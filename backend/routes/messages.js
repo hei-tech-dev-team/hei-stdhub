@@ -76,12 +76,14 @@ if (useCloudinary) {
 router.get("/search", auth, async (req, res) => {
   const { q } = req.query;
   if (!q?.trim()) return res.json([]);
+  const isDeveloper = req.user.role === "developer";
   try {
     const { rows } = await db.query(
       `SELECT id, ref, pseudo, role, level, avatar
        FROM users
        WHERE id != $1
          AND (pseudo ILIKE $2 OR ref ILIKE $2)
+         ${isDeveloper ? "" : "AND role != 'developer'"}
        ORDER BY pseudo
        LIMIT 10`,
       [req.user.id, `%${q}%`],
@@ -96,8 +98,12 @@ router.get("/search", auth, async (req, res) => {
 router.get("/contacts", auth, async (req, res) => {
   try {
     const { q, limit = 200, offset = 0 } = req.query;
+    const isDeveloper = req.user.role === "developer";
     const params = [req.user.id];
     let whereClause = "WHERE id != $1";
+    if (!isDeveloper) {
+      whereClause += " AND role != 'developer'";
+    }
     if (q?.trim()) {
       params.push(`%${q.trim()}%`);
       whereClause += ` AND (pseudo ILIKE $${params.length} OR ref ILIKE $${params.length})`;
