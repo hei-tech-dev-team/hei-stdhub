@@ -94,7 +94,7 @@ const tryGetAdminFromToken = (req) => {
   if (!header?.startsWith("Bearer ")) return null;
   try {
     const decoded = jwt.verify(header.split(" ")[1], process.env.JWT_SECRET);
-    return decoded.role === "admin" ? decoded : null;
+    return ["admin", "developer"].includes(decoded.role) ? decoded : null;
   } catch {
     return null;
   }
