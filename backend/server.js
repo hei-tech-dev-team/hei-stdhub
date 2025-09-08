@@ -164,6 +164,7 @@ app.use("/api/custom-ues", require("./routes/custom-ues"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/alumni-spotlight", require("./routes/alumniSpotlight"));
+app.use("/api/bug-reports", require("./routes/bugReports"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) =>
@@ -215,8 +216,10 @@ io.on("connection", (socket) => {
     socket.join(`user:${userId}`);
     socket.join("global-chat");
 
-    // Broadcast to others only (not to self)
-    socket.broadcast.emit("user:online", userId);
+    // Broadcast to others only (not to self), hide developer
+    if (socket.user?.role !== "developer") {
+      socket.broadcast.emit("user:online", userId);
+    }
   });
 
   socket.on("message:global", (msg) => {
