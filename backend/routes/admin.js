@@ -1,16 +1,17 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const developerOrAdmin = require("../middleware/developerOrAdmin");
 
 const router = express.Router();
 
 const adminOnly = (req, res, next) => {
       if (req.user.role !== "admin")
-            return res.status(403).json({ error: "Accès réservé à l'admin." });
+            return res.status(403).json({ error: "Acces reserve a l'admin." });
       next();
 };
 
-router.get("/stats", auth, adminOnly, async (req, res) => {
+router.get("/stats", auth, developerOrAdmin, async (req, res) => {
       try {
             const [counts, byRole] = await Promise.all([
                   db.query(`
@@ -35,7 +36,7 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
       }
 });
 
-router.get("/next-pseudo", auth, adminOnly, async (req, res) => {
+router.get("/next-pseudo", auth, developerOrAdmin, async (req, res) => {
       try {
             const { rows } = await db.query(
               `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(pseudo, '^new_user0*', '') AS INTEGER)), 0) AS last_num FROM users WHERE pseudo ~ '^new_user[0-9]+$'`
@@ -46,7 +47,7 @@ router.get("/next-pseudo", auth, adminOnly, async (req, res) => {
       }
 });
 
-router.get("/users", auth, adminOnly, async (req, res) => {
+router.get("/users", auth, developerOrAdmin, async (req, res) => {
       try {
             const { q, role, limit = 50, offset = 0 } = req.query;
             const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -100,7 +101,7 @@ router.get("/users", auth, adminOnly, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
+router.patch("/users/:id/role", auth, developerOrAdmin, async (req, res) => {
       console.log(
             "PATCH ROLE appelé — user:",
             req.user,
@@ -110,7 +111,7 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
             req.params.id,
       );
       const { role } = req.body;
-      const validRoles = ["student", "teacher", "admin", "bde", "alumni"];
+      const validRoles = ["student", "teacher", "admin", "bde", "alumni", "developer"];
       if (!validRoles.includes(role))
             return res.status(400).json({ error: "Rôle invalide." });
       try {
@@ -129,7 +130,7 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/email", auth, adminOnly, async (req, res) => {
+router.patch("/users/:id/email", auth, developerOrAdmin, async (req, res) => {
       const { email } = req.body;
       if (!email || !email.includes("@"))
             return res.status(400).json({ error: "Email invalide." });
@@ -147,7 +148,7 @@ router.patch("/users/:id/email", auth, adminOnly, async (req, res) => {
       }
 });
 
-router.delete("/users/:id", auth, adminOnly, async (req, res) => {
+router.delete("/users/:id", auth, developerOrAdmin, async (req, res) => {
       if (parseInt(req.params.id) === req.user.id)
             return res
                   .status(400)
@@ -158,6 +159,51 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
             await db.query("DELETE FROM users WHERE id=$1", [req.params.id]);
             res.json({ success: true });
       } catch (err) {
+            res.status(500).json({ error: "Erreur serveur." });
+      }
+});
+
+router.patch("/users/:id/level", auth, developerOrAdmin, async (req, res) => {
+      const { level } = req.body;
+      if (!["L1", "L2", "L3"].includes(level))
+            return res.status(400).json({ error: "Level invalide." });
+      try {
+            const { rows } = await db.query(
+                  "SELECT id, role FROM users WHERE id = $1",
+                  [req.params.id],
+            );
+            if (!rows.length)
+                  return res.status(404).json({ error: "Utilisateur introuvable." });
+            if (!["student", "bde"].includes(rows[0].role))
+                  return res.status(400).json({ error: "Level reserve aux etudiants et BDE." });
+            const { rows: updated } = await db.query(
+                  "UPDATE users SET level = $1 WHERE id = $2 RETURNING id, ref, level",
+                  [level, req.params.id],
+            );
+            res.json(updated[0]);
+      } catch (err) {
+            console.error("ERREUR PATCH LEVEL:", err.message);
+            res.status(500).json({ error: "Erreur serveur." });
+      }
+});
+
+router.patch("/users/:id/role-upgrade", auth, developerOrAdmin, async (req, res) => {
+      try {
+            const { rows } = await db.query(
+                  "SELECT id, role FROM users WHERE id = $1",
+                  [req.params.id],
+            );
+            if (!rows.length)
+                  return res.status(404).json({ error: "Utilisateur introuvable." });
+            if (rows[0].role !== "student")
+                  return res.status(400).json({ error: "Seuls les etudiants peuvent etre upgardes en BDE." });
+            const { rows: updated } = await db.query(
+                  "UPDATE users SET role = 'bde' WHERE id = $1 RETURNING id, ref, role",
+                  [req.params.id],
+            );
+            res.json(updated[0]);
+      } catch (err) {
+            console.error("ERREUR ROLE-UPGRADE:", err.message);
             res.status(500).json({ error: "Erreur serveur." });
       }
 });
@@ -209,7 +255,7 @@ const generateInviteCode = (role) => {
       return `${prefixes[role]}-${random}`;
 };
 
-router.post("/invitations", auth, adminOnly, async (req, res) => {
+router.post("/invitations", auth, developerOrAdmin, async (req, res) => {
       const { role, max_uses } = req.body;
       if (!["student", "teacher", "alumni"].includes(role))
             return res.status(400).json({ error: "Rôle invalide." });
@@ -230,7 +276,7 @@ router.post("/invitations", auth, adminOnly, async (req, res) => {
       }
 });
 
-router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
+router.post("/invitations/bulk", auth, developerOrAdmin, async (req, res) => {
   const { role, count, max_uses } = req.body;
   if (!["student", "teacher", "alumni"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
@@ -280,7 +326,7 @@ router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
   }
 });
 
-router.get("/invitations", auth, adminOnly, async (req, res) => {
+router.get("/invitations", auth, developerOrAdmin, async (req, res) => {
       try {
             const { limit = 50, offset = 0 } = req.query;
             const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -304,7 +350,7 @@ router.get("/invitations", auth, adminOnly, async (req, res) => {
       }
 });
 
-router.delete("/invitations/:id", auth, adminOnly, async (req, res) => {
+router.delete("/invitations/:id", auth, developerOrAdmin, async (req, res) => {
       try {
             await db.query("DELETE FROM invitations WHERE id=$1", [
                   req.params.id,
