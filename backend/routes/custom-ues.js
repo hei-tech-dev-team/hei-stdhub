@@ -1,15 +1,9 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const developerOrAdmin = require("../middleware/developerOrAdmin");
 
 const router = express.Router();
-
-// Admin only
-const adminOnly = (req, res, next) => {
-  if (req.user?.role !== "admin")
-    return res.status(403).json({ error: "Accès refusé." });
-  next();
-};
 
 // GET all custom UEs
 router.get("/", async (req, res) => {
@@ -25,7 +19,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST create a custom UE
-router.post("/", auth, adminOnly, async (req, res) => {
+router.post("/", auth, developerOrAdmin, async (req, res) => {
   const { ue, level } = req.body;
   if (!ue || !level)
     return res.status(400).json({ error: "UE et niveau requis." });
@@ -50,7 +44,7 @@ router.post("/", auth, adminOnly, async (req, res) => {
 });
 
 // DELETE a custom UE
-router.delete("/:id", auth, adminOnly, async (req, res) => {
+router.delete("/:id", auth, developerOrAdmin, async (req, res) => {
   try {
     await db.query("DELETE FROM custom_ues WHERE id=$1", [req.params.id]);
     res.json({ message: "UE supprimée." });
