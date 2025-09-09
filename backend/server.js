@@ -222,6 +222,12 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("dev:join", () => {
+    if (socket.user?.role === "developer") {
+      socket.join("developers");
+    }
+  });
+
   socket.on("message:global", (msg) => {
     if (!msg || !msg.content) {
       socket.emit("error", { message: "Message vide." });
@@ -282,7 +288,9 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     if (socket.userId) {
       onlineUsers.delete(socket.userId);
-      socket.broadcast.emit("user:offline", socket.userId);
+      if (socket.user?.role !== "developer") {
+        socket.broadcast.emit("user:offline", socket.userId);
+      }
     }
   });
 });
