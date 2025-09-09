@@ -2,6 +2,7 @@ const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const developerOrAdmin = require("../middleware/developerOrAdmin");
+const developerOnly = require("../middleware/developerOnly");
 
 const router = express.Router();
 
@@ -163,7 +164,7 @@ router.delete("/users/:id", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/level", auth, developerOrAdmin, async (req, res) => {
+router.patch("/users/:id/level", auth, developerOnly, async (req, res) => {
       const { level } = req.body;
       if (!["L1", "L2", "L3"].includes(level))
             return res.status(400).json({ error: "Level invalide." });
@@ -222,7 +223,7 @@ router.post("/alumni-upgrade", auth, adminOnly, async (req, res) => {
 });
 
 // Passage de classe : L1->L2, L2->L3 (exclut les redoublants)
-router.post("/class-upgrade", auth, adminOnly, async (req, res) => {
+router.post("/class-upgrade", auth, developerOnly, async (req, res) => {
   const { failed_l1_refs, failed_l2_refs } = req.body;
   try {
     const allFailed = [...(failed_l1_refs || []), ...(failed_l2_refs || [])];
