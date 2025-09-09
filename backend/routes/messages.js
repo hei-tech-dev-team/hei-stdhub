@@ -247,7 +247,7 @@ router.get("/private/:userId", auth, async (req, res) => {
 // POST /purge-test —  (admin only, debug)
 let purgeInProgress = false;
 router.post("/purge-test", auth, async (req, res) => {
-  if (req.user.role !== "admin") {
+  if (!["admin", "developer"].includes(req.user.role)) {
     return res.status(403).json({ error: "Réservé aux administrateurs." });
   }
   if (purgeInProgress) {
