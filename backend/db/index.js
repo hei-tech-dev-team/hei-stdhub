@@ -105,6 +105,29 @@ const ensureIndexes = async () => {
         created_by INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMP    NOT NULL DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id          SERIAL       PRIMARY KEY,
+        reporter_id INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title       VARCHAR(255) NOT NULL,
+        description TEXT         NOT NULL,
+        page        VARCHAR(255) NULL,
+        status      VARCHAR(20)  NOT NULL DEFAULT 'open',
+        created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS support_ticket_responses (
+        id         SERIAL       PRIMARY KEY,
+        ticket_id  INTEGER      NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        response   TEXT         NOT NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TRIGGER trg_support_tickets_updated_at
+        BEFORE UPDATE ON support_tickets
+        FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
     `);
   } catch (err) {
     console.error("Failed to ensure indexes:", err.message);
