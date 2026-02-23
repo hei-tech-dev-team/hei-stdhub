@@ -11,7 +11,7 @@ import {
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
-import { HEI_WHITE_LOGO } from "../../assets/logos";
+import { HEI_BLUE_LOGO } from "../../assets/logos";
 
 const NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
@@ -65,7 +65,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-between px-2 mb-10">
           <div className="flex items-center gap-3">
             <img
-              src={HEI_WHITE_LOGO}
+              src={HEI_BLUE_LOGO}
               alt="HEI Logo"
               className="h-8 w-8 object-contain"
             />

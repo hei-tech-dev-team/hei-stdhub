@@ -6,7 +6,7 @@ import {
   faSmile,
   faChevronLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import { HEI_WHITE_LOGO } from "../../assets/logos";
+import { HEI_BLUE_LOGO } from "../../assets/logos";
 import Avatar from "../ui/Avatar";
 
 export default function MessagePanel({
@@ -59,7 +59,7 @@ export default function MessagePanel({
                           flex items-center justify-center shrink-0"
           >
             <img
-              src={HEI_WHITE_LOGO}
+              src={HEI_BLUE_LOGO}
               alt="HEI"
               className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
             />
