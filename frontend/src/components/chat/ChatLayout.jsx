@@ -58,6 +58,7 @@ const DEMO_MESSAGES = {
 export default function ChatLayout() {
   const [activeContact, setActiveContact] = useState(DEMO_CONTACTS[0]);
   const [messages, setMessages] = useState(DEMO_MESSAGES);
+  const [showContactList, setShowContactList] = useState(true);
 
   const sendMessage = (content) => {
     const msg = {
@@ -76,18 +77,50 @@ export default function ChatLayout() {
     }));
   };
 
+  const handleSelectContact = (contact) => {
+    setActiveContact(contact);
+    setShowContactList(false);
+  };
+
   return (
-    <div className="flex w-full h-screen">
-      <ContactList
-        contacts={DEMO_CONTACTS}
-        activeId={activeContact.id}
-        onSelect={(c) => setActiveContact(c)}
-      />
-      <MessagePanel
-        contact={activeContact}
-        messages={messages[activeContact.id] || []}
-        onSend={sendMessage}
-      />
+    <div className="flex w-full h-screen overflow-hidden">
+      {/* ── ContactList — visible sur md+, drawer sur mobile ── */}
+      <div
+        className={`
+          absolute md:static inset-y-0 left-0 z-20
+          w-full sm:w-72 md:w-64 lg:w-72
+          transform transition-transform duration-300
+          ${
+            showContactList
+              ? "translate-x-0"
+              : "-translate-x-full md:translate-x-0"
+          }
+        `}
+      >
+        <ContactList
+          contacts={DEMO_CONTACTS}
+          activeId={activeContact.id}
+          onSelect={handleSelectContact}
+        />
+      </div>
+
+      {/* ── Overlay mobile quand contacts ouverts ── */}
+      {showContactList && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-10"
+          onClick={() => setShowContactList(false)}
+        />
+      )}
+
+      {/* ── MessagePanel ── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <MessagePanel
+          contact={activeContact}
+          messages={messages[activeContact.id] || []}
+          onSend={sendMessage}
+          onOpenContacts={() => setShowContactList(true)}
+        />
+      </div>
     </div>
   );
 }
