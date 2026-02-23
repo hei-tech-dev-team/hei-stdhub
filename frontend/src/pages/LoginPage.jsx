@@ -4,16 +4,17 @@ import { useAuth } from "../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../assets/logos";
 
 export default function LoginPage() {
-  const { login }  = useAuth();
-  const navigate   = useNavigate();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const [form,  setForm]  = useState({
-    ref: "", password: "", role: "student",
+  const [form, setForm] = useState({
+    ref: "",
+    password: "",
+    role: "student",
   });
   const [error, setError] = useState("");
 
-  const set = (key, val) =>
-    setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -23,21 +24,24 @@ export default function LoginPage() {
     }
     // TODO : POST /api/auth/login
     login({
-      ref:    form.ref.toUpperCase(),
-      name:   form.ref,
-      email:  "",
+      ref: form.ref.toUpperCase(),
+      name: form.ref,
+      email: "",
       pseudo: form.ref,
-      role:   form.role,
+      role: form.role,
     });
     navigate("/");
   };
 
   return (
-    <div className="min-h-screen bg-surface flex items-center
-                    justify-center px-4">
-      <div className="bg-white rounded-3xl shadow-modal p-10
-                      w-full max-w-md">
-
+    <div
+      className="min-h-screen bg-surface flex items-center
+                    justify-center px-4"
+    >
+      <div
+        className="bg-white rounded-3xl shadow-modal p-10
+                      w-full max-w-md"
+      >
         {/* ── Logo ── */}
         <div className="flex flex-col items-center mb-8">
           <img
@@ -45,9 +49,7 @@ export default function LoginPage() {
             alt="HEI"
             className="h-16 mb-3 object-contain"
           />
-          <h1 className="text-2xl font-bold text-navy">
-            HEI STDhub
-          </h1>
+          <h1 className="text-2xl font-bold text-navy">HEI STDhub</h1>
           <p className="text-gray-400 text-sm mt-1">
             Connectez-vous à votre espace
           </p>
@@ -55,18 +57,21 @@ export default function LoginPage() {
 
         {/* ── Erreur ── */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600
-                          text-sm px-4 py-3 rounded-xl mb-4">
+          <div
+            className="bg-red-50 border border-red-200 text-red-600
+                          text-sm px-4 py-3 rounded-xl mb-4"
+          >
             {error}
           </div>
         )}
 
         {/* ── Formulaire ── */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1
-                              block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500 mb-1
+                              block uppercase tracking-wide"
+            >
               Référence *
             </label>
             <input
@@ -81,8 +86,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1
-                              block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500 mb-1
+                              block uppercase tracking-wide"
+            >
               Mot de passe *
             </label>
             <input
@@ -98,8 +105,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1
-                              block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500 mb-1
+                              block uppercase tracking-wide"
+            >
               Rôle
             </label>
             <select
@@ -118,20 +127,15 @@ export default function LoginPage() {
           >
             Se connecter
           </button>
-
         </form>
 
         {/* ── Lien inscription ── */}
         <p className="text-center text-xs text-gray-400 mt-6">
           Pas encore inscrit ?{" "}
-          <Link
-            to="/register"
-            className="text-gold font-bold hover:underline"
-          >
+          <Link to="/register" className="text-gold font-bold hover:underline">
             Créer un compte
           </Link>
         </p>
-
       </div>
     </div>
   );
