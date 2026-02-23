@@ -46,7 +46,7 @@ export default function LoginPage() {
           <img
             src={HEI_BLUE_LOGO}
             alt="HEI"
-            className="h-12 sm:h-16 mb-3 object-contain"
+            className="h-12 sm:h-16 mb-3 object-contain "
           />
           <h1 className="text-xl sm:text-2xl font-bold text-navy">
             HEI STDhub

@@ -114,9 +114,9 @@ export default function TeacherHome() {
         >
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-navy">
-              Tableau de bord
+              Tableau de bord enseignant
             </h1>
-            <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
               Publiez vos cours, TD et examens
             </p>
           </div>
@@ -135,7 +135,7 @@ export default function TeacherHome() {
         {showForm && (
           <div className="card mb-6 border border-contact">
             <h2 className="font-bold text-navy mb-5 text-base">
-              Publier un contenu
+              Publier un Cours/TD/Examen
             </h2>
             <form onSubmit={handlePublish}>
               {/* Titre + UE : colonne sur mobile, ligne sur desktop */}
@@ -149,7 +149,7 @@ export default function TeacherHome() {
                   </label>
                   <input
                     className="input-field"
-                    placeholder="Ex : TD3 – JavaScript ES6"
+                    placeholder="Ex: TD PROG1"
                     value={form.title}
                     onChange={(e) => set("title", e.target.value)}
                     required
