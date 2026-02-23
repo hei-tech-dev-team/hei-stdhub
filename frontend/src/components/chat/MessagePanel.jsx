@@ -10,8 +10,8 @@ import { HEI_WHITE_LOGO } from "../../assets/logos";
 import Avatar from "../ui/Avatar";
 
 export default function MessagePanel({ contact, messages, onSend }) {
-  const [text,    setText]    = useState("");
-  const bottomRef             = useRef(null);
+  const [text, setText] = useState("");
+  const bottomRef = useRef(null);
 
   /* Scroll auto vers le bas */
   useEffect(() => {
@@ -34,13 +34,16 @@ export default function MessagePanel({ contact, messages, onSend }) {
 
   return (
     <div className="flex-1 flex flex-col bg-[#1a2b45]">
-
       {/* ── Header conversation ── */}
-      <div className="flex items-center gap-4 px-6 py-4 bg-navy-dark
-                      border-b border-white/10 shrink-0">
+      <div
+        className="flex items-center gap-4 px-6 py-4 bg-navy-dark
+                      border-b border-white/10 shrink-0"
+      >
         {contact.isGlobal ? (
-          <div className="w-10 h-10 rounded-full bg-navy
-                          flex items-center justify-center shrink-0">
+          <div
+            className="w-10 h-10 rounded-full bg-navy
+                          flex items-center justify-center shrink-0"
+          >
             <img
               src={HEI_WHITE_LOGO}
               alt="HEI"
@@ -52,9 +55,7 @@ export default function MessagePanel({ contact, messages, onSend }) {
         )}
 
         <div>
-          <h3 className="text-white font-bold text-sm">
-            {contact.name}
-          </h3>
+          <h3 className="text-white font-bold text-sm">{contact.name}</h3>
           {contact.isGlobal && (
             <p className="text-white/40 text-xs">
               Chat global – tous les membres
@@ -84,11 +85,7 @@ export default function MessagePanel({ contact, messages, onSend }) {
           >
             {/* Avatar expéditeur */}
             {!msg.own && (
-              <Avatar
-                name={msg.sender}
-                size="sm"
-                color="bg-white/20"
-              />
+              <Avatar name={msg.sender} size="sm" color="bg-white/20" />
             )}
 
             {/* Bulle */}
@@ -103,9 +100,11 @@ export default function MessagePanel({ contact, messages, onSend }) {
               )}
               <div
                 className={`px-4 py-2.5 rounded-2xl text-sm font-medium shadow
-                            ${msg.own
-                              ? "bg-white text-navy rounded-br-sm"
-                              : "bg-white/15 text-white rounded-bl-sm"}`}
+                            ${
+                              msg.own
+                                ? "bg-white text-navy rounded-br-sm"
+                                : "bg-white/15 text-white rounded-bl-sm"
+                            }`}
               >
                 {msg.content}
               </div>
@@ -122,10 +121,11 @@ export default function MessagePanel({ contact, messages, onSend }) {
       {/* ── Zone de saisie ── */}
       <div className="px-4 py-4 bg-navy-dark border-t border-white/10 shrink-0">
         <div className="flex items-center gap-3">
-
           {/* Input texte */}
-          <div className="flex-1 flex items-center bg-white
-                          rounded-2xl px-4 py-2.5 gap-2">
+          <div
+            className="flex-1 flex items-center bg-white
+                          rounded-2xl px-4 py-2.5 gap-2"
+          >
             <input
               className="flex-1 text-sm text-navy bg-transparent
                          focus:outline-none placeholder:text-gray-400"
@@ -160,9 +160,7 @@ export default function MessagePanel({ contact, messages, onSend }) {
                        flex items-center justify-center
                        hover:bg-white/10 transition shrink-0"
             title="Ajouter fichier ou image"
-            onClick={() =>
-              document.getElementById("chat-file").click()
-            }
+            onClick={() => document.getElementById("chat-file").click()}
           >
             <FontAwesomeIcon icon={faPlus} className="text-sm" />
           </button>
@@ -175,10 +173,8 @@ export default function MessagePanel({ contact, messages, onSend }) {
               if (f) onSend(`[Fichier : ${f.name}]`);
             }}
           />
-
         </div>
       </div>
-
     </div>
   );
 }
