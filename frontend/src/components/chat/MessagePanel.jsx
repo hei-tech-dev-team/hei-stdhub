@@ -1,16 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faPaperPlane, faPlus, faSmile, faChevronLeft,
+  faPaperPlane,
+  faPlus,
+  faSmile,
+  faChevronLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
 import Avatar from "../ui/Avatar";
 
 export default function MessagePanel({
-  contact, messages, onSend, onOpenContacts,
+  contact,
+  messages,
+  onSend,
+  onOpenContacts,
 }) {
-  const [text,    setText]    = useState("");
-  const bottomRef             = useRef(null);
+  const [text, setText] = useState("");
+  const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,11 +38,11 @@ export default function MessagePanel({
 
   return (
     <div className="flex flex-col h-full bg-[#1a2b45]">
-
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4
-                      bg-navy-dark border-b border-white/10 shrink-0">
-
+      <div
+        className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4
+                      bg-navy-dark border-b border-white/10 shrink-0"
+      >
         {/* Bouton retour mobile */}
         <button
           type="button"
@@ -48,8 +54,10 @@ export default function MessagePanel({
         </button>
 
         {contact.isGlobal ? (
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-navy
-                          flex items-center justify-center shrink-0">
+          <div
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-navy
+                          flex items-center justify-center shrink-0"
+          >
             <img
               src={HEI_WHITE_LOGO}
               alt="HEI"
@@ -78,8 +86,10 @@ export default function MessagePanel({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4
-                      flex flex-col gap-3">
+      <div
+        className="flex-1 overflow-y-auto px-3 sm:px-6 py-4
+                      flex flex-col gap-3"
+      >
         {messages.length === 0 && (
           <div className="text-center text-white/30 text-sm mt-10">
             Démarrez la conversation...
@@ -97,22 +107,26 @@ export default function MessagePanel({
             {!msg.own && (
               <Avatar name={msg.sender} size="sm" color="bg-white/20" />
             )}
-            <div className={
-              "flex flex-col max-w-[75%] sm:max-w-xs lg:max-w-md " +
-              (msg.own ? "items-end" : "items-start")
-            }>
+            <div
+              className={
+                "flex flex-col max-w-[75%] sm:max-w-xs lg:max-w-md " +
+                (msg.own ? "items-end" : "items-start")
+              }
+            >
               {!msg.own && (
                 <span className="text-white/40 text-xs mb-1 ml-1">
                   {msg.sender}
                 </span>
               )}
-              <div className={
-                "px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl " +
-                "text-xs sm:text-sm font-medium shadow " +
-                (msg.own
-                  ? "bg-white text-navy rounded-br-sm"
-                  : "bg-white/15 text-white rounded-bl-sm")
-              }>
+              <div
+                className={
+                  "px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl " +
+                  "text-xs sm:text-sm font-medium shadow " +
+                  (msg.own
+                    ? "bg-white text-navy rounded-br-sm"
+                    : "bg-white/15 text-white rounded-bl-sm")
+                }
+              >
                 {msg.content}
               </div>
               <span className="text-white/30 text-xs mt-1 mx-1">
@@ -126,13 +140,16 @@ export default function MessagePanel({
       </div>
 
       {/* Zone de saisie */}
-      <div className="px-3 sm:px-4 py-3 sm:py-4
-                      bg-navy-dark border-t border-white/10 shrink-0">
+      <div
+        className="px-3 sm:px-4 py-3 sm:py-4
+                      bg-navy-dark border-t border-white/10 shrink-0"
+      >
         <div className="flex items-center gap-2 sm:gap-3">
-
           {/* Input */}
-          <div className="flex-1 flex items-center bg-white
-                          rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 gap-2">
+          <div
+            className="flex-1 flex items-center bg-white
+                          rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 gap-2"
+          >
             <input
               className="flex-1 text-xs sm:text-sm text-navy
                          bg-transparent focus:outline-none
@@ -181,10 +198,8 @@ export default function MessagePanel({
               if (f) onSend(`[Fichier : ${f.name}]`);
             }}
           />
-
         </div>
       </div>
-
     </div>
   );
 }
