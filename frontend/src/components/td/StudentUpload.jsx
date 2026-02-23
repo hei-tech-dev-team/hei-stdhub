@@ -17,10 +17,18 @@ const GROUPS = {
 // UE disponibles par niveau — correspond exactement au curriculum HEI
 const UES = {
   L1: [
-    "WEB1", "PROG1", "SYS1", "DONNEES1",
-    "THEORIE1-P1", "THEORIE1-P2",
-    "WEB2", "PROG2-POO", "PROG2-API",
-    "SYS2", "DONNEES2", "IA1",
+    "WEB1",
+    "PROG1",
+    "SYS1",
+    "DONNEES1",
+    "THEORIE1-P1",
+    "THEORIE1-P2",
+    "WEB2",
+    "PROG2-POO",
+    "PROG2-API",
+    "SYS2",
+    "DONNEES2",
+    "IA1",
   ],
   L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
@@ -45,11 +53,11 @@ export default function StudentUpload() {
   const [form, setForm] = useState({
     ...EMPTY,
     email: user?.email || "",
-    ref:   user?.ref   || "",
+    ref: user?.ref || "",
   });
-  const [dragOver,  setDragOver]  = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [error,     setError]     = useState("");
+  const [error, setError] = useState("");
 
   const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
@@ -57,9 +65,9 @@ export default function StudentUpload() {
   const handleLevelChange = (newLevel) => {
     setForm((prev) => ({
       ...prev,
-      level:  newLevel,
+      level: newLevel,
       groupe: GROUPS[newLevel][0],
-      ue:     UES[newLevel][0],
+      ue: UES[newLevel][0],
     }));
   };
 
@@ -88,11 +96,11 @@ export default function StudentUpload() {
   };
 
   const validate = () => {
-    if (!form.nom.trim())    return "Le nom est requis.";
+    if (!form.nom.trim()) return "Le nom est requis.";
     if (!form.prenom.trim()) return "Le prénom est requis.";
-    if (!form.email.trim())  return "L'email est requis.";
-    if (!form.ref.trim())    return "La référence STD est requise.";
-    if (!form.ue)            return "Veuillez choisir une UE.";
+    if (!form.email.trim()) return "L'email est requis.";
+    if (!form.ref.trim()) return "La référence STD est requise.";
+    if (!form.ue) return "Veuillez choisir une UE.";
     if (!form.file && !form.link.trim())
       return "Veuillez déposer un fichier ou coller un lien.";
     return null;
@@ -101,7 +109,10 @@ export default function StudentUpload() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const err = validate();
-    if (err) { setError(err); return; }
+    if (err) {
+      setError(err);
+      return;
+    }
     setError("");
     setSubmitted(true);
     // TODO: appel API — le backend redirigera vers la boîte du prof de l'UE
@@ -119,8 +130,10 @@ export default function StudentUpload() {
 
   if (submitted) {
     return (
-      <div className="flex flex-col items-center justify-center
-                      h-full text-center py-16 sm:py-24 px-4">
+      <div
+        className="flex flex-col items-center justify-center
+                      h-full text-center py-16 sm:py-24 px-4"
+      >
         <FontAwesomeIcon
           icon={faCheckCircle}
           className="text-5xl sm:text-6xl text-green-400 mb-4"
@@ -129,8 +142,8 @@ export default function StudentUpload() {
           Rendu soumis avec succès !
         </h2>
         <p className="text-gray-400 text-sm">
-          Votre devoir a été envoyé au professeur de{" "}
-          <span className="font-bold text-navy">{form.ue}</span>.
+          Votre devoir de <span className="font-bold text-navy">{form.ue}</span>
+          a été envoyé avec succès.
         </p>
       </div>
     );
@@ -138,7 +151,6 @@ export default function StudentUpload() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
-
       {/* ── Zone drag & drop ── */}
       <div
         className={
@@ -149,7 +161,10 @@ export default function StudentUpload() {
             ? "border-gold bg-gold/5"
             : "border-contact bg-white hover:border-navy/40")
         }
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => document.getElementById("student-file").click()}
@@ -171,7 +186,10 @@ export default function StudentUpload() {
             </p>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); set("file", null); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                set("file", null);
+              }}
               className="mt-3 text-red-400 text-xs hover:underline
                          flex items-center gap-1"
             >
@@ -199,10 +217,11 @@ export default function StudentUpload() {
 
       {/* ── Formulaire ── */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 lg:flex-1">
-
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600
-                          text-sm px-4 py-2 rounded-xl">
+          <div
+            className="bg-red-50 border border-red-200 text-red-600
+                          text-sm px-4 py-2 rounded-xl"
+          >
             {error}
           </div>
         )}
@@ -210,8 +229,10 @@ export default function StudentUpload() {
         {/* Nom + Prénom */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
+            >
               Nom *
             </label>
             <input
@@ -222,8 +243,10 @@ export default function StudentUpload() {
             />
           </div>
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
+            >
               Prénom *
             </label>
             <input
@@ -237,8 +260,10 @@ export default function StudentUpload() {
 
         {/* Email */}
         <div>
-          <label className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide">
+          <label
+            className="text-xs font-bold text-gray-500
+                            mb-1 block uppercase tracking-wide"
+          >
             Email *
           </label>
           <input
@@ -252,8 +277,10 @@ export default function StudentUpload() {
 
         {/* Référence */}
         <div>
-          <label className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide">
+          <label
+            className="text-xs font-bold text-gray-500
+                            mb-1 block uppercase tracking-wide"
+          >
             Référence STD *
           </label>
           <input
@@ -267,8 +294,10 @@ export default function StudentUpload() {
         {/* Niveau + Groupe */}
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
+            >
               Niveau
             </label>
             <select
@@ -282,8 +311,10 @@ export default function StudentUpload() {
             </select>
           </div>
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
+            >
               Groupe
             </label>
             <select
@@ -300,8 +331,10 @@ export default function StudentUpload() {
 
         {/* UE — change selon le niveau */}
         <div>
-          <label className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide">
+          <label
+            className="text-xs font-bold text-gray-500
+                            mb-1 block uppercase tracking-wide"
+          >
             Unité d'enseignement (UE) *
           </label>
           <select
@@ -310,7 +343,9 @@ export default function StudentUpload() {
             onChange={(e) => set("ue", e.target.value)}
           >
             {UES[form.level].map((ue) => (
-              <option key={ue} value={ue}>{ue}</option>
+              <option key={ue} value={ue}>
+                {ue}
+              </option>
             ))}
           </select>
           <p className="text-xs text-gray-400 mt-1">
@@ -320,8 +355,10 @@ export default function StudentUpload() {
 
         {/* Type */}
         <div>
-          <label className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide">
+          <label
+            className="text-xs font-bold text-gray-500
+                            mb-1 block uppercase tracking-wide"
+          >
             Type
           </label>
           <select
@@ -369,7 +406,6 @@ export default function StudentUpload() {
             Soumettre
           </button>
         </div>
-
       </form>
     </div>
   );
