@@ -1,68 +1,89 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap");
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  * {
+    font-family: "Quicksand", sans-serif;
+    box-sizing: border-box;
   }
-  a:hover {
-    color: #747bff;
+
+  body {
+    @apply bg-surface text-navy-dark;
+    margin: 0;
+    padding: 0;
   }
-  button {
-    background-color: #f9f9f9;
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-contact rounded-full;
+  }
+}
+
+@layer components {
+  /* ── Layout ── */
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm
+           text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer;
+  }
+
+  .sidebar-link-active {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm
+           bg-gold text-navy-dark transition-all duration-200 cursor-pointer;
+  }
+
+  /* ── Cards ── */
+  .card {
+    @apply bg-white rounded-2xl shadow-card p-5;
+  }
+
+  /* ── Badges ── */
+  .badge-td {
+    @apply bg-cyan-100 text-cyan-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-examen {
+    @apply bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-cours {
+    @apply bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
+  }
+
+  /* ── Inputs ── */
+  .input-field {
+    @apply w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white
+           focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10
+           transition-all duration-200 placeholder:text-gray-400;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm
+           hover:bg-navy-dark transition-all duration-200 cursor-pointer;
+  }
+
+  .btn-gold {
+    @apply bg-gold text-white px-5 py-2.5 rounded-full font-semibold text-sm
+           hover:opacity-90 transition-all duration-200 cursor-pointer;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm
+           hover:bg-red-600 transition-all duration-200 cursor-pointer;
+  }
+
+  .btn-success {
+    @apply bg-green-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm
+           hover:bg-green-600 transition-all duration-200 cursor-pointer;
   }
 }
