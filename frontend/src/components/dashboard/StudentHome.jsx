@@ -5,7 +5,6 @@ import Navbar from "../layout/Navbar";
 import Badge from "../ui/Badge";
 import Avatar from "../ui/Avatar";
 
-/* ── Données de démo – remplacer par appel API ── */
 const DEMO_POSTS = [
   {
     id: 1,
@@ -79,32 +78,39 @@ export default function StudentHome() {
     <div className="flex flex-col h-full">
       <Navbar />
 
-      <div className="flex-1 p-8 overflow-y-auto">
-        {/* ── Header + Filtres ── */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        {/* Header + Filtres */}
+        <div
+          className="flex flex-col sm:flex-row sm:items-center
+                        justify-between gap-3 mb-6"
+        >
           <div>
-            <h1 className="text-xl font-bold text-navy">Contenu disponible</h1>
-            <p className="text-sm text-gray-400 mt-0.5">
+            <h1 className="text-lg sm:text-xl font-bold text-navy">
+              Contenu disponible
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
               {filtered.length} élément(s)
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Filtres niveau */}
+          <div className="flex items-center gap-2 flex-wrap">
             <FontAwesomeIcon
               icon={faFilter}
-              className="text-gray-400 text-sm"
+              className="text-gray-400 text-sm shrink-0"
             />
             {LEVELS.map((l) => (
               <button
                 key={l}
+                type="button"
                 onClick={() => setFilter(l)}
-                className={`px-4 py-1.5 rounded-full text-sm font-semibold
-                            transition
-                            ${
-                              filter === l
-                                ? "bg-navy text-white"
-                                : "bg-white border border-contact text-navy hover:bg-surface"
-                            }`}
+                className={
+                  "px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm " +
+                  "font-semibold transition " +
+                  (filter === l
+                    ? "bg-navy text-white"
+                    : "bg-white border border-contact text-navy hover:bg-surface")
+                }
               >
                 {l}
               </button>
@@ -112,8 +118,8 @@ export default function StudentHome() {
           </div>
         </div>
 
-        {/* ── Grille ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* Grille — 1 col mobile, 2 col tablet, 3 col desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
           {filtered.map((post) => (
             <div
               key={post.id}
@@ -125,11 +131,11 @@ export default function StudentHome() {
               />
 
               {/* Badges */}
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <Badge type={post.type} />
                 <span
-                  className="bg-navy/10 text-navy text-xs font-bold
-                                 px-3 py-1 rounded-full"
+                  className="bg-navy/10 text-navy text-xs
+                                 font-bold px-3 py-1 rounded-full"
                 >
                   {post.ue}
                 </span>
@@ -142,26 +148,30 @@ export default function StudentHome() {
                 </span>
               </div>
 
-              {/* Titre */}
+              {/* Titre + description */}
               <h3
                 className="font-bold text-navy text-sm mb-1
                              group-hover:text-gold transition-colors"
               >
                 {post.title}
               </h3>
-              <p className="text-gray-400 text-xs mb-4 line-clamp-2">
+              <p className="text-gray-400 text-xs mb-4 line-clamp-2 leading-relaxed">
                 {post.description}
               </p>
 
               {/* Footer */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <Avatar name={post.author} size="sm" color="bg-navy" />
-                  <span className="text-xs text-gray-500">{post.author}</span>
+                  <span className="text-xs text-gray-500 truncate">
+                    {post.author}
+                  </span>
                 </div>
                 <button
+                  type="button"
                   className="text-xs text-gold font-semibold
-                                   hover:underline flex items-center gap-1"
+                             hover:underline flex items-center gap-1
+                             shrink-0 ml-2"
                 >
                   <FontAwesomeIcon icon={faDownload} className="text-xs" />
                   Accéder

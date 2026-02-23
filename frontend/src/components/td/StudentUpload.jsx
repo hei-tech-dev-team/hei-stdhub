@@ -38,23 +38,32 @@ export default function StudentUpload() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
-  /* ── Drag & Drop ── */
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (!f) return;
-    if (f.size > 10 * 1024 * 1024) {
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
       setError("Fichier trop volumineux (max 10 Mo).");
       return;
     }
-    set("file", f);
+    set("file", file);
     setError("");
   };
 
-  /* ── Validation ── */
+  const handleFileInput = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Fichier trop volumineux (max 10 Mo).");
+      return;
+    }
+    set("file", file);
+    setError("");
+  };
+
   const validate = () => {
     if (!form.nom.trim()) return "Le nom est requis.";
     if (!form.prenom.trim()) return "Le prénom est requis.";
@@ -65,7 +74,6 @@ export default function StudentUpload() {
     return null;
   };
 
-  /* ── Soumettre ── */
   const handleSubmit = (e) => {
     e.preventDefault();
     const err = validate();
@@ -74,30 +82,29 @@ export default function StudentUpload() {
       return;
     }
     setError("");
-    // TODO : POST /api/submissions
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
-      setForm({
-        ...EMPTY,
-        email: user?.email || "",
-        ref: user?.ref || "",
-      });
+      setForm({ ...EMPTY, email: user?.email || "", ref: user?.ref || "" });
     }, 3000);
   };
 
-  /* ── Succès ── */
+  const handleReset = () => {
+    setForm({ ...EMPTY, email: user?.email || "", ref: user?.ref || "" });
+    setError("");
+  };
+
   if (submitted) {
     return (
       <div
         className="flex flex-col items-center justify-center
-                      h-full text-center py-24"
+                      h-full text-center py-16 sm:py-24 px-4"
       >
         <FontAwesomeIcon
           icon={faCheckCircle}
-          className="text-6xl text-green-400 mb-4"
+          className="text-5xl sm:text-6xl text-green-400 mb-4"
         />
-        <h2 className="text-xl font-bold text-navy mb-2">
+        <h2 className="text-lg sm:text-xl font-bold text-navy mb-2">
           Rendu soumis avec succès !
         </h2>
         <p className="text-gray-400 text-sm">Vous allez être redirigé...</p>
@@ -106,17 +113,17 @@ export default function StudentUpload() {
   }
 
   return (
-    <div className="flex gap-8 h-full">
-      {/* ── Zone de dépôt ── */}
+    <div className="flex flex-col lg:flex-row gap-6 h-full">
+      {/* ── Zone drag & drop ── */}
       <div
-        className={`flex-1 flex flex-col items-center justify-center
-                    rounded-2xl border-2 border-dashed cursor-pointer
-                    transition min-h-64
-                    ${
-                      dragOver
-                        ? "border-gold bg-gold/5"
-                        : "border-contact bg-white hover:border-navy/40"
-                    }`}
+        className={
+          "flex flex-col items-center justify-center rounded-2xl " +
+          "border-2 border-dashed cursor-pointer transition " +
+          "min-h-48 sm:min-h-64 lg:flex-1 p-6 sm:p-8 " +
+          (dragOver
+            ? "border-gold bg-gold/5"
+            : "border-contact bg-white hover:border-navy/40")
+        }
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -127,17 +134,21 @@ export default function StudentUpload() {
       >
         <FontAwesomeIcon
           icon={faCloudUploadAlt}
-          className={`text-5xl mb-3 transition
-                      ${dragOver ? "text-gold" : "text-gray-300"}`}
+          className={
+            "text-4xl sm:text-5xl mb-3 transition " +
+            (dragOver ? "text-gold" : "text-gray-300")
+          }
         />
-
         {form.file ? (
           <>
-            <p className="font-bold text-navy text-sm">{form.file.name}</p>
+            <p className="font-bold text-navy text-sm text-center truncate max-w-full px-4">
+              {form.file.name}
+            </p>
             <p className="text-xs text-gray-400 mt-1">
               {(form.file.size / 1024 / 1024).toFixed(2)} Mo
             </p>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 set("file", null);
@@ -151,35 +162,24 @@ export default function StudentUpload() {
           </>
         ) : (
           <>
-            <p className="font-semibold text-gray-400">
+            <p className="font-semibold text-gray-400 text-sm sm:text-base text-center">
               Déposer votre devoir ici
             </p>
-            <p className="text-xs text-gray-300 mt-1">
+            <p className="text-xs text-gray-300 mt-1 text-center">
               ou cliquer pour parcourir (max 10 Mo)
             </p>
           </>
         )}
-
         <input
           id="student-file"
           type="file"
           className="hidden"
-          onChange={(e) => {
-            const f = e.target.files[0];
-            if (!f) return;
-            if (f.size > 10 * 1024 * 1024) {
-              setError("Fichier trop volumineux (max 10 Mo).");
-              return;
-            }
-            set("file", f);
-            setError("");
-          }}
+          onChange={handleFileInput}
         />
       </div>
 
       {/* ── Formulaire ── */}
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-3">
-        {/* Erreur */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3 lg:flex-1">
         {error && (
           <div
             className="bg-red-50 border border-red-200 text-red-600
@@ -189,43 +189,43 @@ export default function StudentUpload() {
           </div>
         )}
 
-        {/* Nom */}
-        <div>
-          <label
-            className="text-xs font-bold text-gray-500 mb-1
-                            block uppercase tracking-wide"
-          >
-            Nom *
-          </label>
-          <input
-            className="input-field"
-            placeholder="Rakoto"
-            value={form.nom}
-            onChange={(e) => set("nom", e.target.value)}
-          />
-        </div>
-
-        {/* Prénom */}
-        <div>
-          <label
-            className="text-xs font-bold text-gray-500 mb-1
-                            block uppercase tracking-wide"
-          >
-            Prénom *
-          </label>
-          <input
-            className="input-field"
-            placeholder="Jean"
-            value={form.prenom}
-            onChange={(e) => set("prenom", e.target.value)}
-          />
+        {/* Nom + Prénom côte à côte sur sm+ */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <label
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
+            >
+              Nom *
+            </label>
+            <input
+              className="input-field"
+              placeholder="Rakoto"
+              value={form.nom}
+              onChange={(e) => set("nom", e.target.value)}
+            />
+          </div>
+          <div className="flex-1">
+            <label
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
+            >
+              Prénom *
+            </label>
+            <input
+              className="input-field"
+              placeholder="Jean"
+              value={form.prenom}
+              onChange={(e) => set("prenom", e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Email */}
         <div>
           <label
-            className="text-xs font-bold text-gray-500 mb-1
-                            block uppercase tracking-wide"
+            className="text-xs font-bold text-gray-500
+                            mb-1 block uppercase tracking-wide"
           >
             Email *
           </label>
@@ -238,11 +238,11 @@ export default function StudentUpload() {
           />
         </div>
 
-        {/* Référence STD */}
+        {/* Référence */}
         <div>
           <label
-            className="text-xs font-bold text-gray-500 mb-1
-                            block uppercase tracking-wide"
+            className="text-xs font-bold text-gray-500
+                            mb-1 block uppercase tracking-wide"
           >
             Référence STD *
           </label>
@@ -258,8 +258,8 @@ export default function StudentUpload() {
         <div className="flex gap-2">
           <div className="flex-1">
             <label
-              className="text-xs font-bold text-gray-500 mb-1
-                              block uppercase tracking-wide"
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
             >
               Niveau
             </label>
@@ -276,11 +276,10 @@ export default function StudentUpload() {
               ))}
             </select>
           </div>
-
           <div className="flex-1">
             <label
-              className="text-xs font-bold text-gray-500 mb-1
-                              block uppercase tracking-wide"
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
             >
               Groupe
             </label>
@@ -294,11 +293,10 @@ export default function StudentUpload() {
               ))}
             </select>
           </div>
-
           <div className="flex-1">
             <label
-              className="text-xs font-bold text-gray-500 mb-1
-                              block uppercase tracking-wide"
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
             >
               Type
             </label>
@@ -313,7 +311,7 @@ export default function StudentUpload() {
           </div>
         </div>
 
-        {/* Séparateur OU */}
+        {/* Séparateur */}
         <div className="flex items-center gap-3">
           <hr className="flex-1 border-contact" />
           <span className="text-xs font-bold text-gray-400">OU</span>
@@ -325,7 +323,7 @@ export default function StudentUpload() {
           <FontAwesomeIcon
             icon={faLink}
             className="absolute left-4 top-1/2 -translate-y-1/2
-                       text-gray-400 text-sm"
+                       text-gray-400 text-sm pointer-events-none"
           />
           <input
             className="input-field pl-10"
@@ -336,21 +334,15 @@ export default function StudentUpload() {
         </div>
 
         {/* Boutons */}
-        <div className="flex gap-3 mt-2">
+        <div className="flex flex-col sm:flex-row gap-3 mt-2">
           <button
             type="button"
-            onClick={() =>
-              setForm({
-                ...EMPTY,
-                email: user?.email || "",
-                ref: user?.ref || "",
-              })
-            }
-            className="flex-1 btn-danger"
+            onClick={handleReset}
+            className="flex-1 btn-danger text-center"
           >
             Annuler
           </button>
-          <button type="submit" className="flex-1 btn-success">
+          <button type="submit" className="flex-1 btn-success text-center">
             Soumettre
           </button>
         </div>
