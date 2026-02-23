@@ -53,6 +53,45 @@ const INIT_SUPPORTS = {
       label: "ISO/IEC 9075-1:2011",
       url: "https://www.iso.org/standard/53681.html",
     },
+    {
+      id: 3,
+      label: "pgAdmin",
+      url: "https://www.pgadmin.org/docs/pgadmin4/latest/",
+    },
+    {
+      id: 4,
+      label: "PostgreSQL Download",
+      url: "https://www.postgresql.org/download/",
+    },
+  ],
+  DONNEES2: [
+    {
+      id: 1,
+      label: "Data Warehouse",
+      url: "https://www.data-bird.co/blog/data-warehouse",
+    },
+    {
+      id: 2,
+      label: "Data Lake",
+      url: "https://www.talend.com/fr/resources/what-is-data-mart/",
+    },
+    {
+      id: 3,
+      label: "Data Marts",
+      url: "https://www.talend.com/fr/resources/what-is-data-mart/",
+    },
+    {
+      id: 4,
+      label: "ETL avec Python",
+      url: "https://www.datacamp.com/fr/courses/etl-and-elt-in-python",
+    },
+  ],
+  IA1: [
+    {
+      id: 1,
+      label: "ActuIA",
+      url: "https://www.actuia.com/decouvrir/quelles-differences-entre-lia-symbolique-et-lapprentissage-automatique/#:~:text=Voici%20une%20comparaison%20entre%20les,les%20donn%C3%A9es%20et%20la%20statistique.",
+    },
   ],
   MGT1: [
     {
@@ -88,6 +127,24 @@ const INIT_SUPPORTS = {
       url: "https://www.amazon.fr/Gestion-projet-SSII-Michel-Winter/dp/2100804419",
     },
   ],
+  MOB1: [
+    {
+      id: 1,
+      label: "React Native",
+      url: "https://reactnative.dev",
+    },
+    {
+      id: 2,
+      label: "Kotlin",
+      url: "https://kotlinlang.org",
+    },
+    {
+      id: 3,
+      label: "Swift",
+      url: "https://swift.org",
+    },
+  ],
+
   PROG1: [
     {
       id: 1,
@@ -108,6 +165,19 @@ const INIT_SUPPORTS = {
       label: "Oracle Help Center - Java JDBC API",
       url: "https://docs.oracle.com/javase/8/docs/technotes/guides/jdbc/",
     },
+    {
+      id: 2,
+      label: "OpenAPI Swagger",
+      url: "https://swagger.io/specification/",
+    },
+  ],
+  PROG4: [
+    { id: 1, label: "Mockito", url: "https://site.mockito.org/" },
+    {
+      id: 2,
+      label: "JUnit",
+      url: "https://junit.org",
+    },
   ],
   SECU1: [
     {
@@ -122,6 +192,21 @@ const INIT_SUPPORTS = {
       label: "OWASP Foundation",
       url: "https://owasp.org",
     },
+    {
+      id: 2,
+      label: "Apprendre le C sur OpenClassrooms",
+      url: "https://openclassrooms.com/fr/courses/19980-apprenez-a-programmer-en-c",
+    },
+    {
+      id: 3,
+      label: "Apprende le C++ sur OpenClassrooms",
+      url: "https://openclassrooms.com/fr/courses/1894236-apprenez-a-programmer-en-c",
+    },
+    {
+      id: 4,
+      label: "SQL Injection principes",
+      url: "https://www.vaadata.com/blog/fr/injections-sql-principes-impacts-exploitations-bonnes-pratiques-securite/",
+    },
   ],
   SYS1: [
     {
@@ -133,6 +218,11 @@ const INIT_SUPPORTS = {
       id: 2,
       label: "Ubuntu",
       url: "https://ubuntu.com/",
+    },
+    {
+      id: 3,
+      label: "VMware Workstation",
+      url: "https://www.vmware.com",
     },
   ],
   SYS2: [
@@ -155,13 +245,6 @@ const INIT_SUPPORTS = {
       id: 4,
       label: "Root me",
       url: "https://www.root-me.org",
-    },
-  ],
-  SYS3: [
-    {
-      id: 1,
-      label: "",
-      url: "",
     },
   ],
   WEB1: [
