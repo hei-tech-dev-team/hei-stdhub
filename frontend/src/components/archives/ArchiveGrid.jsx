@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faFolderOpen, faPlus, faTimes, faLink, faExternalLinkAlt,
+  faFolderOpen,
+  faPlus,
+  faTimes,
+  faLink,
+  faExternalLinkAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 
@@ -10,44 +14,185 @@ const YEARS = [
     id: "L1",
     label: "PREMIERE ANNEE – SEMESTRE 1 ET 2",
     ues: [
-      "WEB1","PROG1","SYS1","DONNEES1","THEORIE1-P1","THEORIE1-P2",
-      "WEB2","PROG2-POO","PROG2-API","SYS2","DONNEES2","IA1",
+      "WEB1",
+      "PROG1",
+      "SYS1",
+      "MGT1",
+      "DONNEES1",
+      "THEORIE1-P1",
+      "THEORIE1-P2",
+      "WEB2",
+      "PROG2-POO",
+      "PROG2-API",
+      "SYS2",
+      "DONNEES2",
+      "IA1",
     ],
   },
   {
     id: "L2",
     label: "DEUXIEME ANNEE – SEMESTRE 3 ET 4",
-    ues: ["WEB3","PROG3","MGT2","PROG4","SYS3"],
+    ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
   },
   {
     id: "L3",
     label: "TROISIEME ANNEE – SEMESTRE 5 ET 6",
-    ues: ["MOB1","PROG5","SECU1","SECU2"],
+    ues: ["MOB1", "PROG5", "SECU1", "SECU2"],
   },
 ];
 
 const INIT_SUPPORTS = {
-  WEB1: [
-    { id: 1, label: "W3Schools – HTML & CSS",  url: "https://w3schools.com"         },
-    { id: 2, label: "MDN Web Docs",             url: "https://developer.mozilla.org" },
-  ],
   DONNEES1: [
-    { id: 3, label: "PostgreSQL Official Docs", url: "https://postgresql.org/docs"   },
+    {
+      id: 1,
+      label: "Documentation Postgresql",
+      url: "https://postgresql.org/docs",
+    },
+    {
+      id: 2,
+      label: "ISO/IEC 9075-1:2011",
+      url: "https://www.iso.org/standard/53681.html",
+    },
+  ],
+  MGT1: [
+    {
+      id: 1,
+      label: "Google workspace",
+      url: "https://workspace.google.com/",
+    },
+    {
+      id: 2,
+      label: "Git",
+      url: "https://git-scm.com/",
+    },
+    {
+      id: 3,
+      label: "Trello",
+      url: "https://trello.com/",
+    },
+    {
+      id: 4,
+      label: "GitLab",
+      url: "https://gitlab.com/",
+    },
+  ],
+  MGT2: [
+    {
+      id: 1,
+      label: "Guide PMBOK©",
+      url: "https://www.pmi.org/pmbok-guide-standards/foundational/pmbok",
+    },
+    {
+      id: 2,
+      label: "Gestion de projet en SSII, Michel Winter",
+      url: "https://www.amazon.fr/Gestion-projet-SSII-Michel-Winter/dp/2100804419",
+    },
+  ],
+  PROG1: [
+    {
+      id: 1,
+      label: "SICP-JS, M. Henz et al",
+      url: "https://source-academy.github.io/sicp/",
+    },
+  ],
+  PROG2: [
+    {
+      id: 1,
+      label: "Effective Java, J. Bloch",
+      url: "https://www.oracle.com/java/technologies/effectivejava.html",
+    },
+  ],
+  PROG3: [
+    {
+      id: 1,
+      label: "Oracle Help Center - Java JDBC API",
+      url: "https://docs.oracle.com/javase/8/docs/technotes/guides/jdbc/",
+    },
+  ],
+  SECU1: [
+    {
+      id: 1,
+      label: "Cyber-résilience en entreprise",
+      url: "https://www.editions-eni.fr/livre/cyber-resilience-en-entreprise-enjeux-referentiels-et-bonnes-pratiques-2e-edition-9782409041440/la-souverainete-numerique",
+    },
+  ],
+  SECU2: [
+    {
+      id: 1,
+      label: "OWASP Foundation",
+      url: "https://owasp.org",
+    },
+  ],
+  SYS1: [
+    {
+      id: 1,
+      label: "LPIC-1 Exam 101",
+      url: "https://learning.lpi.org/en/learning-materials/101-500",
+    },
+    {
+      id: 2,
+      label: "Ubuntu",
+      url: "https://ubuntu.com/",
+    },
+  ],
+  SYS2: [
+    {
+      id: 1,
+      label: "Ansible Community",
+      url: "https://docs.ansible.com",
+    },
+    {
+      id: 2,
+      label: "Puppet Documentation",
+      url: "https://help.puppet.com/",
+    },
+    {
+      id: 3,
+      label: "Docker-DockerDocs",
+      url: "https://docs.docker.com/",
+    },
+    {
+      id: 4,
+      label: "Root me",
+      url: "https://www.root-me.org",
+    },
+  ],
+  SYS3: [
+    {
+      id: 1,
+      label: "",
+      url: "",
+    },
+  ],
+  WEB1: [
+    {
+      id: 1,
+      label: "Templated",
+      url: "https://templated.co/",
+    },
+    {
+      id: 2,
+      label: "AFIHM",
+      url: "https://www.afihm.org/enseignement.shtml",
+    },
+    {
+      id: 3,
+      label: "W3C",
+      url: "https://www.w3c.fr/standards/",
+    },
   ],
 };
-
 export default function ArchiveGrid() {
   const { user } = useAuth();
   const isTeacher = user?.role === "teacher";
 
-  const [selectedUE,  setSelectedUE]  = useState(null);
-  const [supports,    setSupports]    = useState(INIT_SUPPORTS);
-  const [showAdd,     setShowAdd]     = useState(false);
-  const [showPanel,   setShowPanel]   = useState(false);
-  const [addForm,     setAddForm]     = useState({ label: "", url: "" });
+  const [selectedUE, setSelectedUE] = useState(null);
+  const [supports, setSupports] = useState(INIT_SUPPORTS);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [addForm, setAddForm] = useState({ label: "", url: "" });
 
-  const setAdd = (key, val) =>
-    setAddForm((prev) => ({ ...prev, [key]: val }));
+  const setAdd = (key, val) => setAddForm((prev) => ({ ...prev, [key]: val }));
 
   const handleSelectUE = (ue) => {
     setSelectedUE(ue);
@@ -80,16 +225,17 @@ export default function ArchiveGrid() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
-
       {/* ── Grille des UE ── */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-6 sm:gap-8">
           {YEARS.map((year) => (
             <div key={year.id}>
               {/* Bandeau année */}
-              <div className="bg-gold-light text-navy font-bold text-xs
+              <div
+                className="bg-gold-light text-navy font-bold text-xs
                               py-3 px-4 sm:px-5 rounded-xl mb-3 sm:mb-4
-                              uppercase tracking-wider">
+                              uppercase tracking-wider"
+              >
                 {year.label}
               </div>
               {/* Boutons UE */}
@@ -126,26 +272,33 @@ export default function ArchiveGrid() {
           />
 
           {/* Panneau */}
-          <div className={
-            "fixed lg:static inset-x-0 bottom-0 lg:inset-auto z-40 " +
-            "lg:w-80 lg:shrink-0 " +
-            "max-h-[80vh] lg:max-h-none lg:h-full " +
-            "rounded-t-2xl lg:rounded-2xl " +
-            "bg-white shadow-modal lg:shadow-card " +
-            "flex flex-col " +
-            (showPanel ? "translate-y-0" : "translate-y-full lg:translate-y-0") +
-            " transition-transform duration-300"
-          }>
+          <div
+            className={
+              "fixed lg:static inset-x-0 bottom-0 lg:inset-auto z-40 " +
+              "lg:w-80 lg:shrink-0 " +
+              "max-h-[80vh] lg:max-h-none lg:h-full " +
+              "rounded-t-2xl lg:rounded-2xl " +
+              "bg-white shadow-modal lg:shadow-card " +
+              "flex flex-col " +
+              (showPanel
+                ? "translate-y-0"
+                : "translate-y-full lg:translate-y-0") +
+              " transition-transform duration-300"
+            }
+          >
             <div className="p-4 sm:p-5 flex flex-col h-full">
-
               {/* Trait mobile */}
-              <div className="lg:hidden w-10 h-1 bg-contact rounded-full
-                              mx-auto mb-4 shrink-0" />
+              <div
+                className="lg:hidden w-10 h-1 bg-contact rounded-full
+                              mx-auto mb-4 shrink-0"
+              />
 
               {/* Header panneau */}
               <div className="flex items-start justify-between mb-4 shrink-0">
                 <div>
-                  <h3 className="font-bold text-navy text-base">{selectedUE}</h3>
+                  <h3 className="font-bold text-navy text-base">
+                    {selectedUE}
+                  </h3>
                   <p className="text-xs text-gray-400 mt-0.5">
                     Supports pédagogiques
                   </p>
@@ -198,7 +351,10 @@ export default function ArchiveGrid() {
                     onChange={(e) => setAdd("url", e.target.value)}
                     required
                   />
-                  <button type="submit" className="btn-primary w-full text-center">
+                  <button
+                    type="submit"
+                    className="btn-primary w-full text-center"
+                  >
                     Ajouter
                   </button>
                 </form>
@@ -207,9 +363,14 @@ export default function ArchiveGrid() {
               {/* Liste supports */}
               <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
                 {currentSupports.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center
-                                  py-10 text-gray-300">
-                    <FontAwesomeIcon icon={faFolderOpen} className="text-3xl mb-2" />
+                  <div
+                    className="flex flex-col items-center justify-center
+                                  py-10 text-gray-300"
+                  >
+                    <FontAwesomeIcon
+                      icon={faFolderOpen}
+                      className="text-3xl mb-2"
+                    />
                     <p className="text-sm">Aucun support ajouté</p>
                   </div>
                 ) : (
@@ -222,13 +383,20 @@ export default function ArchiveGrid() {
                       className="flex items-center gap-3 p-3 bg-surface
                                  rounded-xl hover:bg-contact/50 transition group"
                     >
-                      <div className="w-8 h-8 rounded-full bg-navy/10
-                                      flex items-center justify-center shrink-0">
-                        <FontAwesomeIcon icon={faLink} className="text-navy text-xs" />
+                      <div
+                        className="w-8 h-8 rounded-full bg-navy/10
+                                      flex items-center justify-center shrink-0"
+                      >
+                        <FontAwesomeIcon
+                          icon={faLink}
+                          className="text-navy text-xs"
+                        />
                       </div>
-                      <span className="text-sm font-semibold text-navy
+                      <span
+                        className="text-sm font-semibold text-navy
                                        group-hover:text-gold transition-colors
-                                       flex-1 truncate">
+                                       flex-1 truncate"
+                      >
                         {s.label}
                       </span>
                       <FontAwesomeIcon
@@ -240,12 +408,10 @@ export default function ArchiveGrid() {
                   ))
                 )}
               </div>
-
             </div>
           </div>
         </>
       )}
-
     </div>
   );
 }
