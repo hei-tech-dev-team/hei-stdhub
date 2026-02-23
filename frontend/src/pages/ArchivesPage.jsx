@@ -1,6 +1,6 @@
-import Sidebar      from "../components/layout/Sidebar";
-import Navbar       from "../components/layout/Navbar";
-import ArchiveGrid  from "../components/archives/ArchiveGrid";
+import Sidebar from "../components/layout/Sidebar";
+import Navbar from "../components/layout/Navbar";
+import ArchiveGrid from "../components/archives/ArchiveGrid";
 
 export default function ArchivesPage() {
   return (
