@@ -22,8 +22,8 @@ const YEARS = [
       "THEORIE1-P1",
       "THEORIE1-P2",
       "WEB2",
-      "PROG2-POO",
-      "PROG2-API",
+      "POO",
+      "API",
       "SYS2",
       "DONNEES2",
       "IA1",
@@ -152,13 +152,14 @@ const INIT_SUPPORTS = {
       url: "https://source-academy.github.io/sicp/",
     },
   ],
-  PROG2: [
+  POO: [
     {
       id: 1,
       label: "Effective Java, J. Bloch",
       url: "https://www.oracle.com/java/technologies/effectivejava.html",
     },
   ],
+  API: [{}],
   PROG3: [
     {
       id: 1,
