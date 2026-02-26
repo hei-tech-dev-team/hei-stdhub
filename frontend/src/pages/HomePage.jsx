@@ -13,7 +13,11 @@ export default function HomePage() {
         className="flex-1 flex flex-col min-h-screen overflow-hidden
                        pl-0 lg:pl-0"
       >
-        {user?.role === "teacher" || "admin" ? <TeacherHome /> : <StudentHome />}
+        {user?.role === "teacher" || user?.role === "admin" ? (
+          <TeacherHome />
+        ) : (
+          <StudentHome />
+        )}
       </main>
     </div>
   );

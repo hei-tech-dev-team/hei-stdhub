@@ -5,58 +5,7 @@ import Navbar from "../layout/Navbar";
 import Badge from "../ui/Badge";
 import Avatar from "../ui/Avatar";
 
-const DEMO_POSTS = [
-  {
-    id: 1,
-    type: "td",
-    ue: "WEB1",
-    level: "L1",
-    title: "Manipulation du DOM",
-    description: "Utilisation de addEventListener et setTimeout",
-    author: "Dr Toky",
-    date: "2025-02-20",
-  },
-  {
-    id: 2,
-    type: "examen",
-    ue: "PROG1",
-    level: "L1",
-    title: "Examen PROG1 P1",
-    description: "Algorithmique et structures de données",
-    author: "Mr Larry",
-    date: "2025-02-19",
-  },
-  {
-    id: 3,
-    type: "cours",
-    ue: "SYS1",
-    level: "L1",
-    title: "Gestion de processus Linux",
-    description: "Installation diverses",
-    author: "Mr Rado",
-    date: "2025-02-18",
-  },
-  {
-    id: 4,
-    type: "examen",
-    ue: "PROG5",
-    level: "L3",
-    title: "EXAMEN PROG5",
-    description: "",
-    author: "Mr Julien",
-    date: "2025-02-17",
-  },
-  {
-    id: 5,
-    type: "cours",
-    ue: "MGT2",
-    level: "L2",
-    title: "Gestion de projet en SSI",
-    description: "Voir support dans les archives de STDhub",
-    author: "Dr Lou",
-    date: "2025-02-16",
-  },
-];
+const DEMO_POSTS = [];
 
 const LEVELS = ["Tous", "L1", "L2", "L3"];
 

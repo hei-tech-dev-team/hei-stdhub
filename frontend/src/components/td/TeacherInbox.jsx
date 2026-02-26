@@ -9,52 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Badge from "../ui/Badge";
 
-const SUBMISSIONS = [
-  {
-    id: 1,
-    ref: "STD25001",
-    email: "hei.jean@gmail.com",
-    groupe: "N1",
-    type: "td",
-    date: "2025-02-20 14:32",
-    format: "Fichier",
-    file: "td3_jean.pdf",
-    link: null,
-  },
-  {
-    id: 2,
-    ref: "STD24002",
-    email: "hei.marie@gmail.com",
-    groupe: "K2",
-    type: "examen",
-    date: "2025-02-20 15:10",
-    format: "Lien GitHub",
-    file: null,
-    link: "https://github.com/marie/exam",
-  },
-  {
-    id: 3,
-    ref: "STD25003",
-    email: "hei.paul@gmail.com",
-    groupe: "N3",
-    type: "td",
-    date: "2025-02-20 16:45",
-    format: "Fichier",
-    file: "td3_paul.zip",
-    link: null,
-  },
-  {
-    id: 4,
-    ref: "STD25004",
-    email: "hei.sara@gmail.com",
-    groupe: "J1",
-    type: "examen",
-    date: "2025-02-19 09:00",
-    format: "Lien Drive",
-    file: null,
-    link: "https://drive.google.com/file/example",
-  },
-];
+const SUBMISSIONS = [];
 
 const FILTER_OPTIONS = ["Tous", "TD", "Examen"];
 

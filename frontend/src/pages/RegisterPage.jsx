@@ -5,14 +5,20 @@ import { HEI_BLUE_LOGO } from "../assets/logos";
 
 export default function RegisterPage() {
   const { register } = useAuth();
-  const navigate     = useNavigate();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    nom: "", prenom: "", email: "",
-    ref: "", pseudo: "", role: "student", level: "L1",
-    password: "", confirmPassword: "",
+    nom: "",
+    prenom: "",
+    email: "",
+    ref: "",
+    pseudo: "",
+    role: "student",
+    level: "L1",
+    password: "",
+    confirmPassword: "",
   });
-  const [error,   setError]   = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
@@ -20,12 +26,12 @@ export default function RegisterPage() {
   const LEVELS = { L1: null, L2: null, L3: null };
 
   const validate = () => {
-    if (!form.nom.trim())    return "Le nom est requis.";
+    if (!form.nom.trim()) return "Le nom est requis.";
     if (!form.prenom.trim()) return "Le prénom est requis.";
-    if (!form.email.trim())  return "L'email est requis.";
-    if (!form.ref.trim())    return "La référence est requise.";
+    if (!form.email.trim()) return "L'email est requis.";
+    if (!form.ref.trim()) return "La référence est requise.";
     if (!form.pseudo.trim()) return "Le pseudo est requis.";
-    if (!form.password)      return "Le mot de passe est requis.";
+    if (!form.password) return "Le mot de passe est requis.";
     if (form.password.length < 6)
       return "Le mot de passe doit faire au moins 6 caractères.";
     if (form.password !== form.confirmPassword)
@@ -38,37 +44,41 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const err = validate();
-    if (err) { setError(err); return; }
+    if (err) {
+      setError(err);
+      return;
+    }
 
     setLoading(true);
     setError("");
     try {
       await register({
-        nom:      form.nom,
-        prenom:   form.prenom,
-        email:    form.email,
-        ref:      form.ref.toUpperCase(),
-        pseudo:   form.pseudo,
+        nom: form.nom,
+        prenom: form.prenom,
+        email: form.email,
+        ref: form.ref.toUpperCase(),
+        pseudo: form.pseudo,
         password: form.password,
-        role:     form.role,
-        level:    form.role === "student" ? form.level : undefined,
+        role: form.role,
+        level: form.role === "student" ? form.level : undefined,
       });
       navigate("/");
     } catch (err) {
-      setError(
-        err.response?.data?.error || "Erreur lors de l'inscription."
-      );
+      setError(err.response?.data?.error || "Erreur lors de l'inscription.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-surface flex items-center
-                    justify-center px-4 py-8">
-      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-modal
-                      p-6 sm:p-8 lg:p-10 w-full max-w-sm sm:max-w-lg">
-
+    <div
+      className="min-h-screen bg-surface flex items-center
+                    justify-center px-4 py-8"
+    >
+      <div
+        className="bg-white rounded-2xl sm:rounded-3xl shadow-modal
+                      p-6 sm:p-8 lg:p-10 w-full max-w-sm sm:max-w-lg"
+      >
         {/* Logo */}
         <div className="flex flex-col items-center mb-6 sm:mb-8">
           <img
@@ -84,46 +94,59 @@ export default function RegisterPage() {
 
         {/* Erreur */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600
-                          text-sm px-4 py-3 rounded-xl mb-4">
+          <div
+            className="bg-red-50 border border-red-200 text-red-600
+                          text-sm px-4 py-3 rounded-xl mb-4"
+          >
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
           {/* Nom + Prénom */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide">
+              <label
+                className="text-xs font-bold text-gray-500
+                                mb-1 block uppercase tracking-wide"
+              >
                 Nom *
               </label>
               <input
                 className="input-field"
                 placeholder="Rakoto"
                 value={form.nom}
-                onChange={(e) => { set("nom", e.target.value); setError(""); }}
+                onChange={(e) => {
+                  set("nom", e.target.value);
+                  setError("");
+                }}
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide">
+              <label
+                className="text-xs font-bold text-gray-500
+                                mb-1 block uppercase tracking-wide"
+              >
                 Prénom *
               </label>
               <input
                 className="input-field"
                 placeholder="Jean"
                 value={form.prenom}
-                onChange={(e) => { set("prenom", e.target.value); setError(""); }}
+                onChange={(e) => {
+                  set("prenom", e.target.value);
+                  setError("");
+                }}
               />
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide">
+            <label
+              className="text-xs font-bold text-gray-500
+                              mb-1 block uppercase tracking-wide"
+            >
               Email *
             </label>
             <input
@@ -131,34 +154,47 @@ export default function RegisterPage() {
               className="input-field"
               placeholder="hei.jean@gmail.com"
               value={form.email}
-              onChange={(e) => { set("email", e.target.value); setError(""); }}
+              onChange={(e) => {
+                set("email", e.target.value);
+                setError("");
+              }}
             />
           </div>
 
           {/* Référence + Pseudo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide">
+              <label
+                className="text-xs font-bold text-gray-500
+                                mb-1 block uppercase tracking-wide"
+              >
                 Référence *
               </label>
               <input
                 className="input-field"
                 placeholder="STD25001"
                 value={form.ref}
-                onChange={(e) => { set("ref", e.target.value); setError(""); }}
+                onChange={(e) => {
+                  set("ref", e.target.value);
+                  setError("");
+                }}
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide">
+              <label
+                className="text-xs font-bold text-gray-500
+                                mb-1 block uppercase tracking-wide"
+              >
                 Pseudo (chat) *
               </label>
               <input
                 className="input-field"
                 placeholder="MonPseudo"
                 value={form.pseudo}
-                onChange={(e) => { set("pseudo", e.target.value); setError(""); }}
+                onChange={(e) => {
+                  set("pseudo", e.target.value);
+                  setError("");
+                }}
               />
             </div>
           </div>
@@ -166,8 +202,10 @@ export default function RegisterPage() {
           {/* Rôle + Niveau */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide">
+              <label
+                className="text-xs font-bold text-gray-500
+                                mb-1 block uppercase tracking-wide"
+              >
                 Rôle *
               </label>
               <select
@@ -181,8 +219,10 @@ export default function RegisterPage() {
             </div>
             {form.role === "student" && (
               <div>
-                <label className="text-xs font-bold text-gray-500
-                                  mb-1 block uppercase tracking-wide">
+                <label
+                  className="text-xs font-bold text-gray-500
+                                  mb-1 block uppercase tracking-wide"
+                >
                   Niveau *
                 </label>
                 <select
@@ -191,7 +231,9 @@ export default function RegisterPage() {
                   onChange={(e) => set("level", e.target.value)}
                 >
                   {Object.keys(LEVELS).map((l) => (
-                    <option key={l} value={l}>{l}</option>
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -201,8 +243,10 @@ export default function RegisterPage() {
           {/* Mot de passe */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide">
+              <label
+                className="text-xs font-bold text-gray-500
+                                mb-1 block uppercase tracking-wide"
+              >
                 Mot de passe *
               </label>
               <input
@@ -210,12 +254,17 @@ export default function RegisterPage() {
                 className="input-field"
                 placeholder="••••••••"
                 value={form.password}
-                onChange={(e) => { set("password", e.target.value); setError(""); }}
+                onChange={(e) => {
+                  set("password", e.target.value);
+                  setError("");
+                }}
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide">
+              <label
+                className="text-xs font-bold text-gray-500
+                                mb-1 block uppercase tracking-wide"
+              >
                 Confirmer *
               </label>
               <input
@@ -223,7 +272,10 @@ export default function RegisterPage() {
                 className="input-field"
                 placeholder="••••••••"
                 value={form.confirmPassword}
-                onChange={(e) => { set("confirmPassword", e.target.value); setError(""); }}
+                onChange={(e) => {
+                  set("confirmPassword", e.target.value);
+                  setError("");
+                }}
               />
             </div>
           </div>
@@ -244,7 +296,6 @@ export default function RegisterPage() {
             Se connecter
           </Link>
         </p>
-
       </div>
     </div>
   );
