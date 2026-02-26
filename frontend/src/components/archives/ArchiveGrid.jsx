@@ -268,7 +268,7 @@ const INIT_SUPPORTS = {
 };
 export default function ArchiveGrid() {
   const { user } = useAuth();
-  const isTeacher = user?.role === "teacher";
+  const isTeacher = user?.role === "teacher" || user?.role === "admin";
 
   const [selectedUE, setSelectedUE] = useState(null);
   const [supports, setSupports] = useState(INIT_SUPPORTS);

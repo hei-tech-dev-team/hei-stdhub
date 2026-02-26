@@ -13,7 +13,11 @@ export default function TDPage() {
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <Navbar title="TD / Examen" />
         <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          {user?.role === "teacher" ? <TeacherInbox /> : <StudentUpload />}
+          {user?.role === "teacher" || user?.role === "admin" ? (
+            <TeacherInbox />
+          ) : (
+            <StudentUpload />
+          )}
         </div>
       </main>
     </div>

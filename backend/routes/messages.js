@@ -69,5 +69,22 @@ router.post("/", auth, async (req, res) => {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
-
+router.get("/search", auth, async (req, res) => {
+  const { q } = req.query;
+  if (!q?.trim()) return res.json([]);
+  try {
+    const { rows } = await db.query(
+      `SELECT id, ref, pseudo, role, level
+       FROM users
+       WHERE id != $1
+         AND (pseudo ILIKE $2 OR ref ILIKE $2)
+       ORDER BY pseudo
+       LIMIT 10`,
+      [req.user.id, `%${q}%`],
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
 module.exports = router;
