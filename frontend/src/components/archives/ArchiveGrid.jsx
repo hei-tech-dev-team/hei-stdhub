@@ -58,7 +58,6 @@ export default function ArchiveGrid() {
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
-  // Charger les supports quand on sélectionne une UE
   const handleSelectUE = async (ue) => {
     setSelectedUE(ue);
     setShowPanel(true);
