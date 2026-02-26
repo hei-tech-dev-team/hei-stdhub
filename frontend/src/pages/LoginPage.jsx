@@ -76,7 +76,7 @@ export default function LoginPage() {
             </label>
             <input
               className="input-field"
-              placeholder="STD25001 ou ADMIN001"
+              placeholder="STD2NXXX ou PROFXXX"
               value={form.ref}
               onChange={(e) => {
                 set("ref", e.target.value);
