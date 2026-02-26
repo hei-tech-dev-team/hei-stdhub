@@ -5,7 +5,9 @@ import {
   faLink,
   faCheckCircle,
   faTrash,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 
 const GROUPS = {
@@ -14,7 +16,6 @@ const GROUPS = {
   L3: ["J1", "J2"],
 };
 
-// UE disponibles par niveau — correspond exactement au curriculum HEI
 const UES = {
   L1: [
     "WEB1",
@@ -24,8 +25,8 @@ const UES = {
     "THEORIE1-P1",
     "THEORIE1-P2",
     "WEB2",
-    "POO",
-    "API",
+    "PROG2-POO",
+    "PROG2-API",
     "SYS2",
     "DONNEES2",
     "IA1",
@@ -34,42 +35,38 @@ const UES = {
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
 };
 
-const EMPTY = {
-  nom: "",
-  prenom: "",
-  email: "",
-  ref: "",
-  level: "L1",
-  groupe: "N1",
-  ue: "WEB1",
-  type: "TD",
-  file: null,
-  link: "",
-};
-
 export default function StudentUpload() {
   const { user } = useAuth();
 
-  const [form, setForm] = useState({
-    ...EMPTY,
+  const defaultLevel = user?.level || "L1";
+  const EMPTY = {
+    nom: "",
+    prenom: "",
     email: user?.email || "",
     ref: user?.ref || "",
-  });
+    level: defaultLevel,
+    groupe: GROUPS[defaultLevel][0],
+    ue: UES[defaultLevel][0],
+    type: "TD",
+    file: null,
+    link: "",
+  };
+
+  const [form, setForm] = useState(EMPTY);
   const [dragOver, setDragOver] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
-  // Quand le niveau change, remettre groupe et UE au premier choix du nouveau niveau
-  const handleLevelChange = (newLevel) => {
-    setForm((prev) => ({
-      ...prev,
+  const handleLevelChange = (newLevel) =>
+    setForm((p) => ({
+      ...p,
       level: newLevel,
       groupe: GROUPS[newLevel][0],
       ue: UES[newLevel][0],
     }));
-  };
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -106,26 +103,43 @@ export default function StudentUpload() {
     return null;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const err = validate();
     if (err) {
       setError(err);
       return;
     }
+    setLoading(true);
     setError("");
-    setSubmitted(true);
-    // TODO: appel API — le backend redirigera vers la boîte du prof de l'UE
-    // await axios.post("/api/submissions", { ...form, file: form.file });
-    setTimeout(() => {
-      setSubmitted(false);
-      setForm({ ...EMPTY, email: user?.email || "", ref: user?.ref || "" });
-    }, 3000);
-  };
 
-  const handleReset = () => {
-    setForm({ ...EMPTY, email: user?.email || "", ref: user?.ref || "" });
-    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("nom", form.nom);
+      fd.append("prenom", form.prenom);
+      fd.append("email", form.email);
+      fd.append("ref", form.ref);
+      fd.append("level", form.level);
+      fd.append("groupe", form.groupe);
+      fd.append("ue", form.ue);
+      fd.append("type", form.type);
+      if (form.file) fd.append("file", form.file);
+      if (form.link) fd.append("link", form.link);
+
+      await api.post("/submissions", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setForm({ ...EMPTY, email: user?.email || "", ref: user?.ref || "" });
+      }, 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors de la soumission.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -142,8 +156,9 @@ export default function StudentUpload() {
           Rendu soumis avec succès !
         </h2>
         <p className="text-gray-400 text-sm">
-          Votre devoir de <span className="font-bold text-navy">{form.ue}</span>
-          a été envoyé avec succès.
+          Votre devoir <span className="font-bold text-navy">{form.type}</span>{" "}
+          pour <span className="font-bold text-navy">{form.ue}</span> a bien été
+          envoyé.
         </p>
       </div>
     );
@@ -151,7 +166,7 @@ export default function StudentUpload() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
-      {/* ── Zone drag & drop ── */}
+      {/* Dropzone */}
       <div
         className={
           "flex flex-col items-center justify-center rounded-2xl " +
@@ -190,11 +205,9 @@ export default function StudentUpload() {
                 e.stopPropagation();
                 set("file", null);
               }}
-              className="mt-3 text-red-400 text-xs hover:underline
-                         flex items-center gap-1"
+              className="mt-3 text-red-400 text-xs hover:underline flex items-center gap-1"
             >
-              <FontAwesomeIcon icon={faTrash} />
-              Supprimer
+              <FontAwesomeIcon icon={faTrash} /> Supprimer
             </button>
           </>
         ) : (
@@ -215,7 +228,7 @@ export default function StudentUpload() {
         />
       </div>
 
-      {/* ── Formulaire ── */}
+      {/* Formulaire */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 lg:flex-1">
         {error && (
           <div
@@ -229,29 +242,23 @@ export default function StudentUpload() {
         {/* Nom + Prénom */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label
-              className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide"
-            >
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
               Nom *
             </label>
             <input
               className="input-field"
-              placeholder="RAKOTOHATRA"
+              placeholder="Rakoto"
               value={form.nom}
               onChange={(e) => set("nom", e.target.value)}
             />
           </div>
           <div className="flex-1">
-            <label
-              className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide"
-            >
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
               Prénom *
             </label>
             <input
               className="input-field"
-              placeholder="Fanampiny"
+              placeholder="Jean"
               value={form.prenom}
               onChange={(e) => set("prenom", e.target.value)}
             />
@@ -260,16 +267,13 @@ export default function StudentUpload() {
 
         {/* Email */}
         <div>
-          <label
-            className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide"
-          >
+          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
             Email *
           </label>
           <input
             type="email"
             className="input-field"
-            placeholder="hei.prenom@gmail.com"
+            placeholder="hei.jean@gmail.com"
             value={form.email}
             onChange={(e) => set("email", e.target.value)}
           />
@@ -277,15 +281,12 @@ export default function StudentUpload() {
 
         {/* Référence */}
         <div>
-          <label
-            className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide"
-          >
+          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
             Référence STD *
           </label>
           <input
             className="input-field"
-            placeholder="STD2XXXX"
+            placeholder="STD25001"
             value={form.ref}
             onChange={(e) => set("ref", e.target.value)}
           />
@@ -294,10 +295,7 @@ export default function StudentUpload() {
         {/* Niveau + Groupe */}
         <div className="flex gap-2">
           <div className="flex-1">
-            <label
-              className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide"
-            >
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
               Niveau
             </label>
             <select
@@ -311,10 +309,7 @@ export default function StudentUpload() {
             </select>
           </div>
           <div className="flex-1">
-            <label
-              className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide"
-            >
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
               Groupe
             </label>
             <select
@@ -329,12 +324,9 @@ export default function StudentUpload() {
           </div>
         </div>
 
-        {/* UE — change selon le niveau */}
+        {/* UE */}
         <div>
-          <label
-            className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide"
-          >
+          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
             Unité d'enseignement (UE) *
           </label>
           <select
@@ -355,10 +347,7 @@ export default function StudentUpload() {
 
         {/* Type */}
         <div>
-          <label
-            className="text-xs font-bold text-gray-500
-                            mb-1 block uppercase tracking-wide"
-          >
+          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
             Type
           </label>
           <select
@@ -397,13 +386,27 @@ export default function StudentUpload() {
         <div className="flex flex-col sm:flex-row gap-3 mt-2">
           <button
             type="button"
-            onClick={handleReset}
+            onClick={() =>
+              setForm({
+                ...EMPTY,
+                email: user?.email || "",
+                ref: user?.ref || "",
+              })
+            }
             className="flex-1 btn-danger text-center"
           >
             Annuler
           </button>
-          <button type="submit" className="flex-1 btn-success text-center">
-            Soumettre
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 btn-success text-center disabled:opacity-60"
+          >
+            {loading ? (
+              <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+            ) : (
+              "Soumettre"
+            )}
           </button>
         </div>
       </form>

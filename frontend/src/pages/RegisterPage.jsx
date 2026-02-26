@@ -114,7 +114,7 @@ export default function RegisterPage() {
               </label>
               <input
                 className="input-field"
-                placeholder="Rakoto"
+                placeholder="Rakotohatra"
                 value={form.nom}
                 onChange={(e) => {
                   set("nom", e.target.value);
@@ -131,7 +131,7 @@ export default function RegisterPage() {
               </label>
               <input
                 className="input-field"
-                placeholder="Jean"
+                placeholder="Fanampiny"
                 value={form.prenom}
                 onChange={(e) => {
                   set("prenom", e.target.value);
@@ -152,7 +152,7 @@ export default function RegisterPage() {
             <input
               type="email"
               className="input-field"
-              placeholder="hei.jean@gmail.com"
+              placeholder="hei.prenom@gmail.com"
               value={form.email}
               onChange={(e) => {
                 set("email", e.target.value);
@@ -172,7 +172,7 @@ export default function RegisterPage() {
               </label>
               <input
                 className="input-field"
-                placeholder="STD25001"
+                placeholder="STD2NXXX/PROFXXX"
                 value={form.ref}
                 onChange={(e) => {
                   set("ref", e.target.value);

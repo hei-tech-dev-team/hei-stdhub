@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolderOpen,
@@ -6,7 +6,10 @@ import {
   faTimes,
   faLink,
   faExternalLinkAlt,
+  faSpinner,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
+import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 
 const YEARS = [
@@ -17,13 +20,12 @@ const YEARS = [
       "WEB1",
       "PROG1",
       "SYS1",
-      "MGT1",
       "DONNEES1",
       "THEORIE1-P1",
       "THEORIE1-P2",
       "WEB2",
-      "POO",
-      "API",
+      "PROG2-POO",
+      "PROG2-API",
       "SYS2",
       "DONNEES2",
       "IA1",
@@ -41,280 +43,91 @@ const YEARS = [
   },
 ];
 
-const INIT_SUPPORTS = {
-  DONNEES1: [
-    {
-      id: 1,
-      label: "Documentation Postgresql",
-      url: "https://postgresql.org/docs",
-    },
-    {
-      id: 2,
-      label: "ISO/IEC 9075-1:2011",
-      url: "https://www.iso.org/standard/53681.html",
-    },
-    {
-      id: 3,
-      label: "pgAdmin",
-      url: "https://www.pgadmin.org/docs/pgadmin4/latest/",
-    },
-    {
-      id: 4,
-      label: "PostgreSQL Download",
-      url: "https://www.postgresql.org/download/",
-    },
-  ],
-  DONNEES2: [
-    {
-      id: 1,
-      label: "Data Warehouse",
-      url: "https://www.data-bird.co/blog/data-warehouse",
-    },
-    {
-      id: 2,
-      label: "Data Lake",
-      url: "https://www.talend.com/fr/resources/what-is-data-mart/",
-    },
-    {
-      id: 3,
-      label: "Data Marts",
-      url: "https://www.talend.com/fr/resources/what-is-data-mart/",
-    },
-    {
-      id: 4,
-      label: "ETL avec Python",
-      url: "https://www.datacamp.com/fr/courses/etl-and-elt-in-python",
-    },
-  ],
-  IA1: [
-    {
-      id: 1,
-      label: "ActuIA",
-      url: "https://www.actuia.com/decouvrir/quelles-differences-entre-lia-symbolique-et-lapprentissage-automatique/#:~:text=Voici%20une%20comparaison%20entre%20les,les%20donn%C3%A9es%20et%20la%20statistique.",
-    },
-  ],
-  MGT1: [
-    {
-      id: 1,
-      label: "Google workspace",
-      url: "https://workspace.google.com/",
-    },
-    {
-      id: 2,
-      label: "Git",
-      url: "https://git-scm.com/",
-    },
-    {
-      id: 3,
-      label: "Trello",
-      url: "https://trello.com/",
-    },
-    {
-      id: 4,
-      label: "GitLab",
-      url: "https://gitlab.com/",
-    },
-  ],
-  MGT2: [
-    {
-      id: 1,
-      label: "Guide PMBOK©",
-      url: "https://www.pmi.org/pmbok-guide-standards/foundational/pmbok",
-    },
-    {
-      id: 2,
-      label: "Gestion de projet en SSII, Michel Winter",
-      url: "https://www.amazon.fr/Gestion-projet-SSII-Michel-Winter/dp/2100804419",
-    },
-  ],
-  MOB1: [
-    {
-      id: 1,
-      label: "React Native",
-      url: "https://reactnative.dev",
-    },
-    {
-      id: 2,
-      label: "Kotlin",
-      url: "https://kotlinlang.org",
-    },
-    {
-      id: 3,
-      label: "Swift",
-      url: "https://swift.org",
-    },
-  ],
-
-  PROG1: [
-    {
-      id: 1,
-      label: "SICP-JS, M. Henz et al",
-      url: "https://source-academy.github.io/sicp/",
-    },
-  ],
-  POO: [
-    {
-      id: 1,
-      label: "Effective Java, J. Bloch",
-      url: "https://www.oracle.com/java/technologies/effectivejava.html",
-    },
-  ],
-  API: [{}],
-  PROG3: [
-    {
-      id: 1,
-      label: "Oracle Help Center - Java JDBC API",
-      url: "https://docs.oracle.com/javase/8/docs/technotes/guides/jdbc/",
-    },
-    {
-      id: 2,
-      label: "OpenAPI Swagger",
-      url: "https://swagger.io/specification/",
-    },
-  ],
-  PROG4: [
-    { id: 1, label: "Mockito", url: "https://site.mockito.org/" },
-    {
-      id: 2,
-      label: "JUnit",
-      url: "https://junit.org",
-    },
-  ],
-  SECU1: [
-    {
-      id: 1,
-      label: "Cyber-résilience en entreprise",
-      url: "https://www.editions-eni.fr/livre/cyber-resilience-en-entreprise-enjeux-referentiels-et-bonnes-pratiques-2e-edition-9782409041440/la-souverainete-numerique",
-    },
-  ],
-  SECU2: [
-    {
-      id: 1,
-      label: "OWASP Foundation",
-      url: "https://owasp.org",
-    },
-    {
-      id: 2,
-      label: "Apprendre le C sur OpenClassrooms",
-      url: "https://openclassrooms.com/fr/courses/19980-apprenez-a-programmer-en-c",
-    },
-    {
-      id: 3,
-      label: "Apprende le C++ sur OpenClassrooms",
-      url: "https://openclassrooms.com/fr/courses/1894236-apprenez-a-programmer-en-c",
-    },
-    {
-      id: 4,
-      label: "SQL Injection principes",
-      url: "https://www.vaadata.com/blog/fr/injections-sql-principes-impacts-exploitations-bonnes-pratiques-securite/",
-    },
-  ],
-  SYS1: [
-    {
-      id: 1,
-      label: "LPIC-1 Exam 101",
-      url: "https://learning.lpi.org/en/learning-materials/101-500",
-    },
-    {
-      id: 2,
-      label: "Ubuntu",
-      url: "https://ubuntu.com/",
-    },
-    {
-      id: 3,
-      label: "VMware Workstation",
-      url: "https://www.vmware.com",
-    },
-  ],
-  SYS2: [
-    {
-      id: 1,
-      label: "Ansible Community",
-      url: "https://docs.ansible.com",
-    },
-    {
-      id: 2,
-      label: "Puppet Documentation",
-      url: "https://help.puppet.com/",
-    },
-    {
-      id: 3,
-      label: "Docker-DockerDocs",
-      url: "https://docs.docker.com/",
-    },
-    {
-      id: 4,
-      label: "Root me",
-      url: "https://www.root-me.org",
-    },
-  ],
-  WEB1: [
-    {
-      id: 1,
-      label: "Templated",
-      url: "https://templated.co/",
-    },
-    {
-      id: 2,
-      label: "AFIHM",
-      url: "https://www.afihm.org/enseignement.shtml",
-    },
-    {
-      id: 3,
-      label: "W3C",
-      url: "https://www.w3c.fr/standards/",
-    },
-  ],
-};
 export default function ArchiveGrid() {
   const { user } = useAuth();
   const isTeacher = user?.role === "teacher" || user?.role === "admin";
 
   const [selectedUE, setSelectedUE] = useState(null);
-  const [supports, setSupports] = useState(INIT_SUPPORTS);
+  const [supports, setSupports] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const [addForm, setAddForm] = useState({ label: "", url: "" });
+  const [saving, setSaving] = useState(false);
+  const [addError, setAddError] = useState("");
 
-  const setAdd = (key, val) => setAddForm((prev) => ({ ...prev, [key]: val }));
+  const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
-  const handleSelectUE = (ue) => {
+  // Charger les supports quand on sélectionne une UE
+  const handleSelectUE = async (ue) => {
     setSelectedUE(ue);
-    setShowAdd(false);
     setShowPanel(true);
+    setShowAdd(false);
     setAddForm({ label: "", url: "" });
+    setAddError("");
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/supports/${ue}`);
+      setSupports(data);
+    } catch (err) {
+      console.error(err);
+      setSupports([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClosePanel = () => {
     setSelectedUE(null);
     setShowPanel(false);
     setShowAdd(false);
+    setSupports([]);
   };
 
-  const handleAdd = (e) => {
+  // Ajouter un support
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!addForm.label.trim() || !addForm.url.trim()) return;
-    setSupports((prev) => ({
-      ...prev,
-      [selectedUE]: [
-        ...(prev[selectedUE] || []),
-        { id: Date.now(), label: addForm.label, url: addForm.url },
-      ],
-    }));
-    setAddForm({ label: "", url: "" });
-    setShowAdd(false);
+    if (!addForm.url.startsWith("http")) {
+      setAddError("L'URL doit commencer par http:// ou https://");
+      return;
+    }
+    setSaving(true);
+    setAddError("");
+    try {
+      const { data } = await api.post("/supports", {
+        ue: selectedUE,
+        label: addForm.label,
+        url: addForm.url,
+      });
+      setSupports((prev) => [...prev, data]);
+      setAddForm({ label: "", url: "" });
+      setShowAdd(false);
+    } catch (err) {
+      setAddError(err.response?.data?.error || "Erreur lors de l'ajout.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const currentSupports = supports[selectedUE] || [];
+  // Supprimer un support
+  const handleDelete = async (id) => {
+    if (!confirm("Supprimer ce support ?")) return;
+    try {
+      await api.delete(`/supports/${id}`);
+      setSupports((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
-      {/* ── Grille des UE ── */}
+      {/* Grille UE */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-6 sm:gap-8">
           {YEARS.map((year) => (
             <div key={year.id}>
-              {/* Bandeau année */}
               <div
                 className="bg-gold-light text-navy font-bold text-xs
                               py-3 px-4 sm:px-5 rounded-xl mb-3 sm:mb-4
@@ -322,7 +135,6 @@ export default function ArchiveGrid() {
               >
                 {year.label}
               </div>
-              {/* Boutons UE */}
               <div className="flex flex-wrap gap-2">
                 {year.ues.map((ue) => (
                   <button
@@ -346,7 +158,7 @@ export default function ArchiveGrid() {
         </div>
       </div>
 
-      {/* ── Panneau supports — drawer mobile, colonne desktop ── */}
+      {/* Panneau supports */}
       {selectedUE && (
         <>
           {/* Overlay mobile */}
@@ -355,7 +167,6 @@ export default function ArchiveGrid() {
             onClick={handleClosePanel}
           />
 
-          {/* Panneau */}
           <div
             className={
               "fixed lg:static inset-x-0 bottom-0 lg:inset-auto z-40 " +
@@ -364,10 +175,10 @@ export default function ArchiveGrid() {
               "rounded-t-2xl lg:rounded-2xl " +
               "bg-white shadow-modal lg:shadow-card " +
               "flex flex-col " +
+              "transition-transform duration-300 " +
               (showPanel
                 ? "translate-y-0"
-                : "translate-y-full lg:translate-y-0") +
-              " transition-transform duration-300"
+                : "translate-y-full lg:translate-y-0")
             }
           >
             <div className="p-4 sm:p-5 flex flex-col h-full">
@@ -377,7 +188,7 @@ export default function ArchiveGrid() {
                               mx-auto mb-4 shrink-0"
               />
 
-              {/* Header panneau */}
+              {/* Header */}
               <div className="flex items-start justify-between mb-4 shrink-0">
                 <div>
                   <h3 className="font-bold text-navy text-base">
@@ -391,10 +202,12 @@ export default function ArchiveGrid() {
                   {isTeacher && (
                     <button
                       type="button"
-                      onClick={() => setShowAdd((prev) => !prev)}
+                      onClick={() => {
+                        setShowAdd((p) => !p);
+                        setAddError("");
+                      }}
                       className="w-7 h-7 rounded-full bg-gold text-white
-                                 flex items-center justify-center
-                                 hover:opacity-80 transition"
+                                 flex items-center justify-center hover:opacity-80 transition"
                     >
                       <FontAwesomeIcon
                         icon={showAdd ? faTimes : faPlus}
@@ -406,8 +219,7 @@ export default function ArchiveGrid() {
                     type="button"
                     onClick={handleClosePanel}
                     className="w-7 h-7 rounded-full bg-surface text-gray-400
-                               flex items-center justify-center
-                               hover:bg-contact transition"
+                               flex items-center justify-center hover:bg-contact transition"
                   >
                     <FontAwesomeIcon icon={faTimes} className="text-xs" />
                   </button>
@@ -418,79 +230,114 @@ export default function ArchiveGrid() {
               {isTeacher && showAdd && (
                 <form
                   onSubmit={handleAdd}
-                  className="mb-4 p-3 bg-surface rounded-xl
-                             flex flex-col gap-2 shrink-0"
+                  className="mb-4 p-3 bg-surface rounded-xl flex flex-col gap-2 shrink-0"
                 >
+                  {addError && (
+                    <p className="text-red-500 text-xs">{addError}</p>
+                  )}
                   <input
                     className="input-field"
-                    placeholder="Intitulé du support"
+                    placeholder="Intitulé du support *"
                     value={addForm.label}
-                    onChange={(e) => setAdd("label", e.target.value)}
+                    onChange={(e) => {
+                      setAdd("label", e.target.value);
+                      setAddError("");
+                    }}
                     required
                   />
                   <input
                     className="input-field"
-                    placeholder="URL (https://...)"
+                    placeholder="URL (https://...) *"
                     value={addForm.url}
-                    onChange={(e) => setAdd("url", e.target.value)}
+                    onChange={(e) => {
+                      setAdd("url", e.target.value);
+                      setAddError("");
+                    }}
                     required
                   />
                   <button
                     type="submit"
-                    className="btn-primary w-full text-center"
+                    disabled={saving}
+                    className="btn-primary w-full text-center disabled:opacity-60"
                   >
-                    Ajouter
+                    {saving ? (
+                      <FontAwesomeIcon
+                        icon={faSpinner}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      "Ajouter"
+                    )}
                   </button>
                 </form>
               )}
 
-              {/* Liste supports */}
+              {/* Supports */}
               <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
-                {currentSupports.length === 0 ? (
-                  <div
-                    className="flex flex-col items-center justify-center
-                                  py-10 text-gray-300"
-                  >
+                {loading && (
+                  <div className="flex justify-center py-8">
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      className="text-navy text-xl animate-spin"
+                    />
+                  </div>
+                )}
+
+                {!loading && supports.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 text-gray-300">
                     <FontAwesomeIcon
                       icon={faFolderOpen}
                       className="text-3xl mb-2"
                     />
                     <p className="text-sm">Aucun support ajouté</p>
                   </div>
-                ) : (
-                  currentSupports.map((s) => (
-                    <a
+                )}
+
+                {!loading &&
+                  supports.map((s) => (
+                    <div
                       key={s.id}
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
                       className="flex items-center gap-3 p-3 bg-surface
-                                 rounded-xl hover:bg-contact/50 transition group"
+                                  rounded-xl hover:bg-contact/50 transition group"
                     >
                       <div
                         className="w-8 h-8 rounded-full bg-navy/10
-                                      flex items-center justify-center shrink-0"
+                                    flex items-center justify-center shrink-0"
                       >
                         <FontAwesomeIcon
                           icon={faLink}
                           className="text-navy text-xs"
                         />
                       </div>
-                      <span
-                        className="text-sm font-semibold text-navy
-                                       group-hover:text-gold transition-colors
-                                       flex-1 truncate"
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 min-w-0 flex items-center gap-2"
                       >
-                        {s.label}
-                      </span>
-                      <FontAwesomeIcon
-                        icon={faExternalLinkAlt}
-                        className="text-gray-300 text-xs shrink-0
+                        <span
+                          className="text-sm font-semibold text-navy
+                                       group-hover:text-gold transition-colors truncate"
+                        >
+                          {s.label}
+                        </span>
+                        <FontAwesomeIcon
+                          icon={faExternalLinkAlt}
+                          className="text-gray-300 text-xs shrink-0
                                    group-hover:text-gold transition-colors"
-                      />
-                    </a>
-                  ))
-                )}
+                        />
+                      </a>
+                      {isTeacher && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(s.id)}
+                          className="text-red-300 hover:text-red-500 transition shrink-0"
+                        >
+                          <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
