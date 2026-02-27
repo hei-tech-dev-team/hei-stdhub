@@ -6,7 +6,7 @@ import {
   faTimes,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import axios from "axios";
+import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import Avatar from "../ui/Avatar";
 
@@ -34,8 +34,7 @@ export default function ContactList({ contacts, activeId, onSelect }) {
     }
     setSearching(true);
     try {
-      const { data } = await axios.get(`${API}/messages/search?q=${q}`);
-      // Exclure les contacts déjà dans la liste et soi-même
+      const { data } = await api.get(`/messages/search?q=${q}`); // Exclure les contacts déjà dans la liste et soi-même
       const existingIds = contacts.map((c) => c.id);
       setSearchResults(
         data.filter((u) => u.id !== user.id && !existingIds.includes(u.id)),
