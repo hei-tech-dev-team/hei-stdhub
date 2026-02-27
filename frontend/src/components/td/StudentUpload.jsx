@@ -115,10 +115,10 @@ export default function StudentUpload() {
 
     try {
       const fd = new FormData();
-      fd.append("nom", form.nom);
-      fd.append("prenom", form.prenom);
-      fd.append("email", form.email);
-      fd.append("ref", form.ref);
+      fd.append("nom", user.nom);
+      fd.append("prenom", user.prenom);
+      fd.append("email", user.email);
+      fd.append("ref", user.ref);
       fd.append("level", form.level);
       fd.append("groupe", form.groupe);
       fd.append("ue", form.ue);
@@ -239,56 +239,51 @@ export default function StudentUpload() {
           </div>
         )}
 
-        {/* Nom + Prénom */}
+        {/* Nom + Prénom — readonly */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-              Nom *
+              Nom
             </label>
             <input
-              className="input-field"
-              placeholder="Rakoto"
-              value={form.nom}
-              onChange={(e) => set("nom", e.target.value)}
+              className="input-field bg-surface text-gray-400 cursor-not-allowed"
+              value={user?.nom || ""}
+              readOnly
             />
           </div>
           <div className="flex-1">
             <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-              Prénom *
+              Prénom
             </label>
             <input
-              className="input-field"
-              placeholder="Jean"
-              value={form.prenom}
-              onChange={(e) => set("prenom", e.target.value)}
+              className="input-field bg-surface text-gray-400 cursor-not-allowed"
+              value={user?.prenom || ""}
+              readOnly
             />
           </div>
         </div>
 
-        {/* Email */}
+        {/* Email — readonly */}
         <div>
           <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-            Email *
+            Email
           </label>
           <input
-            type="email"
-            className="input-field"
-            placeholder="hei.jean@gmail.com"
-            value={form.email}
-            onChange={(e) => set("email", e.target.value)}
+            className="input-field bg-surface text-gray-400 cursor-not-allowed"
+            value={user?.email || ""}
+            readOnly
           />
         </div>
 
-        {/* Référence */}
+        {/* Référence — readonly */}
         <div>
           <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-            Référence STD *
+            Référence STD
           </label>
           <input
-            className="input-field"
-            placeholder="STD25001"
-            value={form.ref}
-            onChange={(e) => set("ref", e.target.value)}
+            className="input-field bg-surface text-gray-400 cursor-not-allowed"
+            value={user?.ref || ""}
+            readOnly
           />
         </div>
 
