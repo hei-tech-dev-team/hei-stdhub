@@ -17,15 +17,42 @@ const upload = multer({
 });
 
 // GET /api/posts  (filtres : ?ue=WEB1&type=td)
+const UES_BY_LEVEL = {
+  L1: [
+    "WEB1",
+    "PROG1",
+    "SYS1",
+    "DONNEES1",
+    "THEORIE1-P1",
+    "THEORIE1-P2",
+    "WEB2",
+    "PROG2-POO",
+    "PROG2-API",
+    "SYS2",
+    "DONNEES2",
+    "IA1",
+  ],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
+  L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
+};
+
 router.get("/", async (req, res) => {
   try {
-    const { ue, type } = req.query;
+    const { ue, type, level } = req.query;
     let q = `
       SELECT p.*, u.pseudo AS author_pseudo, u.ref AS author_ref
       FROM posts p LEFT JOIN users u ON p.author_id = u.id
       WHERE 1=1
     `;
     const params = [];
+
+    if (level && UES_BY_LEVEL[level]) {
+      const placeholders = UES_BY_LEVEL[level]
+        .map((_, i) => `$${params.length + i + 1}`)
+        .join(",");
+      params.push(...UES_BY_LEVEL[level]);
+      q += ` AND p.ue IN (${placeholders})`;
+    }
     if (ue) {
       params.push(ue);
       q += ` AND p.ue=$${params.length}`;
@@ -34,8 +61,8 @@ router.get("/", async (req, res) => {
       params.push(type);
       q += ` AND p.type=$${params.length}`;
     }
-    q += " ORDER BY p.created_at DESC";
 
+    q += " ORDER BY p.created_at DESC";
     const { rows } = await db.query(q, params);
     res.json(rows);
   } catch (err) {

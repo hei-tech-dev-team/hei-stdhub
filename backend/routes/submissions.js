@@ -11,7 +11,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// POST /api/submissions  (étudiant)
+// POST /api/submissions
 router.post("/", auth, upload.single("file"), async (req, res) => {
   const { nom, prenom, email, ref, level, groupe, ue, type, link } = req.body;
 
@@ -27,7 +27,7 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `INSERT INTO submissions
-         (student_id,nom,prenom,email,ref,level,groupe,ue,type,file_name,file_path,link)
+         (student_id, nom, prenom, email, ref, level, groupe, ue, type, file_name, file_path, link)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING *`,
       [
@@ -52,7 +52,7 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   }
 });
 
-// GET /api/submissions  (prof voit ses UE, admin voit tout)
+// GET /api/submissions — prof et admin voient TOUT
 router.get("/", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
@@ -61,18 +61,11 @@ router.get("/", auth, async (req, res) => {
     const { type, groupe, ue } = req.query;
     let q = `
       SELECT s.*, u.pseudo AS student_pseudo
-      FROM submissions s LEFT JOIN users u ON s.student_id = u.id
+      FROM submissions s
+      LEFT JOIN users u ON s.student_id = u.id
       WHERE 1=1
     `;
     const params = [];
-
-    // Un prof ne voit que les rendus des UE liées à ses posts
-    if (req.user.role === "teacher") {
-      q += ` AND s.ue IN (
-        SELECT DISTINCT ue FROM posts WHERE author_id=$${params.length + 1}
-      )`;
-      params.push(req.user.id);
-    }
 
     if (type) {
       params.push(type);
@@ -88,7 +81,6 @@ router.get("/", auth, async (req, res) => {
     }
 
     q += " ORDER BY s.created_at DESC";
-
     const { rows } = await db.query(q, params);
     res.json(rows);
   } catch (err) {
