@@ -10,7 +10,6 @@ import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import Avatar from "../ui/Avatar";
 
-
 export default function ContactList({ contacts, activeId, onSelect }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
