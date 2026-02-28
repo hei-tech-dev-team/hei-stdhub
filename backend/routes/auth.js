@@ -13,7 +13,6 @@ const makeToken = (user) =>
     { expiresIn: "7d" },
   );
 
-// POST /api/auth/register
 router.post("/register", async (req, res) => {
   const { ref, nom, prenom, email, pseudo, password, role, level, inviteCode } =
     req.body;
@@ -25,7 +24,6 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ error: "Code d'invitation requis." });
 
   try {
-    // Vérifier le code d'invitation
     const invite = await db.query(
       `SELECT * FROM invitations
        WHERE code=$1 AND used=FALSE AND expires_at > NOW()`,

@@ -176,8 +176,8 @@ export default function AdminPage() {
   return (
     <div className="flex min-h-screen bg-surface">
       <Sidebar />
-      <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+      <main className="flex-1 flex flex-col overflow-y-auto h-screen">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-xl sm:text-2xl font-bold text-navy">
@@ -187,7 +187,6 @@ export default function AdminPage() {
               Gestion des utilisateurs et des accès
             </p>
           </div>
-
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <StatCard
@@ -215,7 +214,6 @@ export default function AdminPage() {
               color="bg-purple-100 text-purple-600"
             />
           </div>
-
           {/* Tabs */}
           <div className="flex gap-2 mb-5">
             {[
@@ -247,7 +245,6 @@ export default function AdminPage() {
               <span className="hidden sm:inline">Générer une invitation</span>
             </button>
           </div>
-
           {/* ── TAB USERS ── */}
           {tab === "users" && (
             <>
@@ -301,7 +298,7 @@ export default function AdminPage() {
                             "Pseudo",
                             "Niveau",
                             "Rôle",
-                            "Inscrit le",
+                            "Premiere connexion",
                             "Action",
                           ].map((h) => (
                             <th
@@ -444,7 +441,6 @@ export default function AdminPage() {
               )}
             </>
           )}
-
           {/* ── TAB INVITATIONS ── */}
           {tab === "invitations" && (
             <div className="flex flex-col gap-3">
