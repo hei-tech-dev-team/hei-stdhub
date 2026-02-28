@@ -43,7 +43,7 @@ export default function MessagePanel({
       {/* Header */}
       <div
         className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4
-                      bg-navy-dark border-b border-white/10 shrink-0"
+                   bg-slate-500 border-b border-white/10 shrink-0 rounded-3xl m-4"
       >
         <button
           type="button"
@@ -74,7 +74,7 @@ export default function MessagePanel({
             {contact.name}
           </h3>
           {contact.isGlobal && (
-            <p className="text-white/40 text-xs hidden sm:block">
+            <p className="text-black text-xs hidden sm:block">
               Chat global – tous les membres
             </p>
           )}
