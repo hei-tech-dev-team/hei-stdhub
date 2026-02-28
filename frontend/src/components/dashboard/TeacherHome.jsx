@@ -273,7 +273,7 @@ export default function TeacherHome() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary sm:w-auto w-full text-center disabled:opacity-60"
+                className="bg-green-500 p-1.5 hover:bg-green-700 rounded-full sm:w-auto w-full text-center disabled:opacity-60"
               >
                 {loading ? (
                   <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
