@@ -52,7 +52,7 @@ router.get("/users", auth, adminOnly, async (req, res) => {
       params.push(role);
       query += ` AND role=$${params.length}`;
     }
-    query += " ORDER BY created_at DESC";
+    query += " ORDER BY ref ASC";
     const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
