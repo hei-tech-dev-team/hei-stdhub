@@ -9,6 +9,7 @@ import {
   faRightFromBracket,
   faBars,
   faTimes,
+  faUserShield,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
@@ -95,6 +96,22 @@ export default function Sidebar() {
               <span>{label}</span>
             </NavLink>
           ))}
+          {user?.role === "admin" && (
+            <NavLink
+              to="/admin"
+              end={false}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                isActive ? "sidebar-link-active" : "sidebar-link"
+              }
+            >
+              <FontAwesomeIcon
+                icon={faUserShield}
+                className="w-4 h-4 shrink-0"
+              />
+              <span>Administration</span>
+            </NavLink>
+          )}
         </nav>
 
         {/* Footer user */}

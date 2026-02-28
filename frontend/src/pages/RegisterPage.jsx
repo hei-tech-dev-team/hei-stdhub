@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../assets/logos";
+import api from "../api/axios";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -17,13 +18,36 @@ export default function RegisterPage() {
     level: "L1",
     password: "",
     confirmPassword: "",
+    inviteCode: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [codeVerified, setCodeVerified] = useState(false);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState("");
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const LEVELS = { L1: null, L2: null, L3: null };
+  // Vérifier le code d'invitation
+  const verifyCode = async () => {
+    if (!form.inviteCode.trim()) {
+      setCodeError("Entrez un code d'invitation.");
+      return;
+    }
+    setCodeLoading(true);
+    setCodeError("");
+    try {
+      const { data } = await api.post("/auth/verify-invite", {
+        code: form.inviteCode.trim().toUpperCase(),
+      });
+      set("role", data.role);
+      setCodeVerified(true);
+    } catch (err) {
+      setCodeError(err.response?.data?.error || "Code invalide ou expiré.");
+    } finally {
+      setCodeLoading(false);
+    }
+  };
 
   const validate = () => {
     if (!form.nom.trim()) return "Le nom est requis.";
@@ -43,6 +67,10 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!codeVerified) {
+      setError("Veuillez vérifier votre code d'invitation.");
+      return;
+    }
     const err = validate();
     if (err) {
       setError(err);
@@ -61,6 +89,7 @@ export default function RegisterPage() {
         password: form.password,
         role: form.role,
         level: form.role === "student" ? form.level : undefined,
+        inviteCode: form.inviteCode.trim().toUpperCase(),
       });
       navigate("/");
     } catch (err) {
@@ -80,7 +109,7 @@ export default function RegisterPage() {
                       p-6 sm:p-8 lg:p-10 w-full max-w-sm sm:max-w-lg"
       >
         {/* Logo */}
-        <div className="flex flex-col items-center mb-6 sm:mb-8">
+        <div className="flex flex-col items-center mb-6">
           <img
             src={HEI_BLUE_LOGO}
             alt="HEI"
@@ -92,7 +121,7 @@ export default function RegisterPage() {
           <p className="text-gray-400 text-xs sm:text-sm mt-1">HEI STDhub</p>
         </div>
 
-        {/* Erreur */}
+        {/* Erreur globale */}
         {error && (
           <div
             className="bg-red-50 border border-red-200 text-red-600
@@ -102,127 +131,167 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Nom + Prénom */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label
-                className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide"
-              >
-                Nom *
-              </label>
-              <input
-                className="input-field"
-                placeholder="Rakotohatra"
-                value={form.nom}
-                onChange={(e) => {
-                  set("nom", e.target.value);
-                  setError("");
-                }}
-              />
+        {/* ── ÉTAPE 1 : Code d'invitation ── */}
+        {!codeVerified ? (
+          <div className="flex flex-col gap-4">
+            <div className="bg-navy/5 rounded-xl p-4 text-center">
+              <p className="text-navy font-semibold text-sm mb-1">
+                Accès sur invitation uniquement
+              </p>
+              <p className="text-gray-400 text-xs">
+                Contactez votre administrateur pour obtenir un code d'accès.
+              </p>
             </div>
-            <div>
-              <label
-                className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide"
-              >
-                Prénom *
-              </label>
-              <input
-                className="input-field"
-                placeholder="Fanampiny"
-                value={form.prenom}
-                onChange={(e) => {
-                  set("prenom", e.target.value);
-                  setError("");
-                }}
-              />
-            </div>
-          </div>
 
-          {/* Email */}
-          <div>
-            <label
-              className="text-xs font-bold text-gray-500
-                              mb-1 block uppercase tracking-wide"
+            {codeError && (
+              <div
+                className="bg-red-50 border border-red-200 text-red-600
+                              text-sm px-4 py-2 rounded-xl"
+              >
+                {codeError}
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                Code d'invitation *
+              </label>
+              <input
+                className="input-field tracking-widest font-mono uppercase"
+                placeholder="EX: AB12CD34"
+                value={form.inviteCode}
+                onChange={(e) => {
+                  set("inviteCode", e.target.value.toUpperCase());
+                  setCodeError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    verifyCode();
+                  }
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={verifyCode}
+              disabled={codeLoading}
+              className="btn-primary w-full text-center py-3 disabled:opacity-60"
             >
-              Email *
-            </label>
-            <input
-              type="email"
-              className="input-field"
-              placeholder="hei.prenom@gmail.com"
-              value={form.email}
-              onChange={(e) => {
-                set("email", e.target.value);
-                setError("");
-              }}
-            />
-          </div>
+              {codeLoading ? "Vérification..." : "Vérifier le code"}
+            </button>
 
-          {/* Référence + Pseudo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <p className="text-center text-xs text-gray-400">
+              Déjà un compte ?{" "}
+              <Link to="/login" className="text-gold font-bold hover:underline">
+                Se connecter
+              </Link>
+            </p>
+          </div>
+        ) : (
+          /* ── ÉTAPE 2 : Formulaire complet ── */
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Badge rôle confirmé */}
+            <div
+              className="flex items-center gap-2 bg-green-50 border border-green-200
+                          text-green-700 text-sm px-4 py-2 rounded-xl"
+            >
+              <span>✅ Code valide — inscription en tant que</span>
+              <span className="font-bold capitalize">
+                {form.role === "student" ? "Étudiant" : "Professeur"}
+              </span>
+            </div>
+
+            {/* Nom + Prénom */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                  Nom *
+                </label>
+                <input
+                  className="input-field"
+                  placeholder="Rakoto"
+                  value={form.nom}
+                  onChange={(e) => {
+                    set("nom", e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                  Prénom *
+                </label>
+                <input
+                  className="input-field"
+                  placeholder="Jean"
+                  value={form.prenom}
+                  onChange={(e) => {
+                    set("prenom", e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Email */}
             <div>
-              <label
-                className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide"
-              >
-                Référence *
+              <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                Email *
               </label>
               <input
+                type="email"
                 className="input-field"
-                placeholder="STD2NXXX/PROFXXX"
-                value={form.ref}
+                placeholder={
+                  form.role === "student"
+                    ? "hei.jean@gmail.com"
+                    : "dr.nom@hei.mg"
+                }
+                value={form.email}
                 onChange={(e) => {
-                  set("ref", e.target.value);
+                  set("email", e.target.value);
                   setError("");
                 }}
               />
             </div>
-            <div>
-              <label
-                className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide"
-              >
-                Pseudo (chat) *
-              </label>
-              <input
-                className="input-field"
-                placeholder="MonPseudo"
-                value={form.pseudo}
-                onChange={(e) => {
-                  set("pseudo", e.target.value);
-                  setError("");
-                }}
-              />
-            </div>
-          </div>
 
-          {/* Rôle + Niveau */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label
-                className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide"
-              >
-                Rôle *
-              </label>
-              <select
-                className="input-field"
-                value={form.role}
-                onChange={(e) => set("role", e.target.value)}
-              >
-                <option value="student">Étudiant</option>
-                <option value="teacher">Professeur</option>
-              </select>
+            {/* Référence + Pseudo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                  Référence *
+                </label>
+                <input
+                  className="input-field"
+                  placeholder={form.role === "student" ? "STD25001" : "PROF001"}
+                  value={form.ref}
+                  onChange={(e) => {
+                    set("ref", e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                  Pseudo (chat) *
+                </label>
+                <input
+                  className="input-field"
+                  placeholder="MonPseudo"
+                  value={form.pseudo}
+                  onChange={(e) => {
+                    set("pseudo", e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
             </div>
+
+            {/* Niveau (étudiant seulement) */}
             {form.role === "student" && (
               <div>
-                <label
-                  className="text-xs font-bold text-gray-500
-                                  mb-1 block uppercase tracking-wide"
-                >
+                <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
                   Niveau *
                 </label>
                 <select
@@ -230,72 +299,64 @@ export default function RegisterPage() {
                   value={form.level}
                   onChange={(e) => set("level", e.target.value)}
                 >
-                  {Object.keys(LEVELS).map((l) => (
-                    <option key={l} value={l}>
-                      {l}
-                    </option>
-                  ))}
+                  <option value="L1">L1 — Première année</option>
+                  <option value="L2">L2 — Deuxième année</option>
+                  <option value="L3">L3 — Troisième année</option>
                 </select>
               </div>
             )}
-          </div>
 
-          {/* Mot de passe */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label
-                className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide"
-              >
-                Mot de passe *
-              </label>
-              <input
-                type="password"
-                className="input-field"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => {
-                  set("password", e.target.value);
-                  setError("");
-                }}
-              />
+            {/* Mots de passe */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                  Mot de passe *
+                </label>
+                <input
+                  type="password"
+                  className="input-field"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => {
+                    set("password", e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                  Confirmer *
+                </label>
+                <input
+                  type="password"
+                  className="input-field"
+                  placeholder="••••••••"
+                  value={form.confirmPassword}
+                  onChange={(e) => {
+                    set("confirmPassword", e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
             </div>
-            <div>
-              <label
-                className="text-xs font-bold text-gray-500
-                                mb-1 block uppercase tracking-wide"
-              >
-                Confirmer *
-              </label>
-              <input
-                type="password"
-                className="input-field"
-                placeholder="••••••••"
-                value={form.confirmPassword}
-                onChange={(e) => {
-                  set("confirmPassword", e.target.value);
-                  setError("");
-                }}
-              />
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full text-center py-3 mt-1
-                       disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? "Inscription..." : "S'inscrire"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full text-center py-3 mt-1 disabled:opacity-60"
+            >
+              {loading ? "Inscription..." : "S'inscrire"}
+            </button>
 
-        <p className="text-center text-xs text-gray-400 mt-5 sm:mt-6">
-          Déjà un compte ?{" "}
-          <Link to="/login" className="text-gold font-bold hover:underline">
-            Se connecter
-          </Link>
-        </p>
+            <button
+              type="button"
+              onClick={() => setCodeVerified(false)}
+              className="text-center text-xs text-gray-400 hover:text-navy transition"
+            >
+              ← Changer de code d'invitation
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
