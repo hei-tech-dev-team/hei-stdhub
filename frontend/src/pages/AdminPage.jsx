@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -17,11 +17,11 @@ import {
   faTicket,
   faTimes,
   faCheck,
+  faArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
-
 const ROLE_CONFIG = {
   student: {
     label: "Étudiant",
@@ -72,7 +72,16 @@ export default function AdminPage() {
   const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
+  const [showTop, setShowTop] = useState(false);
+  const mainRef = useRef(null);
 
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const onScroll = () => setShowTop(el.scrollTop > 50);
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
   // Modal invitation
   const [showInvModal, setShowInvModal] = useState(false);
   const [invRole, setInvRole] = useState("student");
@@ -176,7 +185,10 @@ export default function AdminPage() {
   return (
     <div className="flex min-h-screen bg-surface">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-y-auto h-screen">
+      <main
+        ref={mainRef}
+        className="flex-1 flex flex-col overflow-y-auto h-screen"
+      >
         <div className="flex-1 p-4 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6">
@@ -541,6 +553,20 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+        {showTop && (
+          <button
+            type="button"
+            onClick={() =>
+              mainRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+            }
+            className="fixed bottom-6 right-6 w-11 h-11 rounded-full bg-navy
+               text-white flex items-center justify-center shadow-lg
+               hover:bg-gold transition z-50"
+            title="Remonter en haut"
+          >
+            <FontAwesomeIcon icon={faArrowUp} />
+          </button>
+        )}
       </main>
 
       {/* Modal générer invitation */}
