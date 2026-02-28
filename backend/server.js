@@ -31,3 +31,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () =>
   console.log(`🚀 HEI STDhub API → http://localhost:${PORT}`),
 );
+const adminRoutes = require("./routes/admin");
+app.use("/api/admin", adminRoutes);

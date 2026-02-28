@@ -15,12 +15,28 @@ const makeToken = (user) =>
 
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
-  const { ref, nom, prenom, email, pseudo, password, role, level } = req.body;
+  const { ref, nom, prenom, email, pseudo, password, role, level, inviteCode } =
+    req.body;
 
   if (!ref || !nom || !prenom || !email || !pseudo || !password || !role)
     return res.status(400).json({ error: "Tous les champs sont requis." });
 
+  if (!inviteCode)
+    return res.status(400).json({ error: "Code d'invitation requis." });
+
   try {
+    // Vérifier le code d'invitation
+    const invite = await db.query(
+      `SELECT * FROM invitations
+       WHERE code=$1 AND used=FALSE AND expires_at > NOW()`,
+      [inviteCode.toUpperCase()],
+    );
+    if (!invite.rows.length)
+      return res
+        .status(400)
+        .json({ error: "Code d'invitation invalide ou expiré." });
+
+    // Vérifier si ref ou email déjà utilisé
     const exists = await db.query(
       "SELECT id FROM users WHERE ref=$1 OR email=$2",
       [ref.toUpperCase(), email],
@@ -30,11 +46,12 @@ router.post("/register", async (req, res) => {
         .status(409)
         .json({ error: "Référence ou email déjà utilisé." });
 
+    // Créer le user
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await db.query(
-      `INSERT INTO users (ref,nom,prenom,email,pseudo,password,role,level)
+      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-       RETURNING id,ref,nom,prenom,email,pseudo,role,level`,
+       RETURNING id, ref, nom, prenom, email, pseudo, role, level`,
       [
         ref.toUpperCase(),
         nom,
@@ -46,7 +63,16 @@ router.post("/register", async (req, res) => {
         level || null,
       ],
     );
-    res.status(201).json({ token: makeToken(rows[0]), user: rows[0] });
+
+    const newUser = rows[0];
+
+    // Marquer le code comme utilisé
+    await db.query(
+      `UPDATE invitations SET used=TRUE, used_by=$1 WHERE code=$2`,
+      [newUser.id, inviteCode.toUpperCase()],
+    );
+
+    res.status(201).json({ token: makeToken(newUser), user: newUser });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -61,7 +87,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id,ref,nom,prenom,email,pseudo,password,role,level
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level
        FROM users WHERE ref=$1`,
       [ref.toUpperCase()],
     );
@@ -84,11 +110,29 @@ router.post("/login", async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT id,ref,nom,prenom,email,pseudo,role,level FROM users WHERE id=$1",
+      "SELECT id, ref, nom, prenom, email, pseudo, role, level FROM users WHERE id=$1",
       [req.user.id],
     );
     if (!rows.length) return res.status(404).json({ error: "Introuvable." });
     res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// POST /api/auth/verify-invite
+router.post("/verify-invite", async (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: "Code requis." });
+  try {
+    const { rows } = await db.query(
+      `SELECT * FROM invitations
+       WHERE code=$1 AND used=FALSE AND expires_at > NOW()`,
+      [code.toUpperCase()],
+    );
+    if (!rows.length)
+      return res.status(400).json({ error: "Code invalide ou expiré." });
+    res.json({ role: rows[0].role });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
