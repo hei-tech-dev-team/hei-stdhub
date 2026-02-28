@@ -6,11 +6,11 @@ import HomePage from "./pages/HomePage";
 import ArchivesPage from "./pages/ArchivesPage";
 import TDPage from "./pages/TDPage";
 import ChatPage from "./pages/ChatPage";
+import AdminPage from "./pages/AdminPage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
-  // Token en cours de vérification → écran de chargement
   if (loading) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -25,9 +25,15 @@ function ProtectedRoute({ children }) {
     );
   }
 
-  // Token invalide ou absent → login
   if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
 
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+  if (!user || user.role !== "admin") return <Navigate to="/" replace />;
   return children;
 }
 
@@ -67,6 +73,14 @@ export default function App() {
           <ProtectedRoute>
             <ChatPage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
         }
       />
 
