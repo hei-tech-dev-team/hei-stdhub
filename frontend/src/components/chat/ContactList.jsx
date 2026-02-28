@@ -33,10 +33,10 @@ export default function ContactList({ contacts, activeId, onSelect }) {
     setSearching(true);
     try {
       const { data } = await api.get(`/messages/search?q=${q}`); // Exclure les contacts déjà dans la liste et soi-même
-      const existingIds = contacts.map((c) => c.id);
-      setSearchResults(
-        data.filter((u) => u.id !== user.id && !existingIds.includes(u.id)),
-      );
+// On exclut seulement soi-même
+setSearchResults(
+  data.filter((u) => u.id !== user.id)
+);
     } catch (err) {
       console.error(err);
     } finally {
