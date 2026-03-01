@@ -78,7 +78,7 @@ export default function AdminPage() {
   useEffect(() => {
     const el = mainRef.current;
     if (!el) return;
-    const onScroll = () => setShowTop(el.scrollTop >0);
+    const onScroll = () => setShowTop(el.scrollTop > 1);
     el.addEventListener("scroll", onScroll);
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
