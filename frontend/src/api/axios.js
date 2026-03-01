@@ -1,8 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://hei-stdhub-backend.onrender.com/api",
-});
+baseURL: import.meta.env.VITE_API_URL 
+  ? import.meta.env.VITE_API_URL + "/api" 
+  : "http://localhost:3001/api",});
 
 // Injecte le token JWT automatiquement
 api.interceptors.request.use((config) => {
