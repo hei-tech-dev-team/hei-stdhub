@@ -5,7 +5,15 @@ require("dotenv").config();
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL }));
+app.use(
+  cors({
+    origin: [
+      process.env.CLIENT_URL,
+      "http://localhost:5173",
+      "https://hei-stdhub.vercel.app",
+    ],
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
