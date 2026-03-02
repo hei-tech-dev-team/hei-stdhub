@@ -199,7 +199,7 @@ export default function TeacherInbox() {
                     <td className="py-3 px-4">
                       {s.file_path ? (
                         <a
-                          href={`http://localhost:3001/${s.file_path}`}
+                          href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${s.file_path}`}
                           target="_blank"
                           rel="noreferrer"
                           className="btn-primary text-xs px-3 py-1.5
