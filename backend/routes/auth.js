@@ -135,5 +135,78 @@ router.post("/verify-invite", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
+// PATCH /api/auth/profile — modifier pseudo
+router.patch("/profile", auth, async (req, res) => {
+  const { pseudo } = req.body;
+  if (!pseudo?.trim()) return res.status(400).json({ error: "Pseudo requis." });
+  try {
+    const { rows } = await db.query(
+      `UPDATE users SET pseudo=$1 WHERE id=$2
+       RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+      [pseudo.trim(), req.user.id],
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
 
+// PATCH /api/auth/password — modifier mot de passe
+router.patch("/password", auth, async (req, res) => {
+  const { current, newPassword } = req.body;
+  if (!current || !newPassword)
+    return res.status(400).json({ error: "Champs requis." });
+  if (newPassword.length < 6)
+    return res.status(400).json({ error: "Minimum 6 caractères." });
+  try {
+    const { rows } = await db.query("SELECT password FROM users WHERE id=$1", [
+      req.user.id,
+    ]);
+    if (!(await bcrypt.compare(current, rows[0].password)))
+      return res.status(401).json({ error: "Mot de passe actuel incorrect." });
+    const hash = await bcrypt.hash(newPassword, 10);
+    await db.query("UPDATE users SET password=$1 WHERE id=$2", [
+      hash,
+      req.user.id,
+    ]);
+    res.json({ message: "Mot de passe mis à jour." });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// PATCH /api/auth/avatar — modifier photo de profil
+router.patch("/avatar", auth, async (req, res) => {
+  const multer = require("multer");
+  const path = require("path");
+  const storage = multer.diskStorage({
+    destination: "uploads/avatars/",
+    filename: (_, file, cb) =>
+      cb(
+        null,
+        `avatar_${req.user.id}_${Date.now()}${path.extname(file.originalname)}`,
+      ),
+  });
+  const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_, file, cb) => {
+      if (!file.mimetype.startsWith("image/"))
+        return cb(new Error("Image uniquement."));
+      cb(null, true);
+    },
+  }).single("avatar");
+
+  upload(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: "Fichier requis." });
+    const avatarPath = `uploads/avatars/${req.file.filename}`;
+    const { rows } = await db.query(
+      `UPDATE users SET avatar=$1 WHERE id=$2
+       RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+      [avatarPath, req.user.id],
+    );
+    res.json(rows[0]);
+  });
+});
 module.exports = router;
