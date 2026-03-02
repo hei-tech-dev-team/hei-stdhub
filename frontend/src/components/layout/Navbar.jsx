@@ -1,9 +1,11 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Navbar({ title }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header
@@ -29,8 +31,10 @@ export default function Navbar({ title }) {
 
       {/* Badge utilisateur */}
       <div
+        onClick={() => navigate("/profile")}
         className="flex items-center gap-2 bg-surface px-3 sm:px-4
-                      py-2 rounded-full border border-contact"
+             py-2 rounded-full border border-contact cursor-pointer
+             hover:border-navy transition"
       >
         <span
           className="font-semibold text-navy text-xs sm:text-sm
