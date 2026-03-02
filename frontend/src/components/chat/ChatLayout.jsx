@@ -19,7 +19,8 @@ export default function ChatLayout() {
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   useEffect(() => {
-    api.get("/messages/contacts")
+    api
+      .get("/messages/contacts")
       .then(({ data }) => {
         const formatted = data.map((c) => ({
           id: c.id,
@@ -33,32 +34,35 @@ export default function ChatLayout() {
       .catch(console.error);
   }, []);
 
-  const loadMessages = useCallback(async (contact) => {
-    setLoadingMessages(true);
-    try {
-      let data;
-      if (contact.isGlobal) {
-        ({ data } = await api.get("/messages/global"));
-      } else {
-        ({ data } = await api.get(`/messages/private/${contact.id}`));
+  const loadMessages = useCallback(
+    async (contact) => {
+      setLoadingMessages(true);
+      try {
+        let data;
+        if (contact.isGlobal) {
+          ({ data } = await api.get("/messages/global"));
+        } else {
+          ({ data } = await api.get(`/messages/private/${contact.id}`));
+        }
+        const formatted = data.map((m) => ({
+          id: m.id,
+          sender: m.sender_pseudo || "Inconnu",
+          content: m.content,
+          own: m.sender_id === user.id,
+          time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }));
+        setMessages((prev) => ({ ...prev, [contact.id]: formatted }));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingMessages(false);
       }
-      const formatted = data.map((m) => ({
-        id: m.id,
-        sender: m.sender_pseudo || "Inconnu",
-        content: m.content,
-        own: m.sender_id === user.id,
-        time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      }));
-      setMessages((prev) => ({ ...prev, [contact.id]: formatted }));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingMessages(false);
-    }
-  }, [user]);
+    },
+    [user],
+  );
 
   useEffect(() => {
     if (activeContact) loadMessages(activeContact);
@@ -99,12 +103,14 @@ export default function ChatLayout() {
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
-      <div className={`
+      <div
+        className={`
         absolute md:static inset-y-0 left-0 z-20
         w-full sm:w-72 md:w-64 lg:w-72
         transform transition-transform duration-300
         ${showContactList ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-      `}>
+      `}
+      >
         <ContactList
           contacts={contacts}
           activeId={activeContact.id}
