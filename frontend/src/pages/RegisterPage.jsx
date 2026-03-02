@@ -139,7 +139,20 @@ export default function RegisterPage() {
                 Accès sur invitation uniquement
               </p>
               <p className="text-gray-400 text-xs">
-                Contactez votre administrateur pour obtenir un code d'accès.
+                Contactez votre administrateur pour obtenir un code d'accès en
+                evnoyant un email à{" "}
+                <a
+                  href="hub203313@gmail.com"
+                  className="text-gold hover:underline"
+                >
+                  hub203313@gmail.com
+                </a>{" "}
+                avec comme objet "Demande de code d'invitation HEI STDhub" et en
+                précisant votre rôle (étudiant ou professeur) ainsi que votre
+                niveau d'étude si vous êtes étudiant.Le code vous sera envoyé
+                par email après vérification de votre statut à HEI. Chaque code
+                est unique, valable une seule fois, et expire après 7
+                jours.{" "}
               </p>
             </div>
 
