@@ -93,10 +93,10 @@ export default function StudentUpload() {
   };
 
   const validate = () => {
-    if (!form.nom.trim()) return "Le nom est requis.";
-    if (!form.prenom.trim()) return "Le prénom est requis.";
-    if (!form.email.trim()) return "L'email est requis.";
-    if (!form.ref.trim()) return "La référence STD est requise.";
+    if (!user?.nom?.trim()) return "Le nom est requis.";
+    if (!user?.prenom?.trim()) return "Le prénom est requis.";
+    if (!user?.email?.trim()) return "L'email est requis.";
+    if (!user?.ref?.trim()) return "La référence STD est requise.";
     if (!form.ue) return "Veuillez choisir une UE.";
     if (!form.file && !form.link.trim())
       return "Veuillez déposer un fichier ou coller un lien.";
