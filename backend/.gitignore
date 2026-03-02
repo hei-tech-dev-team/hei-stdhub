@@ -24,17 +24,3 @@ Thumbs.db
 ```
 
 ---
-
-## Structure finale
-```
-hei-stdhub/
-├── .gitignore       ← ici
-├── src/
-├── package.json
-└── ...
-
-hei-stdhub-backend/
-├── .gitignore       ← et ici
-├── server.js
-├── .env             ← jamais commit grâce au .gitignore
-└── ...
