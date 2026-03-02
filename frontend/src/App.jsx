@@ -7,6 +7,7 @@ import ArchivesPage from "./pages/ArchivesPage";
 import TDPage from "./pages/TDPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -81,6 +82,14 @@ export default function App() {
           <AdminRoute>
             <AdminPage />
           </AdminRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
         }
       />
 
