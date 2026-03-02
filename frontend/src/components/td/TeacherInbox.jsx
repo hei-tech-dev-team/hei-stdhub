@@ -260,7 +260,7 @@ export default function TeacherInbox() {
                 <p className="text-xs text-gray-400 mb-3">{s.email}</p>
                 {s.file_path ? (
                   <a
-                    href={`http://localhost:3001/${s.file_path}`}
+                    href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${s.file_path}`}
                     target="_blank"
                     rel="noreferrer"
                     className="btn-primary text-xs px-4 py-2
