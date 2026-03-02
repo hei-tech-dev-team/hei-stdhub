@@ -8,7 +8,7 @@ import {
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
-import { HEI_BLUE_LOGO } from "../../assets/logos";
+import { HEI_WHITE_LOGO } from "../../assets/logos";
 
 export default function MessagePanel({
   contact,
@@ -60,7 +60,7 @@ export default function MessagePanel({
                           flex items-center justify-center shrink-0"
           >
             <img
-              src={HEI_BLUE_LOGO}
+              src={HEI_WHITE_LOGO}
               alt="HEI"
               className="w-5 h-5 sm:w-6 sm:h-6 object-cover"
             />
