@@ -7,9 +7,7 @@ export default function Navbar({ title }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const avatarUrl = user?.avatar
-    ? `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${user.avatar}`
-    : null;
+  const avatarUrl = user?.avatar || null;
 
   return (
     <header
