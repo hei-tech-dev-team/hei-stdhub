@@ -35,10 +35,7 @@ export default function ProfilePage() {
   const [errorPseudo, setErrorPseudo] = useState("");
   const [errorPwd, setErrorPwd] = useState("");
 
-  const avatarUrl = user?.avatar
-    ? `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${user.avatar}`
-    : null;
-
+  const avatarUrl = user?.avatar || null;
   // ── Changer avatar ──
   const handleAvatar = async (e) => {
     const file = e.target.files[0];
