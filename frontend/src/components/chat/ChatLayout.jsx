@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import { socket } from "../../socket";
+import { getSocket } from "../../socket";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
@@ -79,6 +79,8 @@ export default function ChatLayout() {
 
   // ── Socket.io listeners ──
   useEffect(() => {
+    const socket = getSocket();
+
     const handleGlobal = (msg) => {
       const formatted = formatMsg(msg);
       setMessages((prev) => ({
@@ -95,8 +97,6 @@ export default function ChatLayout() {
         ...prev,
         [contactId]: [...(prev[contactId] || []), formatted],
       }));
-
-      // Marquer comme vu si c'est la conversation active
       if (msg.sender_id !== user.id && activeContact.id === contactId) {
         api.patch(`/messages/${msg.id}/seen`).catch(console.error);
       }
@@ -131,7 +131,6 @@ export default function ChatLayout() {
         ? { content, is_global: true }
         : { content, receiver_id: activeContact.id, is_global: false };
       await api.post("/messages", payload);
-      // Le message arrive via socket, pas besoin de l'ajouter manuellement
     } catch (err) {
       console.error(err);
     }
