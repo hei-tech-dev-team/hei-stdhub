@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import { getSocket } from "../../socket";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
@@ -18,6 +17,12 @@ export default function ChatLayout() {
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const activeContactRef = useRef(activeContact);
+  const pollingRef = useRef(null);
+
+  useEffect(() => {
+    activeContactRef.current = activeContact;
+  }, [activeContact]);
 
   useEffect(() => {
     api
@@ -51,8 +56,8 @@ export default function ChatLayout() {
   );
 
   const loadMessages = useCallback(
-    async (contact) => {
-      setLoadingMessages(true);
+    async (contact, silent = false) => {
+      if (!silent) setLoadingMessages(true);
       try {
         let data;
         if (contact.isGlobal) {
@@ -67,66 +72,24 @@ export default function ChatLayout() {
       } catch (err) {
         console.error(err);
       } finally {
-        setLoadingMessages(false);
+        if (!silent) setLoadingMessages(false);
       }
     },
     [formatMsg],
   );
 
+  // Charger au changement de contact
   useEffect(() => {
     if (activeContact) loadMessages(activeContact);
   }, [activeContact, loadMessages]);
 
-  // ── Socket.io listeners ──
+  // Polling toutes les 3 secondes
   useEffect(() => {
-    let cleanup = () => {};
-
-    const handleGlobal = (msg) => {
-      const formatted = formatMsg(msg);
-      setMessages((prev) => ({
-        ...prev,
-        global: [...(prev.global || []), formatted],
-      }));
-    };
-
-    const handlePrivate = (msg) => {
-      const contactId =
-        msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
-      const formatted = formatMsg(msg);
-      setMessages((prev) => ({
-        ...prev,
-        [contactId]: [...(prev[contactId] || []), formatted],
-      }));
-      if (msg.sender_id !== user.id && activeContact.id === contactId) {
-        api.patch(`/messages/${msg.id}/seen`).catch(console.error);
-      }
-    };
-
-    const handleSeen = ({ messageId }) => {
-      setMessages((prev) => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach((key) => {
-          updated[key] = updated[key]?.map((m) =>
-            m.id === messageId ? { ...m, seen: true } : m,
-          );
-        });
-        return updated;
-      });
-    };
-
-    getSocket().then((socket) => {
-      socket.on("message:global", handleGlobal);
-      socket.on("message:private", handlePrivate);
-      socket.on("message:seen", handleSeen);
-      cleanup = () => {
-        socket.off("message:global", handleGlobal);
-        socket.off("message:private", handlePrivate);
-        socket.off("message:seen", handleSeen);
-      };
-    });
-
-    return () => cleanup();
-  }, [user, activeContact, formatMsg]);
+    pollingRef.current = setInterval(() => {
+      loadMessages(activeContactRef.current, true);
+    }, 3000);
+    return () => clearInterval(pollingRef.current);
+  }, [loadMessages]);
 
   const sendMessage = async (content) => {
     try {
@@ -134,6 +97,8 @@ export default function ChatLayout() {
         ? { content, is_global: true }
         : { content, receiver_id: activeContact.id, is_global: false };
       await api.post("/messages", payload);
+      // Recharger immédiatement après envoi
+      loadMessages(activeContact, true);
     } catch (err) {
       console.error(err);
     }
