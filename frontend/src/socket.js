@@ -1,9 +1,8 @@
-import { io } from "socket.io-client";
-
 let socketInstance = null;
 
-export const getSocket = () => {
+export const getSocket = async () => {
   if (!socketInstance) {
+    const { io } = await import("socket.io-client");
     const URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
     socketInstance = io(URL, {
       autoConnect: false,

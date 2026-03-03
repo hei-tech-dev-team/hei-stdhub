@@ -16,9 +16,9 @@ export function AuthProvider({ children }) {
     }
     api
       .get("/auth/me")
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         setUser(data);
-        const socket = getSocket();
+        const socket = await getSocket();
         if (!socket.connected) {
           socket.connect();
           socket.emit("user:join", data.id);
@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
     const { data } = await api.post("/auth/login", { ref, password });
     localStorage.setItem("hei_token", data.token);
     setUser(data.user);
-    const socket = getSocket();
+    const socket = await getSocket();
     if (!socket.connected) {
       socket.connect();
       socket.emit("user:join", data.user.id);
@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
     const { data } = await api.post("/auth/register", formData);
     localStorage.setItem("hei_token", data.token);
     setUser(data.user);
-    const socket = getSocket();
+    const socket = await getSocket();
     if (!socket.connected) {
       socket.connect();
       socket.emit("user:join", data.user.id);
@@ -52,10 +52,11 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem("hei_token");
-    const socket = getSocket();
+    const socket = await getSocket();
     socket.disconnect();
+    socketInstance = null;
     setUser(null);
   };
 
