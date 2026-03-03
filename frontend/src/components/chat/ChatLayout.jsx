@@ -6,7 +6,7 @@ import MessagePanel from "./MessagePanel";
 
 const GLOBAL_CONTACT = {
   id: "global",
-  name: "HEI STDhub global chat",
+  name: "HEI STDhub — Chat Global",
   isGlobal: true,
 };
 
@@ -15,7 +15,7 @@ export default function ChatLayout() {
   const [contacts, setContacts] = useState([GLOBAL_CONTACT]);
   const [activeContact, setActiveContact] = useState(GLOBAL_CONTACT);
   const [messages, setMessages] = useState({});
-  const [showContactList, setShowContactList] = useState(true);
+  const [showContactList, setShowContactList] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   useEffect(() => {
@@ -73,9 +73,7 @@ export default function ChatLayout() {
       const payload = activeContact.isGlobal
         ? { content, is_global: true }
         : { content, receiver_id: activeContact.id, is_global: false };
-
       const { data } = await api.post("/messages", payload);
-
       const newMsg = {
         id: data.id,
         sender: user.pseudo,
@@ -86,13 +84,12 @@ export default function ChatLayout() {
           minute: "2-digit",
         }),
       };
-
       setMessages((prev) => ({
         ...prev,
         [activeContact.id]: [...(prev[activeContact.id] || []), newMsg],
       }));
     } catch (err) {
-      console.error("Erreur envoi message:", err);
+      console.error(err);
     }
   };
 
@@ -103,12 +100,13 @@ export default function ChatLayout() {
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
+      {/* ContactList — toujours visible desktop, drawer mobile */}
       <div
         className={`
-        absolute md:static inset-y-0 left-0 z-20
-        w-full sm:w-72 md:w-64 lg:w-72
+        lg:relative lg:translate-x-0 lg:w-72 lg:flex lg:shrink-0
+        fixed inset-y-0 left-0 z-20 w-72
         transform transition-transform duration-300
-        ${showContactList ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        ${showContactList ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
       >
         <ContactList
@@ -118,13 +116,15 @@ export default function ChatLayout() {
         />
       </div>
 
+      {/* Overlay mobile */}
       {showContactList && (
         <div
-          className="md:hidden fixed inset-0 bg-black/40 z-10"
+          className="lg:hidden fixed inset-0 bg-black/40 z-10"
           onClick={() => setShowContactList(false)}
         />
       )}
 
+      {/* MessagePanel */}
       <div className="flex-1 flex flex-col min-w-0">
         <MessagePanel
           contact={activeContact}

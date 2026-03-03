@@ -99,5 +99,28 @@ router.post("/", auth, async (req, res) => {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
+const multer = require("multer");
+const path = require("path");
 
+const chatStorage = multer.diskStorage({
+  destination: "uploads/chat/",
+  filename: (_, file, cb) =>
+    cb(null, `chat_${Date.now()}${path.extname(file.originalname)}`),
+});
+const chatUpload = multer({
+  storage: chatStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).single("file");
+
+router.post("/upload", auth, (req, res) => {
+  chatUpload(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: "Fichier requis." });
+    const url = `${process.env.CLIENT_URL?.replace("netlify.app", "onrender.com") || "http://localhost:3001"}/uploads/chat/${req.file.filename}`;
+    res.json({
+      filename: req.file.filename,
+      url: `${process.env.BACKEND_URL || "http://localhost:3001"}/uploads/chat/${req.file.filename}`,
+    });
+  });
+});
 module.exports = router;
