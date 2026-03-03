@@ -6,7 +6,6 @@ import {
   faChevronLeft,
   faSpinner,
   faFile,
-  faImage,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -201,9 +200,17 @@ export default function MessagePanel({
                 >
                   {renderContent(msg.content)}
                 </div>
-                <span className="text-white/30 text-xs mt-1 mx-1">
-                  {msg.time}
-                </span>
+
+                {/* Timestamp + vu */}
+                <div className="flex items-center gap-1 mt-1 mx-1">
+                  <span className="text-white/30 text-xs">{msg.time}</span>
+                  {msg.own && !msg.seen && (
+                    <span className="text-white/30 text-xs">✓</span>
+                  )}
+                  {msg.own && msg.seen && (
+                    <span className="text-gold text-xs">✓✓</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -211,13 +218,17 @@ export default function MessagePanel({
       </div>
 
       {/* Zone saisie */}
-      <div className="px-3 sm:px-4 py-3 bg-[#1a2b45] border-t border-white/10 shrink-0">
+      <div
+        className="px-3 sm:px-4 py-3 bg-[#1a2b45]
+                      border-t border-white/10 shrink-0"
+      >
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-9 h-9 rounded-full border border-white/20 text-white/60
-                             flex items-center justify-center hover:bg-white/10 transition shrink-0"
+            className="w-9 h-9 rounded-full border border-white/20
+                             text-white/60 flex items-center justify-center
+                             hover:bg-white/10 transition shrink-0"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
           </button>
