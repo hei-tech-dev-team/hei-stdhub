@@ -1,7 +1,6 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
-
 const router = express.Router();
 
 // GET /api/messages/search?q=...
@@ -94,11 +93,58 @@ router.post("/", auth, async (req, res) => {
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [req.user.id, is_global ? null : receiver_id, content, !!is_global],
     );
-    res.status(201).json(rows[0]);
+
+    const msg = rows[0];
+
+    const { rows: userRows } = await db.query(
+      "SELECT pseudo FROM users WHERE id=$1",
+      [req.user.id],
+    );
+
+    const fullMsg = {
+      ...msg,
+      sender_pseudo: userRows[0]?.pseudo || "Inconnu",
+    };
+
+    const io = req.app.get("io");
+    if (is_global) {
+      io.emit("message:global", fullMsg);
+    } else {
+      io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
+      io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
+    }
+
+    res.status(201).json(fullMsg);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// PATCH /api/messages/:id/seen
+router.patch("/:id/seen", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `UPDATE messages SET seen=TRUE, seen_at=NOW()
+       WHERE id=$1 AND receiver_id=$2
+       RETURNING *`,
+      [req.params.id, req.user.id],
+    );
+    if (!rows.length)
+      return res.status(404).json({ error: "Message introuvable." });
+
+    const io = req.app.get("io");
+    io.to(`user:${rows[0].sender_id}`).emit("message:seen", {
+      messageId: rows[0].id,
+    });
+
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
+
+// POST /api/messages/upload
 const multer = require("multer");
 const path = require("path");
 
@@ -116,11 +162,11 @@ router.post("/upload", auth, (req, res) => {
   chatUpload(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
-    const url = `${process.env.CLIENT_URL?.replace("netlify.app", "onrender.com") || "http://localhost:3001"}/uploads/chat/${req.file.filename}`;
     res.json({
       filename: req.file.filename,
       url: `${process.env.BACKEND_URL || "http://localhost:3001"}/uploads/chat/${req.file.filename}`,
     });
   });
 });
+
 module.exports = router;

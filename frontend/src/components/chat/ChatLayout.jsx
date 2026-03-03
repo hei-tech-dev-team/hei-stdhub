@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import { socket } from "../../socket";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
@@ -34,6 +35,21 @@ export default function ChatLayout() {
       .catch(console.error);
   }, []);
 
+  const formatMsg = useCallback(
+    (m) => ({
+      id: m.id,
+      sender: m.sender_pseudo || "Inconnu",
+      content: m.content,
+      own: m.sender_id === user.id,
+      seen: m.seen || false,
+      time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    }),
+    [user],
+  );
+
   const loadMessages = useCallback(
     async (contact) => {
       setLoadingMessages(true);
@@ -44,50 +60,78 @@ export default function ChatLayout() {
         } else {
           ({ data } = await api.get(`/messages/private/${contact.id}`));
         }
-        const formatted = data.map((m) => ({
-          id: m.id,
-          sender: m.sender_pseudo || "Inconnu",
-          content: m.content,
-          own: m.sender_id === user.id,
-          time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+        setMessages((prev) => ({
+          ...prev,
+          [contact.id]: data.map(formatMsg),
         }));
-        setMessages((prev) => ({ ...prev, [contact.id]: formatted }));
       } catch (err) {
         console.error(err);
       } finally {
         setLoadingMessages(false);
       }
     },
-    [user],
+    [formatMsg],
   );
 
   useEffect(() => {
     if (activeContact) loadMessages(activeContact);
   }, [activeContact, loadMessages]);
 
+  // ── Socket.io listeners ──
+  useEffect(() => {
+    const handleGlobal = (msg) => {
+      const formatted = formatMsg(msg);
+      setMessages((prev) => ({
+        ...prev,
+        global: [...(prev.global || []), formatted],
+      }));
+    };
+
+    const handlePrivate = (msg) => {
+      const contactId =
+        msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+      const formatted = formatMsg(msg);
+      setMessages((prev) => ({
+        ...prev,
+        [contactId]: [...(prev[contactId] || []), formatted],
+      }));
+
+      // Marquer comme vu si c'est la conversation active
+      if (msg.sender_id !== user.id && activeContact.id === contactId) {
+        api.patch(`/messages/${msg.id}/seen`).catch(console.error);
+      }
+    };
+
+    const handleSeen = ({ messageId }) => {
+      setMessages((prev) => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach((key) => {
+          updated[key] = updated[key]?.map((m) =>
+            m.id === messageId ? { ...m, seen: true } : m,
+          );
+        });
+        return updated;
+      });
+    };
+
+    socket.on("message:global", handleGlobal);
+    socket.on("message:private", handlePrivate);
+    socket.on("message:seen", handleSeen);
+
+    return () => {
+      socket.off("message:global", handleGlobal);
+      socket.off("message:private", handlePrivate);
+      socket.off("message:seen", handleSeen);
+    };
+  }, [user, activeContact, formatMsg]);
+
   const sendMessage = async (content) => {
     try {
       const payload = activeContact.isGlobal
         ? { content, is_global: true }
         : { content, receiver_id: activeContact.id, is_global: false };
-      const { data } = await api.post("/messages", payload);
-      const newMsg = {
-        id: data.id,
-        sender: user.pseudo,
-        content: data.content,
-        own: true,
-        time: new Date(data.created_at).toLocaleTimeString("fr-FR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages((prev) => ({
-        ...prev,
-        [activeContact.id]: [...(prev[activeContact.id] || []), newMsg],
-      }));
+      await api.post("/messages", payload);
+      // Le message arrive via socket, pas besoin de l'ajouter manuellement
     } catch (err) {
       console.error(err);
     }
@@ -100,7 +144,6 @@ export default function ChatLayout() {
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
-      {/* ContactList — toujours visible desktop, drawer mobile */}
       <div
         className={`
         lg:relative lg:translate-x-0 lg:w-72 lg:flex lg:shrink-0
@@ -116,7 +159,6 @@ export default function ChatLayout() {
         />
       </div>
 
-      {/* Overlay mobile */}
       {showContactList && (
         <div
           className="lg:hidden fixed inset-0 bg-black/40 z-10"
@@ -124,7 +166,6 @@ export default function ChatLayout() {
         />
       )}
 
-      {/* MessagePanel */}
       <div className="flex-1 flex flex-col min-w-0">
         <MessagePanel
           contact={activeContact}

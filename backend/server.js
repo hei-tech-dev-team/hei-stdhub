@@ -1,9 +1,23 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 require("dotenv").config();
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: [
+      process.env.CLIENT_URL,
+      "http://localhost:5173",
+      "https://hei-stdhub.vercel.app",
+    ],
+    methods: ["GET", "POST"],
+  },
+});
 
 app.use(
   cors({
@@ -16,8 +30,6 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Fichiers uploadés
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
@@ -28,15 +40,55 @@ app.use("/api/submissions", require("./routes/submissions"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/admin", require("./routes/admin"));
 
-// Santé
 app.get("/api/health", (req, res) =>
   res.json({ status: "ok", time: new Date() }),
 );
 
-// 404 — doit toujours être EN DERNIER
 app.use((req, res) => res.status(404).json({ error: "Route introuvable." }));
 
+// ── Socket.io ──
+const onlineUsers = new Map(); // userId → socketId
+
+io.on("connection", (socket) => {
+  console.log("🔌 Socket connecté:", socket.id);
+
+  // L'utilisateur s'identifie
+  socket.on("user:join", (userId) => {
+    onlineUsers.set(userId, socket.id);
+    socket.userId = userId;
+    // Rejoindre une room personnelle
+    socket.join(`user:${userId}`);
+    console.log(`👤 User ${userId} connecté`);
+  });
+
+  // Message global
+  socket.on("message:global", (msg) => {
+    io.emit("message:global", msg);
+  });
+
+  // Message privé
+  socket.on("message:private", ({ receiverId, msg }) => {
+    // Envoyer au destinataire
+    io.to(`user:${receiverId}`).emit("message:private", msg);
+    // Renvoyer à l'expéditeur aussi
+    io.to(`user:${socket.userId}`).emit("message:private", msg);
+  });
+
+  // Message vu
+  socket.on("message:seen", ({ messageId, senderId }) => {
+    io.to(`user:${senderId}`).emit("message:seen", { messageId });
+  });
+
+  socket.on("disconnect", () => {
+    if (socket.userId) onlineUsers.delete(socket.userId);
+    console.log("🔌 Socket déconnecté:", socket.id);
+  });
+});
+
+// Exporter io pour l'utiliser dans les routes
+app.set("io", io);
+
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () =>
+server.listen(PORT, () =>
   console.log(`🚀 HEI STDhub API → http://localhost:${PORT}`),
 );
