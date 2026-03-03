@@ -3,7 +3,26 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const avatarStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "hei-stdhub/avatars",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ width: 200, height: 200, crop: "fill" }],
+  },
+});
+
+const avatarUpload = multer({ storage: avatarStorage }).single("avatar");
 const router = express.Router();
 
 const makeToken = (user) =>
@@ -207,6 +226,22 @@ router.patch("/avatar", auth, async (req, res) => {
       [avatarPath, req.user.id],
     );
     res.json(rows[0]);
+  });
+});
+router.patch("/avatar", auth, (req, res) => {
+  avatarUpload(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: "Fichier requis." });
+    try {
+      const { rows } = await db.query(
+        `UPDATE users SET avatar=$1 WHERE id=$2
+         RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+        [req.file.path, req.user.id],
+      );
+      res.json(rows[0]);
+    } catch (err) {
+      res.status(500).json({ error: "Erreur serveur." });
+    }
   });
 });
 module.exports = router;
