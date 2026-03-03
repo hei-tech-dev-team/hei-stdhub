@@ -2,13 +2,16 @@ import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPaperPlane,
-  faPlus,
-  faSmile,
+  faPaperclip,
   faChevronLeft,
   faSpinner,
+  faFile,
+  faImage,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 
 export default function MessagePanel({
   contact,
@@ -17,18 +20,23 @@ export default function MessagePanel({
   onSend,
   onOpenContacts,
 }) {
+  const { user } = useAuth();
   const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    onSend(trimmed);
+    setSending(true);
+    await onSend(trimmed);
     setText("");
+    setSending(false);
   };
 
   const handleKey = (e) => {
@@ -38,60 +46,107 @@ export default function MessagePanel({
     }
   };
 
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Fichier trop volumineux (max 10 Mo).");
+      return;
+    }
+    setSending(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/messages/upload", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await onSend(`[FILE:${data.filename}:${data.url}]`);
+    } catch (err) {
+      console.error(err);
+      await onSend(`[Fichier : ${file.name}]`);
+    } finally {
+      setSending(false);
+      e.target.value = "";
+    }
+  };
+
+  const renderContent = (content) => {
+    const fileMatch = content.match(/^\[FILE:(.+):(.+)\]$/);
+    if (fileMatch) {
+      const [, filename, url] = fileMatch;
+      const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+      if (isImage) {
+        return (
+          <a href={url} target="_blank" rel="noreferrer">
+            <img
+              src={url}
+              alt={filename}
+              className="max-w-48 max-h-48 rounded-xl object-cover"
+            />
+          </a>
+        );
+      }
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 text-gold hover:underline text-xs"
+        >
+          <FontAwesomeIcon icon={faFile} />
+          {filename}
+        </a>
+      );
+    }
+    return content;
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#1a2b45]">
+    <div className="flex flex-col h-full bg-[#0f1e33]">
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4
-                   bg-slate-500 border-b border-white/10 shrink-0 rounded-3xl m-4"
+        className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4
+                      bg-[#1a2b45] border-b border-white/10 shrink-0"
       >
         <button
           type="button"
           onClick={onOpenContacts}
-          className="md:hidden text-white/60 hover:text-white
-                     transition mr-1 shrink-0"
+          className="lg:hidden text-white/60 hover:text-white transition shrink-0"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-lg" />
         </button>
 
         {contact.isGlobal ? (
           <div
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white
+            className="w-9 h-9 rounded-full bg-white/10 border border-white/20
                           flex items-center justify-center shrink-0"
           >
             <img
               src={HEI_WHITE_LOGO}
               alt="HEI"
-              className="w-5 h-5 sm:w-6 sm:h-6 object-cover"
+              className="w-5 h-5 object-cover"
             />
           </div>
         ) : (
-          <Avatar name={contact.name} size="md" color="bg-navy" />
+          <Avatar name={contact.name} size="md" color="bg-gold/30" />
         )}
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h3 className="text-white font-bold text-sm truncate">
             {contact.name}
           </h3>
-          {contact.isGlobal && (
-            <p className="text-black text-xs hidden sm:block">
-              Chat global – tous les membres
-            </p>
-          )}
-          {contact.role && (
-            <p className="text-white/40 text-xs capitalize">
-              {contact.role === "teacher" ? "Professeur" : "Étudiant"}
-            </p>
-          )}
+          <p className="text-white/40 text-xs">
+            {contact.isGlobal
+              ? "Chat global – tous les membres"
+              : contact.role === "teacher"
+                ? "Professeur"
+                : "Étudiant"}
+          </p>
         </div>
       </div>
 
       {/* Messages */}
-      <div
-        className="flex-1 overflow-y-auto px-3 sm:px-6 py-4
-                      flex flex-col gap-3"
-      >
-        {/* Chargement */}
+      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-3">
         {loading && (
           <div className="flex justify-center py-10">
             <FontAwesomeIcon
@@ -101,14 +156,17 @@ export default function MessagePanel({
           </div>
         )}
 
-        {/* Vide */}
         {!loading && messages.length === 0 && (
-          <div className="text-center text-white/30 text-sm mt-10">
-            Démarrez la conversation...
+          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
+            <img
+              src={HEI_WHITE_LOGO}
+              alt="HEI"
+              className="w-12 h-12 object-contain"
+            />
+            <p className="text-white text-sm">Démarrez la conversation...</p>
           </div>
         )}
 
-        {/* Liste messages */}
         {!loading &&
           messages.map((msg) => (
             <div
@@ -123,25 +181,25 @@ export default function MessagePanel({
               )}
               <div
                 className={
-                  "flex flex-col max-w-[75%] sm:max-w-xs lg:max-w-md " +
+                  "flex flex-col max-w-[75%] sm:max-w-sm " +
                   (msg.own ? "items-end" : "items-start")
                 }
               >
                 {!msg.own && (
-                  <span className="text-white/40 text-xs mb-1 ml-1">
+                  <span className="text-white/50 text-xs mb-1 ml-1 font-medium">
                     {msg.sender}
                   </span>
                 )}
                 <div
                   className={
-                    "px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl " +
-                    "text-xs sm:text-sm font-medium shadow " +
+                    "px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow " +
+                    "text-xs sm:text-sm font-medium " +
                     (msg.own
-                      ? "bg-white text-navy rounded-br-sm"
-                      : "bg-white/15 text-white rounded-bl-sm")
+                      ? "bg-gold text-white rounded-br-sm"
+                      : "bg-white/10 text-white rounded-bl-sm")
                   }
                 >
-                  {msg.content}
+                  {renderContent(msg.content)}
                 </div>
                 <span className="text-white/30 text-xs mt-1 mx-1">
                   {msg.time}
@@ -149,68 +207,58 @@ export default function MessagePanel({
               </div>
             </div>
           ))}
-
         <div ref={bottomRef} />
       </div>
 
-      {/* Zone de saisie */}
-      <div
-        className="px-3 sm:px-4 py-3 sm:py-4
-                      bg-navy-dark border-t border-white/10 shrink-0"
-      >
-        <div className="flex items-center gap-2 sm:gap-3">
+      {/* Zone saisie */}
+      <div className="px-3 sm:px-4 py-3 bg-[#1a2b45] border-t border-white/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="w-9 h-9 rounded-full border border-white/20 text-white/60
+                             flex items-center justify-center hover:bg-white/10 transition shrink-0"
+          >
+            <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            className="hidden"
+            onChange={handleFile}
+          />
+
           <div
-            className="flex-1 flex items-center bg-white
-                          rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 gap-2"
+            className="flex-1 flex items-center bg-white/10 rounded-2xl
+                          px-4 py-2.5 gap-2 border border-white/10"
           >
             <input
-              className="flex-1 text-xs sm:text-sm text-navy
-                         bg-transparent focus:outline-none
-                         placeholder:text-gray-400"
+              className="flex-1 text-xs sm:text-sm text-white bg-transparent
+                         focus:outline-none placeholder:text-white/30"
               placeholder="Écrire un message..."
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKey}
             />
-            <button
-              type="button"
-              className="text-gray-400 hover:text-gold transition shrink-0"
-            >
-              <FontAwesomeIcon icon={faSmile} className="text-base" />
-            </button>
           </div>
 
           <button
             type="button"
             onClick={handleSend}
-            disabled={!text.trim()}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gold
-                       text-white flex items-center justify-center
-                       hover:opacity-90 transition shadow-lg shrink-0
-                       disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={!text.trim() || sending}
+            className="w-9 h-9 rounded-full bg-gold text-white
+                             flex items-center justify-center hover:opacity-90
+                             transition shadow-lg shrink-0 disabled:opacity-40"
           >
-            <FontAwesomeIcon icon={faPaperPlane} className="text-sm" />
+            {sending ? (
+              <FontAwesomeIcon
+                icon={faSpinner}
+                className="text-sm animate-spin"
+              />
+            ) : (
+              <FontAwesomeIcon icon={faPaperPlane} className="text-sm" />
+            )}
           </button>
-
-          <button
-            type="button"
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full
-                       border border-white/20 text-white/60
-                       flex items-center justify-center
-                       hover:bg-white/10 transition shrink-0"
-            onClick={() => document.getElementById("chat-file").click()}
-          >
-            <FontAwesomeIcon icon={faPlus} className="text-sm" />
-          </button>
-          <input
-            id="chat-file"
-            type="file"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files[0];
-              if (f) onSend(`[Fichier : ${f.name}]`);
-            }}
-          />
         </div>
       </div>
     </div>
