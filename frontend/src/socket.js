@@ -1,8 +1,13 @@
-import { io } from "socket.io-client";
+let socketInstance = null;
 
-const URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-
-export const socket = io(URL, {
-  autoConnect: false,
-  transports: ["websocket", "polling"],
-});
+export const getSocket = () => {
+  if (!socketInstance) {
+    const { io } = require("socket.io-client");
+    const URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    socketInstance = io(URL, {
+      autoConnect: false,
+      transports: ["websocket", "polling"],
+    });
+  }
+  return socketInstance;
+};
