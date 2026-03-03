@@ -79,7 +79,7 @@ export default function ChatLayout() {
 
   // ── Socket.io listeners ──
   useEffect(() => {
-    const socket = getSocket();
+    let cleanup = () => {};
 
     const handleGlobal = (msg) => {
       const formatted = formatMsg(msg);
@@ -114,15 +114,18 @@ export default function ChatLayout() {
       });
     };
 
-    socket.on("message:global", handleGlobal);
-    socket.on("message:private", handlePrivate);
-    socket.on("message:seen", handleSeen);
+    getSocket().then((socket) => {
+      socket.on("message:global", handleGlobal);
+      socket.on("message:private", handlePrivate);
+      socket.on("message:seen", handleSeen);
+      cleanup = () => {
+        socket.off("message:global", handleGlobal);
+        socket.off("message:private", handlePrivate);
+        socket.off("message:seen", handleSeen);
+      };
+    });
 
-    return () => {
-      socket.off("message:global", handleGlobal);
-      socket.off("message:private", handlePrivate);
-      socket.off("message:seen", handleSeen);
-    };
+    return () => cleanup();
   }, [user, activeContact, formatMsg]);
 
   const sendMessage = async (content) => {
