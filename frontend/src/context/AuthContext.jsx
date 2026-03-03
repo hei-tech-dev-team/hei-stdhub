@@ -7,7 +7,24 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  useEffect(() => {
+    const token = localStorage.getItem("hei_token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    api
+      .get("/auth/me")
+      .then(({ data }) => {
+        setUser(data);
+        if (!socket.connected) {
+          socket.connect();
+          socket.emit("user:join", data.id);
+        }
+      })
+      .catch(() => localStorage.removeItem("hei_token"))
+      .finally(() => setLoading(false));
+  }, []);
   useEffect(() => {
     const token = localStorage.getItem("hei_token");
     if (!token) {
