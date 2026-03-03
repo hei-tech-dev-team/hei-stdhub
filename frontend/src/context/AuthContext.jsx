@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/axios";
-import { getSocket } from "../socket";
 
 const AuthContext = createContext(null);
 
@@ -16,14 +15,7 @@ export function AuthProvider({ children }) {
     }
     api
       .get("/auth/me")
-      .then(async ({ data }) => {
-        setUser(data);
-        const socket = await getSocket();
-        if (!socket.connected) {
-          socket.connect();
-          socket.emit("user:join", data.id);
-        }
-      })
+      .then(({ data }) => setUser(data))
       .catch(() => localStorage.removeItem("hei_token"))
       .finally(() => setLoading(false));
   }, []);
@@ -32,11 +24,6 @@ export function AuthProvider({ children }) {
     const { data } = await api.post("/auth/login", { ref, password });
     localStorage.setItem("hei_token", data.token);
     setUser(data.user);
-    const socket = await getSocket();
-    if (!socket.connected) {
-      socket.connect();
-      socket.emit("user:join", data.user.id);
-    }
     return data.user;
   };
 
@@ -44,19 +31,11 @@ export function AuthProvider({ children }) {
     const { data } = await api.post("/auth/register", formData);
     localStorage.setItem("hei_token", data.token);
     setUser(data.user);
-    const socket = await getSocket();
-    if (!socket.connected) {
-      socket.connect();
-      socket.emit("user:join", data.user.id);
-    }
     return data.user;
   };
 
-  const logout = async () => {
+  const logout = () => {
     localStorage.removeItem("hei_token");
-    const socket = await getSocket();
-    socket.disconnect();
-    socketInstance = null;
     setUser(null);
   };
 
