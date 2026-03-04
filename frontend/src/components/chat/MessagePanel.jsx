@@ -131,38 +131,29 @@ export default function MessagePanel({
 
   return (
     <div className="flex flex-col h-full bg-[#0f1e33]">
-      {/* Header */}
-      <div
-        className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 sm:py-4
-                bg-[#1a2b45] border-b border-white/10 shrink-0"
-      >
-        <ContactAvatar />
+ {/* Header */}
+<div className="flex flex-col items-center justify-center px-4 sm:px-5 py-3 sm:py-4
+                bg-[#1a2b45] border-b border-white/10 shrink-0 relative">
 
-        {/* Nom centré */}
-        <div className="flex-1 text-center min-w-0">
-          <h3 className="text-white font-bold text-sm truncate">
-            {contact.name}
-          </h3>
-          <p className="text-white/40 text-xs">
-            {contact.isGlobal
-              ? "Chat global – tous les membres"
-              : contact.role === "teacher"
-                ? "Professeur"
-                : "Étudiant"}
-          </p>
-        </div>
+  {/* Bouton retour à droite en absolu */}
+  <button type="button" onClick={onOpenContacts}
+          className="lg:hidden absolute right-4 top-1/2 -translate-y-1/2
+                     w-8 h-8 rounded-full bg-white/10 text-white
+                     flex items-center justify-center hover:bg-white/20 transition">
+    <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
+  </button>
 
-        {/* Bouton retour à droite */}
-        <button
-          type="button"
-          onClick={onOpenContacts}
-          className="lg:hidden w-8 h-8 rounded-full bg-white/10 text-white
-                     flex items-center justify-center hover:bg-white/20
-                     transition shrink-0"
-        >
-          <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
-        </button>
-      </div>
+  <ContactAvatar />
+  
+  <div className="text-center mt-1">
+    <h3 className="text-white font-bold text-sm">{contact.name}</h3>
+    <p className="text-white/40 text-xs">
+      {contact.isGlobal
+        ? "Chat global – tous les membres"
+        : contact.role === "teacher" ? "Professeur" : "Étudiant"}
+    </p>
+  </div>
+</div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-3">
