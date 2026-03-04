@@ -172,9 +172,9 @@ export default function MessagePanel({
         {!loading && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
             <img
-              src="/frontend/src/assets/images/STDHUB logos(2).png"
+              src={HEI_WHITE_LOGO}
               alt="HEI"
-              className="w-12 h-12 object-contain"
+              className="w-12 h-12 object-contain rounded-full"
             />
             <p className="text-white text-sm">Démarrez la conversation...</p>
           </div>
