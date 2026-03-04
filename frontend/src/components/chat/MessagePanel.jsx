@@ -133,12 +133,13 @@ export default function MessagePanel({
     <div className="flex flex-col h-full bg-[#0f1e33]">
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4
+        className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 sm:py-4
                 bg-[#1a2b45] border-b border-white/10 shrink-0"
       >
         <ContactAvatar />
 
-        <div className="min-w-0 flex-1">
+        {/* Nom centré */}
+        <div className="flex-1 text-center min-w-0">
           <h3 className="text-white font-bold text-sm truncate">
             {contact.name}
           </h3>
@@ -151,7 +152,7 @@ export default function MessagePanel({
           </p>
         </div>
 
-        {/* Bouton retour à DROITE sur mobile */}
+        {/* Bouton retour à droite */}
         <button
           type="button"
           onClick={onOpenContacts}
@@ -161,7 +162,7 @@ export default function MessagePanel({
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
-      </div>  
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-3">
