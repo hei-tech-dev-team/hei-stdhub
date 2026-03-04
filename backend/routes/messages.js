@@ -1,6 +1,8 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const multer = require("multer");
+const path = require("path");
 const router = express.Router();
 
 // GET /api/messages/search?q=...
@@ -9,7 +11,7 @@ router.get("/search", auth, async (req, res) => {
   if (!q?.trim()) return res.json([]);
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, pseudo, role, level
+      `SELECT id, ref, pseudo, role, level, avatar
        FROM users
        WHERE id != $1
          AND (pseudo ILIKE $2 OR ref ILIKE $2)
@@ -27,7 +29,7 @@ router.get("/search", auth, async (req, res) => {
 router.get("/contacts", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, pseudo, role, level
+      `SELECT id, ref, pseudo, role, level, avatar
        FROM users
        WHERE id != $1
        ORDER BY
@@ -45,7 +47,8 @@ router.get("/contacts", auth, async (req, res) => {
 router.get("/global", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref, u.role AS sender_role
+      `SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+              u.role AS sender_role, u.avatar AS sender_avatar
        FROM messages m
        LEFT JOIN users u ON m.sender_id = u.id
        WHERE m.is_global = TRUE
@@ -62,7 +65,7 @@ router.get("/global", auth, async (req, res) => {
 router.get("/private/:userId", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT m.*, u.pseudo AS sender_pseudo
+      `SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
        FROM messages m
        LEFT JOIN users u ON m.sender_id = u.id
        WHERE m.is_global = FALSE
@@ -97,13 +100,14 @@ router.post("/", auth, async (req, res) => {
     const msg = rows[0];
 
     const { rows: userRows } = await db.query(
-      "SELECT pseudo FROM users WHERE id=$1",
+      "SELECT pseudo, avatar FROM users WHERE id=$1",
       [req.user.id],
     );
 
     const fullMsg = {
       ...msg,
       sender_pseudo: userRows[0]?.pseudo || "Inconnu",
+      sender_avatar: userRows[0]?.avatar || null,
     };
 
     const io = req.app.get("io");
@@ -145,9 +149,6 @@ router.patch("/:id/seen", auth, async (req, res) => {
 });
 
 // POST /api/messages/upload
-const multer = require("multer");
-const path = require("path");
-
 const chatStorage = multer.diskStorage({
   destination: "uploads/chat/",
   filename: (_, file, cb) =>
