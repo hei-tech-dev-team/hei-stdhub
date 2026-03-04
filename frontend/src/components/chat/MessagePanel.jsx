@@ -87,7 +87,7 @@ export default function MessagePanel({
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 text-gold hover:underline text-xs"
+          className="flex items-center gap-2 text-slate-950 hover:underline text-xs"
         >
           <FontAwesomeIcon icon={faFile} />
           {filename}
