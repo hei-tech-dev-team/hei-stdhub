@@ -18,10 +18,11 @@ api.interceptors.response.use(
     // Rediriger vers login SEULEMENT si c'est une route protégée
     // et PAS une route d'auth comme /password ou /login
     const url = err.config?.url || "";
-    const isAuthRoute = url.includes("/auth/login") ||
-                        url.includes("/auth/password") ||
-                        url.includes("/auth/register") ||
-                        url.includes("/auth/verify-invite");
+    const isAuthRoute =
+      url.includes("/auth/login") ||
+      url.includes("/auth/password") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/verify-invite");
     if (err.response?.status === 401 && !isAuthRoute) {
       localStorage.removeItem("hei_token");
       window.location.href = "/login";
