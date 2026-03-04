@@ -134,19 +134,8 @@ export default function MessagePanel({
       {/* Header */}
       <div
         className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4
-                      bg-[#1a2b45] border-b border-white/10 shrink-0"
+                bg-[#1a2b45] border-b border-white/10 shrink-0"
       >
-        {/* Bouton retour TOUJOURS visible sur mobile */}
-        <button
-          type="button"
-          onClick={onOpenContacts}
-          className="lg:hidden w-8 h-8 rounded-full bg-white/10 text-white
-                           flex items-center justify-center hover:bg-white/20
-                           transition shrink-0"
-        >
-          <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
-        </button>
-
         <ContactAvatar />
 
         <div className="min-w-0 flex-1">
@@ -161,7 +150,18 @@ export default function MessagePanel({
                 : "Étudiant"}
           </p>
         </div>
-      </div>
+
+        {/* Bouton retour à DROITE sur mobile */}
+        <button
+          type="button"
+          onClick={onOpenContacts}
+          className="lg:hidden w-8 h-8 rounded-full bg-white/10 text-white
+                     flex items-center justify-center hover:bg-white/20
+                     transition shrink-0"
+        >
+          <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
+        </button>
+      </div>  
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-3">
