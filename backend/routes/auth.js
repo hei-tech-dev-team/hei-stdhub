@@ -6,6 +6,12 @@ const auth = require("../middleware/auth");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
+const capitalize = (str) =>
+  str
+    .trim()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -119,8 +125,19 @@ router.post("/login", async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar FROM users WHERE id=$1",
-      [req.user.id],
+      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level)
+   VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+   RETURNING id, ref, nom, prenom, email, pseudo, role, level`,
+      [
+        ref.toUpperCase(),
+        capitalize(nom),
+        capitalize(prenom),
+        email,
+        capitalize(pseudo),
+        hash,
+        role,
+        level || null,
+      ],
     );
     if (!rows.length) return res.status(404).json({ error: "Introuvable." });
     res.json(rows[0]);
