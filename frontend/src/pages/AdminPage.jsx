@@ -75,12 +75,17 @@ export default function AdminPage() {
   const [showTop, setShowTop] = useState(false);
   const mainRef = useRef(null);
 
+  // Charger stats avec polling 3 secondes
   useEffect(() => {
-    const el = mainRef.current;
-    if (!el) return;
-    const onScroll = () => setShowTop(el.scrollTop > 1);
-    el.addEventListener("scroll", onScroll);
-    return () => el.removeEventListener("scroll", onScroll);
+    const fetchStats = () => {
+      api
+        .get("/admin/stats")
+        .then(({ data }) => setStats(data))
+        .catch(console.error);
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 3000);
+    return () => clearInterval(interval);
   }, []);
   // Modal invitation
   const [showInvModal, setShowInvModal] = useState(false);
