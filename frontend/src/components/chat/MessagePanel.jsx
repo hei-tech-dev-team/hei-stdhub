@@ -6,6 +6,7 @@ import {
   faChevronLeft,
   faSpinner,
   faFile,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -61,7 +62,6 @@ export default function MessagePanel({
       });
       await onSend(`[FILE:${data.filename}:${data.url}]`);
     } catch (err) {
-      console.error(err);
       await onSend(`[Fichier : ${file.name}]`);
     } finally {
       setSending(false);
@@ -100,6 +100,35 @@ export default function MessagePanel({
     return content;
   };
 
+  const ContactAvatar = () => {
+    if (contact.isGlobal) {
+      return (
+        <div
+          className="w-9 h-9 rounded-full bg-white/10 border border-white/20
+                        flex items-center justify-center shrink-0"
+        >
+          <img
+            src={HEI_WHITE_LOGO}
+            alt="HEI"
+            className="w-5 h-5 object-cover"
+          />
+        </div>
+      );
+    }
+    if (contact.avatar) {
+      return (
+        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border-2 border-white/20">
+          <img
+            src={contact.avatar}
+            alt={contact.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      );
+    }
+    return <Avatar name={contact.name} size="md" color="bg-gold/30" />;
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#0f1e33]">
       {/* Header */}
@@ -107,28 +136,18 @@ export default function MessagePanel({
         className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4
                       bg-[#1a2b45] border-b border-white/10 shrink-0"
       >
+        {/* Bouton retour TOUJOURS visible sur mobile */}
         <button
           type="button"
           onClick={onOpenContacts}
-          className="lg:hidden text-white/60 hover:text-white transition shrink-0"
+          className="lg:hidden w-8 h-8 rounded-full bg-white/10 text-white
+                           flex items-center justify-center hover:bg-white/20
+                           transition shrink-0"
         >
-          <FontAwesomeIcon icon={faChevronLeft} className="text-lg" />
+          <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
 
-        {contact.isGlobal ? (
-          <div
-            className="w-9 h-9 rounded-full bg-white/10 border border-white/20
-                          flex items-center justify-center shrink-0"
-          >
-            <img
-              src={HEI_WHITE_LOGO}
-              alt="HEI"
-              className="w-5 h-5 object-cover"
-            />
-          </div>
-        ) : (
-          <Avatar name={contact.name} size="md" color="bg-gold/30" />
-        )}
+        <ContactAvatar />
 
         <div className="min-w-0 flex-1">
           <h3 className="text-white font-bold text-sm truncate">
@@ -175,9 +194,18 @@ export default function MessagePanel({
                 (msg.own ? "flex-row-reverse" : "flex-row")
               }
             >
-              {!msg.own && (
-                <Avatar name={msg.sender} size="sm" color="bg-white/20" />
-              )}
+              {!msg.own &&
+                (msg.senderAvatar ? (
+                  <div className="w-7 h-7 rounded-full overflow-hidden shrink-0">
+                    <img
+                      src={msg.senderAvatar}
+                      alt={msg.sender}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <Avatar name={msg.sender} size="sm" color="bg-white/20" />
+                ))}
               <div
                 className={
                   "flex flex-col max-w-[75%] sm:max-w-sm " +
@@ -200,8 +228,6 @@ export default function MessagePanel({
                 >
                   {renderContent(msg.content)}
                 </div>
-
-                {/* Timestamp + vu */}
                 <div className="flex items-center gap-1 mt-1 mx-1">
                   <span className="text-white/30 text-xs">{msg.time}</span>
                   {msg.own && !msg.seen && (
@@ -218,17 +244,13 @@ export default function MessagePanel({
       </div>
 
       {/* Zone saisie */}
-      <div
-        className="px-3 sm:px-4 py-3 bg-[#1a2b45]
-                      border-t border-white/10 shrink-0"
-      >
+      <div className="px-3 sm:px-4 py-3 bg-[#1a2b45] border-t border-white/10 shrink-0">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-9 h-9 rounded-full border border-white/20
-                             text-white/60 flex items-center justify-center
-                             hover:bg-white/10 transition shrink-0"
+            className="w-9 h-9 rounded-full border border-white/20 text-white/60
+                             flex items-center justify-center hover:bg-white/10 transition shrink-0"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
           </button>
@@ -257,9 +279,9 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-9 h-9 rounded-full bg-gold text-white
-                             flex items-center justify-center hover:opacity-90
-                             transition shadow-lg shrink-0 disabled:opacity-40"
+            className="w-9 h-9 rounded-full bg-gold text-white flex items-center
+                             justify-center hover:opacity-90 transition shadow-lg
+                             shrink-0 disabled:opacity-40"
           >
             {sending ? (
               <FontAwesomeIcon
