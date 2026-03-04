@@ -6,11 +6,9 @@ import {
   faChevronLeft,
   faSpinner,
   faFile,
-  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
-import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 
 export default function MessagePanel({
@@ -20,7 +18,6 @@ export default function MessagePanel({
   onSend,
   onOpenContacts,
 }) {
-  const { user } = useAuth();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
