@@ -40,20 +40,17 @@ export default function ChatLayout() {
       .catch(console.error);
   }, []);
 
-  const formatMsg = useCallback(
-    (m) => ({
-      id: m.id,
-      sender: m.sender_pseudo || "Inconnu",
-      content: m.content,
-      own: m.sender_id === user.id,
-      seen: m.seen || false,
-      time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    }),
-    [user],
-  );
+  const formatMsg = useCallback((m) => ({
+  id: m.id,
+  sender: m.sender_pseudo || "Inconnu",
+  senderAvatar: m.sender_avatar || null,
+  content: m.content,
+  own: m.sender_id === user.id,
+  seen: m.seen || false,
+  time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
+    hour: "2-digit", minute: "2-digit",
+  }),
+}), [user]);
 
   const loadMessages = useCallback(
     async (contact, silent = false) => {
