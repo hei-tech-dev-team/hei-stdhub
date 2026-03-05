@@ -2,8 +2,38 @@ const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-const path = require("path");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const router = express.Router();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const chatStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder: "hei-stdhub/chat",
+    resource_type: "auto",
+    allowed_formats: [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "pdf",
+      "docx",
+      "xlsx",
+    ],
+  }),
+});
+
+const chatUpload = multer({
+  storage: chatStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).single("file");
 
 // GET /api/messages/search?q=...
 router.get("/search", auth, async (req, res) => {
@@ -148,24 +178,16 @@ router.patch("/:id/seen", auth, async (req, res) => {
   }
 });
 
-// POST /api/messages/upload
-const chatStorage = multer.diskStorage({
-  destination: "uploads/chat/",
-  filename: (_, file, cb) =>
-    cb(null, `chat_${Date.now()}${path.extname(file.originalname)}`),
-});
-const chatUpload = multer({
-  storage: chatStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).single("file");
-
+// POST /api/messages/upload — Cloudinary
 router.post("/upload", auth, (req, res) => {
   chatUpload(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
+    const isImage = req.file.mimetype?.startsWith("image/");
     res.json({
-      filename: req.file.filename,
-      url: `${process.env.BACKEND_URL || "http://localhost:3001"}/uploads/chat/${req.file.filename}`,
+      filename: req.file.originalname,
+      url: req.file.secure_url || req.file.path,
+      isImage,
     });
   });
 });
