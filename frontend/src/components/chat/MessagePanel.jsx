@@ -77,12 +77,12 @@ export default function MessagePanel({
       if (type === "img") {
         return (
           <a href={url} target="_blank" rel="noreferrer">
-            <img
-              src={url}
-              alt={filename}
-              className="max-w-48 max-h-48 rounded-xl object-cover
-                            cursor-pointer hover:opacity-90 transition"
-            />
+<img
+  src={url}
+  alt={filename}
+  className="max-w-48 max-h-48 rounded-lg object-cover
+             cursor-pointer hover:opacity-90 transition"
+/>
           </a>
         );
       }
