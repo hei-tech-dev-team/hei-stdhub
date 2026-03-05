@@ -6,7 +6,6 @@ import { useAuth } from "../../context/AuthContext";
 export default function Navbar({ title }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const avatarUrl = user?.avatar || null;
 
   return (
