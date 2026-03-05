@@ -1,31 +1,37 @@
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faPaperPlane,
-  faPaperclip,
-  faChevronLeft,
-  faSpinner,
-  faFile,
+  faPaperPlane, faPaperclip, faChevronLeft,
+  faSpinner, faFile, faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
 import api from "../../api/axios";
 
 export default function MessagePanel({
-  contact,
-  messages,
-  loading,
-  onSend,
-  onOpenContacts,
+  contact, messages, loading, onSend, onOpenContacts,
+  isAtBottom, onAtBottomChange, onScrollToBottom,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
+  const scrollRef = useRef(null);
 
+  // Scroll automatique seulement si on est en bas
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (isAtBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isAtBottom]);
+
+  // Détecter si on est en bas
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    onAtBottomChange(atBottom);
+  };
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -34,6 +40,9 @@ export default function MessagePanel({
     await onSend(trimmed);
     setText("");
     setSending(false);
+    // Scroll en bas après envoi
+    onAtBottomChange(true);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
   const handleKey = (e) => {
@@ -71,57 +80,46 @@ export default function MessagePanel({
   const isFileMessage = (content) => content.startsWith("[FILE:");
 
   const renderContent = (content) => {
-    // Nouveau format : [FILE:filename:url:img|file]
     const fileMatchNew = content.match(/^\[FILE:(.+):(.+):(img|file)\]$/);
     if (fileMatchNew) {
       const [, filename, url, type] = fileMatchNew;
       if (type === "img") {
         return (
           <a href={url} target="_blank" rel="noreferrer">
-            <img
-              src={url}
-              alt={filename}
-              className="max-w-56 max-h-56 object-cover rounded-2xl
-                         cursor-pointer hover:opacity-90 transition block"
-            />
+            <img src={url} alt={filename}
+                 className="max-w-56 max-h-56 object-cover rounded-2xl
+                            cursor-pointer hover:opacity-90 transition block" />
           </a>
         );
       }
       return (
         <a href={url} target="_blank" rel="noreferrer"
            className="flex items-center gap-2 text-blue-300
-                      hover:text-blue-200 hover:underline text-xs font-medium
-                      px-3 py-2">
+                      hover:text-blue-200 hover:underline text-xs font-medium px-3 py-2">
           <FontAwesomeIcon icon={faFile} />
           <span>{filename}</span>
         </a>
       );
     }
 
-    // Ancien format : [FILE:filename:url]
     const fileMatchOld = content.match(/^\[FILE:(.+):(.+)\]$/);
     if (fileMatchOld) {
       const [, filename, url] = fileMatchOld;
-      const isImage =
-        /\.(jpg|jpeg|png|gif|webp)/i.test(url) ||
-        /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+      const isImage = /\.(jpg|jpeg|png|gif|webp)/i.test(url) ||
+                      /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
       if (isImage) {
         return (
           <a href={url} target="_blank" rel="noreferrer">
-            <img
-              src={url}
-              alt={filename}
-              className="max-w-56 max-h-56 object-cover rounded-2xl
-                         cursor-pointer hover:opacity-90 transition block"
-            />
+            <img src={url} alt={filename}
+                 className="max-w-56 max-h-56 object-cover rounded-2xl
+                            cursor-pointer hover:opacity-90 transition block" />
           </a>
         );
       }
       return (
         <a href={url} target="_blank" rel="noreferrer"
            className="flex items-center gap-2 text-blue-300
-                      hover:text-blue-200 hover:underline text-xs font-medium
-                      px-3 py-2">
+                      hover:text-blue-200 hover:underline text-xs font-medium px-3 py-2">
           <FontAwesomeIcon icon={faFile} />
           <span>{filename}</span>
         </a>
@@ -176,7 +174,8 @@ export default function MessagePanel({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-3">
+      <div ref={scrollRef} onScroll={handleScroll}
+           className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-3 relative">
         {loading && (
           <div className="flex justify-center py-10">
             <FontAwesomeIcon icon={faSpinner}
@@ -213,8 +212,6 @@ export default function MessagePanel({
                   {msg.sender}
                 </span>
               )}
-
-              {/* Bulle — pas de padding si c'est une image */}
               <div className={
                 "rounded-2xl shadow overflow-hidden " +
                 "text-xs sm:text-sm font-medium " +
@@ -227,7 +224,6 @@ export default function MessagePanel({
               }>
                 {renderContent(msg.content)}
               </div>
-
               <div className="flex items-center gap-1 mt-1 mx-1">
                 <span className="text-white/30 text-xs">{msg.time}</span>
                 {msg.own && !msg.seen && (
@@ -241,6 +237,23 @@ export default function MessagePanel({
           </div>
         ))}
         <div ref={bottomRef} />
+
+        {/* Bouton flottant retour en bas */}
+        {!isAtBottom && (
+          <button
+            type="button"
+            onClick={() => {
+              onScrollToBottom();
+              bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="fixed bottom-20 right-6 w-10 h-10 rounded-full
+                       bg-white/10 backdrop-blur-md border border-white/20
+                       text-white flex items-center justify-center
+                       hover:bg-white/20 transition shadow-lg z-10"
+            title="Revenir en bas">
+            <FontAwesomeIcon icon={faChevronDown} className="text-sm" />
+          </button>
+        )}
       </div>
 
       {/* Zone saisie */}

@@ -17,12 +17,18 @@ export default function ChatLayout() {
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const activeContactRef = useRef(activeContact);
+  const isAtBottomRef = useRef(true);
   const pollingRef = useRef(null);
 
   useEffect(() => {
     activeContactRef.current = activeContact;
   }, [activeContact]);
+
+  useEffect(() => {
+    isAtBottomRef.current = isAtBottom;
+  }, [isAtBottom]);
 
   useEffect(() => {
     api
@@ -80,15 +86,16 @@ export default function ChatLayout() {
     [formatMsg],
   );
 
-  // Charger au changement de contact
   useEffect(() => {
     if (activeContact) loadMessages(activeContact);
   }, [activeContact, loadMessages]);
 
-  // Polling toutes les 3 secondes
+  // Polling — seulement si l'utilisateur est en bas
   useEffect(() => {
     pollingRef.current = setInterval(() => {
-      loadMessages(activeContactRef.current, true);
+      if (isAtBottomRef.current) {
+        loadMessages(activeContactRef.current, true);
+      }
     }, 3000);
     return () => clearInterval(pollingRef.current);
   }, [loadMessages]);
@@ -99,7 +106,6 @@ export default function ChatLayout() {
         ? { content, is_global: true }
         : { content, receiver_id: activeContact.id, is_global: false };
       await api.post("/messages", payload);
-      // Recharger immédiatement après envoi
       loadMessages(activeContact, true);
     } catch (err) {
       console.error(err);
@@ -109,6 +115,13 @@ export default function ChatLayout() {
   const handleSelectContact = (contact) => {
     setActiveContact(contact);
     setShowContactList(false);
+    setIsAtBottom(true);
+  };
+
+  // Déclencher refresh manuel quand on revient en bas
+  const handleScrollToBottom = () => {
+    setIsAtBottom(true);
+    loadMessages(activeContactRef.current, true);
   };
 
   return (
@@ -142,6 +155,9 @@ export default function ChatLayout() {
           loading={loadingMessages}
           onSend={sendMessage}
           onOpenContacts={() => setShowContactList(true)}
+          isAtBottom={isAtBottom}
+          onAtBottomChange={setIsAtBottom}
+          onScrollToBottom={handleScrollToBottom}
         />
       </div>
     </div>
