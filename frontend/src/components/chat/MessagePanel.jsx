@@ -57,7 +57,10 @@ export default function MessagePanel({
       const { data } = await api.post("/messages/upload", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      await onSend(`[FILE:${data.filename}:${data.url}]`);
+      // On stocke isImage dans le message pour savoir comment l'afficher
+      await onSend(
+        `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}]`,
+      );
     } catch (err) {
       await onSend(`[Fichier : ${file.name}]`);
     } finally {
@@ -67,17 +70,18 @@ export default function MessagePanel({
   };
 
   const renderContent = (content) => {
-    const fileMatch = content.match(/^\[FILE:(.+):(.+)\]$/);
-    if (fileMatch) {
-      const [, filename, url] = fileMatch;
-      const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
-      if (isImage) {
+    // Nouveau format avec type : [FILE:filename:url:img|file]
+    const fileMatchNew = content.match(/^\[FILE:(.+):(.+):(img|file)\]$/);
+    if (fileMatchNew) {
+      const [, filename, url, type] = fileMatchNew;
+      if (type === "img") {
         return (
           <a href={url} target="_blank" rel="noreferrer">
             <img
               src={url}
               alt={filename}
-              className="max-w-48 max-h-48 rounded-xl object-cover"
+              className="max-w-48 max-h-48 rounded-xl object-cover
+                            cursor-pointer hover:opacity-90 transition"
             />
           </a>
         );
@@ -87,13 +91,48 @@ export default function MessagePanel({
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 text-white hover:underline text-xs"
+          className="flex items-center gap-2 text-blue-300
+                      hover:text-blue-200 hover:underline text-xs font-medium"
         >
           <FontAwesomeIcon icon={faFile} />
-          {filename}
+          <span>{filename}</span>
         </a>
       );
     }
+
+    // Ancien format sans type : [FILE:filename:url]
+    const fileMatchOld = content.match(/^\[FILE:(.+):(.+)\]$/);
+    if (fileMatchOld) {
+      const [, filename, url] = fileMatchOld;
+      const isImage =
+        /\.(jpg|jpeg|png|gif|webp)/i.test(url) ||
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+      if (isImage) {
+        return (
+          <a href={url} target="_blank" rel="noreferrer">
+            <img
+              src={url}
+              alt={filename}
+              className="max-w-48 max-h-48 rounded-xl object-cover
+                            cursor-pointer hover:opacity-90 transition"
+            />
+          </a>
+        );
+      }
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 text-blue-300
+                      hover:text-blue-200 hover:underline text-xs font-medium"
+        >
+          <FontAwesomeIcon icon={faFile} />
+          <span>{filename}</span>
+        </a>
+      );
+    }
+
     return content;
   };
 
@@ -130,22 +169,21 @@ export default function MessagePanel({
     <div className="flex flex-col h-full bg-[#0f1e33]">
       {/* Header */}
       <div
-        className="flex flex-col items-center justify-center px-4 sm:px-5 py-3 sm:py-4
-                bg-[#1a2b45] border-b border-white/10 shrink-0 relative"
+        className="flex flex-col items-center justify-center
+                      px-4 sm:px-5 py-3 sm:py-4
+                      bg-[#1a2b45] border-b border-white/10 shrink-0 relative"
       >
-        {/* Bouton retour à droite en absolu */}
         <button
           type="button"
           onClick={onOpenContacts}
           className="lg:hidden absolute right-4 top-1/2 -translate-y-1/2
-                     w-8 h-8 rounded-full bg-white/10 text-white
-                     flex items-center justify-center hover:bg-white/20 transition"
+                           w-8 h-8 rounded-full bg-white/10 text-white
+                           flex items-center justify-center
+                           hover:bg-white/20 transition"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
-
         <ContactAvatar />
-
         <div className="text-center mt-1">
           <h3 className="text-white font-bold text-sm">{contact.name}</h3>
           <p className="text-white/40 text-xs">
@@ -239,13 +277,17 @@ export default function MessagePanel({
       </div>
 
       {/* Zone saisie */}
-      <div className="px-3 sm:px-4 py-3 bg-[#1a2b45] border-t border-white/10 shrink-0">
+      <div
+        className="px-3 sm:px-4 py-3 bg-[#1a2b45]
+                      border-t border-white/10 shrink-0"
+      >
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-9 h-9 rounded-full border border-white/20 text-white/60
-                             flex items-center justify-center hover:bg-white/10 transition shrink-0"
+            className="w-9 h-9 rounded-full border border-white/20
+                             text-white/60 flex items-center justify-center
+                             hover:bg-white/10 transition shrink-0"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
           </button>
@@ -274,9 +316,9 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-9 h-9 rounded-full bg-gold text-white flex items-center
-                             justify-center hover:opacity-90 transition shadow-lg
-                             shrink-0 disabled:opacity-40"
+            className="w-9 h-9 rounded-full bg-gold text-white
+                             flex items-center justify-center hover:opacity-90
+                             transition shadow-lg shrink-0 disabled:opacity-40"
           >
             {sending ? (
               <FontAwesomeIcon
