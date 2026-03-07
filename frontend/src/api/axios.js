@@ -15,18 +15,22 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    // Rediriger vers login SEULEMENT si c'est une route protégée
-    // et PAS une route d'auth comme /password ou /login
     const url = err.config?.url || "";
     const isAuthRoute =
       url.includes("/auth/login") ||
       url.includes("/auth/password") ||
       url.includes("/auth/register") ||
       url.includes("/auth/verify-invite");
-    if (err.response?.status === 401 && !isAuthRoute) {
+
+    // Ne rediriger que si c'est un vrai 401 et pas un problème réseau
+    const is401 = err.response?.status === 401;
+    const isNetworkError = !err.response;
+
+    if (is401 && !isAuthRoute && !isNetworkError) {
       localStorage.removeItem("hei_token");
       window.location.href = "/login";
     }
+
     return Promise.reject(err);
   },
 );
