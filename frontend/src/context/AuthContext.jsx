@@ -13,11 +13,15 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    api
-      .get("/auth/me")
-      .then(({ data }) => setUser(data))
-      .catch(() => localStorage.removeItem("hei_token"))
-      .finally(() => setLoading(false));
+api.get("/auth/me")
+  .then(({ data }) => setUser(data))
+  .catch((err) => {
+    // Supprimer le token seulement si c'est un vrai 401
+    if (err.response?.status === 401) {
+      localStorage.removeItem("hei_token");
+    }
+  })
+  .finally(() => setLoading(false));
   }, []);
 
   const login = async (ref, password) => {
