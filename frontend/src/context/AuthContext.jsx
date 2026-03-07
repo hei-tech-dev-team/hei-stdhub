@@ -9,24 +9,43 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem("hei_token");
+    const savedUser = localStorage.getItem("hei_user");
+
     if (!token) {
       setLoading(false);
       return;
     }
-api.get("/auth/me")
-  .then(({ data }) => setUser(data))
-  .catch((err) => {
-    // Supprimer le token seulement si c'est un vrai 401
-    if (err.response?.status === 401) {
-      localStorage.removeItem("hei_token");
+
+    // Charger l'user depuis localStorage immédiatement
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (_) {}
     }
-  })
-  .finally(() => setLoading(false));
+
+    // Puis rafraîchir depuis l'API en arrière-plan
+    api
+      .get("/auth/me")
+      .then(({ data }) => {
+        setUser(data);
+        localStorage.setItem("hei_user", JSON.stringify(data));
+      })
+      .catch((err) => {
+        // Supprimer seulement si vrai 401
+        if (err.response?.status === 401) {
+          localStorage.removeItem("hei_token");
+          localStorage.removeItem("hei_user");
+          setUser(null);
+        }
+        // Erreur réseau = cold start Render, on garde l'user en cache
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (ref, password) => {
     const { data } = await api.post("/auth/login", { ref, password });
     localStorage.setItem("hei_token", data.token);
+    localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   };
@@ -34,12 +53,14 @@ api.get("/auth/me")
   const register = async (formData) => {
     const { data } = await api.post("/auth/register", formData);
     localStorage.setItem("hei_token", data.token);
+    localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   };
 
   const logout = () => {
     localStorage.removeItem("hei_token");
+    localStorage.removeItem("hei_user");
     setUser(null);
   };
 
