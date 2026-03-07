@@ -151,8 +151,11 @@ export default function ContactList({ contacts, activeId, onSelect }) {
                       (isActive ? "text-navy/60" : "text-white/40")
                     }
                   >
-                    {contact.role === "teacher" ? "Professeur" : "Étudiant"}
-                  </span>
+{contact.role === "teacher" 
+  ? "Professeur" 
+  : contact.role === "admin" 
+    ? "Admin" 
+    : "Étudiant"}                  </span>
                 )}
               </div>
             </button>
