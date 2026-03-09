@@ -55,7 +55,7 @@ describe("🔐 AUTH", () => {
       .send({ ref: "ADMIN001", password: "password" });
 
     const token = loginRes.body.token;
-
+ console.log("Token obtenu:", token);
     const res = await request(app)
       .get("/api/auth/me")
       .set("Authorization", `Bearer ${token}`);
