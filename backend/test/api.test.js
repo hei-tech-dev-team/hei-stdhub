@@ -17,7 +17,7 @@ describe("🔐 AUTH", () => {
   it("LOGIN réussi admin", async () => {
     const res = await request(app)
       .post("/api/auth/login")
-      .send({ ref: "ADMIN001", password: "admin123" });
+      .send({ ref: "ADMIN001", password: "password" });
     expect(res.status).to.equal(200);
     expect(res.body).to.have.property("token");
     adminToken = res.body.token;
