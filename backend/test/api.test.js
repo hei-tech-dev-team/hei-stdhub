@@ -13,13 +13,19 @@ before(async () => {
     .post("/api/auth/login")
     .send({ ref: "ADMIN001", password: "password" });
   adminToken = res.body.token;
+  console.log("adminToken:", adminToken);
+  
+  const meRes = await agent
+    .get("/api/auth/me")
+    .set("Authorization", `Bearer ${adminToken}`);
+  console.log("/auth/me status:", meRes.status);
+  console.log("/auth/me body:", meRes.body);
 });
 
 // ══════════════════════════════════════════
 // AUTH TESTS
 // ══════════════════════════════════════════
 describe("🔐 AUTH", () => {
-
   it("LOGIN réussi admin", async () => {
     const res = await agent
       .post("/api/auth/login")
@@ -43,9 +49,7 @@ describe("🔐 AUTH", () => {
   });
 
   it("LOGIN champs manquants → 400", async () => {
-    const res = await agent
-      .post("/api/auth/login")
-      .send({ ref: "ADMIN001" });
+    const res = await agent.post("/api/auth/login").send({ ref: "ADMIN001" });
     expect(res.status).to.equal(400);
   });
 
@@ -69,14 +73,12 @@ describe("🔐 AUTH", () => {
       .set("Authorization", "Bearer tokenbidon123");
     expect(res.status).to.equal(401);
   });
-
 });
 
 // ══════════════════════════════════════════
 // SÉCURITÉ — INJECTION SQL
 // ══════════════════════════════════════════
 describe("🛡️ SÉCURITÉ — Injection SQL", () => {
-
   it("Injection SQL dans login ref → pas de bypass", async () => {
     const res = await agent
       .post("/api/auth/login")
@@ -99,14 +101,12 @@ describe("🛡️ SÉCURITÉ — Injection SQL", () => {
     expect(res.status).to.equal(201);
     expect(res.body.content).to.include("<script>");
   });
-
 });
 
 // ══════════════════════════════════════════
 // ADMIN — PRIVILEGE ESCALATION
 // ══════════════════════════════════════════
 describe("👑 ADMIN — Accès et privilege escalation", () => {
-
   it("GET /admin/stats sans token → 401", async () => {
     const res = await agent.get("/api/admin/stats");
     expect(res.status).to.equal(401);
@@ -134,14 +134,12 @@ describe("👑 ADMIN — Accès et privilege escalation", () => {
     expect(res.status).to.equal(201);
     expect(res.body).to.have.property("code");
   });
-
 });
 
 // ══════════════════════════════════════════
 // MESSAGES
 // ══════════════════════════════════════════
 describe("💬 MESSAGES", () => {
-
   it("GET /messages/global sans token → 401", async () => {
     const res = await agent.get("/api/messages/global");
     expect(res.status).to.equal(401);
@@ -184,14 +182,12 @@ describe("💬 MESSAGES", () => {
     const res = await agent.get("/api/messages/search?q=test");
     expect(res.status).to.equal(401);
   });
-
 });
 
 // ══════════════════════════════════════════
 // SUBMISSIONS
 // ══════════════════════════════════════════
 describe("📁 SUBMISSIONS", () => {
-
   it("GET /submissions sans token → 401", async () => {
     const res = await agent.get("/api/submissions");
     expect(res.status).to.equal(401);
@@ -212,18 +208,15 @@ describe("📁 SUBMISSIONS", () => {
       .send({ nom: "Test" });
     expect(res.status).to.equal(400);
   });
-
 });
 
 // ══════════════════════════════════════════
 // HEALTH CHECK
 // ══════════════════════════════════════════
 describe("❤️ HEALTH", () => {
-
   it("GET /api/health → 200", async () => {
     const res = await agent.get("/api/health");
     expect(res.status).to.equal(200);
     expect(res.body).to.have.property("status", "ok");
   });
-
 });
