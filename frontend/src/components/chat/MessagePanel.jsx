@@ -11,6 +11,7 @@ import {
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
 import api from "../../api/axios";
+import DOMPurify from "dompurify";
 
 export default function MessagePanel({
   contact,
@@ -28,14 +29,12 @@ export default function MessagePanel({
   const fileRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // Scroll automatique seulement si on est en bas
   useEffect(() => {
     if (isAtBottom) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isAtBottom]);
 
-  // Détecter si on est en bas
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
@@ -50,7 +49,6 @@ export default function MessagePanel({
     await onSend(trimmed);
     setText("");
     setSending(false);
-    // Scroll en bas après envoi
     onAtBottomChange(true);
     setTimeout(
       () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
@@ -154,7 +152,9 @@ export default function MessagePanel({
       );
     }
 
-    return content;
+    // Texte normal — sanitiser XSS
+    const clean = DOMPurify.sanitize(content);
+    return <span dangerouslySetInnerHTML={{ __html: clean }} />;
   };
 
   const ContactAvatar = () => {
@@ -302,7 +302,6 @@ export default function MessagePanel({
           ))}
         <div ref={bottomRef} />
 
-        {/* Bouton flottant retour en bas */}
         {!isAtBottom && (
           <button
             type="button"
