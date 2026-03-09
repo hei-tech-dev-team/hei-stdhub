@@ -49,14 +49,21 @@ describe("🔐 AUTH", () => {
     expect(res.status).to.equal(401);
   });
 
-  it("GET /auth/me avec token valide → 200", async () => {
-    const res = await request(app)
-      .get("/api/auth/me")
-      .set("Authorization", `Bearer ${adminToken}`);
-    expect(res.status).to.equal(200);
-    expect(res.body).to.have.property("id");
-    expect(res.body).to.have.property("avatar");
-  });
+ it("GET /auth/me avec token valide → 200", async () => {
+  // Login d'abord pour avoir un token frais
+  const loginRes = await request(app)
+    .post("/api/auth/login")
+    .send({ ref: "ADMIN001", password: "password" });
+  
+  const token = loginRes.body.token;
+  
+  const res = await request(app)
+    .get("/api/auth/me")
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).to.equal(200);
+  expect(res.body).to.have.property("id");
+  expect(res.body).to.have.property("avatar");
+});
 
   it("GET /auth/me avec token invalide → 401", async () => {
     const res = await request(app)
