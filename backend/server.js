@@ -89,6 +89,10 @@ io.on("connection", (socket) => {
 app.set("io", io);
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () =>
-  console.log(`🚀 HEI STDhub API → http://localhost:${PORT}`),
-);
+if (require.main === module) {
+  server.listen(PORT, () =>
+    console.log(`🚀 HEI STDhub API → http://localhost:${PORT}`),
+  );
+}
+
+module.exports = app;
