@@ -125,23 +125,14 @@ router.post("/login", async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level)
-   VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-   RETURNING id, ref, nom, prenom, email, pseudo, role, level`,
-      [
-        ref.toUpperCase(),
-        capitalize(nom),
-        capitalize(prenom),
-        email,
-        capitalize(pseudo),
-        hash,
-        role,
-        level || null,
-      ],
+      `SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar
+       FROM users WHERE id=$1`,
+      [req.user.id],
     );
     if (!rows.length) return res.status(404).json({ error: "Introuvable." });
     res.json(rows[0]);
   } catch (err) {
+    console.error("ERREUR /auth/me:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });

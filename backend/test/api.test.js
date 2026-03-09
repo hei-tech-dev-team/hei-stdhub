@@ -14,7 +14,7 @@ before(async () => {
     .send({ ref: "ADMIN001", password: "password" });
   adminToken = res.body.token;
   console.log("adminToken:", adminToken);
-  
+
   const meRes = await agent
     .get("/api/auth/me")
     .set("Authorization", `Bearer ${adminToken}`);
