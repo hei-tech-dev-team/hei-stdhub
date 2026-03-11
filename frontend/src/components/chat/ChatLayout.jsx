@@ -67,7 +67,7 @@ export default function ChatLayout() {
     async (contact, silent = false) => {
       if (!silent) setLoadingMessages(true);
       try {
-        let data
+        let data;
         if (contact.isGlobal) {
           ({ data } = await api.get("/messages/global"));
         } else {
