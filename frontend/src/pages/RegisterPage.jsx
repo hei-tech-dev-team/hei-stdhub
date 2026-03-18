@@ -7,7 +7,7 @@ import api from "../api/axios";
 const ALL_UES = [
   "WEB1", "PROG1", "SYS1", "DONNEES1", "THEORIE1-P1", "THEORIE1-P2",
   "WEB2", "PROG2-POO", "PROG2-API", "SYS2",
-  "DONNEES2", "WEB3", "PROG3", "MGT2", "PROG4", "SYS3",
+  "WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2",
   "MOB1", "PROG5", "SECU1", "SECU2",
 ];
 
@@ -126,6 +126,7 @@ export default function RegisterPage() {
           <p className="text-gray-400 text-xs sm:text-sm mt-1">HEI STDhub</p>
         </div>
 
+        {/* Erreur globale */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4">
             {error}
@@ -142,7 +143,7 @@ export default function RegisterPage() {
               <p className="text-gray-400 text-xs">
                 Contactez votre administrateur pour obtenir un code d'accès en
                 envoyant un email à{" "}
-                <a href="mailto:hub203313@gmail.com" className="text-gold hover:underline">
+                <a href="hub203313@gmail.com" className="text-gold hover:underline">
                   hub203313@gmail.com
                 </a>{" "}
                 avec comme objet "Demande de code d'invitation HEI STDhub" et en
@@ -199,7 +200,7 @@ export default function RegisterPage() {
         ) : (
           /* ÉTAPE 2 : Formulaire complet */
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Badge rôle */}
+            {/* Badge rôle confirmé */}
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-2 rounded-xl">
               <span>✅ Code valide — inscription en tant que</span>
               <span className="font-bold capitalize">
@@ -302,7 +303,7 @@ export default function RegisterPage() {
                     <button
                       key={ue}
                       type="button"
-                      onClick={() => toggleUE(ue)}
+                      onClick={() => { toggleUE(ue); setError(""); }}
                       className={
                         "px-3 py-1.5 rounded-full text-xs font-semibold border transition " +
                         (form.ues.includes(ue)
@@ -316,7 +317,7 @@ export default function RegisterPage() {
                 </div>
                 {form.ues.length > 0 && (
                   <p className="text-xs text-green-600 mt-2 font-medium">
-                    {form.ues.length} UE(s) sélectionnée(s) : {form.ues.join(", ")}
+                    {form.ues.length} UE{form.ues.length > 1 ? "s" : ""} sélectionnée{form.ues.length > 1 ? "s" : ""}
                   </p>
                 )}
               </div>
