@@ -39,11 +39,26 @@ const makeToken = (user) =>
   );
 
 router.post("/register", async (req, res) => {
-  const { ref, nom, prenom, email, pseudo, password, role, level, inviteCode } =
-    req.body;
+  const {
+    ref,
+    nom,
+    prenom,
+    email,
+    pseudo,
+    password,
+    role,
+    level,
+    inviteCode,
+    ues,
+  } = req.body;
 
   if (!ref || !nom || !prenom || !email || !pseudo || !password || !role)
     return res.status(400).json({ error: "Tous les champs sont requis." });
+
+  if (role === "teacher" && (!ues || ues.length === 0))
+    return res
+      .status(400)
+      .json({ error: "Un professeur doit avoir au moins une UE." });
   if (!inviteCode)
     return res.status(400).json({ error: "Code d'invitation requis." });
 
@@ -68,18 +83,19 @@ router.post("/register", async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await db.query(
-      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-       RETURNING id, ref, nom, prenom, email, pseudo, role, level`,
+      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues)
+ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+ RETURNING id, ref, nom, prenom, email, pseudo, role, level, ues`,
       [
         ref.toUpperCase(),
-        nom,
-        prenom,
+        capitalize(nom),
+        capitalize(prenom),
         email,
-        pseudo,
+        capitalize(pseudo),
         hash,
         role,
         level || null,
+        ues || [],
       ],
     );
 
