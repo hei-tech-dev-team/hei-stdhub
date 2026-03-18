@@ -28,10 +28,8 @@ const UES = {
     "PROG2-POO",
     "PROG2-API",
     "SYS2",
-    "DONNEES2",
-    "IA1",
   ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2"],
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
 };
 
@@ -144,21 +142,12 @@ export default function StudentUpload() {
 
   if (submitted) {
     return (
-      <div
-        className="flex flex-col items-center justify-center
-                      h-full text-center py-16 sm:py-24 px-4"
-      >
-        <FontAwesomeIcon
-          icon={faCheckCircle}
-          className="text-5xl sm:text-6xl text-green-400 mb-4"
-        />
-        <h2 className="text-lg sm:text-xl font-bold text-navy mb-2">
-          Rendu soumis avec succès !
-        </h2>
+      <div className="flex flex-col items-center justify-center h-full text-center py-16 sm:py-24 px-4">
+        <FontAwesomeIcon icon={faCheckCircle} className="text-5xl sm:text-6xl text-green-400 mb-4" />
+        <h2 className="text-lg sm:text-xl font-bold text-navy mb-2">Rendu soumis avec succès !</h2>
         <p className="text-gray-400 text-sm">
           Votre devoir <span className="font-bold text-navy">{form.type}</span>{" "}
-          pour <span className="font-bold text-navy">{form.ue}</span> a bien été
-          envoyé.
+          pour <span className="font-bold text-navy">{form.ue}</span> a bien été envoyé.
         </p>
       </div>
     );
@@ -172,39 +161,24 @@ export default function StudentUpload() {
           "flex flex-col items-center justify-center rounded-2xl " +
           "border-2 border-dashed cursor-pointer transition " +
           "min-h-48 sm:min-h-64 lg:flex-1 p-6 sm:p-8 " +
-          (dragOver
-            ? "border-gold bg-gold/5"
-            : "border-contact bg-white hover:border-navy/40")
+          (dragOver ? "border-gold bg-gold/5" : "border-contact bg-white hover:border-navy/40")
         }
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => document.getElementById("student-file").click()}
       >
         <FontAwesomeIcon
           icon={faCloudUploadAlt}
-          className={
-            "text-4xl sm:text-5xl mb-3 transition " +
-            (dragOver ? "text-gold" : "text-gray-300")
-          }
+          className={"text-4xl sm:text-5xl mb-3 transition " + (dragOver ? "text-gold" : "text-gray-300")}
         />
         {form.file ? (
           <>
-            <p className="font-bold text-navy text-sm text-center truncate max-w-full px-4">
-              {form.file.name}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {(form.file.size / 1024 / 1024).toFixed(2)} Mo
-            </p>
+            <p className="font-bold text-navy text-sm text-center truncate max-w-full px-4">{form.file.name}</p>
+            <p className="text-xs text-gray-400 mt-1">{(form.file.size / 1024 / 1024).toFixed(2)} Mo</p>
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                set("file", null);
-              }}
+              onClick={(e) => { e.stopPropagation(); set("file", null); }}
               className="mt-3 text-red-400 text-xs hover:underline flex items-center gap-1"
             >
               <FontAwesomeIcon icon={faTrash} /> Supprimer
@@ -212,196 +186,94 @@ export default function StudentUpload() {
           </>
         ) : (
           <>
-            <p className="font-semibold text-gray-400 text-sm sm:text-base text-center">
-              Déposer votre devoir ici
-            </p>
-            <p className="text-xs text-gray-300 mt-1 text-center">
-              ou cliquer pour parcourir (max 10 Mo)
-            </p>
+            <p className="font-semibold text-gray-400 text-sm sm:text-base text-center">Déposer votre devoir ici</p>
+            <p className="text-xs text-gray-300 mt-1 text-center">ou cliquer pour parcourir (max 10 Mo)</p>
           </>
         )}
-        <input
-          id="student-file"
-          type="file"
-          className="hidden"
-          onChange={handleFileInput}
-        />
+        <input id="student-file" type="file" className="hidden" onChange={handleFileInput} />
       </div>
 
       {/* Formulaire */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 lg:flex-1">
         {error && (
-          <div
-            className="bg-red-50 border border-red-200 text-red-600
-                          text-sm px-4 py-2 rounded-xl"
-          >
-            {error}
-          </div>
+          <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2 rounded-xl">{error}</div>
         )}
 
-        {/* Nom + Prénom — readonly */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-              Nom
-            </label>
-            <input
-              className="input-field bg-surface text-gray-400 cursor-not-allowed"
-              value={user?.nom || ""}
-              readOnly
-            />
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">Nom</label>
+            <input className="input-field bg-surface text-gray-400 cursor-not-allowed" value={user?.nom || ""} readOnly />
           </div>
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-              Prénom
-            </label>
-            <input
-              className="input-field bg-surface text-gray-400 cursor-not-allowed"
-              value={user?.prenom || ""}
-              readOnly
-            />
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">Prénom</label>
+            <input className="input-field bg-surface text-gray-400 cursor-not-allowed" value={user?.prenom || ""} readOnly />
           </div>
         </div>
 
-        {/* Email — readonly */}
         <div>
-          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-            Email
-          </label>
-          <input
-            className="input-field bg-surface text-gray-400 cursor-not-allowed"
-            value={user?.email || ""}
-            readOnly
-          />
+          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">Email</label>
+          <input className="input-field bg-surface text-gray-400 cursor-not-allowed" value={user?.email || ""} readOnly />
         </div>
 
-        {/* Référence — readonly */}
         <div>
-          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-            Référence STD
-          </label>
-          <input
-            className="input-field bg-surface text-gray-400 cursor-not-allowed"
-            value={user?.ref || ""}
-            readOnly
-          />
+          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">Référence STD</label>
+          <input className="input-field bg-surface text-gray-400 cursor-not-allowed" value={user?.ref || ""} readOnly />
         </div>
 
-        {/* Niveau + Groupe */}
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-              Niveau
-            </label>
-            <select
-              className="input-field"
-              value={form.level}
-              onChange={(e) => handleLevelChange(e.target.value)}
-            >
-              {Object.keys(GROUPS).map((l) => (
-                <option key={l}>{l}</option>
-              ))}
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">Niveau</label>
+            <select className="input-field" value={form.level} onChange={(e) => handleLevelChange(e.target.value)}>
+              {Object.keys(GROUPS).map((l) => (<option key={l}>{l}</option>))}
             </select>
           </div>
           <div className="flex-1">
-            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-              Groupe
-            </label>
-            <select
-              className="input-field"
-              value={form.groupe}
-              onChange={(e) => set("groupe", e.target.value)}
-            >
-              {GROUPS[form.level].map((g) => (
-                <option key={g}>{g}</option>
-              ))}
+            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">Groupe</label>
+            <select className="input-field" value={form.groupe} onChange={(e) => set("groupe", e.target.value)}>
+              {GROUPS[form.level].map((g) => (<option key={g}>{g}</option>))}
             </select>
           </div>
         </div>
 
-        {/* UE */}
         <div>
           <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
             Unité d'enseignement (UE) *
           </label>
-          <select
-            className="input-field"
-            value={form.ue}
-            onChange={(e) => set("ue", e.target.value)}
-          >
-            {UES[form.level].map((ue) => (
-              <option key={ue} value={ue}>
-                {ue}
-              </option>
-            ))}
+          <select className="input-field" value={form.ue} onChange={(e) => set("ue", e.target.value)}>
+            {UES[form.level].map((ue) => (<option key={ue} value={ue}>{ue}</option>))}
           </select>
-          <p className="text-xs text-gray-400 mt-1">
-            Le rendu sera envoyé au professeur responsable de cette UE.
-          </p>
+          <p className="text-xs text-gray-400 mt-1">Le rendu sera envoyé au professeur responsable de cette UE.</p>
         </div>
 
-        {/* Type */}
         <div>
-          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-            Type
-          </label>
-          <select
-            className="input-field"
-            value={form.type}
-            onChange={(e) => set("type", e.target.value)}
-          >
+          <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">Type</label>
+          <select className="input-field" value={form.type} onChange={(e) => set("type", e.target.value)}>
             <option>TD</option>
             <option>Examen</option>
           </select>
         </div>
 
-        {/* Séparateur */}
         <div className="flex items-center gap-3">
           <hr className="flex-1 border-contact" />
           <span className="text-xs font-bold text-gray-400">OU</span>
           <hr className="flex-1 border-contact" />
         </div>
 
-        {/* Lien */}
         <div className="relative">
-          <FontAwesomeIcon
-            icon={faLink}
-            className="absolute left-4 top-1/2 -translate-y-1/2
-                       text-gray-400 text-sm pointer-events-none"
-          />
-          <input
-            className="input-field pl-10"
-            placeholder="Lien Google Drive ou GitHub..."
-            value={form.link}
-            onChange={(e) => set("link", e.target.value)}
-          />
+          <FontAwesomeIcon icon={faLink} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+          <input className="input-field pl-10" placeholder="Lien Google Drive ou GitHub..." value={form.link} onChange={(e) => set("link", e.target.value)} />
         </div>
 
-        {/* Boutons */}
         <div className="flex flex-col sm:flex-row gap-3 mt-2">
           <button
             type="button"
-            onClick={() =>
-              setForm({
-                ...EMPTY,
-                email: user?.email || "",
-                ref: user?.ref || "",
-              })
-            }
+            onClick={() => setForm({ ...EMPTY, email: user?.email || "", ref: user?.ref || "" })}
             className="flex-1 btn-danger text-center"
           >
             Annuler
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 btn-success text-center disabled:opacity-60"
-          >
-            {loading ? (
-              <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-            ) : (
-              "Soumettre"
-            )}
+          <button type="submit" disabled={loading} className="flex-1 btn-success text-center disabled:opacity-60">
+            {loading ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : "Soumettre"}
           </button>
         </div>
       </form>
