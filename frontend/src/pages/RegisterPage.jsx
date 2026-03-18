@@ -5,10 +5,26 @@ import { HEI_BLUE_LOGO } from "../assets/logos";
 import api from "../api/axios";
 
 const ALL_UES = [
-  "WEB1", "PROG1", "SYS1", "DONNEES1", "THEORIE1-P1", "THEORIE1-P2",
-  "WEB2", "PROG2-POO", "PROG2-API", "SYS2",
-  "WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2",
-  "MOB1", "PROG5", "SECU1", "SECU2",
+  "WEB1",
+  "PROG1",
+  "SYS1",
+  "DONNEES1",
+  "THEORIE1-P1",
+  "THEORIE1-P2",
+  "WEB2",
+  "PROG2-POO",
+  "PROG2-API",
+  "SYS2",
+  "WEB3",
+  "PROG3",
+  "MGT2",
+  "PROG4",
+  "SYS3",
+  "DONNEES2",
+  "MOB1",
+  "PROG5",
+  "SECU1",
+  "SECU2",
 ];
 
 export default function RegisterPage() {
@@ -121,8 +137,14 @@ export default function RegisterPage() {
       <div className="bg-white rounded-2xl sm:rounded-3xl shadow-modal p-6 sm:p-8 lg:p-10 w-full max-w-sm sm:max-w-lg">
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <img src={HEI_BLUE_LOGO} alt="HEI" className="h-12 sm:h-14 mb-3 object-contain" />
-          <h1 className="text-xl sm:text-2xl font-bold text-navy">Créer un compte</h1>
+          <img
+            src={HEI_BLUE_LOGO}
+            alt="HEI"
+            className="h-12 sm:h-14 mb-3 object-contain"
+          />
+          <h1 className="text-xl sm:text-2xl font-bold text-navy">
+            Créer un compte
+          </h1>
           <p className="text-gray-400 text-xs sm:text-sm mt-1">HEI STDhub</p>
         </div>
 
@@ -143,7 +165,10 @@ export default function RegisterPage() {
               <p className="text-gray-400 text-xs">
                 Contactez votre administrateur pour obtenir un code d'accès en
                 envoyant un email à{" "}
-                <a href="hub203313@gmail.com" className="text-gold hover:underline">
+                <a
+                  href="hub203313@gmail.com"
+                  className="text-gold hover:underline"
+                >
                   hub203313@gmail.com
                 </a>{" "}
                 avec comme objet "Demande de code d'invitation HEI STDhub" et en
@@ -218,7 +243,10 @@ export default function RegisterPage() {
                   className="input-field"
                   placeholder="Rakoto"
                   value={form.nom}
-                  onChange={(e) => { set("nom", e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    set("nom", e.target.value);
+                    setError("");
+                  }}
                 />
               </div>
               <div>
@@ -229,7 +257,10 @@ export default function RegisterPage() {
                   className="input-field"
                   placeholder="Jean"
                   value={form.prenom}
-                  onChange={(e) => { set("prenom", e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    set("prenom", e.target.value);
+                    setError("");
+                  }}
                 />
               </div>
             </div>
@@ -242,9 +273,16 @@ export default function RegisterPage() {
               <input
                 type="email"
                 className="input-field"
-                placeholder={form.role === "student" ? "hei.jean@gmail.com" : "dr.nom@hei.mg"}
+                placeholder={
+                  form.role === "student"
+                    ? "hei.jean@gmail.com"
+                    : "dr.nom@hei.mg"
+                }
                 value={form.email}
-                onChange={(e) => { set("email", e.target.value); setError(""); }}
+                onChange={(e) => {
+                  set("email", e.target.value);
+                  setError("");
+                }}
               />
             </div>
 
@@ -258,7 +296,10 @@ export default function RegisterPage() {
                   className="input-field"
                   placeholder={form.role === "student" ? "STD25001" : "PROF001"}
                   value={form.ref}
-                  onChange={(e) => { set("ref", e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    set("ref", e.target.value);
+                    setError("");
+                  }}
                 />
               </div>
               <div>
@@ -269,7 +310,10 @@ export default function RegisterPage() {
                   className="input-field"
                   placeholder="MonPseudo"
                   value={form.pseudo}
-                  onChange={(e) => { set("pseudo", e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    set("pseudo", e.target.value);
+                    setError("");
+                  }}
                 />
               </div>
             </div>
@@ -303,7 +347,10 @@ export default function RegisterPage() {
                     <button
                       key={ue}
                       type="button"
-                      onClick={() => { toggleUE(ue); setError(""); }}
+                      onClick={() => {
+                        toggleUE(ue);
+                        setError("");
+                      }}
                       className={
                         "px-3 py-1.5 rounded-full text-xs font-semibold border transition " +
                         (form.ues.includes(ue)
@@ -317,7 +364,8 @@ export default function RegisterPage() {
                 </div>
                 {form.ues.length > 0 && (
                   <p className="text-xs text-green-600 mt-2 font-medium">
-                    {form.ues.length} UE{form.ues.length > 1 ? "s" : ""} sélectionnée{form.ues.length > 1 ? "s" : ""}
+                    {form.ues.length} UE{form.ues.length > 1 ? "s" : ""}{" "}
+                    sélectionnée{form.ues.length > 1 ? "s" : ""}
                   </p>
                 )}
               </div>
@@ -334,7 +382,10 @@ export default function RegisterPage() {
                   className="input-field"
                   placeholder="••••••••"
                   value={form.password}
-                  onChange={(e) => { set("password", e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    set("password", e.target.value);
+                    setError("");
+                  }}
                 />
               </div>
               <div>
@@ -346,7 +397,10 @@ export default function RegisterPage() {
                   className="input-field"
                   placeholder="••••••••"
                   value={form.confirmPassword}
-                  onChange={(e) => { set("confirmPassword", e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    set("confirmPassword", e.target.value);
+                    setError("");
+                  }}
                 />
               </div>
             </div>
