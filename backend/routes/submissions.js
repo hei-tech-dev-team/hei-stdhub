@@ -67,20 +67,35 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   }
 });
 
-// GET /api/submissions — prof et admin voient TOUT
+// GET /api/submissions — prof voit seulement ses UEs, admin voit tout
 router.get("/", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
 
   try {
     const { type, groupe, ue } = req.query;
+    const params = [];
+
     let q = `
       SELECT s.*, u.pseudo AS student_pseudo
       FROM submissions s
       LEFT JOIN users u ON s.student_id = u.id
       WHERE 1=1
     `;
-    const params = [];
+
+    // Profs voient seulement leurs UEs
+    if (req.user.role === "teacher") {
+      const { rows: teacherRows } = await db.query(
+        "SELECT ues FROM users WHERE id=$1",
+        [req.user.id],
+      );
+      const teacherUes = teacherRows[0]?.ues || [];
+      if (teacherUes.length === 0) {
+        return res.json([]);
+      }
+      params.push(teacherUes);
+      q += ` AND s.ue = ANY($${params.length})`;
+    }
 
     if (type) {
       params.push(type);
