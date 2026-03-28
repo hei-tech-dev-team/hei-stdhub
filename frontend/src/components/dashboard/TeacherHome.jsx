@@ -24,10 +24,8 @@ const UES_BY_LEVEL = {
     "PROG2-POO",
     "PROG2-API",
     "SYS2",
-    "DONNEES2",
-    "IA1",
   ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
 };
 const ALL_UES = [...UES_BY_LEVEL.L1, ...UES_BY_LEVEL.L2, ...UES_BY_LEVEL.L3];
