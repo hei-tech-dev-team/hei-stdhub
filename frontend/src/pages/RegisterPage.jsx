@@ -91,7 +91,7 @@ export default function RegisterPage() {
       return "Le mot de passe doit faire au moins 6 caractères.";
     if (form.password !== form.confirmPassword)
       return "Les mots de passe ne correspondent pas.";
-    if (form.role === "student" && !/^hei\..+@gmail\.com$/.test(form.email))
+    if (form.role === "student" && !/^hei\.auth.+@gmail\.com$/.test(form.email))
       return "Format email étudiant : hei.prenom@gmail.com";
     if (form.role === "teacher" && form.ues.length === 0)
       return "Veuillez sélectionner au moins une UE.";
@@ -107,7 +107,7 @@ export default function RegisterPage() {
     const err = validate();
     if (err) {
       setError(err);
-      return;
+      return;auth
     }
 
     setLoading(true);
