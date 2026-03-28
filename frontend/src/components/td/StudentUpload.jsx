@@ -29,7 +29,7 @@ const UES = {
     "PROG2-API",
     "SYS2",
   ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2"],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
 };
 
