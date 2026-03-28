@@ -11,35 +11,23 @@ import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
 import Badge from "../ui/Badge";
 import Avatar from "../ui/Avatar";
-
-const UES_BY_LEVEL = {
-  L1: [
-    "WEB1",
-    "PROG1",
-    "SYS1",
-    "DONNEES1",
-    "THEORIE1-P1",
-    "THEORIE1-P2",
-    "WEB2",
-    "PROG2-POO",
-    "PROG2-API",
-    "SYS2",
-  ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
-  L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
-};
-const ALL_UES = [...UES_BY_LEVEL.L1, ...UES_BY_LEVEL.L2, ...UES_BY_LEVEL.L3];
-
-const EMPTY_FORM = {
-  title: "",
-  description: "",
-  ue: "WEB1",
-  type: "cours",
-  link: "",
-  file: null,
-};
+import { useAuth } from "../../context/AuthContext";
 
 export default function TeacherHome() {
+  const { user } = useAuth();
+
+  // UEs du prof connecté uniquement
+  const teacherUes = user?.ues?.length > 0 ? user.ues : [];
+
+  const EMPTY_FORM = {
+    title: "",
+    description: "",
+    ue: teacherUes[0] || "",
+    type: "cours",
+    link: "",
+    file: null,
+  };
+
   const [posts, setPosts] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [dragOver, setDragOver] = useState(false);
@@ -79,6 +67,7 @@ export default function TeacherHome() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) return setError("Le titre est requis.");
+    if (!form.ue) return setError("Veuillez sélectionner une UE.");
     if (!form.file && !form.link.trim())
       return setError("Un fichier ou un lien est requis.");
 
@@ -124,11 +113,14 @@ export default function TeacherHome() {
             Publier un contenu
           </h2>
 
+          {teacherUes.length === 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm px-4 py-3 rounded-xl mb-4">
+              ⚠️ Aucune UE assignée à votre compte. Contactez l'administrateur.
+            </div>
+          )}
+
           {error && (
-            <div
-              className="bg-red-50 border border-red-200 text-red-600
-                            text-sm px-4 py-2 rounded-xl mb-4"
-            >
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2 rounded-xl mb-4">
               {error}
             </div>
           )}
@@ -152,16 +144,22 @@ export default function TeacherHome() {
             />
 
             <div className="flex flex-col sm:flex-row gap-3">
+              {/* Select UE — uniquement les UEs du prof */}
               <select
                 className="input-field flex-1"
                 value={form.ue}
                 onChange={(e) => set("ue", e.target.value)}
+                disabled={teacherUes.length === 0}
               >
-                {ALL_UES.map((ue) => (
-                  <option key={ue} value={ue}>
-                    {ue}
-                  </option>
-                ))}
+                {teacherUes.length === 0 ? (
+                  <option value="">Aucune UE disponible</option>
+                ) : (
+                  teacherUes.map((ue) => (
+                    <option key={ue} value={ue}>
+                      {ue}
+                    </option>
+                  ))
+                )}
               </select>
               <div className="flex gap-2">
                 {["cours", "td", "examen"].map((t) => (
@@ -270,8 +268,8 @@ export default function TeacherHome() {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="btn-primary sm:w-auto w-full text-center flex items-center justify-center gap-2"
+                disabled={loading || teacherUes.length === 0}
+                className="btn-primary sm:w-auto w-full text-center flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {loading ? (
                   <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
