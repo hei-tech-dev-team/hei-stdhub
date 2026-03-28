@@ -21,6 +21,7 @@ const ALL_UES = [
   "PROG4",
   "SYS3",
   "DONNEES2",
+  "IA1",
   "MOB1",
   "PROG5",
   "SECU1",
