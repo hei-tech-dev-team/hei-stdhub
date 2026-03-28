@@ -27,14 +27,12 @@ const YEARS = [
       "PROG2-POO",
       "PROG2-API",
       "SYS2",
-      "DONNEES2",
-      "IA1",
     ],
   },
   {
     id: "L2",
     label: "DEUXIEME ANNEE – SEMESTRE 3 ET 4",
-    ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
+    ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
   },
   {
     id: "L3",
