@@ -4,8 +4,8 @@
   "description": "La plateforme collaborative de HEI Madagascar",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0F1E33",
-  "theme_color": "#0F1E33",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "orientation": "portrait",
   "icons": [
     {
