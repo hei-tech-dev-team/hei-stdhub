@@ -95,7 +95,7 @@ export default function BDEPage() {
         justification,
       });
       setSuggestions((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, ...data } : s))
+        prev.map((s) => (s.id === id ? { ...s, ...data } : s)),
       );
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de la mise à jour.");
@@ -128,7 +128,9 @@ export default function BDEPage() {
       setSent(true);
       setTimeout(() => setSent(false), 4000);
     } catch (err) {
-      setError(err.response?.data?.error || "Erreur lors de l'envoi des emails.");
+      setError(
+        err.response?.data?.error || "Erreur lors de l'envoi des emails.",
+      );
     } finally {
       setSending(false);
     }
@@ -144,7 +146,6 @@ export default function BDEPage() {
       <div className="flex flex-col flex-1 min-w-0">
         <Navbar title="Interface BDE" />
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
@@ -238,7 +239,8 @@ export default function BDEPage() {
                         </p>
                         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-surface">
                           <div className="w-5 h-5 rounded-full bg-navy flex items-center justify-center text-white text-xs font-bold shrink-0">
-                            {s.prenom?.[0]}{s.nom?.[0]}
+                            {s.prenom?.[0]}
+                            {s.nom?.[0]}
                           </div>
                           <span className="text-xs text-gray-400 truncate">
                             {s.prenom} {s.nom}
