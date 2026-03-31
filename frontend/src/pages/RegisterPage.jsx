@@ -107,7 +107,7 @@ export default function RegisterPage() {
     const err = validate();
     if (err) {
       setError(err);
-      return;auth
+      return;
     }
 
     setLoading(true);
