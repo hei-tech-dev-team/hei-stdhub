@@ -10,6 +10,8 @@ import {
   faBars,
   faTimes,
   faUserShield,
+  faLightbulb,
+  faUsersRectangle,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
@@ -75,6 +77,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
+          {/* Liens communs à tous */}
           {NAV_LINKS.map(({ to, label, icon, end }) => (
             <NavLink
               key={to}
@@ -89,6 +92,44 @@ export default function Sidebar() {
               <span className="truncate">{label}</span>
             </NavLink>
           ))}
+
+          {/* Suggestions — visible par les étudiants uniquement */}
+          {user?.role === "student" && (
+            <NavLink
+              to="/suggestions"
+              end={false}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                isActive ? "sidebar-link-active" : "sidebar-link"
+              }
+            >
+              <FontAwesomeIcon
+                icon={faLightbulb}
+                className="w-4 h-4 shrink-0"
+              />
+              <span className="truncate">Suggestions BDE</span>
+            </NavLink>
+          )}
+
+          {/* Interface BDE — visible par les membres BDE uniquement */}
+          {user?.role === "bde" && (
+            <NavLink
+              to="/bde"
+              end={false}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                isActive ? "sidebar-link-active" : "sidebar-link"
+              }
+            >
+              <FontAwesomeIcon
+                icon={faUsersRectangle}
+                className="w-4 h-4 shrink-0"
+              />
+              <span className="truncate">Interface BDE</span>
+            </NavLink>
+          )}
+
+          {/* Admin */}
           {user?.role === "admin" && (
             <NavLink
               to="/admin"
@@ -113,7 +154,9 @@ export default function Sidebar() {
               ? "Professeur"
               : user?.role === "admin"
                 ? "Admin"
-                : "Étudiant"}
+                : user?.role === "bde"
+                  ? "BDE"
+                  : "Étudiant"}
           </p>
           <p className="text-white font-semibold text-sm px-2 mb-3 truncate">
             {user?.pseudo || user?.ref || "—"}
