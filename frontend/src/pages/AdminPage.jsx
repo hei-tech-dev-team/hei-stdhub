@@ -38,6 +38,11 @@ const ROLE_CONFIG = {
     icon: faUserShield,
     color: "bg-red-100 text-red-700",
   },
+  bde: {
+    label: "BDE",
+    icon: faUserShield,
+    color: "bg-yellow-100 text-yellow-700",
+  },
 };
 
 function StatCard({ icon, label, value, color }) {
@@ -286,9 +291,10 @@ export default function AdminPage() {
                   onChange={(e) => setRoleFilter(e.target.value)}
                 >
                   <option value="">Tous les rôles</option>
-                  <option value="student">Étudiant</option>
-                  <option value="teacher">Professeur</option>
                   <option value="admin">Admin</option>
+                  <option value="teacher">Professeur</option>
+                  <option value="bde">BDE</option>
+                  <option value="student">Étudiant</option>
                 </select>
               </div>
 
@@ -363,9 +369,10 @@ export default function AdminPage() {
                                   ROLE_CONFIG[u.role]?.color
                                 }
                               >
-                                <option value="student">Étudiant</option>
-                                <option value="teacher">Professeur</option>
                                 <option value="admin">Admin</option>
+                                <option value="bde">BDE</option>
+                                <option value="teacher">Professeur</option>
+                                <option value="student">Étudiant</option>
                               </select>
                             </td>
                             <td className="py-3 px-4 text-gray-400 text-xs whitespace-nowrap">
