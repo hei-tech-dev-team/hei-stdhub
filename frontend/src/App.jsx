@@ -8,6 +8,8 @@ import TDPage from "./pages/TDPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage";
+import SuggestionPage from "./pages/SuggestionPage";
+import BDEPage from "./pages/BDEPage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -32,9 +34,15 @@ function ProtectedRoute({ children }) {
 
 function AdminRoute({ children }) {
   const { user, loading } = useAuth();
-
   if (loading) return null;
   if (!user || user.role !== "admin") return <Navigate to="/" replace />;
+  return children;
+}
+
+function BDERoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user || user.role !== "bde") return <Navigate to="/" replace />;
   return children;
 }
 
@@ -74,6 +82,22 @@ export default function App() {
           <ProtectedRoute>
             <ChatPage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/suggestions"
+        element={
+          <ProtectedRoute>
+            <SuggestionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/bde"
+        element={
+          <BDERoute>
+            <BDEPage />
+          </BDERoute>
         }
       />
       <Route
