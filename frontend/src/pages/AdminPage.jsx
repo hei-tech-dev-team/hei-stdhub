@@ -40,7 +40,7 @@ const ROLE_CONFIG = {
   },
   bde: {
     label: "BDE",
-    icon: faUserShield,
+    icon: faUsers,
     color: "bg-yellow-100 text-yellow-700",
   },
 };
@@ -140,11 +140,12 @@ export default function AdminPage() {
       const { data } = await api.patch(`/admin/users/${userId}/role`, {
         role: newRole,
       });
+      console.log("Réponse:", data);
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: data.role } : u)),
       );
     } catch (err) {
-      console.error(err);
+      console.error("Erreur:", err.response?.data);
     }
   };
 
@@ -286,15 +287,15 @@ export default function AdminPage() {
                   />
                 </div>
                 <select
-                  className="input-field sm:w-40"
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
+                  value={u.role}
+                  onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                  disabled={u.id === user.id}
+                  className="flex-1 input-field text-xs py-1.5"
                 >
-                  <option value="">Tous les rôles</option>
-                  <option value="admin">Admin</option>
-                  <option value="teacher">Professeur</option>
-                  <option value="bde">BDE</option>
                   <option value="student">Étudiant</option>
+                  <option value="teacher">Professeur</option>
+                  <option value="admin">Admin</option>
+                  <option value="bde">BDE</option>
                 </select>
               </div>
 
