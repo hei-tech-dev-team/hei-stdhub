@@ -33,30 +33,40 @@ const io = new Server(server, {
 
 // ── Middlewares ──
 app.use(compression()); // Gzip toutes les réponses
-app.use(cors({
-  origin: [
-    process.env.CLIENT_URL,
-    "http://localhost:5173",
-    "https://hei-stdhub.vercel.app",
-  ],
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      process.env.CLIENT_URL,
+      "http://localhost:5173",
+      "https://hei-stdhub.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
-  maxAge: "7d", // Cache fichiers statiques 7 jours
-}));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    maxAge: "7d", // Cache fichiers statiques 7 jours
+  }),
+);
 
 // ── Keep-alive Render (ping toutes les 14 min) ──
 if (process.env.NODE_ENV === "production") {
   const https = require("https");
-  setInterval(() => {
-    https.get(process.env.BACKEND_URL + "/api/health", (res) => {
-      console.log("🏓 Keep-alive ping:", res.statusCode);
-    }).on("error", (e) => console.error("Keep-alive error:", e.message));
-  }, 14 * 60 * 1000);
+  setInterval(
+    () => {
+      https
+        .get(process.env.BACKEND_URL + "/api/health", (res) => {
+          console.log("🏓 Keep-alive ping:", res.statusCode);
+        })
+        .on("error", (e) => console.error("Keep-alive error:", e.message));
+    },
+    14 * 60 * 1000,
+  );
 }
 
 // ── Routes ──
@@ -71,7 +81,7 @@ app.use("/api/admin", require("./routes/admin"));
 
 // ── Health check ──
 app.get("/api/health", (req, res) =>
-  res.json({ status: "ok", time: new Date() })
+  res.json({ status: "ok", time: new Date() }),
 );
 
 app.use((req, res) => res.status(404).json({ error: "Route introuvable." }));
@@ -109,7 +119,7 @@ app.set("io", io);
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
   server.listen(PORT, () =>
-    console.log(`🚀 HEI STDhub API → http://localhost:${PORT}`)
+    console.log(`🚀 HEI STDhub API → http://localhost:${PORT}`),
   );
 }
 
