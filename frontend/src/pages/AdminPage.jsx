@@ -87,7 +87,6 @@ export default function AdminPage() {
     mainEl.addEventListener("scroll", handleScroll);
     return () => mainEl.removeEventListener("scroll", handleScroll);
   }, []);
-  
 
   // Charger stats avec polling 3 secondes
   useEffect(() => {
