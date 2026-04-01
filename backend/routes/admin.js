@@ -63,7 +63,7 @@ router.get("/users", auth, adminOnly, async (req, res) => {
 // PATCH /api/admin/users/:id/role
 router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
   const { role } = req.body;
-  const validRoles = ["student", "teacher", "admin"];
+  const validRoles = ["student", "teacher", "admin", "bde"];
   if (!validRoles.includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
   try {
