@@ -35,14 +35,9 @@ const io = new Server(server, {
 app.use(compression()); // Gzip toutes les réponses
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_URL,
-      "http://localhost:5173",
-      "https://hei-stdhub.vercel.app",
-    ],
+    origin: "*",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
   }),
 );
 app.use(express.json({ limit: "10mb" }));
