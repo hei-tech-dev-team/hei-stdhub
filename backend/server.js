@@ -29,15 +29,16 @@ const io = new Server(server, {
   },
 });
 
-app.use(
-  cors({
-    origin: [
-      process.env.CLIENT_URL,
-      "http://localhost:5173",
-      "https://hei-stdhub.vercel.app",
-    ],
-  }),
-);
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+    "https://hei-stdhub.vercel.app",
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
