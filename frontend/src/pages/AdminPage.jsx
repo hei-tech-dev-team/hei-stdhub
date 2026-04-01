@@ -287,11 +287,11 @@ export default function AdminPage() {
                   />
                 </div>
                 <select
-                  value={u.role}
-                  onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                  disabled={u.id === user.id}
-                  className="flex-1 input-field text-xs py-1.5"
+                  className="input-field sm:w-40"
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
                 >
+                  <option value="">Tous les rôles</option>
                   <option value="student">Étudiant</option>
                   <option value="teacher">Professeur</option>
                   <option value="admin">Admin</option>
@@ -439,6 +439,7 @@ export default function AdminPage() {
                             <option value="student">Étudiant</option>
                             <option value="teacher">Professeur</option>
                             <option value="admin">Admin</option>
+                            <option value="bde">BDE</option>
                           </select>
                           {u.id !== user.id && (
                             <button
