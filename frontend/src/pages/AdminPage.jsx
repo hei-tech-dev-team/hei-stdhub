@@ -65,10 +65,6 @@ function StatCard({ icon, label, value, color }) {
 
 export default function AdminPage() {
   const { user } = useAuth();
-
-  // Guard
-  if (user?.role !== "admin") return <Navigate to="/" replace />;
-
   const [tab, setTab] = useState("users");
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -78,7 +74,20 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
-  const mainRef = useRef(null);
+
+  // Guard
+  if (user?.role !== "admin") return <Navigate to="/" replace />;
+  const mainRef = useRef();
+  // Afficher bouton "remonter en haut"
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowTop(mainRef.current.scrollTop > 300);
+    };
+    const mainEl = mainRef.current;
+    mainEl.addEventListener("scroll", handleScroll);
+    return () => mainEl.removeEventListener("scroll", handleScroll);
+  }, []);
+  
 
   // Charger stats avec polling 3 secondes
   useEffect(() => {
