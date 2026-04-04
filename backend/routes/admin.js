@@ -31,7 +31,7 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
       by_role: byRole.rows,
     });
   } catch (err) {
-    console.error("ERROR PATCH ROLE:",err.message,err.stack);
+    console.error("ERROR PATCH ROLE:", err.message, err.stack);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
@@ -63,6 +63,7 @@ router.get("/users", auth, adminOnly, async (req, res) => {
 
 // PATCH /api/admin/users/:id/role
 router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
+  console.log("PATCH ROLE appelé — user:", req.user, "body:", req.body, "id:", req.params.id);
   const { role } = req.body;
   const validRoles = ["student", "teacher", "admin", "bde"];
   if (!validRoles.includes(role))
@@ -76,7 +77,8 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
       return res.status(404).json({ error: "Utilisateur introuvable." });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: "Erreur serveur." });
+    console.error("ERREUR PATCH ROLE:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
