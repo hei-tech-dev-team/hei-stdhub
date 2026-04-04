@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Middleware admin only
 const adminOnly = (req, res, next) => {
+  console.log("adminOnly check — role:", req.user?.role);
   if (req.user.role !== "admin")
     return res.status(403).json({ error: "Accès réservé à l'admin." });
   next();
@@ -63,7 +64,14 @@ router.get("/users", auth, adminOnly, async (req, res) => {
 
 // PATCH /api/admin/users/:id/role
 router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
-  console.log("PATCH ROLE appelé — user:", req.user, "body:", req.body, "id:", req.params.id);
+  console.log(
+    "PATCH ROLE appelé — user:",
+    req.user,
+    "body:",
+    req.body,
+    "id:",
+    req.params.id,
+  );
   const { role } = req.body;
   const validRoles = ["student", "teacher", "admin", "bde"];
   if (!validRoles.includes(role))
