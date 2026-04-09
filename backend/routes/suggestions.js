@@ -60,8 +60,7 @@ router.patch("/:id", auth, async (req, res) => {
     return res.status(403).json({ error: "Accès réservé au BDE." });
 
   const { statut, justification } = req.body;
-  const validStatuts = ["recu", "a_discuter", "refuse"];
-  if (!validStatuts.includes(statut))
+const validStatuts = ["recu", "accepte", "a_discuter", "refuse"];  if (!validStatuts.includes(statut))
     return res.status(400).json({ error: "Statut invalide." });
   if (statut === "refuse" && !justification?.trim())
     return res
