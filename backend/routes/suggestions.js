@@ -60,7 +60,8 @@ router.patch("/:id", auth, async (req, res) => {
     return res.status(403).json({ error: "Accès réservé au BDE." });
 
   const { statut, justification } = req.body;
-const validStatuts = ["recu", "accepte", "a_discuter", "refuse"];  if (!validStatuts.includes(statut))
+  const validStatuts = ["recu", "accepte", "a_discuter", "refuse"];
+  if (!validStatuts.includes(statut))
     return res.status(400).json({ error: "Statut invalide." });
   if (statut === "refuse" && !justification?.trim())
     return res
@@ -91,9 +92,9 @@ router.post("/confirm", auth, async (req, res) => {
     // Récupérer toutes les suggestions avec leur statut final
     const { rows: suggestions } = await db.query(
       `SELECT s.*, u.nom, u.prenom, u.email
-       FROM suggestions s
-       JOIN users u ON s.student_id = u.id
-       WHERE s.statut != 'recu'`,
+   FROM suggestions s
+   JOIN users u ON s.student_id = u.id
+   WHERE s.statut != 'recu'`,
     );
 
     // Récupérer tous les emails étudiants
@@ -102,6 +103,7 @@ router.post("/confirm", auth, async (req, res) => {
     );
 
     // Construire le résumé des suggestions
+    const acceptes = suggestions.filter((s) => s.statut === "accepte");
     const aDiscuter = suggestions.filter((s) => s.statut === "a_discuter");
     const refuses = suggestions.filter((s) => s.statut === "refuse");
 
