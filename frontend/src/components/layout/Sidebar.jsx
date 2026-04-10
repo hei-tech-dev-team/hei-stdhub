@@ -93,23 +93,20 @@ export default function Sidebar() {
             </NavLink>
           ))}
 
-          {/* Suggestions — visible par les étudiants uniquement */}
-          {user?.role === "student" && (
-            <NavLink
-              to="/suggestions"
-              end={false}
-              onClick={handleNavClick}
-              className={({ isActive }) =>
-                isActive ? "sidebar-link-active" : "sidebar-link"
-              }
-            >
-              <FontAwesomeIcon
-                icon={faLightbulb}
-                className="w-4 h-4 shrink-0"
-              />
-              <span className="truncate">Suggestions BDE</span>
-            </NavLink>
-          )}
+{/* Suggestions — visible par étudiants ET profs */}
+{["student", "teacher"].includes(user?.role) && (
+  <NavLink
+    to="/suggestions"
+    end={false}
+    onClick={handleNavClick}
+    className={({ isActive }) =>
+      isActive ? "sidebar-link-active" : "sidebar-link"
+    }
+  >
+    <FontAwesomeIcon icon={faLightbulb} className="w-4 h-4 shrink-0" />
+    <span className="truncate">Suggestions BDE</span>
+  </NavLink>
+)}
 
           {/* Interface BDE — visible par les membres BDE uniquement */}
           {user?.role === "bde" && (
