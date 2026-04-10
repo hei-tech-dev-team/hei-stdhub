@@ -13,20 +13,22 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// POST /api/suggestions — étudiant soumet une suggestion
+// POST /api/suggestions — étudiant ou prof soumet une suggestion
 router.post("/", auth, async (req, res) => {
-  if (req.user.role !== "student")
-    return res.status(403).json({ error: "Réservé aux étudiants." });
+  if (!["student", "teacher"].includes(req.user.role))
+    return res
+      .status(403)
+      .json({ error: "Réservé aux étudiants et professeurs." });
 
-  const { titre, contenu } = req.body;
+  const { titre, contenu, anonyme } = req.body;
   if (!titre?.trim() || !contenu?.trim())
     return res.status(400).json({ error: "Titre et contenu requis." });
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO suggestions (student_id, titre, contenu)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [req.user.id, titre.trim(), contenu.trim()],
+      `INSERT INTO suggestions (student_id, titre, contenu, anonyme)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [req.user.id, titre.trim(), contenu.trim(), anonyme === true],
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -42,7 +44,12 @@ router.get("/", auth, async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT s.*, u.nom, u.prenom, u.email, u.ref
+      `SELECT s.*,
+        CASE WHEN s.anonyme = true THEN 'Anonyme' ELSE u.nom END AS nom,
+        CASE WHEN s.anonyme = true THEN '' ELSE u.prenom END AS prenom,
+        CASE WHEN s.anonyme = true THEN '' ELSE u.email END AS email,
+        CASE WHEN s.anonyme = true THEN '' ELSE u.ref END AS ref,
+        u.role AS auteur_role
        FROM suggestions s
        JOIN users u ON s.student_id = u.id
        ORDER BY s.created_at DESC`,
@@ -83,100 +90,84 @@ router.patch("/:id", auth, async (req, res) => {
   }
 });
 
-// POST /api/suggestions/confirm — BDE confirme et envoie les emails à tous les étudiants
+// POST /api/suggestions/confirm — BDE confirme et envoie les emails
 router.post("/confirm", auth, async (req, res) => {
   if (req.user.role !== "bde")
     return res.status(403).json({ error: "Accès réservé au BDE." });
 
   try {
-    // Récupérer toutes les suggestions avec leur statut final
     const { rows: suggestions } = await db.query(
-      `SELECT s.*, u.nom, u.prenom, u.email
-   FROM suggestions s
-   JOIN users u ON s.student_id = u.id
-   WHERE s.statut != 'recu'`,
+      `SELECT s.*, u.nom, u.prenom, u.role AS auteur_role
+       FROM suggestions s
+       JOIN users u ON s.student_id = u.id
+       WHERE s.statut != 'recu'`,
     );
 
-    // Récupérer tous les emails étudiants
-    const { rows: students } = await db.query(
-      "SELECT email, nom, prenom FROM users WHERE role = 'student'",
+    // Envoyer aux étudiants ET aux profs
+    const { rows: recipients } = await db.query(
+      "SELECT email, nom, prenom FROM users WHERE role IN ('student', 'teacher')",
     );
 
-    // Construire le résumé des suggestions
     const acceptes = suggestions.filter((s) => s.statut === "accepte");
     const aDiscuter = suggestions.filter((s) => s.statut === "a_discuter");
     const refuses = suggestions.filter((s) => s.statut === "refuse");
 
-    let resumeHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #0F1E33; padding: 24px; text-align: center;">
-          <h1 style="color: #F5A623; margin: 0;">HEI STDhub</h1>
-          <p style="color: #fff; margin: 8px 0 0;">Retour du BDE sur les suggestions</p>
+    const buildSection = (items, color, emoji, title) => {
+      if (items.length === 0) return "";
+      let html = `
+        <h2 style="color:#0F1E33;border-left:4px solid ${color};padding-left:12px;margin-top:24px;">
+          ${emoji} ${title} (${items.length})
+        </h2>
+        <ul style="list-style:none;padding:0;">
+      `;
+      items.forEach((s) => {
+        const auteur = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
+        html += `
+          <li style="background:white;border-radius:8px;padding:16px;margin-bottom:12px;border:1px solid #e2e8f0;border-left:4px solid ${color};">
+            <strong style="color:#0F1E33;">${s.titre}</strong>
+            <p style="color:#64748b;margin:8px 0 0;font-size:14px;">${s.contenu}</p>
+            <p style="color:#94a3b8;margin:6px 0 0;font-size:12px;">— ${auteur}</p>
+            ${s.justification ? `<p style="color:${color};margin:8px 0 0;font-size:13px;"><strong>Justification BDE :</strong> ${s.justification}</p>` : ""}
+          </li>
+        `;
+      });
+      html += `</ul>`;
+      return html;
+    };
+
+    const resumeHtml = (prenom, nom) => `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#0F1E33;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
+          <h1 style="color:#F5A623;margin:0;">HEI STDhub</h1>
+          <p style="color:#fff;margin:8px 0 0;">Retour du BDE sur les suggestions</p>
         </div>
-        <div style="padding: 24px; background: #f8fafc;">
-    `;
-
-    if (aDiscuter.length > 0) {
-      resumeHtml += `
-        <h2 style="color: #0F1E33; border-left: 4px solid #00E096; padding-left: 12px;">
-          ✅ Suggestions retenues pour discussion (${aDiscuter.length})
-        </h2>
-        <ul style="list-style: none; padding: 0;">
-      `;
-      aDiscuter.forEach((s) => {
-        resumeHtml += `
-          <li style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
-            <strong style="color: #0F1E33;">${s.titre}</strong>
-            <p style="color: #64748b; margin: 8px 0 0; font-size: 14px;">${s.contenu}</p>
-          </li>
-        `;
-      });
-      resumeHtml += `</ul>`;
-    }
-
-    if (refuses.length > 0) {
-      resumeHtml += `
-        <h2 style="color: #0F1E33; border-left: 4px solid #FF4D9E; padding-left: 12px;">
-          Suggestions refusées (${refuses.length})
-        </h2>
-        <ul style="list-style: none; padding: 0;">
-      `;
-      refuses.forEach((s) => {
-        resumeHtml += `
-          <li style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
-            <strong style="color: #0F1E33;">${s.titre}</strong>
-            <p style="color: #64748b; margin: 8px 0 0; font-size: 14px;">${s.contenu}</p>
-            ${s.justification ? `<p style="color: #FF4D9E; margin: 8px 0 0; font-size: 13px;"><strong>Justification BDE :</strong> ${s.justification}</p>` : ""}
-          </li>
-        `;
-      });
-      resumeHtml += `</ul>`;
-    }
-
-    resumeHtml += `
-        <p style="color: #64748b; font-size: 13px; margin-top: 24px; text-align: center;">
-          Ce message a été envoyé automatiquement par HEI STDhub.
-        </p>
+        <div style="padding:24px;background:#f8fafc;border-radius:0 0 12px 12px;">
+          <p style="color:#0F1E33;font-size:15px;">Bonjour <strong>${prenom} ${nom}</strong>,</p>
+          <p style="color:#64748b;font-size:14px;">
+            Le BDE a examiné les suggestions soumises. Voici le résumé des décisions prises.
+          </p>
+          ${buildSection(acceptes, "#10B981", "✅", "Suggestions acceptées")}
+          ${buildSection(aDiscuter, "#F59E0B", "💬", "Suggestions à approfondir")}
+          ${buildSection(refuses, "#EF4444", "❌", "Suggestions refusées")}
+          <p style="color:#94a3b8;font-size:12px;margin-top:24px;text-align:center;">
+            Ce message a été envoyé automatiquement par HEI STDhub · Bureau Des Étudiants
+          </p>
         </div>
       </div>
     `;
 
-    // Envoyer l'email à tous les étudiants
-    const emailPromises = students.map((student) =>
+    const emailPromises = recipients.map((r) =>
       transporter.sendMail({
-        from: `"HEI STDhub BDE" <${process.env.EMAIL_USER}>`,
-        to: student.email,
-        subject: "Retour du BDE sur vos suggestions",
-        html: resumeHtml.replace(
-          "Cher(e) étudiant(e)",
-          `Bonjour ${student.prenom} ${student.nom}`,
-        ),
+        from: `"BDE — HEI STDhub" <${process.env.EMAIL_USER}>`,
+        to: r.email,
+        subject: "📬 Retour du BDE sur les suggestions",
+        html: resumeHtml(r.prenom, r.nom),
       }),
     );
 
     await Promise.allSettled(emailPromises);
 
-    res.json({ message: `Emails envoyés à ${students.length} étudiants.` });
+    res.json({ message: `Emails envoyés à ${recipients.length} personnes.` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });

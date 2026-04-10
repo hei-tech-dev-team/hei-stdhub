@@ -93,8 +93,8 @@ export default function Sidebar() {
             </NavLink>
           ))}
 
-          {/* Suggestions — visible par les étudiants uniquement */}
-          {user?.role === "student" && (
+          {/* Suggestions — visible par étudiants ET profs */}
+          {["student", "teacher"].includes(user?.role) && (
             <NavLink
               to="/suggestions"
               end={false}
