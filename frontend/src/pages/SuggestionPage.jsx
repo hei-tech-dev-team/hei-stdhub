@@ -5,13 +5,17 @@ import {
   faPaperPlane,
   faSpinner,
   faCheckCircle,
+  faUserSecret,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
+import { useAuth } from "../context/AuthContext";
 
 export default function SuggestionPage() {
-  const [form, setForm] = useState({ titre: "", contenu: "" });
+  const { user } = useAuth();
+  const [form, setForm] = useState({ titre: "", contenu: "", anonyme: false });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -30,7 +34,7 @@ export default function SuggestionPage() {
     try {
       await api.post("/suggestions", form);
       setSubmitted(true);
-      setForm({ titre: "", contenu: "" });
+      setForm({ titre: "", contenu: "", anonyme: false });
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'envoi.");
@@ -38,6 +42,8 @@ export default function SuggestionPage() {
       setLoading(false);
     }
   };
+
+  const isTeacher = user?.role === "teacher";
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -58,9 +64,9 @@ export default function SuggestionPage() {
                 <h1 className="text-lg font-bold">Boîte à idées du BDE</h1>
               </div>
               <p className="text-white/60 text-sm leading-relaxed">
-                Tu as une idée pour améliorer la vie étudiante à HEI ? Soumets
-                ta suggestion au Bureau Des Étudiants. Chaque suggestion sera
-                examinée et tu recevras un retour par email.
+                {isTeacher
+                  ? "En tant que professeur, vous pouvez soumettre des suggestions au BDE pour améliorer la vie à HEI. Vous recevrez un retour par email."
+                  : "Tu as une idée pour améliorer la vie étudiante à HEI ? Soumets ta suggestion au Bureau Des Étudiants. Chaque suggestion sera examinée et tu recevras un retour par email."}
               </p>
             </div>
 
@@ -135,11 +141,60 @@ export default function SuggestionPage() {
                   </p>
                 </div>
 
+                {/* Toggle anonyme */}
+                <div
+                  onClick={() => set("anonyme", !form.anonyme)}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition select-none ${
+                    form.anonyme
+                      ? "border-navy bg-navy/5"
+                      : "border-contact bg-surface hover:border-navy/30"
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition ${
+                      form.anonyme
+                        ? "bg-navy text-white"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    <FontAwesomeIcon
+                      icon={form.anonyme ? faUserSecret : faUser}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={`font-bold text-sm ${form.anonyme ? "text-navy" : "text-gray-500"}`}
+                    >
+                      {form.anonyme
+                        ? "Suggestion anonyme"
+                        : "Suggestion avec mon nom"}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {form.anonyme
+                        ? "Le BDE ne verra pas votre identité."
+                        : "Cliquez pour soumettre anonymement."}
+                    </p>
+                  </div>
+                  {/* Switch */}
+                  <div
+                    className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${
+                      form.anonyme ? "bg-navy" : "bg-gray-200"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                        form.anonyme ? "left-5" : "left-0.5"
+                      }`}
+                    />
+                  </div>
+                </div>
+
                 <div className="flex gap-3 justify-end pt-1">
                   <button
                     type="button"
                     onClick={() => {
-                      setForm({ titre: "", contenu: "" });
+                      setForm({ titre: "", contenu: "", anonyme: false });
                       setError("");
                     }}
                     className="btn-danger"
@@ -158,8 +213,12 @@ export default function SuggestionPage() {
                       />
                     ) : (
                       <>
-                        <FontAwesomeIcon icon={faPaperPlane} />
-                        Envoyer au BDE
+                        <FontAwesomeIcon
+                          icon={form.anonyme ? faUserSecret : faPaperPlane}
+                        />
+                        {form.anonyme
+                          ? "Envoyer anonymement"
+                          : "Envoyer au BDE"}
                       </>
                     )}
                   </button>
@@ -171,9 +230,11 @@ export default function SuggestionPage() {
             <div className="mt-4 bg-gold/10 border border-gold/30 rounded-xl p-4">
               <p className="text-xs text-navy/70 leading-relaxed">
                 <strong className="text-navy">Comment ça marche ?</strong> Le
-                BDE reçoit ta suggestion et l'examine. Elle peut être retenue
-                pour discussion, ou refusée avec une justification. Tu seras
-                notifié par email dès qu'une décision est prise.
+                BDE reçoit ta suggestion et l'examine. Elle peut être acceptée,
+                mise en discussion, ou refusée avec une justification. Tu seras
+                notifié par email dès qu'une décision est prise.{" "}
+                <strong className="text-navy">Envoi anonyme :</strong> ton
+                identité ne sera pas visible par le BDE.
               </p>
             </div>
           </div>
