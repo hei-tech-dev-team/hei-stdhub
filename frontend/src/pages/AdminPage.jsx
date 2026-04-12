@@ -165,7 +165,7 @@ export default function AdminPage() {
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       api.get("/admin/stats").then(({ data }) => setStats(data));
     } catch (err) {
-      console.error(err);
+      console.error(err);n
     }
   };
 
