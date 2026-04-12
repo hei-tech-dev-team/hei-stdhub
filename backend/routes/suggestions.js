@@ -183,7 +183,7 @@ router.post("/confirm", auth, async (req, res) => {
 
     // Envoyer les emails via Resend
     const emailPromises = recipients.map((r) =>
-      resend.emails.send({
+      getResend().emails.send({
         from: "HEI STDhub BDE <noreply@hei-stdhub.com>",
         to: r.email,
         subject: "📬 Retour du BDE sur les suggestions",
