@@ -4,7 +4,11 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const { Resend } = require("resend");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend;
+const getResend = () => {
+  if (!resend) resend = new Resend(process.env.RESEND_API_KEY);
+  return resend;
+};
 
 // POST /api/suggestions — étudiant ou prof soumet une suggestion
 router.post("/", auth, async (req, res) => {
