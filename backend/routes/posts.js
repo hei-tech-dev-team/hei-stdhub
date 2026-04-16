@@ -3,6 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const { log, timeLog } = require("console");
 
 const router = express.Router();
 
