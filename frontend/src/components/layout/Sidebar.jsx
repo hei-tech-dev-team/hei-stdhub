@@ -125,7 +125,7 @@ export default function Sidebar() {
                 icon={faUsersRectangle}
                 className="w-4 h-4 shrink-0"
               />
-              <span className="truncate">Interface BDE</span>
+              <span className="truncate"> BAL BDE</span>
             </NavLink>
           )}
 
