@@ -18,6 +18,8 @@
     "axios": "^1.13.5",
     "client": "^0.0.1",
     "dompurify": "^3.3.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",

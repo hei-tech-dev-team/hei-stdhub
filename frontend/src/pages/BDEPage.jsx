@@ -6,11 +6,12 @@ import {
   faComments,
   faTimesCircle,
   faSpinner,
-  faPaperPlane,
+  faFilePdf,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
+import jsPDF from "jspdf";
 
 const COLUMNS = [
   {
@@ -55,11 +56,131 @@ const COLUMNS = [
   },
 ];
 
+const generatePDF = (suggestions) => {
+  const doc = new jsPDF();
+  const date = new Date().toLocaleDateString("fr-FR");
+  const pageW = doc.internal.pageSize.getWidth();
+
+  // Header
+  doc.setFillColor(15, 30, 51);
+  doc.rect(0, 0, pageW, 35, "F");
+  doc.setTextColor(245, 166, 35);
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("HEI STDhub", pageW / 2, 15, { align: "center" });
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Retour officiel du BDE — ${date}`, pageW / 2, 25, {
+    align: "center",
+  });
+
+  let y = 45;
+
+  const acceptes = suggestions.filter((s) => s.statut === "accepte");
+  const aDiscuter = suggestions.filter((s) => s.statut === "a_discuter");
+  const refuses = suggestions.filter((s) => s.statut === "refuse");
+
+  const addSection = (items, label, r, g, b) => {
+    if (items.length === 0) return;
+
+    // Nouvelle page si besoin
+    if (y > 240) {
+      doc.addPage();
+      y = 20;
+    }
+
+    // Titre section
+    doc.setFillColor(r, g, b);
+    doc.rect(14, y, 4, 8, "F");
+    doc.setTextColor(r, g, b);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${label} (${items.length})`, 22, y + 6);
+    y += 14;
+
+    items.forEach((s) => {
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Card fond
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(r, g, b);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(14, y, pageW - 28, 0, 3, 3);
+
+      // Titre suggestion
+      doc.setTextColor(15, 30, 51);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      const titreLines = doc.splitTextToSize(s.titre, pageW - 40);
+      doc.text(titreLines, 18, y + 7);
+      y += 7 + titreLines.length * 5;
+
+      // Contenu
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const contenuLines = doc.splitTextToSize(s.contenu, pageW - 40);
+      doc.text(contenuLines, 18, y + 2);
+      y += 2 + contenuLines.length * 4;
+
+      // Auteur
+      const auteur = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(8);
+      doc.text(`— ${auteur}`, 18, y + 3);
+      y += 5;
+
+      // Justification si refusé
+      if (s.justification) {
+        doc.setFillColor(254, 242, 242);
+        doc.setTextColor(239, 68, 68);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.text("Justification BDE :", 18, y + 4);
+        doc.setFont("helvetica", "normal");
+        const justLines = doc.splitTextToSize(s.justification, pageW - 44);
+        doc.text(justLines, 18, y + 9);
+        y += 9 + justLines.length * 4;
+      }
+
+      y += 6;
+    });
+
+    y += 4;
+  };
+
+  addSection(acceptes, "✓ Suggestions acceptées", 16, 185, 129);
+  addSection(aDiscuter, "? À approfondir", 245, 158, 11);
+  addSection(refuses, "✗ Suggestions refusées", 239, 68, 68);
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFillColor(15, 30, 51);
+    doc.rect(0, doc.internal.pageSize.getHeight() - 12, pageW, 12, "F");
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(7);
+    doc.text(
+      `HEI STDhub — Bureau Des Étudiants — ${date} — Page ${i}/${pageCount}`,
+      pageW / 2,
+      doc.internal.pageSize.getHeight() - 4,
+      { align: "center" },
+    );
+  }
+
+  doc.save(`BDE_Rapport_${date.replace(/\//g, "-")}.pdf`);
+};
+
 export default function BDEPage() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [done, setDone] = useState(false);
   const [dragId, setDragId] = useState(null);
   const [dragOver, setDragOver] = useState(null);
   const [justModal, setJustModal] = useState(null);
@@ -142,12 +263,16 @@ export default function BDEPage() {
     setError("");
     try {
       const { data } = await api.post("/suggestions/confirm");
-      setSent(true);
-      setTimeout(() => setSent(false), 5000);
+
+      // Générer et télécharger le PDF
+      generatePDF(data.suggestions);
+
+      // Vider les suggestions du state
+      setSuggestions([]);
+      setDone(true);
+      setTimeout(() => setDone(false), 5000);
     } catch (err) {
-      setError(
-        err.response?.data?.error || "Erreur lors de l'envoi des emails.",
-      );
+      setError(err.response?.data?.error || "Erreur lors de la confirmation.");
     } finally {
       setSending(false);
     }
@@ -166,15 +291,16 @@ export default function BDEPage() {
                 Gestion des suggestions
               </h1>
               <p className="text-gray-400 text-sm mt-0.5">
-                Glissez-déposez les suggestions dans les colonnes appropriées,
-                puis confirmez pour notifier les étudiants par email.
+                Glissez-déposez les suggestions dans les colonnes, puis
+                confirmez pour générer le rapport PDF et le partager dans le
+                chat.
               </p>
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
-              {sent && (
+              {done && (
                 <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200">
                   <FontAwesomeIcon icon={faCheckCircle} />
-                  Emails envoyés à tous les étudiants !
+                  PDF téléchargé & partagé dans le chat !
                 </div>
               )}
               <button
@@ -185,9 +311,9 @@ export default function BDEPage() {
                 {sending ? (
                   <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
                 ) : (
-                  <FontAwesomeIcon icon={faPaperPlane} />
+                  <FontAwesomeIcon icon={faFilePdf} />
                 )}
-                Confirmer & notifier les étudiants
+                Confirmer & générer le rapport
               </button>
             </div>
           </div>
@@ -204,6 +330,13 @@ export default function BDEPage() {
                 icon={faSpinner}
                 className="text-navy text-3xl animate-spin"
               />
+            </div>
+          ) : suggestions.length === 0 && !loading ? (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-300">
+              <FontAwesomeIcon icon={faInbox} className="text-5xl mb-3" />
+              <p className="text-gray-400 font-semibold text-sm">
+                Aucune suggestion pour le moment
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
@@ -258,11 +391,10 @@ export default function BDEPage() {
                         </p>
                         <div className="flex items-center gap-1.5 pt-2 border-t border-surface">
                           <div className="w-5 h-5 rounded-full bg-navy flex items-center justify-center text-white text-xs font-bold shrink-0">
-                            {s.prenom?.[0]}
-                            {s.nom?.[0]}
+                            {s.anonyme ? "?" : `${s.prenom?.[0]}${s.nom?.[0]}`}
                           </div>
                           <span className="text-xs text-gray-400 truncate flex-1">
-                            {s.prenom} {s.nom}
+                            {s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`}
                           </span>
                           <span className="text-xs text-gray-300 shrink-0">
                             {new Date(s.created_at).toLocaleDateString("fr-FR")}
@@ -296,8 +428,8 @@ export default function BDEPage() {
               Justification du refus
             </h3>
             <p className="text-gray-400 text-sm mb-4">
-              Cette justification sera visible par tous les étudiants dans
-              l'email de retour.
+              Cette justification apparaîtra dans le rapport PDF partagé dans le
+              chat.
             </p>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 text-xs px-3 py-2 rounded-lg mb-3">
