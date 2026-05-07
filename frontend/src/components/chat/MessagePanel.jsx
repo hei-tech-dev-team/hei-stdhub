@@ -80,7 +80,7 @@ export default function MessagePanel({
       await onSend(
         `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}]`,
       );
-    } catch (err) {
+    } catch {
       await onSend(`[Fichier : ${file.name}]`);
     } finally {
       setSending(false);

@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
@@ -12,12 +11,10 @@ import {
   faSave,
   faSpinner,
   faCheck,
-  faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
-  const navigate = useNavigate();
   const fileRef = useRef(null);
 
   const [pseudo, setPseudo] = useState(user?.pseudo || "");

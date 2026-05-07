@@ -66,6 +66,8 @@ if (process.env.NODE_ENV === "production") {
 
 // ── Routes ──
 app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/forgot-password", loginLimiter);
+app.use("/api/auth/reset-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));

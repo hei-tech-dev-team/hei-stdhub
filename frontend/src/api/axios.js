@@ -19,6 +19,8 @@ api.interceptors.response.use(
     const isAuthRoute =
       url.includes("/auth/login") ||
       url.includes("/auth/password") ||
+      url.includes("/auth/forgot-password") ||
+      url.includes("/auth/reset-password") ||
       url.includes("/auth/register") ||
       url.includes("/auth/verify-invite");
 
