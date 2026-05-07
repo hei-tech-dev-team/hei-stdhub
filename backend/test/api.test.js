@@ -73,6 +73,24 @@ describe("🔐 AUTH", () => {
       .set("Authorization", "Bearer tokenbidon123");
     expect(res.status).to.equal(401);
   });
+
+  it("POST /auth/forgot-password existe et valide l'email → 400", async () => {
+    const res = await agent.post("/api/auth/forgot-password").send({});
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property("error", "Adresse email requise.");
+  });
+
+  it("GET /auth/reset-password/:token existe → 400 pour token invalide", async () => {
+    const res = await agent.get("/api/auth/reset-password/token-invalide");
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property("error", "Lien invalide ou expiré.");
+  });
+
+  it("POST /auth/reset-password existe et valide les champs → 400", async () => {
+    const res = await agent.post("/api/auth/reset-password").send({});
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property("error", "Token et mot de passe requis.");
+  });
 });
 
 // ══════════════════════════════════════════
