@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS messages    CASCADE;
 DROP TABLE IF EXISTS submissions CASCADE;
 DROP TABLE IF EXISTS supports    CASCADE;
 DROP TABLE IF EXISTS posts       CASCADE;
+DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS users       CASCADE;
 
 DROP TYPE IF EXISTS user_role   CASCADE;
@@ -39,6 +40,15 @@ CREATE TABLE users (
     (role = 'student' AND email ~ '^hei\.[a-zA-Z0-9._%+-]+@gmail\.com$')
     OR role IN ('teacher','admin')
   )
+);
+
+CREATE TABLE password_reset_tokens (
+  id         SERIAL       PRIMARY KEY,
+  user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash VARCHAR(64)  NOT NULL UNIQUE,
+  expires_at TIMESTAMP    NOT NULL,
+  used_at    TIMESTAMP    NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE posts (
@@ -138,6 +148,11 @@ CREATE INDEX idx_msg_global    ON messages(is_global);
 CREATE INDEX idx_msg_sender    ON messages(sender_id);
 CREATE INDEX idx_msg_receiver  ON messages(receiver_id);
 CREATE INDEX idx_msg_created   ON messages(created_at ASC);
+CREATE INDEX idx_password_reset_token_hash
+  ON password_reset_tokens(token_hash);
+CREATE INDEX idx_password_reset_user_active
+  ON password_reset_tokens(user_id, expires_at)
+  WHERE used_at IS NULL;
 
 CREATE OR REPLACE FUNCTION fn_set_updated_at()
 RETURNS TRIGGER AS $$
@@ -159,5 +174,6 @@ INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level) VALUE
   ('ADMIN001', 'Admin', 'HEI', 'admin@hei.mg', 'ADMIN',
    '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'admin', NULL),
   ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
-   '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'student', 'L1');
-   ('PROF001','Tester','PROF','tester@gmail.com','PROFTEST','$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi','teacher',NULL)
+   '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'student', 'L1'),
+  ('PROF001','Tester','PROF','tester@gmail.com','PROFTEST',
+   '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi','teacher',NULL);
