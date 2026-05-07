@@ -43,31 +43,54 @@ const escapeHtml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 
+const getEmailTimeoutMs = () =>
+  Number(process.env.EMAIL_TIMEOUT_MS || process.env.RESEND_TIMEOUT_MS || 10000);
+
+const readResponseBody = async (response) => {
+  const text = await response.text();
+  if (!text) return "";
+
+  try {
+    return JSON.stringify(JSON.parse(text));
+  } catch {
+    return text;
+  }
+};
+
 const sendWithResend = async ({ user, subject, text, html }) => {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return null;
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from:
-        process.env.RESEND_FROM ||
-        process.env.EMAIL_FROM ||
-        process.env.MAIL_FROM ||
-        "HEI STDhub <onboarding@resend.dev>",
-      to: user.email,
-      subject,
-      text,
-      html,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), getEmailTimeoutMs());
+
+  let response;
+  try {
+    response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from:
+          process.env.RESEND_FROM ||
+          process.env.EMAIL_FROM ||
+          process.env.MAIL_FROM ||
+          "HEI STDhub <onboarding@resend.dev>",
+        to: user.email,
+        subject,
+        text,
+        html,
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
-    const body = await response.text();
+    const body = await readResponseBody(response);
     throw new Error(`Resend email failed (${response.status}): ${body}`);
   }
 
@@ -97,26 +120,25 @@ const sendPasswordResetEmail = async ({ user, token }) => {
     `;
 
   if (process.env.RESEND_API_KEY) {
-    await sendWithResend({ user, subject, text, html });
+    const result = await sendWithResend({ user, subject, text, html });
+    console.info(`Email de réinitialisation envoyé via Resend à ${user.email}`);
+    return { skipped: false, resetUrl, provider: "resend", result };
+  }
+
+  if (transporter) {
+    await transporter.sendMail({
+      from: getFromAddress(),
+      to: user.email,
+      subject,
+      text,
+      html,
+    });
+    console.info(`Email de réinitialisation envoyé via SMTP à ${user.email}`);
     return { skipped: false, resetUrl };
   }
 
-  if (!transporter) {
-    console.info(
-      `Lien de réinitialisation pour ${user.email}: ${resetUrl}`,
-    );
-    return { skipped: true, resetUrl };
-  }
-
-  await transporter.sendMail({
-    from: getFromAddress(),
-    to: user.email,
-    subject,
-    text,
-    html,
-  });
-
-  return { skipped: false, resetUrl };
+  console.info(`Lien de réinitialisation pour ${user.email}: ${resetUrl}`);
+  return { skipped: true, resetUrl };
 };
 
 module.exports = {
