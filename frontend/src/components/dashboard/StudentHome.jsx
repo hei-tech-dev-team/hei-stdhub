@@ -21,7 +21,6 @@ export default function StudentHome() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
     const params = filter !== "Tous" ? { level: filter } : {};
     api
       .get("/posts", { params })
@@ -29,6 +28,11 @@ export default function StudentHome() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [filter]);
+
+  const handleFilterChange = (level) => {
+    setLoading(true);
+    setFilter(level);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -49,7 +53,7 @@ export default function StudentHome() {
               <button
                 key={l}
                 type="button"
-                onClick={() => setFilter(l)}
+                onClick={() => handleFilterChange(l)}
                 className={
                   "px-4 py-1.5 rounded-full text-xs font-bold transition " +
                   (filter === l

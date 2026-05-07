@@ -1,11 +1,13 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const cloudinary = require("cloudinary").v2;
 const CloudinaryStorage = require("multer-storage-cloudinary");
 const multer = require("multer");
+const { sendPasswordResetEmail } = require("../services/mailer");
 const capitalize = (str) =>
   str
     .trim()
@@ -37,6 +39,14 @@ const makeToken = (user) =>
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
+
+const hashResetToken = (token) =>
+  crypto.createHash("sha256").update(token).digest("hex");
+
+const genericForgotPasswordResponse = {
+  message:
+    "Si un compte est associé à cet email, un lien de réinitialisation a été envoyé.",
+};
 
 router.post("/register", async (req, res) => {
   const {
@@ -134,6 +144,119 @@ router.post("/login", async (req, res) => {
     res.json({ token: makeToken(safeUser), user: safeUser });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  if (!email)
+    return res.status(400).json({ error: "Adresse email requise." });
+
+  try {
+    const { rows } = await db.query(
+      `SELECT id, email, prenom, pseudo FROM users WHERE LOWER(email)=LOWER($1)`,
+      [email],
+    );
+
+    if (!rows.length) return res.json(genericForgotPasswordResponse);
+
+    const user = rows[0];
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashResetToken(token);
+
+    await db.query(
+      `UPDATE password_reset_tokens
+       SET used_at=NOW()
+       WHERE user_id=$1 AND used_at IS NULL`,
+      [user.id],
+    );
+
+    await db.query(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '1 hour')`,
+      [user.id, tokenHash],
+    );
+
+    await sendPasswordResetEmail({ user, token });
+    res.json(genericForgotPasswordResponse);
+  } catch (err) {
+    console.error("ERREUR /auth/forgot-password:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.get("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  if (!token) return res.status(400).json({ error: "Token requis." });
+
+  try {
+    const { rows } = await db.query(
+      `SELECT id FROM password_reset_tokens
+       WHERE token_hash=$1 AND used_at IS NULL AND expires_at > NOW()
+       LIMIT 1`,
+      [hashResetToken(token)],
+    );
+
+    if (!rows.length)
+      return res.status(400).json({ error: "Lien invalide ou expiré." });
+
+    res.json({ valid: true });
+  } catch (err) {
+    console.error("ERREUR /auth/reset-password/:token:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  const { token } = req.body;
+  const newPassword = req.body.newPassword || req.body.password;
+
+  if (!token || !newPassword)
+    return res.status(400).json({ error: "Token et mot de passe requis." });
+  if (newPassword.length < 6)
+    return res.status(400).json({ error: "Minimum 6 caractères." });
+
+  try {
+    const tokenHash = hashResetToken(token);
+    const { rows } = await db.query(
+      `SELECT prt.id, prt.user_id
+       FROM password_reset_tokens prt
+       WHERE prt.token_hash=$1 AND prt.used_at IS NULL AND prt.expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash],
+    );
+
+    if (!rows.length)
+      return res.status(400).json({ error: "Lien invalide ou expiré." });
+
+    const resetToken = rows[0];
+    const hash = await bcrypt.hash(newPassword, 10);
+
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("UPDATE users SET password=$1 WHERE id=$2", [
+        hash,
+        resetToken.user_id,
+      ]);
+      await client.query(
+        `UPDATE password_reset_tokens
+         SET used_at=NOW()
+         WHERE user_id=$1 AND used_at IS NULL`,
+        [resetToken.user_id],
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    res.json({ message: "Mot de passe réinitialisé." });
+  } catch (err) {
+    console.error("ERREUR /auth/reset-password:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
