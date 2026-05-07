@@ -178,8 +178,10 @@ router.post("/forgot-password", async (req, res) => {
       [user.id, tokenHash],
     );
 
-    await sendPasswordResetEmail({ user, token });
     res.json(genericForgotPasswordResponse);
+    sendPasswordResetEmail({ user, token }).catch((emailErr) => {
+      console.error("ERREUR email /auth/forgot-password:", emailErr);
+    });
   } catch (err) {
     console.error("ERREUR /auth/forgot-password:", err);
     res.status(500).json({ error: "Erreur serveur." });
