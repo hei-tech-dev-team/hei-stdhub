@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Navigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers,
@@ -75,8 +74,6 @@ export default function AdminPage() {
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
-  // Guard
-  if (user?.role !== "admin") return <Navigate to="/" replace />;
   const mainRef = useRef();
   // Afficher bouton "remonter en haut"
   useEffect(() => {
