@@ -1,27 +1,31 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/axios";
 
 const AuthContext = createContext(null);
 
+const getSavedUser = () => {
+  const savedUser = localStorage.getItem("hei_user");
+  if (!savedUser) return null;
+
+  try {
+    return JSON.parse(savedUser);
+  } catch {
+    localStorage.removeItem("hei_user");
+    return null;
+  }
+};
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(getSavedUser);
+  const [loading, setLoading] = useState(() =>
+    Boolean(localStorage.getItem("hei_token")),
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("hei_token");
-    const savedUser = localStorage.getItem("hei_user");
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    // Charger l'user depuis localStorage immédiatement
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (_) {}
-    }
+    if (!token) return;
 
     // Puis rafraîchir depuis l'API en arrière-plan
     api
