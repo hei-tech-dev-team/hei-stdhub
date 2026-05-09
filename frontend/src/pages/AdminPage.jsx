@@ -949,7 +949,7 @@ export default function AdminPage() {
               Rôle de l'invité
             </label>
             <div className="flex gap-2 mb-6">
-              {["student", "teacher"].map((r) => (
+              {["student", "teacher", "alumni"].map((r) => (
                 <button
                   key={r}
                   type="button"
