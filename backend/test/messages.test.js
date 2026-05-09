@@ -19,8 +19,7 @@ before(async () => {
   }
 });
 
-describe("💬 MESSAGES — Auth & validation", () => {
-  // ── GET /messages/search ──
+describe("MESSAGES — Auth & validation", () => {
   describe("GET /messages/search", () => {
     it("retourne 401 sans token", async () => {
       const res = await agent.get("/api/messages/search?q=test");
@@ -46,7 +45,6 @@ describe("💬 MESSAGES — Auth & validation", () => {
     });
   });
 
-  // ── GET /messages/contacts ──
   describe("GET /messages/contacts", () => {
     it("retourne 401 sans token", async () => {
       const res = await agent.get("/api/messages/contacts");
@@ -54,7 +52,6 @@ describe("💬 MESSAGES — Auth & validation", () => {
     });
   });
 
-  // ── GET /messages/global ──
   describe("GET /messages/global", () => {
     it("retourne 401 sans token", async () => {
       const res = await agent.get("/api/messages/global");
@@ -62,7 +59,6 @@ describe("💬 MESSAGES — Auth & validation", () => {
     });
   });
 
-  // ── GET /messages/private/:id ──
   describe("GET /messages/private/:id", () => {
     it("retourne 401 sans token", async () => {
       const res = await agent.get("/api/messages/private/1");
@@ -70,7 +66,6 @@ describe("💬 MESSAGES — Auth & validation", () => {
     });
   });
 
-  // ── POST /messages ──
   describe("POST /messages", () => {
     it("retourne 401 sans token", async () => {
       const res = await agent
@@ -120,7 +115,6 @@ describe("💬 MESSAGES — Auth & validation", () => {
     });
   });
 
-  // ── PATCH /messages/:id/seen ──
   describe("PATCH /messages/:id/seen", () => {
     it("retourne 401 sans token", async () => {
       const res = await agent.patch("/api/messages/1/seen");
@@ -128,7 +122,6 @@ describe("💬 MESSAGES — Auth & validation", () => {
     });
   });
 
-  // ── POST /messages/upload ──
   describe("POST /messages/upload", () => {
     it("retourne 401 sans token", async () => {
       const res = await agent.post("/api/messages/upload");

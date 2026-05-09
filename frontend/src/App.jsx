@@ -88,7 +88,7 @@ export default function App() {
         }
       />
       <Route
-        // Remplace SuggestionPage route — accessible à student ET teacher
+        // Open to both students and teachers
         path="/suggestions"
         element={
           <ProtectedRoute>

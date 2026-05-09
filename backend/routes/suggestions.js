@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require("../db");
 const auth = require("../middleware/auth");
 
-// POST /api/suggestions — étudiant ou prof soumet une suggestion
+// Students and teachers can submit suggestions
 router.post("/", auth, async (req, res) => {
   if (!["student", "teacher"].includes(req.user.role))
     return res
@@ -27,7 +27,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// GET /api/suggestions — BDE voit toutes les suggestions
+// BDE can see all suggestions
 router.get("/", auth, async (req, res) => {
   if (req.user.role !== "bde")
     return res.status(403).json({ error: "Accès réservé au BDE." });
@@ -51,7 +51,7 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// PATCH /api/suggestions/:id — BDE change le statut
+// BDE updates the status of a suggestion
 router.patch("/:id", auth, async (req, res) => {
   if (req.user.role !== "bde")
     return res.status(403).json({ error: "Accès réservé au BDE." });
@@ -80,9 +80,8 @@ router.patch("/:id", auth, async (req, res) => {
   }
 });
 
-// POST /api/suggestions/confirm — BDE confirme
-// Retourne les données pour générer le PDF côté frontend
-// puis envoie un message dans le chat global et supprime les suggestions
+// BDE confirms the suggestions round
+// Returns data for PDF generation, posts a summary to global chat, then deletes all suggestions
 router.post("/confirm", auth, async (req, res) => {
   if (req.user.role !== "bde")
     return res.status(403).json({ error: "Accès réservé au BDE." });
@@ -104,48 +103,48 @@ router.post("/confirm", auth, async (req, res) => {
         .status(400)
         .json({ error: "Aucune suggestion traitée à confirmer." });
 
-    // Envoyer un message dans le chat global
+    // Post a summary to the global chat
     const date = new Date().toLocaleDateString("fr-FR");
     const acceptes = suggestions.filter((s) => s.statut === "accepte");
     const aDiscuter = suggestions.filter((s) => s.statut === "a_discuter");
     const refuses = suggestions.filter((s) => s.statut === "refuse");
 
-    let chatMsg = `📋 *Retour du BDE — ${date}*\n\n`;
+    let chatMsg = `*Retour du BDE — ${date}*\n\n`;
     if (acceptes.length > 0) {
-      chatMsg += `✅ Suggestions acceptées (${acceptes.length}) :\n`;
+      chatMsg += `Suggestions acceptées (${acceptes.length}) :\n`;
       acceptes.forEach((s) => {
         chatMsg += `• ${s.titre}\n`;
       });
       chatMsg += "\n";
     }
     if (aDiscuter.length > 0) {
-      chatMsg += `💬 À approfondir (${aDiscuter.length}) :\n`;
+      chatMsg += `À approfondir (${aDiscuter.length}) :\n`;
       aDiscuter.forEach((s) => {
         chatMsg += `• ${s.titre}\n`;
       });
       chatMsg += "\n";
     }
     if (refuses.length > 0) {
-      chatMsg += `❌ Refusées (${refuses.length}) :\n`;
+      chatMsg += `Refusées (${refuses.length}) :\n`;
       refuses.forEach((s) => {
         chatMsg += `• ${s.titre}`;
         if (s.justification) chatMsg += ` — ${s.justification}`;
         chatMsg += "\n";
       });
     }
-    chatMsg += "\n📄 Le rapport complet a été téléchargé.";
+    chatMsg += "\nLe rapport complet a été téléchargé.";
 
-    // Poster dans le chat global
+    // Insert into global messages
     await db.query(
       `INSERT INTO messages (sender_id, content, is_global)
        VALUES ($1, $2, true)`,
       [req.user.id, chatMsg],
     );
 
-    // Supprimer toutes les suggestions
+    // Clear all processed suggestions
     await db.query("DELETE FROM suggestions");
 
-    // Retourner les données pour le PDF frontend
+    // Return suggestion data so the frontend can generate a PDF
     res.json({
       suggestions,
       message: "Confirmé, message posté dans le chat global.",
