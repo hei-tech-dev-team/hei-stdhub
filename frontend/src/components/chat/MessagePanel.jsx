@@ -17,7 +17,6 @@ import {
   GROUP_GAP,
   formatTime,
   formatDateLabel,
-  formatMessageTime,
   formatTooltipDate,
   isFileMessage,
   parseFileContent,
@@ -197,6 +196,41 @@ function MessageGroup({ messages, isOwn }) {
   );
 }
 
+function ContactAvatar({ contact, onlineUsers }) {
+  if (contact.isGlobal) {
+    return (
+      <div className="w-10 h-10 rounded-full bg-[#d4a017]/20 flex items-center justify-center shrink-0">
+        <img
+          src={HEI_WHITE_LOGO}
+          alt="HEI"
+          className="w-5 h-5 object-contain"
+        />
+      </div>
+    );
+  }
+  const online = onlineUsers.has(contact.id);
+  return (
+    <div className="relative shrink-0">
+      {contact.avatar ? (
+        <div className="w-10 h-10 rounded-full overflow-hidden">
+          <img
+            src={contact.avatar}
+            alt={contact.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <Avatar name={contact.name} size="md" color="bg-[#5865f2]" />
+      )}
+      <span className="absolute -bottom-0.5 -right-0.5">
+        <span
+          className={`status-dot ${online ? "status-online" : "status-offline"}`}
+        />
+      </span>
+    </div>
+  );
+}
+
 export default function MessagePanel({
   contact,
   messages,
@@ -206,6 +240,7 @@ export default function MessagePanel({
   isAtBottom,
   onAtBottomChange,
   onScrollToBottom,
+  onlineUsers,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -315,36 +350,10 @@ export default function MessagePanel({
     return result;
   }, [messages]);
 
-  const ContactAvatar = () => {
-    if (contact.isGlobal) {
-      return (
-        <div className="w-10 h-10 rounded-full bg-[#d4a017]/20 flex items-center justify-center shrink-0">
-          <img
-            src={HEI_WHITE_LOGO}
-            alt="HEI"
-            className="w-5 h-5 object-contain"
-          />
-        </div>
-      );
-    }
-    if (contact.avatar) {
-      return (
-        <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
-          <img
-            src={contact.avatar}
-            alt={contact.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      );
-    }
-    return <Avatar name={contact.name} size="md" color="bg-[#5865f2]" />;
-  };
-
   return (
     <div className="flex flex-col h-full bg-[#1e1f22]">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 bg-[#2b2d31] border-b border-[#1e1f22] shrink-0 shadow-sm">
+      <div className="glass-card flex items-center gap-3 px-4 sm:px-5 py-3 bg-[#2b2d31]/80 border-b border-white/10 shrink-0 shadow-sm">
         <button
           type="button"
           onClick={onOpenContacts}
@@ -353,7 +362,7 @@ export default function MessagePanel({
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
-        <ContactAvatar />
+        <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
         <div className="flex-1 min-w-0">
           <h3 className="text-white font-bold text-base truncate">
             {contact.name}
@@ -419,7 +428,7 @@ export default function MessagePanel({
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
             className="fixed bottom-20 right-6 w-10 h-10 rounded-full
-                       bg-[#2b2d31] border border-white/10
+                       bg-[#2b2d31]/80 glass border border-white/10
                        text-white flex items-center justify-center
                        hover:bg-[#3a3c42] transition shadow-lg z-10"
             title="Revenir en bas"
@@ -430,7 +439,7 @@ export default function MessagePanel({
       </div>
 
       {/* Input */}
-      <div className="px-4 sm:px-5 py-4 bg-[#2b2d31] border-t border-[#1e1f22] shrink-0">
+      <div className="px-4 sm:px-5 py-4 bg-[#2b2d31]/80 glass-border border-t border-white/10 shrink-0">
         <div className="flex items-center gap-2 bg-[#1e1f22] rounded-lg px-4 py-2.5 border border-[#3a3c42] focus-within:border-[#d4a017] transition">
           <button
             type="button"
