@@ -26,7 +26,7 @@ function DateSeparator({ date }) {
   return (
     <div className="flex items-center gap-3 my-4">
       <div className="flex-1 h-px bg-white/10" />
-      <span className="text-white/40 text-xs font-medium shrink-0">
+      <span className="text-white/50 text-xs font-medium shrink-0">
         {formatDateLabel(date)}
       </span>
       <div className="flex-1 h-px bg-white/10" />
@@ -82,7 +82,7 @@ function MessageGroup({ messages, isOwn }) {
           return (
             <div key={msg.id} className="flex items-end gap-2 mb-1 max-w-[75%] sm:max-w-sm">
               {!isOwn && isFirst && (
-                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end">
+                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
                   {msg.senderAvatar ? (
                     <img
                       src={msg.senderAvatar}
@@ -90,7 +90,7 @@ function MessageGroup({ messages, isOwn }) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Avatar name={msg.sender} size="sm" color="bg-[#5865f2]" />
+                    <Avatar name={msg.sender} size="sm" color="bg-gold" />
                   )}
                 </div>
               )}
@@ -99,13 +99,13 @@ function MessageGroup({ messages, isOwn }) {
                 <div
                   className={`rounded-lg overflow-hidden ${
                     isOwn
-                      ? "bg-[#d4a017] text-white rounded-br-sm"
-                      : "bg-[#2b2d31] text-white rounded-bl-sm"
+                      ? "bg-navy text-white rounded-br-sm"
+                      : "bg-white/10 backdrop-blur-sm border border-white/10 text-white rounded-bl-sm"
                   }`}
                 >
                   {renderContent(msg.content)}
                 </div>
-                <span className="text-white/20 text-[10px] mt-0.5 px-1">
+                <span className="text-white/30 text-[10px] mt-0.5 px-1">
                   {timeStr}
                 </span>
               </div>
@@ -123,7 +123,7 @@ function MessageGroup({ messages, isOwn }) {
             onMouseLeave={() => setHoveredId(null)}
           >
             {!isOwn && isFirst && (
-              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end">
+              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
                 {msg.senderAvatar ? (
                   <img
                     src={msg.senderAvatar}
@@ -131,7 +131,7 @@ function MessageGroup({ messages, isOwn }) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Avatar name={msg.sender} size="sm" color="bg-[#5865f2]" />
+                  <Avatar name={msg.sender} size="sm" color="bg-gold" />
                 )}
               </div>
             )}
@@ -141,7 +141,7 @@ function MessageGroup({ messages, isOwn }) {
               {isFirst && (
                 <span
                   className={`text-[11px] font-semibold mb-0.5 ml-1 ${
-                    isOwn ? "text-right text-white/40" : "text-[#d4a017]"
+                    isOwn ? "text-right text-white/40" : "text-gold"
                   }`}
                 >
                   {isOwn ? "Vous" : msg.sender}
@@ -150,7 +150,7 @@ function MessageGroup({ messages, isOwn }) {
               <div className="flex items-end gap-1.5">
                 {!isOwn && (
                   <span
-                    className={`text-[10px] text-white/20 opacity-0 group-hover:opacity-100 transition-opacity select-none self-end pb-0.5 ${
+                    className={`text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity select-none self-end pb-0.5 ${
                       hoveredId === msg.id ? "opacity-100" : ""
                     }`}
                     title={tooltipStr}
@@ -161,8 +161,8 @@ function MessageGroup({ messages, isOwn }) {
                 <div
                   className={`px-3 py-1.5 text-sm leading-relaxed ${
                     isOwn
-                      ? "bg-[#d4a017] text-white rounded-2xl rounded-br-sm"
-                      : "bg-[#2b2d31] text-white/90 rounded-2xl rounded-bl-sm"
+                      ? "bg-navy text-white rounded-2xl rounded-br-sm"
+                      : "bg-white/10 backdrop-blur-sm border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
                   }`}
                 >
                   {renderContent(msg.content)}
@@ -174,16 +174,16 @@ function MessageGroup({ messages, isOwn }) {
                         hoveredId === msg.id || !isFirst
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100"
-                      } ${isOwn ? "text-white/20" : "text-white/20"}`}
+                      } text-white/30`}
                       title={tooltipStr}
                     >
                       {timeStr}
                     </span>
                     {!msg.seen && (
-                      <span className="text-white/20 text-[10px]">✓</span>
+                      <span className="text-white/30 text-[10px]">✓</span>
                     )}
                     {msg.seen && (
-                      <span className="text-[#d4a017] text-[10px]">✓✓</span>
+                      <span className="text-gold text-[10px]">✓✓</span>
                     )}
                   </div>
                 )}
@@ -199,7 +199,7 @@ function MessageGroup({ messages, isOwn }) {
 function ContactAvatar({ contact, onlineUsers }) {
   if (contact.isGlobal) {
     return (
-      <div className="w-10 h-10 rounded-full bg-[#d4a017]/20 flex items-center justify-center shrink-0">
+      <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center shrink-0 ring-2 ring-white/10">
         <img
           src={HEI_WHITE_LOGO}
           alt="HEI"
@@ -212,7 +212,7 @@ function ContactAvatar({ contact, onlineUsers }) {
   return (
     <div className="relative shrink-0">
       {contact.avatar ? (
-        <div className="w-10 h-10 rounded-full overflow-hidden">
+        <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/10">
           <img
             src={contact.avatar}
             alt={contact.name}
@@ -220,7 +220,7 @@ function ContactAvatar({ contact, onlineUsers }) {
           />
         </div>
       ) : (
-        <Avatar name={contact.name} size="md" color="bg-[#5865f2]" />
+        <Avatar name={contact.name} size="md" color="bg-gold" />
       )}
       <span className="absolute -bottom-0.5 -right-0.5">
         <span
@@ -351,9 +351,9 @@ export default function MessagePanel({
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full bg-[#1e1f22]">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="glass-card flex items-center gap-3 px-4 sm:px-5 py-3 bg-[#2b2d31]/80 border-b border-white/10 shrink-0 shadow-sm">
+      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0 shadow-sm">
         <button
           type="button"
           onClick={onOpenContacts}
@@ -367,7 +367,7 @@ export default function MessagePanel({
           <h3 className="text-white font-bold text-base truncate">
             {contact.name}
           </h3>
-          <p className="text-white/40 text-xs">
+          <p className="text-white/50 text-xs">
             {contact.isGlobal
               ? "Chat global – tous les membres"
               : contact.role === "teacher"
@@ -387,19 +387,19 @@ export default function MessagePanel({
           <div className="flex justify-center py-10">
             <FontAwesomeIcon
               icon={faSpinner}
-              className="text-[#d4a017] text-2xl animate-spin"
+              className="text-gold text-2xl animate-spin"
             />
           </div>
         )}
 
         {!loading && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
+          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40">
             <img
               src={HEI_WHITE_LOGO}
               alt="HEI"
               className="w-14 h-14 object-contain rounded-full"
             />
-            <p className="text-white text-sm">Démarrez la conversation...</p>
+            <p className="text-white/70 text-sm">Démarrez la conversation...</p>
           </div>
         )}
 
@@ -428,9 +428,9 @@ export default function MessagePanel({
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
             className="fixed bottom-20 right-6 w-10 h-10 rounded-full
-                       bg-[#2b2d31]/80 glass border border-white/10
+                       bg-white/10 backdrop-blur-xl border border-white/20
                        text-white flex items-center justify-center
-                       hover:bg-[#3a3c42] transition shadow-lg z-10"
+                       hover:bg-white/20 transition shadow-lg z-10"
             title="Revenir en bas"
           >
             <FontAwesomeIcon icon={faChevronDown} className="text-sm" />
@@ -439,8 +439,8 @@ export default function MessagePanel({
       </div>
 
       {/* Input */}
-      <div className="px-4 sm:px-5 py-4 bg-[#2b2d31]/80 glass-border border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 bg-[#1e1f22] rounded-lg px-4 py-2.5 border border-[#3a3c42] focus-within:border-[#d4a017] transition">
+      <div className="px-4 sm:px-5 py-4 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
+        <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2.5 border border-white/20 focus-within:border-gold transition">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
@@ -456,7 +456,7 @@ export default function MessagePanel({
           />
           <input
             className="flex-1 text-sm text-white bg-transparent
-                       focus:outline-none placeholder:text-white/20"
+                       focus:outline-none placeholder:text-white/30"
             placeholder="Écrire un message..."
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -466,7 +466,7 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-8 h-8 rounded-lg bg-[#d4a017] text-white
+            className="w-8 h-8 rounded-lg bg-gold text-white
                      flex items-center justify-center hover:opacity-90
                      transition shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
           >
