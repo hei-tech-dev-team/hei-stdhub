@@ -9,8 +9,6 @@ const RED = [239, 68, 68];
 const DARK = [30, 41, 59];
 const GRAY = [100, 116, 139];
 const LIGHT_GRAY = [148, 163, 184];
-const BG = [248, 250, 252];
-const BORDER = [226, 232, 240];
 
 function generateSuggestionReport(suggestions) {
   const doc = new jsPDF();
@@ -23,6 +21,7 @@ function generateSuggestionReport(suggestions) {
   const acceptes = suggestions.filter((s) => s.statut === "accepte");
   const aDiscuter = suggestions.filter((s) => s.statut === "a_discuter");
   const refuses = suggestions.filter((s) => s.statut === "refuse");
+  const total = suggestions.length;
 
   function addFooter(pageNum, totalPages) {
     doc.setPage(pageNum);
@@ -35,12 +34,7 @@ function generateSuggestionReport(suggestions) {
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.text("HEI STDhub — Bureau Des Etudiants", margin, pageH - 5);
-    doc.text(
-      `Page ${pageNum}/${totalPages}`,
-      pageW - margin,
-      pageH - 5,
-      { align: "right" },
-    );
+    doc.text(`Page ${pageNum}/${totalPages}`, pageW - margin, pageH - 5, { align: "right" });
   }
 
   function checkPage(y, needed) {
@@ -60,220 +54,169 @@ function generateSuggestionReport(suggestions) {
   doc.setLineWidth(1);
   doc.line(0, 48, pageW, 48);
 
+  doc.setFillColor(...GOLD);
+  doc.circle(margin + 4, 12, 1.5, "F");
+  doc.circle(margin + 12, 12, 1.5, "F");
+  doc.circle(margin + 20, 12, 1.5, "F");
+
   doc.setTextColor(...GOLD);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("HEI STDhub", margin, 18);
+  doc.text("HEI STDhub", margin, 20);
 
   doc.setTextColor(...WHITE);
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setFont("helvetica", "normal");
-  doc.text("Rapport du Bureau Des Etudiants", margin, 30);
+  doc.text("Rapport officiel du Bureau Des Etudiants", margin, 33);
 
   doc.setFontSize(8);
   doc.setTextColor(...LIGHT_GRAY);
-  doc.text(
-    `Rapport officiel — ${dateFr}`,
-    pageW - margin,
-    18,
-    { align: "right" },
-  );
-  doc.text(
-    `Reference: BDE-SUG-${Date.now().toString(36).toUpperCase()}`,
-    pageW - margin,
-    28,
-    { align: "right" },
-  );
+  doc.text(dateFr, pageW - margin, 18, { align: "right" });
+  doc.text(`Ref: BDE-RPT-${Date.now().toString(36).toUpperCase()}`, pageW - margin, 28, { align: "right" });
 
   y = 58;
 
-  // ── SUMMARY BOX ──
-  doc.setFillColor(...BG);
-  doc.setDrawColor(...BORDER);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin, y, contentW, 32, 3, 3, "FD");
+  // ── SUMMARY CARD ──
+  doc.setFillColor(245, 247, 250);
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, y, contentW, 36, 4, 4, "FD");
 
-  doc.setTextColor(...DARK);
+  doc.setFillColor(...GOLD);
+  doc.rect(margin, y, 3, 36, "F");
+
+  doc.setTextColor(...NAVY);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("Resume des suggestions", margin + 6, y + 10);
+  doc.text("RESUME", margin + 10, y + 10);
 
-  const total = suggestions.length;
-  const summary = [
+  const summaryColW = (contentW - 16) / 4;
+  const summaryItems = [
     { label: "Acceptees", count: acceptes.length, color: GREEN },
-    { label: "A discuter", count: aDiscuter.length, color: AMBER },
+    { label: "A approfondir", count: aDiscuter.length, color: AMBER },
     { label: "Refusees", count: refuses.length, color: RED },
     { label: "Total", count: total, color: NAVY },
   ];
-
-  const colW = (contentW - 12) / summary.length;
-  summary.forEach((item, i) => {
-    const x = margin + 6 + i * colW;
+  summaryItems.forEach((item, i) => {
+    const x = margin + 10 + i * summaryColW;
     doc.setFillColor(...item.color);
-    doc.circle(x + colW / 2, y + 16, 6, "F");
+    doc.circle(x + summaryColW / 2, y + 17, 5, "F");
     doc.setTextColor(...WHITE);
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
-    doc.text(String(item.count), x + colW / 2, y + 18, { align: "center" });
+    doc.text(String(item.count), x + summaryColW / 2, y + 18.5, { align: "center" });
     doc.setTextColor(...GRAY);
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
-    doc.text(item.label, x + colW / 2, y + 26, { align: "center" });
+    doc.text(item.label, x + summaryColW / 2, y + 27, { align: "center" });
   });
 
-  y += 42;
+  y += 48;
 
   // ── SECTION RENDERER ──
-  function renderSection(items, label, accentColor, icon) {
+  function renderSection(items, label, accentColor, sectionNum) {
     if (items.length === 0) return;
 
     y = checkPage(y, 45 + items.length * 30);
-    y += 2;
 
-    // Section header bar
     doc.setFillColor(...accentColor);
-    doc.rect(margin, y, 3, 12, "F");
-    doc.setTextColor(...DARK);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${icon} ${label} (${items.length})`, margin + 8, y + 9);
+    doc.rect(margin, y, 3, 14, "F");
 
-    y += 18;
+    doc.setTextColor(...NAVY);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${sectionNum}. ${label} (${items.length})`, margin + 10, y + 10);
+
+    doc.setDrawColor(220, 225, 235);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y + 18, pageW - margin, y + 18);
+
+    y += 26;
 
     items.forEach((s) => {
-      y = checkPage(y, 36);
+      y = checkPage(y, 40);
 
-      // Card background
+      const titleLines = doc.splitTextToSize(s.titre, contentW - 20);
+      const titleH = titleLines.length * 5;
+      const contentMax = s.contenu.length > 150 ? s.contenu.substring(0, 150) + "..." : s.contenu;
+      const contentLines = doc.splitTextToSize(contentMax, contentW - 20);
+      const contentH = contentLines.length * 3.5;
+      const auteur = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
+
+      let cardH = 8 + titleH + 3 + contentH + 10;
+
+      if (s.justification) {
+        const justLines = doc.splitTextToSize(s.justification, contentW - 32);
+        cardH += 10 + 12 + justLines.length * 3.5;
+      }
+
+      // Card shadow
+      doc.setFillColor(235, 238, 245);
+      doc.roundedRect(margin + 0.5, y + 0.5, contentW, cardH, 4, 4, "F");
+
+      // Card body
       doc.setFillColor(...WHITE);
-      doc.setDrawColor(...accentColor);
-      doc.setLineWidth(1);
-      doc.roundedRect(margin, y, contentW, 0, 2, 2, "FD");
+      doc.setDrawColor(210, 215, 225);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, y, contentW, cardH, 4, 4, "FD");
 
-      // Subtle left accent bar
+      // Left accent bar
       doc.setFillColor(...accentColor);
-      doc.rect(margin, y, 2.5, 0, "F");
+      doc.rect(margin + 0.5, y + 2, 2.5, cardH - 4, "F");
+
+      // Gold corner accent
+      doc.setFillColor(...GOLD);
+      doc.circle(margin + contentW - 6, y + 6, 1.5, "F");
 
       // Title
-      doc.setTextColor(...DARK);
+      doc.setTextColor(...NAVY);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      const titleLines = doc.splitTextToSize(s.titre, contentW - 16);
-      doc.text(titleLines, margin + 8, y + 7);
-      const titleH = titleLines.length * 5;
+      doc.text(titleLines, margin + 10, y + 8);
 
-      // Content preview
+      // Content
       doc.setTextColor(...GRAY);
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      const contentLines = doc.splitTextToSize(
-        s.contenu.length > 120
-          ? s.contenu.substring(0, 120) + "..."
-          : s.contenu,
-        contentW - 16,
-      );
-      doc.text(contentLines, margin + 8, y + 7 + titleH + 2);
-      const contentH = contentLines.length * 3.5;
+      doc.text(contentLines, margin + 10, y + 8 + titleH + 3);
 
       // Author
-      const auteur = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
       doc.setTextColor(...LIGHT_GRAY);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
-      doc.text(`— ${auteur}`, margin + 8, y + 7 + titleH + 2 + contentH + 4);
+      doc.text(`— ${auteur}`, margin + 10, y + 8 + titleH + 3 + contentH + 5);
 
-      // Card height
-      let cardH = 7 + titleH + 2 + contentH + 10;
-
-      // Justification for refused
+      // Justification
       if (s.justification) {
-        const justY = y + cardH + 2;
-        doc.setFillColor(254, 242, 242);
+        const justY = y + 8 + titleH + 3 + contentH + 9;
+        const justLines = doc.splitTextToSize(s.justification, contentW - 32);
+        const justH = 12 + justLines.length * 3.5;
+
+        doc.setFillColor(255, 245, 245);
         doc.setDrawColor(...RED);
         doc.setLineWidth(0.3);
-        doc.roundedRect(margin + 6, justY, contentW - 12, 0, 2, 2, "FD");
+        doc.roundedRect(margin + 8, justY, contentW - 16, justH, 3, 3, "FD");
 
         doc.setTextColor(...RED);
         doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
-        doc.text("Justification du BDE :", margin + 12, justY + 6);
+        doc.text("Justification du BDE :", margin + 14, justY + 6);
 
         doc.setTextColor(180, 40, 40);
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
-        const justLines = doc.splitTextToSize(
-          s.justification,
-          contentW - 28,
-        );
-        doc.text(justLines, margin + 12, justY + 12);
-        cardH += 12 + justLines.length * 3.5 + 4;
+        doc.text(justLines, margin + 14, justY + 12);
       }
 
-      // Draw the actual card rectangle with proper height
-      doc.setFillColor(...WHITE);
-      doc.setDrawColor(...BORDER);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(margin, y, contentW, cardH, 2, 2, "FD");
-
-      // Left accent bar (overlay)
-      doc.setFillColor(...accentColor);
-      doc.rect(margin, y, 2.5, cardH, "F");
-
-      // Re-render text on top of card background
-      doc.setTextColor(...DARK);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text(titleLines, margin + 8, y + 7);
-
-      doc.setTextColor(...GRAY);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.text(contentLines, margin + 8, y + 7 + titleH + 2);
-
-      doc.setTextColor(...LIGHT_GRAY);
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "italic");
-      doc.text(`— ${auteur}`, margin + 8, y + 7 + titleH + 2 + contentH + 4);
-
-      if (s.justification) {
-        const justY = y + 7 + titleH + 2 + contentH + 8;
-        doc.setFillColor(254, 242, 242);
-        doc.setDrawColor(...RED);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(
-          margin + 6,
-          justY,
-          contentW - 12,
-          12 + s.justification.length / 3,
-          2,
-          2,
-          "FD",
-        );
-
-        doc.setTextColor(...RED);
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.text("Justification du BDE :", margin + 12, justY + 6);
-
-        doc.setTextColor(180, 40, 40);
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "normal");
-        const justLines = doc.splitTextToSize(
-          s.justification,
-          contentW - 28,
-        );
-        doc.text(justLines, margin + 12, justY + 12);
-        cardH += 12 + justLines.length * 3.5 + 4;
-      }
-
-      y += cardH + 6;
+      y += cardH + 8;
     });
 
-    y += 2;
+    y += 4;
   }
 
-  renderSection(acceptes, "Suggestions acceptees", GREEN, ">");
-  renderSection(aDiscuter, "A approfondir", AMBER, "?");
-  renderSection(refuses, "Suggestions refusees", RED, ">");
+  renderSection(acceptes, "Suggestions acceptees", GREEN, 1);
+  renderSection(aDiscuter, "A approfondir", AMBER, 2);
+  renderSection(refuses, "Suggestions refusees", RED, 3);
 
   // ── FOOTER ON ALL PAGES ──
   const totalPages = doc.internal.getNumberOfPages();
