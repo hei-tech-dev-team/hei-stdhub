@@ -22,6 +22,22 @@ import {
   parseFileContent,
 } from "./chat-utils";
 
+const ROLE_BADGE = {
+  bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
+  teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
+  admin: { label: "Admin", cls: "bg-red-500/20 text-red-300 border-red-500/30" },
+};
+
+function RoleBadge({ role }) {
+  const cfg = ROLE_BADGE[role];
+  if (!cfg) return null;
+  return (
+    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ml-1.5 ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
 function DateSeparator({ date }) {
   return (
     <div className="flex items-center gap-3 my-4">
@@ -140,11 +156,12 @@ function MessageGroup({ messages, isOwn }) {
             <div className="flex flex-col">
               {isFirst && (
                 <span
-                  className={`text-[11px] font-semibold mb-0.5 ml-1 ${
-                    isOwn ? "text-right text-navy-dark" : "text-gold"
+                  className={`text-[11px] font-semibold mb-0.5 ml-1 flex items-center ${
+                    isOwn ? "text-right text-navy-dark justify-end" : "text-gold"
                   }`}
                 >
                   {isOwn ? "Vous" : msg.sender}
+                  {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
               )}
               <div className="flex items-end gap-1.5">
@@ -364,15 +381,18 @@ export default function MessagePanel({
         </button>
         <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold text-base truncate">
+          <h3 className="text-white font-bold text-base truncate flex items-center">
             {contact.name}
+            {!contact.isGlobal && <RoleBadge role={contact.role} />}
           </h3>
           <p className="text-white/50 text-xs">
             {contact.isGlobal
               ? "Chat global – tous les membres"
               : contact.role === "teacher"
                 ? "Professeur"
-                : "Étudiant"}
+                : contact.role === "bde"
+                  ? "Bureau Des Étudiants"
+                  : "Étudiant"}
           </p>
         </div>
       </div>
