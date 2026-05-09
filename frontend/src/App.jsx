@@ -12,6 +12,7 @@ import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage";
 import SuggestionPage from "./pages/SuggestionPage";
 import BDEPage from "./pages/BDEPage";
+import OnboardingModal from "./components/ui/OnboardingModal";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -49,79 +50,83 @@ function BDERoute({ children }) {
 }
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/archives"
-        element={
-          <ProtectedRoute>
-            <ArchivesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/td"
-        element={
-          <ProtectedRoute>
-            <TDPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <ProtectedRoute>
-            <ChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        // Remplace SuggestionPage route — accessible à student ET teacher
-        path="/suggestions"
-        element={
-          <ProtectedRoute>
-            <SuggestionPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/bde"
-        element={
-          <BDERoute>
-            <BDEPage />
-          </BDERoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <AdminPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
+  const { user, firstLogin } = useAuth();
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+  return (
+    <>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/archives"
+          element={
+            <ProtectedRoute>
+              <ArchivesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/td"
+          element={
+            <ProtectedRoute>
+              <TDPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/suggestions"
+          element={
+            <ProtectedRoute>
+              <SuggestionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bde"
+          element={
+            <BDERoute>
+              <BDEPage />
+            </BDERoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      {user && firstLogin && <OnboardingModal />}
+    </>
   );
 }
