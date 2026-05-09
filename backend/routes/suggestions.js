@@ -155,4 +155,29 @@ router.post("/confirm", auth, async (req, res) => {
   }
 });
 
+// Generate a PDF report from provided suggestions data
+router.post("/report", auth, async (req, res) => {
+  if (req.user.role !== "bde" && req.user.role !== "admin")
+    return res.status(403).json({ error: "Acces reserve au BDE." });
+
+  const { suggestions } = req.body;
+  if (!Array.isArray(suggestions) || suggestions.length === 0)
+    return res.status(400).json({ error: "Suggestions requises." });
+
+  try {
+    const { generateSuggestionReport } = require("../services/suggestionPdf");
+    const doc = generateSuggestionReport(suggestions);
+    const buf = Buffer.from(doc.output("arraybuffer"));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="BDE_Rapport.pdf"`,
+    );
+    res.send(buf);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur generation PDF." });
+  }
+});
+
 module.exports = router;
