@@ -104,7 +104,7 @@
     @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl;
   }
 
-  .status-dot {
+    .status-dot {
     @apply w-3 h-3 rounded-full shrink-0 shadow-sm;
   }
 
@@ -114,5 +114,32 @@
 
   .status-offline {
     @apply bg-red-500;
+  }
+
+  @keyframes message-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .animate-message-in {
+    animation: message-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out forwards;
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
