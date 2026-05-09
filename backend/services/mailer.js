@@ -98,6 +98,8 @@ const sendWithResend = async ({ user, subject, text, html }) => {
 };
 
 const sendPasswordResetEmail = async ({ user, token }) => {
+  if (!user?.email?.trim()) throw new Error("User email is required");
+
   const resetUrl = buildResetUrl(token);
   const transporter = createTransport();
   const displayName = user.prenom || user.pseudo || "";
@@ -137,7 +139,7 @@ const sendPasswordResetEmail = async ({ user, token }) => {
     return { skipped: false, resetUrl };
   }
 
-  console.info(`Lien de réinitialisation pour ${user.email}: ${resetUrl}`);
+  console.info(`Lien de réinitialisation pour ${user.email} (consulter les logs serveur)`);
   return { skipped: true, resetUrl };
 };
 
