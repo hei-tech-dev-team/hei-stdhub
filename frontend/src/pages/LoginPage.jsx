@@ -93,7 +93,7 @@ export default function LoginPage() {
             {/* Bottom badge */}
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
               <p className="text-white/80 text-xs font-medium">
-                🎓 Communauté HEI Madagascar
+                Communauté HEI Madagascar
               </p>
               <p className="text-white/50 text-xs mt-0.5">
                 Étudiants · Professeurs · Admin
@@ -124,7 +124,7 @@ export default function LoginPage() {
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
-                <span className="text-red-400">⚠</span> {error}
+                {error}
               </div>
             )}
 
