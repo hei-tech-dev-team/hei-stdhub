@@ -4,6 +4,10 @@ import { useAuth } from "../context/AuthContext";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
 import api from "../api/axios";
 import {
+  determineRegisterRole,
+  validateRegisterEmail,
+} from "../utils/roleFilter";
+import {
   Eye,
   EyeOff,
   User,
@@ -102,11 +106,7 @@ export default function RegisterPage() {
       const { data } = await api.post("/auth/verify-invite", {
         code: form.inviteCode.trim().toUpperCase(),
       });
-      if (data.role === "teacher") {
-        set("role", "teacher");
-      } else {
-        set("role", isAlumni ? "alumni" : "student");
-      }
+      set("role", determineRegisterRole(data.role, isAlumni));
       setCodeVerified(true);
     } catch (err) {
       setCodeError(err.response?.data?.error || "Code invalide ou expiré.");
@@ -126,10 +126,11 @@ export default function RegisterPage() {
       return "Le mot de passe doit faire au moins 6 caractères.";
     if (form.password !== form.confirmPassword)
       return "Les mots de passe ne correspondent pas.";
-    if (form.role === "student" && !/^hei\.[a-zA-Z0-9._%+-]+@gmail\.com$/.test(form.email))
-      return "Format email étudiant : hei.prenom@gmail.com";
-    if (form.role === "alumni" && !form.email.includes("@"))
-      return "Email invalide.";
+    if (!validateRegisterEmail(form.email, form.role)) {
+      if (form.role === "student")
+        return "Format email étudiant : hei.prenom@gmail.com";
+      if (form.role === "alumni") return "Email invalide.";
+    }
     if (form.role === "teacher" && form.ues.length === 0)
       return "Veuillez sélectionner au moins une UE.";
     return null;
