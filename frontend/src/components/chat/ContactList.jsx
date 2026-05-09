@@ -6,12 +6,21 @@ import {
   faTimes,
   faSpinner,
   faUser,
+  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import Avatar from "../ui/Avatar";
 
-export default function ContactList({ contacts, activeId, onSelect }) {
+function StatusDot({ online }) {
+  return (
+    <span
+      className={`status-dot ${online ? "status-online" : "status-offline"}`}
+    />
+  );
+}
+
+export default function ContactList({ contacts, activeId, onSelect, onlineUsers }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -56,62 +65,81 @@ export default function ContactList({ contacts, activeId, onSelect }) {
   const ContactAvatar = ({ contact, isActive }) => {
     if (contact.isGlobal) {
       return (
-        <div className="w-9 h-9 rounded-full bg-navy flex items-center justify-center shrink-0">
-          <span className="text-gold font-bold text-xs">HEI</span>
-        </div>
-      );
-    }
-    if (contact.avatar) {
-      return (
-        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border-2 border-white/20">
-          <img
-            src={contact.avatar}
-            alt={contact.name}
-            className="w-full h-full object-cover"
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
+            ${isActive ? "bg-gold" : "bg-white/10"}`}
+        >
+          <FontAwesomeIcon
+            icon={faComments}
+            className={`text-sm ${isActive ? "text-white" : "text-white/60"}`}
           />
         </div>
       );
     }
+    const online = onlineUsers.has(contact.id);
     return (
-      <Avatar
-        name={contact.name}
-        size="md"
-        color={isActive ? "bg-navy" : "bg-white/20"}
-      />
+      <div className="relative shrink-0">
+        {contact.avatar ? (
+          <div className="w-10 h-10 rounded-full overflow-hidden">
+            <img
+              src={contact.avatar}
+              alt={contact.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <Avatar
+            name={contact.name}
+            size="md"
+            color={isActive ? "bg-gold" : "bg-white/10"}
+          />
+        )}
+        <span className="absolute -bottom-0.5 -right-0.5">
+          <StatusDot online={online} />
+        </span>
+      </div>
     );
   };
 
   return (
-    <div className="w-full h-full bg-navy-dark flex flex-col relative">
+    <div className="w-full h-full bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col relative">
       {/* Header */}
-      <div className="px-4 sm:px-5 pt-5 pb-4 shrink-0">
-        <div className="flex items-center gap-3 mb-4">
-          {user?.avatar ? (
-            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 border-gold">
-              <img
-                src={user.avatar}
-                alt="moi"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center shrink-0">
-              <FontAwesomeIcon icon={faUser} className="text-gold text-xs" />
-            </div>
-          )}
-          <h2 className="text-white font-bold text-sm truncate">
-            {user?.pseudo || user?.ref || "Chat"}
-          </h2>
+      <div className="px-4 pt-4 pb-3 shrink-0 border-b border-white/10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="relative shrink-0">
+            {user?.avatar ? (
+              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gold">
+                <img
+                  src={user.avatar}
+                  alt="moi"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center border-2 border-gold">
+                <FontAwesomeIcon icon={faUser} className="text-gold text-xs" />
+              </div>
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5">
+              <StatusDot online={true} />
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-white font-bold text-sm truncate">
+              {user?.pseudo || user?.ref || "Chat"}
+            </h2>
+            <span className="text-white/40 text-xs">Messages</span>
+          </div>
         </div>
 
         <div className="relative">
           <FontAwesomeIcon
             icon={faSearch}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none"
           />
           <input
-            className="w-full bg-white/10 border border-white/10 rounded-xl
-                       pl-9 pr-4 py-2 text-sm text-white placeholder:text-gray-400
+            className="w-full bg-white/10 border border-white/20 rounded-lg
+                       pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30
                        focus:outline-none focus:border-gold transition"
             placeholder="Filtrer les conversations..."
             value={search}
@@ -120,8 +148,8 @@ export default function ContactList({ contacts, activeId, onSelect }) {
         </div>
       </div>
 
-      {/* Liste contacts */}
-      <div className="flex-1 overflow-y-auto px-2 sm:px-3 pb-4">
+      {/* Contact list */}
+      <div className="flex-1 overflow-y-auto px-2 py-2">
         {filtered.map((contact) => {
           const isActive = contact.id === activeId;
           return (
@@ -129,33 +157,26 @@ export default function ContactList({ contacts, activeId, onSelect }) {
               key={contact.id}
               type="button"
               onClick={() => onSelect(contact)}
-              className={
-                "w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-left transition-all " +
-                (isActive ? "bg-gold" : "hover:bg-white/10")
-              }
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-left transition-all ${
+                isActive ? "bg-gold/20" : "hover:bg-white/10"
+              }`}
             >
               <ContactAvatar contact={contact} isActive={isActive} />
               <div className="flex-1 min-w-0">
                 <span
-                  className={
-                    "font-semibold text-sm truncate block " +
-                    (isActive ? "text-navy-dark" : "text-white")
-                  }
+                  className={`font-semibold text-sm truncate block ${
+                    isActive ? "text-gold" : "text-white"
+                  }`}
                 >
                   {contact.name}
                 </span>
                 {contact.role && (
-                  <span
-                    className={
-                      "text-xs capitalize " +
-                      (isActive ? "text-navy/60" : "text-white/40")
-                    }
-                  >
+                  <span className="text-xs text-white/40 capitalize">
                     {contact.role === "teacher"
                       ? "Professeur"
                       : contact.role === "admin"
                         ? "Admin"
-                        : "Étudiant"}{" "}
+                        : "Étudiant"}
                   </span>
                 )}
               </div>
@@ -164,9 +185,9 @@ export default function ContactList({ contacts, activeId, onSelect }) {
         })}
       </div>
 
-      {/* Modal recherche */}
+      {/* Search modal */}
       {showSearch && (
-        <div className="absolute inset-0 bg-navy-dark z-30 flex flex-col p-4">
+        <div className="absolute inset-0 bg-[#001948]/95 backdrop-blur-2xl z-30 flex flex-col p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-bold text-sm">
               Nouvelle conversation
@@ -178,7 +199,7 @@ export default function ContactList({ contacts, activeId, onSelect }) {
                 setSearchQuery("");
                 setSearchResults([]);
               }}
-              className="text-white/60 hover:text-white transition"
+              className="text-white/40 hover:text-white transition"
             >
               <FontAwesomeIcon icon={faTimes} />
             </button>
@@ -187,12 +208,12 @@ export default function ContactList({ contacts, activeId, onSelect }) {
           <div className="relative mb-4">
             <FontAwesomeIcon
               icon={faSearch}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none"
             />
             <input
               autoFocus
-              className="w-full bg-white/10 border border-white/10 rounded-xl
-                         pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-gray-400
+              className="w-full bg-white/10 border border-white/20 rounded-lg
+                         pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/30
                          focus:outline-none focus:border-gold transition"
               placeholder="Rechercher un pseudo ou une référence..."
               value={searchQuery}
@@ -220,19 +241,24 @@ export default function ContactList({ contacts, activeId, onSelect }) {
                   key={u.id}
                   type="button"
                   onClick={() => handleStartConversation(u)}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 hover:bg-white/10 transition text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 hover:bg-white/10 transition text-left"
                 >
-                  {u.avatar ? (
-                    <div className="w-9 h-9 rounded-full overflow-hidden shrink-0">
-                      <img
-                        src={u.avatar}
-                        alt={u.pseudo}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <Avatar name={u.pseudo} size="md" color="bg-white/20" />
-                  )}
+                  <div className="relative shrink-0">
+                    {u.avatar ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden">
+                        <img
+                          src={u.avatar}
+                          alt={u.pseudo}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <Avatar name={u.pseudo} size="md" color="bg-white/10" />
+                    )}
+                    <span className="absolute -bottom-0.5 -right-0.5">
+                      <StatusDot online={onlineUsers.has(u.id)} />
+                    </span>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <span className="font-semibold text-sm text-white truncate block">
                       {u.pseudo}
@@ -253,12 +279,12 @@ export default function ContactList({ contacts, activeId, onSelect }) {
         </div>
       )}
 
-      {/* Bouton nouvelle conversation */}
-      <div className="px-4 pb-5 flex justify-end shrink-0">
+      {/* New conversation button */}
+      <div className="px-4 pb-4 flex justify-end shrink-0">
         <button
           type="button"
           onClick={() => setShowSearch(true)}
-          className="w-11 h-11 rounded-full bg-gold text-white flex items-center
+          className="w-10 h-10 rounded-full bg-gold text-white flex items-center
                      justify-center hover:opacity-90 transition shadow-lg"
           title="Nouvelle conversation"
         >
