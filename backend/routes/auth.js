@@ -334,13 +334,13 @@ router.patch("/password", auth, async (req, res) => {
   }
 });
 
-// ── PATCH /api/auth/avatar — Cloudinary uniquement ──
+// Avatar upload via Cloudinary
 router.patch("/avatar", auth, (req, res) => {
   avatarUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
     try {
-      // secure_url = URL Cloudinary complète
+      // Cloudinary returns the full URL
       const avatarUrl = req.file.secure_url || req.file.path;
       const { rows } = await db.query(
         `UPDATE users SET avatar=$1 WHERE id=$2

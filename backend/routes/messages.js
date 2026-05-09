@@ -35,7 +35,7 @@ const chatUpload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 }).single("file");
 
-// GET /api/messages/search?q=...
+// Search users by ref or pseudo
 router.get("/search", auth, async (req, res) => {
   const { q } = req.query;
   if (!q?.trim()) return res.json([]);
@@ -55,7 +55,7 @@ router.get("/search", auth, async (req, res) => {
   }
 });
 
-// GET /api/messages/contacts
+// List all users except the caller, for contact selection
 router.get("/contacts", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -73,7 +73,7 @@ router.get("/contacts", auth, async (req, res) => {
   }
 });
 
-// GET /api/messages/global
+// Get global chat messages (last 200)
 router.get("/global", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -91,7 +91,7 @@ router.get("/global", auth, async (req, res) => {
   }
 });
 
-// GET /api/messages/private/:userId
+// Get private messages between the caller and another user
 router.get("/private/:userId", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -113,7 +113,7 @@ router.get("/private/:userId", auth, async (req, res) => {
   }
 });
 
-// POST /api/messages
+// Send a message (global or private)
 router.post("/", auth, async (req, res) => {
   const { content, receiver_id, is_global } = req.body;
   if (!content?.trim()) return res.status(400).json({ error: "Message vide." });
@@ -155,7 +155,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// PATCH /api/messages/:id/seen
+// Mark a message as seen
 router.patch("/:id/seen", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -178,7 +178,7 @@ router.patch("/:id/seen", auth, async (req, res) => {
   }
 });
 
-// POST /api/messages/upload — Cloudinary
+// Upload a file to Cloudinary for chat sharing
 router.post("/upload", auth, (req, res) => {
   chatUpload(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
