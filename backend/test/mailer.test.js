@@ -3,7 +3,7 @@ const { buildResetUrl, sendPasswordResetEmail } = require("../services/mailer");
 
 const { expect } = chai;
 
-describe("📧 MAILER — buildResetUrl", () => {
+describe("MAILER — buildResetUrl", () => {
   const ORIGINAL_URL = process.env.CLIENT_URL;
 
   afterEach(() => {
@@ -49,7 +49,7 @@ describe("📧 MAILER — buildResetUrl", () => {
   });
 });
 
-describe("📧 MAILER — sendPasswordResetEmail validation", () => {
+describe("MAILER — sendPasswordResetEmail validation", () => {
   it("throws when user is undefined", async () => {
     try {
       await sendPasswordResetEmail({ token: "x" });
@@ -87,7 +87,7 @@ describe("📧 MAILER — sendPasswordResetEmail validation", () => {
   });
 });
 
-describe("📧 MAILER — sendPasswordResetEmail with SMTP", () => {
+describe("MAILER — sendPasswordResetEmail with SMTP", () => {
   const ORIGINAL_ENV = { ...process.env };
   const nodemailer = require("nodemailer");
   const originalCreateTransport = nodemailer.createTransport.bind(nodemailer);
@@ -125,7 +125,7 @@ describe("📧 MAILER — sendPasswordResetEmail with SMTP", () => {
   });
 });
 
-describe("📧 MAILER — sendPasswordResetEmail fallback", () => {
+describe("MAILER — sendPasswordResetEmail fallback", () => {
   const ORIGINAL_ENV = { ...process.env };
 
   beforeEach(() => {
@@ -161,7 +161,7 @@ describe("📧 MAILER — sendPasswordResetEmail fallback", () => {
   });
 });
 
-describe("📧 MAILER — sendPasswordResetEmail with Resend", () => {
+describe("MAILER — sendPasswordResetEmail with Resend", () => {
   const ORIGINAL_FETCH = global.fetch;
   const ORIGINAL_ENV = { ...process.env };
 
