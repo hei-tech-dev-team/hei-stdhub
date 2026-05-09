@@ -53,7 +53,8 @@ export default function App() {
   const { user, firstLogin } = useAuth();
 
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -124,6 +125,7 @@ export default function App() {
         }
       />
 
+      </Routes>
       {user && firstLogin && <OnboardingModal />}
     </>
   );
