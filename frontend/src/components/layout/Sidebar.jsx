@@ -23,6 +23,11 @@ const NAV_LINKS = [
   { to: "/chat", label: "Chat", icon: faComments, end: false },
 ];
 
+const ALUMNI_NAV_LINKS = [
+  { to: "/", label: "Accueil", icon: faHouse, end: true },
+  { to: "/chat", label: "Chat", icon: faComments, end: false },
+];
+
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -77,8 +82,8 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          {/* Liens communs à tous */}
-          {NAV_LINKS.map(({ to, label, icon, end }) => (
+          {/* Alumni: accès limité */}
+          {(user?.role === "alumni" ? ALUMNI_NAV_LINKS : NAV_LINKS).map(({ to, label, icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -93,8 +98,8 @@ export default function Sidebar() {
             </NavLink>
           ))}
 
-          {/* Suggestions — visible par étudiants ET profs */}
-          {["student", "teacher"].includes(user?.role) && (
+          {/* Suggestions — visible par étudiants, profs et alumni */}
+          {["student", "teacher", "alumni"].includes(user?.role) && (
             <NavLink
               to="/suggestions"
               end={false}
@@ -156,7 +161,9 @@ export default function Sidebar() {
                 ? "Admin"
                 : user?.role === "bde"
                   ? "BDE"
-                  : "Étudiant"}
+                  : user?.role === "alumni"
+                    ? `Alumni${user?.promo ? ` · Promo ${user.promo}` : ""}`
+                    : "Étudiant"}
           </p>
           <p className="text-white font-semibold text-sm px-2 mb-3 truncate">
             {user?.pseudo || user?.ref || "—"}

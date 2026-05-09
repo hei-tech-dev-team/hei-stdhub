@@ -51,8 +51,14 @@ router.get("/users", auth, adminOnly, async (req, res) => {
       query += ` AND (ref ILIKE $${params.length} OR pseudo ILIKE $${params.length} OR email ILIKE $${params.length})`;
     }
     if (role) {
-      params.push(role);
-      query += ` AND role=$${params.length}`;
+      const roles = role.split(",").map((r) => r.trim()).filter(Boolean);
+      if (roles.length > 0) {
+        const placeholders = roles.map((r) => {
+          params.push(r);
+          return `$${params.length}`;
+        });
+        query += ` AND role IN (${placeholders.join(",")})`;
+      }
     }
     query += " ORDER BY ref ASC";
     const { rows } = await db.query(query, params);
@@ -73,7 +79,7 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
     req.params.id,
   );
   const { role } = req.body;
-  const validRoles = ["student", "teacher", "admin", "bde"];
+  const validRoles = ["student", "teacher", "admin", "bde", "alumni"];
   if (!validRoles.includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
   try {
