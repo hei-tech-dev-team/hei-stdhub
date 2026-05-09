@@ -1,6 +1,6 @@
 # HEI STDhub v2
 
-Full-stack web platform for HEI students and teachers. Access course materials (cours, TD, examens), submit homework, chat in real-time, suggest improvements, and manage the school community — all with a navy/gold glassmorphism UI.
+Full-stack web platform for HEI students and teachers. Access course materials (cours, TD, examens), submit homework, chat in real-time with role badges, suggest improvements to the BDE, and manage the school community — all with a navy/gold glassmorphism UI.
 
 ## Stack
 
@@ -11,12 +11,13 @@ Full-stack web platform for HEI students and teachers. Access course materials (
 
 ## Features
 
-- **Auth** — Login, register, forgot/reset password with email
-- **Posts** — Browse cours/TD/examen files by UE
-- **Submissions** — Submit homework files/links by level & group
-- **Support links** — Curated external resources per UE
-- **Chat** — Real-time global & private messaging with Socket.IO, online indicators, file sharing, seen status
-- **Suggestions** — Submit and upvote platform improvements
-- **Admin** — User management, role changes, invitation codes, stats dashboard
-- **BDE** — Student government section
-- **Profile** — Edit personal info and avatar
+- **Auth** — Login, register, forgot/reset password with email, invitation codes
+- **Dashboard** — Browse cours/TD/examen posts filtered by UE, level, and type
+- **Submissions** — Submit homework files/links by level, group, and UE
+- **Support links** — Curated external resources per UE (teachers can add/delete)
+- **Chat** — Real-time global & private messaging with Socket.IO, online/offline indicators, file/image sharing, seen/delivered status, **role badges** (BDE/Prof/Admin)
+- **Suggestions** — Submit ideas anonymously or by name; BDE reviews with drag-and-drop Kanban, generates PDF reports shared to chat
+- **Admin** — User & invitation management, role changes, stats dashboard with live polling
+- **BDE** — Kanban board for suggestion triage (received/accepted/to-discuss/refused), PDF report generation with jsPDF
+- **Profile** — Avatar upload, pseudo change, password update
+- **UI/UX** — Glassmorphism design, smooth micro-animations, responsive mobile layout
