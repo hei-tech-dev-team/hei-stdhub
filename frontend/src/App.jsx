@@ -12,6 +12,7 @@ import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage";
 import SuggestionPage from "./pages/SuggestionPage";
 import BDEPage from "./pages/BDEPage";
+import OnboardingModal from "./components/ui/OnboardingModal";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -49,6 +50,8 @@ function BDERoute({ children }) {
 }
 
 export default function App() {
+  const { user, firstLogin } = useAuth();
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -121,7 +124,7 @@ export default function App() {
         }
       />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      {user && firstLogin && <OnboardingModal />}
+    </>
   );
 }

@@ -39,6 +39,23 @@ const ALL_UES = [
   "SECU2",
 ];
 
+const InputWrapper = ({ label, icon: Icon, children }) => (
+  <div>
+    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">
+      {label}
+    </label>
+    <div className="relative">
+      {Icon && (
+        <Icon
+          size={14}
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        />
+      )}
+      {children}
+    </div>
+  </div>
+);
+
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -103,7 +120,7 @@ export default function RegisterPage() {
       return "Le mot de passe doit faire au moins 6 caractères.";
     if (form.password !== form.confirmPassword)
       return "Les mots de passe ne correspondent pas.";
-    if (form.role === "student" && !/^hei\.auth.+@gmail\.com$/.test(form.email))
+    if (form.role === "student" && !/^hei\.[a-zA-Z0-9._%+-]+@gmail\.com$/.test(form.email))
       return "Format email étudiant : hei.prenom@gmail.com";
     if (form.role === "teacher" && form.ues.length === 0)
       return "Veuillez sélectionner au moins une UE.";
@@ -143,23 +160,6 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
-
-  const InputWrapper = ({ label, icon: Icon, children }) => (
-    <div>
-      <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">
-        {label}
-      </label>
-      <div className="relative">
-        {Icon && (
-          <Icon
-            size={14}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-          />
-        )}
-        {children}
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
@@ -245,7 +245,7 @@ export default function RegisterPage() {
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
-                <span className="text-red-400">⚠</span> {error}
+                {error}
               </div>
             )}
 
