@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/axios";
 
@@ -18,6 +17,7 @@ const getSavedUser = () => {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(getSavedUser);
+  const [firstLogin, setFirstLogin] = useState(false);
   const [loading, setLoading] = useState(() =>
     Boolean(localStorage.getItem("hei_token")),
   );
@@ -27,7 +27,6 @@ export function AuthProvider({ children }) {
 
     if (!token) return;
 
-    // Puis rafraîchir depuis l'API en arrière-plan
     api
       .get("/auth/me")
       .then(({ data }) => {
@@ -35,13 +34,11 @@ export function AuthProvider({ children }) {
         localStorage.setItem("hei_user", JSON.stringify(data));
       })
       .catch((err) => {
-        // Supprimer seulement si vrai 401
         if (err.response?.status === 401) {
           localStorage.removeItem("hei_token");
           localStorage.removeItem("hei_user");
           setUser(null);
         }
-        // Erreur réseau = cold start Render, on garde l'user en cache
       })
       .finally(() => setLoading(false));
   }, []);
@@ -51,6 +48,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("hei_token", data.token);
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
+    if (data.first_login) setFirstLogin(true);
     return data.user;
   };
 
@@ -59,8 +57,11 @@ export function AuthProvider({ children }) {
     localStorage.setItem("hei_token", data.token);
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
+    if (data.first_login) setFirstLogin(true);
     return data.user;
   };
+
+  const dismissOnboarding = () => setFirstLogin(false);
 
   const logout = () => {
     localStorage.removeItem("hei_token");
@@ -70,7 +71,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, login, register, logout, loading }}
+      value={{ user, setUser, login, register, logout, loading, firstLogin, dismissOnboarding }}
     >
       {children}
     </AuthContext.Provider>
