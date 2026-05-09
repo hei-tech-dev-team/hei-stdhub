@@ -67,7 +67,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
       return (
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
-            ${isActive ? "bg-[#d4a017]" : "bg-[#3a3c42]"}`}
+            ${isActive ? "bg-gold" : "bg-white/10"}`}
         >
           <FontAwesomeIcon
             icon={faComments}
@@ -91,7 +91,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
           <Avatar
             name={contact.name}
             size="md"
-            color={isActive ? "bg-[#d4a017]" : "bg-[#3a3c42]"}
+            color={isActive ? "bg-gold" : "bg-white/10"}
           />
         )}
         <span className="absolute -bottom-0.5 -right-0.5">
@@ -102,13 +102,13 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
   };
 
   return (
-    <div className="w-full h-full bg-[#2b2d31] glass-border flex flex-col relative">
+    <div className="w-full h-full bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col relative">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 shrink-0 border-b border-[#1e1f22]">
+      <div className="px-4 pt-4 pb-3 shrink-0 border-b border-white/10">
         <div className="flex items-center gap-3 mb-3">
           <div className="relative shrink-0">
             {user?.avatar ? (
-              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#d4a017]">
+              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gold">
                 <img
                   src={user.avatar}
                   alt="moi"
@@ -116,8 +116,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                 />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#d4a017]/20 flex items-center justify-center border-2 border-[#d4a017]">
-                <FontAwesomeIcon icon={faUser} className="text-[#d4a017] text-xs" />
+              <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center border-2 border-gold">
+                <FontAwesomeIcon icon={faUser} className="text-gold text-xs" />
               </div>
             )}
             <span className="absolute -bottom-0.5 -right-0.5">
@@ -128,7 +128,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
             <h2 className="text-white font-bold text-sm truncate">
               {user?.pseudo || user?.ref || "Chat"}
             </h2>
-            <span className="text-white/30 text-xs">Messages</span>
+            <span className="text-white/40 text-xs">Messages</span>
           </div>
         </div>
 
@@ -138,9 +138,9 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
             className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none"
           />
           <input
-            className="w-full bg-[#1e1f22] border border-[#3a3c42] rounded-lg
-                       pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/20
-                       focus:outline-none focus:border-[#d4a017] transition"
+            className="w-full bg-white/10 border border-white/20 rounded-lg
+                       pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30
+                       focus:outline-none focus:border-gold transition"
             placeholder="Filtrer les conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -158,20 +158,20 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
               type="button"
               onClick={() => onSelect(contact)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-left transition-all ${
-                isActive ? "bg-[#d4a017]/20" : "hover:bg-white/5"
+                isActive ? "bg-gold/20" : "hover:bg-white/10"
               }`}
             >
               <ContactAvatar contact={contact} isActive={isActive} />
               <div className="flex-1 min-w-0">
                 <span
                   className={`font-semibold text-sm truncate block ${
-                    isActive ? "text-[#d4a017]" : "text-white"
+                    isActive ? "text-gold" : "text-white"
                   }`}
                 >
                   {contact.name}
                 </span>
                 {contact.role && (
-                  <span className="text-xs text-white/30 capitalize">
+                  <span className="text-xs text-white/40 capitalize">
                     {contact.role === "teacher"
                       ? "Professeur"
                       : contact.role === "admin"
@@ -187,7 +187,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
 
       {/* Search modal */}
       {showSearch && (
-        <div className="absolute inset-0 bg-[#2b2d31]/95 glass backdrop-blur-2xl z-30 flex flex-col p-4">
+        <div className="absolute inset-0 bg-[#001948]/95 backdrop-blur-2xl z-30 flex flex-col p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-bold text-sm">
               Nouvelle conversation
@@ -212,9 +212,9 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
             />
             <input
               autoFocus
-              className="w-full bg-[#1e1f22] border border-[#3a3c42] rounded-lg
-                         pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/20
-                         focus:outline-none focus:border-[#d4a017] transition"
+              className="w-full bg-white/10 border border-white/20 rounded-lg
+                         pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/30
+                         focus:outline-none focus:border-gold transition"
               placeholder="Rechercher un pseudo ou une référence..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
@@ -226,12 +226,12 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
               <div className="flex justify-center py-8">
                 <FontAwesomeIcon
                   icon={faSpinner}
-                  className="text-[#d4a017] text-xl animate-spin"
+                  className="text-gold text-xl animate-spin"
                 />
               </div>
             )}
             {!searching && searchQuery && searchResults.length === 0 && (
-              <p className="text-white/30 text-sm text-center py-8">
+              <p className="text-white/40 text-sm text-center py-8">
                 Aucun utilisateur trouvé
               </p>
             )}
@@ -241,7 +241,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                   key={u.id}
                   type="button"
                   onClick={() => handleStartConversation(u)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 hover:bg-white/5 transition text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 hover:bg-white/10 transition text-left"
                 >
                   <div className="relative shrink-0">
                     {u.avatar ? (
@@ -253,7 +253,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                         />
                       </div>
                     ) : (
-                      <Avatar name={u.pseudo} size="md" color="bg-[#3a3c42]" />
+                      <Avatar name={u.pseudo} size="md" color="bg-white/10" />
                     )}
                     <span className="absolute -bottom-0.5 -right-0.5">
                       <StatusDot online={onlineUsers.has(u.id)} />
@@ -263,7 +263,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                     <span className="font-semibold text-sm text-white truncate block">
                       {u.pseudo}
                     </span>
-                    <span className="text-xs text-white/30">
+                    <span className="text-xs text-white/40">
                       {u.ref} ·{" "}
                       {u.role === "teacher" ? "Professeur" : "Étudiant"}
                     </span>
@@ -271,7 +271,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                 </button>
               ))}
             {!searching && !searchQuery && (
-              <p className="text-white/20 text-xs text-center py-8">
+              <p className="text-white/30 text-xs text-center py-8">
                 Tapez un pseudo ou une référence STD/PROF
               </p>
             )}
@@ -284,7 +284,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
         <button
           type="button"
           onClick={() => setShowSearch(true)}
-          className="w-10 h-10 rounded-full bg-[#d4a017] text-white flex items-center
+          className="w-10 h-10 rounded-full bg-gold text-white flex items-center
                      justify-center hover:opacity-90 transition shadow-lg"
           title="Nouvelle conversation"
         >
