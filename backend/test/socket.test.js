@@ -25,6 +25,7 @@ describe("🔌 SOCKET.IO — Server events", () => {
         onlineUsers.set(userId, socket.id);
         socket.userId = userId;
         socket.join(`user:${userId}`);
+        ioServer.emit("user:online", userId);
       });
 
       socket.on("message:global", (msg) => {
@@ -41,7 +42,10 @@ describe("🔌 SOCKET.IO — Server events", () => {
       });
 
       socket.on("disconnect", () => {
-        if (socket.userId) onlineUsers.delete(socket.userId);
+        if (socket.userId) {
+          onlineUsers.delete(socket.userId);
+          ioServer.emit("user:offline", socket.userId);
+        }
       });
     });
 
@@ -136,5 +140,67 @@ describe("🔌 SOCKET.IO — Server events", () => {
       // On vérifie juste que la déconnexion ne crée pas d'erreur
       done();
     }, 100);
+  });
+
+  it("user:online est émis quand un utilisateur se connecte", (done) => {
+    clientSocket2.on("user:online", (userId) => {
+      expect(userId).to.equal("user1");
+      done();
+    });
+
+    clientSocket1.emit("user:join", "user1");
+  });
+
+  it("user:offline est émis quand un utilisateur se déconnecte", (done) => {
+    clientSocket2.on("user:offline", (userId) => {
+      expect(userId).to.equal("user1");
+      done();
+    });
+
+    clientSocket1.emit("user:join", "user1");
+    setTimeout(() => clientSocket1.close(), 50);
+  });
+
+  it("message:private reçu seulement par le destinataire et l'expéditeur", (done) => {
+    clientSocket1.emit("user:join", "user1");
+    clientSocket2.emit("user:join", "user2");
+    // Un troisième client qui ne devrait pas recevoir
+    const clientSocket3 = ioc(`http://localhost:${PORT}`, {
+      transports: ["websocket"],
+    });
+
+    let receivedCount = 0;
+    const unexpectedMsg = () => {
+      expect.fail("Le troisième client ne devrait pas recevoir le message");
+    };
+
+    clientSocket3.on("connect", () => {
+      clientSocket3.emit("user:join", "user3");
+      clientSocket3.on("message:private", unexpectedMsg);
+
+      setTimeout(() => {
+        clientSocket1.on("message:private", () => {
+          receivedCount++;
+          if (receivedCount === 2) {
+            clientSocket3.off("message:private", unexpectedMsg);
+            clientSocket3.close();
+            done();
+          }
+        });
+        clientSocket2.on("message:private", () => {
+          receivedCount++;
+          if (receivedCount === 2) {
+            clientSocket3.off("message:private", unexpectedMsg);
+            clientSocket3.close();
+            done();
+          }
+        });
+
+        clientSocket1.emit("message:private", {
+          receiverId: "user2",
+          msg: { text: "secret", sender: "user1" },
+        });
+      }, 150);
+    });
   });
 });
