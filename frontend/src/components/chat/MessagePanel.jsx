@@ -12,78 +12,16 @@ import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
 import api from "../../api/axios";
 import DOMPurify from "dompurify";
-
-const SECOND = 1000;
-const MINUTE = 60 * SECOND;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-const GROUP_GAP = 5 * MINUTE;
-
-const isSameDay = (a, b) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
-
-const getDayDiff = (a, b) => {
-  const ta = new Date(a.getFullYear(), a.getMonth(), a.getDate());
-  const tb = new Date(b.getFullYear(), b.getMonth(), b.getDate());
-  return Math.round((ta - tb) / DAY);
-};
-
-const formatTime = (date) =>
-  date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-
-const formatDateLabel = (date) => {
-  const now = new Date();
-  const diff = getDayDiff(now, date);
-
-  if (diff === 0) return "Aujourd'hui";
-  if (diff === 1) return "Hier";
-  if (diff < 7)
-    return date.toLocaleDateString("fr-FR", { weekday: "long" });
-
-  if (date.getFullYear() === now.getFullYear())
-    return date.toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-    });
-
-  return date.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-};
-
-const formatMessageTime = (date) => {
-  const now = new Date();
-  const diff = getDayDiff(now, date);
-
-  if (diff === 0) return formatTime(date);
-  if (diff === 1) return `Hier ${formatTime(date)}`;
-  if (diff < 7)
-    return `${date.toLocaleDateString("fr-FR", { weekday: "short" })} ${formatTime(date)}`;
-
-  if (date.getFullYear() === now.getFullYear())
-    return date.toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "short",
-    }) + ` ${formatTime(date)}`;
-
-  return date.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }) + ` ${formatTime(date)}`;
-};
-
-const formatTooltipDate = (date) =>
-  date.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }) + ` à ${formatTime(date)}`;
+import {
+  isSameDay,
+  GROUP_GAP,
+  formatTime,
+  formatDateLabel,
+  formatMessageTime,
+  formatTooltipDate,
+  isFileMessage,
+  parseFileContent,
+} from "./chat-utils";
 
 function DateSeparator({ date }) {
   return (
@@ -97,20 +35,15 @@ function DateSeparator({ date }) {
   );
 }
 
-function isFileMessage(content) {
-  return content.startsWith("[FILE:");
-}
-
 function renderContent(content) {
-  const fileMatchNew = content.match(/^\[FILE:(.+):(.+):(img|file)\]$/);
-  if (fileMatchNew) {
-    const [, filename, url, type] = fileMatchNew;
-    if (type === "img") {
+  const parsed = parseFileContent(content);
+  if (parsed) {
+    if (parsed.type === "img") {
       return (
-        <a href={url} target="_blank" rel="noreferrer">
+        <a href={parsed.url} target="_blank" rel="noreferrer">
           <img
-            src={url}
-            alt={filename}
+            src={parsed.url}
+            alt={parsed.filename}
             className="max-w-56 max-h-56 object-cover rounded-lg
                           cursor-pointer hover:opacity-90 transition block"
           />
@@ -119,46 +52,14 @@ function renderContent(content) {
     }
     return (
       <a
-        href={url}
+        href={parsed.url}
         target="_blank"
         rel="noreferrer"
         className="flex items-center gap-2 text-blue-300
                       hover:text-blue-200 hover:underline text-xs font-medium"
       >
         <FontAwesomeIcon icon={faFile} />
-        <span>{filename}</span>
-      </a>
-    );
-  }
-
-  const fileMatchOld = content.match(/^\[FILE:(.+):(.+)\]$/);
-  if (fileMatchOld) {
-    const [, filename, url] = fileMatchOld;
-    const isImage =
-      /\.(jpg|jpeg|png|gif|webp)/i.test(url) ||
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
-    if (isImage) {
-      return (
-        <a href={url} target="_blank" rel="noreferrer">
-          <img
-            src={url}
-            alt={filename}
-            className="max-w-56 max-h-56 object-cover rounded-lg
-                          cursor-pointer hover:opacity-90 transition block"
-          />
-        </a>
-      );
-    }
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-2 text-blue-300
-                      hover:text-blue-200 hover:underline text-xs font-medium"
-      >
-        <FontAwesomeIcon icon={faFile} />
-        <span>{filename}</span>
+        <span>{parsed.filename}</span>
       </a>
     );
   }
