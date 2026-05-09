@@ -132,6 +132,7 @@ export default function AdminPage() {
   const [showInvModal, setShowInvModal] = useState(false);
   const [invRole, setInvRole] = useState("student");
   const [invLoading, setInvLoading] = useState(false);
+  const [invError, setInvError] = useState("");
 
   // Charger stats
   useEffect(() => {
@@ -201,12 +202,14 @@ export default function AdminPage() {
   // Créer invitation
   const handleCreateInvitation = async () => {
     setInvLoading(true);
+    setInvError("");
     try {
       const { data } = await api.post("/admin/invitations", { role: invRole });
       setInvitations((prev) => [data, ...prev]);
       setShowInvModal(false);
       setTab("invitations");
     } catch (err) {
+      setInvError(err.response?.data?.error || "Erreur lors de la création.");
       console.error(err);
     } finally {
       setInvLoading(false);
@@ -945,6 +948,12 @@ export default function AdminPage() {
               utilisé qu'une seule fois.
             </p>
 
+            {invError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                {invError}
+              </div>
+            )}
+
             <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
               Rôle de l'invité
             </label>
@@ -953,7 +962,7 @@ export default function AdminPage() {
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setInvRole(r)}
+                  onClick={() => { setInvRole(r); setInvError(""); }}
                   className={
                     "flex-1 py-3 rounded-xl text-sm font-bold border transition " +
                     (invRole === r
