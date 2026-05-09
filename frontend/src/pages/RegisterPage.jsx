@@ -171,7 +171,7 @@ export default function RegisterPage() {
 
       <div className="relative w-full max-w-4xl">
         <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex">
-          {/* ── Left panel ── */}
+          {/* Left panel */}
           <div
             className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
             style={{
@@ -225,7 +225,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* ── Right panel ── */}
+          {/* Right panel */}
           <div className="flex-1 flex flex-col px-8 sm:px-10 py-8 overflow-y-auto max-h-screen">
             <div className="flex lg:hidden items-center gap-2 mb-6">
               <img

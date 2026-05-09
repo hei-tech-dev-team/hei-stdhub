@@ -33,7 +33,7 @@ export default function ProfilePage() {
   const [errorPwd, setErrorPwd] = useState("");
 
   const avatarUrl = user?.avatar || null;
-  // ── Changer avatar ──
+  // Change avatar
   const handleAvatar = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -52,7 +52,7 @@ export default function ProfilePage() {
     }
   };
 
-  // ── Changer pseudo ──
+  // Change pseudo
   const handlePseudo = async (e) => {
     e.preventDefault();
     setErrorPseudo("");
@@ -69,7 +69,7 @@ export default function ProfilePage() {
     }
   };
 
-  // ── Changer mot de passe ──
+  // Change password
   const handlePassword = async (e) => {
     e.preventDefault();
     setErrorPwd("");

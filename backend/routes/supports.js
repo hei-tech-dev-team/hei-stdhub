@@ -4,7 +4,7 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-// GET /api/supports/:ue
+// Get support links for a specific UE
 router.get("/:ue", async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -19,7 +19,7 @@ router.get("/:ue", async (req, res) => {
   }
 });
 
-// POST /api/supports
+// Teachers and admins can add support links
 router.post("/", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
@@ -40,7 +40,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// DELETE /api/supports/:id
+// Teachers and admins can delete support links
 router.delete("/:id", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
