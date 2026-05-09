@@ -4,7 +4,7 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-// Middleware admin only
+// Restrict to admin role
 const adminOnly = (req, res, next) => {
   console.log("adminOnly check — role:", req.user?.role);
   if (req.user.role !== "admin")
@@ -12,7 +12,7 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-// GET /api/admin/stats
+// Get platform statistics
 router.get("/stats", auth, adminOnly, async (req, res) => {
   try {
     const [users, posts, submissions, messages] = await Promise.all([
@@ -37,7 +37,7 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
   }
 });
 
-// GET /api/admin/users
+// List all users with optional filters
 router.get("/users", auth, adminOnly, async (req, res) => {
   try {
     const { q, role } = req.query;
@@ -62,7 +62,7 @@ router.get("/users", auth, adminOnly, async (req, res) => {
   }
 });
 
-// PATCH /api/admin/users/:id/role
+// Change a user's role
 router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
   console.log(
     "PATCH ROLE appelé — user:",
@@ -90,7 +90,7 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/users/:id
+// Delete a user (cannot delete yourself)
 router.delete("/users/:id", auth, adminOnly, async (req, res) => {
   if (parseInt(req.params.id) === req.user.id)
     return res
@@ -104,15 +104,15 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
   }
 });
 
-// POST /api/admin/invitations
+// Generate an invitation code
 router.post("/invitations", auth, adminOnly, async (req, res) => {
   const { role } = req.body;
   if (!["student", "teacher"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
 
-  // Générer un code unique 8 chars
+  // Generate an 8-character unique code
   const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-  const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 jours
+  const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
   try {
     const { rows } = await db.query(
@@ -126,7 +126,7 @@ router.post("/invitations", auth, adminOnly, async (req, res) => {
   }
 });
 
-// GET /api/admin/invitations
+// List all invitation codes
 router.get("/invitations", auth, adminOnly, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -138,7 +138,7 @@ router.get("/invitations", auth, adminOnly, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/invitations/:id
+// Delete an invitation code
 router.delete("/invitations/:id", auth, adminOnly, async (req, res) => {
   try {
     await db.query("DELETE FROM invitations WHERE id=$1", [req.params.id]);
