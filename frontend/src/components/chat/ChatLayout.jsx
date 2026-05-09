@@ -31,7 +31,7 @@ function showNotification(title, body) {
     });
     setTimeout(() => n.close(), 5000);
   } catch {
-    // Notification non supportée ou refusée
+    // Browser doesn't support notifications or permission denied
   }
 }
 
@@ -123,7 +123,7 @@ export default function ChatLayout() {
     if (activeContact) loadMessages(activeContact);
   }, [activeContact, loadMessages]);
 
-  // Socket.IO + push notifications
+  // Socket.IO with push notifications
   useEffect(() => {
     let socket;
 
@@ -145,7 +145,7 @@ export default function ChatLayout() {
             if (document.hidden || !active?.isGlobal) {
               showNotification(
                 "HEI STDhub – Chat global",
-                `${msg.sender}: ${msg.content.replace(/\[FILE:.+\]/, "📎 Fichier")}`,
+                `${msg.sender}: ${msg.content.replace(/\[FILE:.+\]/, "[Fichier]")}`,
               );
             }
           }
@@ -166,7 +166,7 @@ export default function ChatLayout() {
             if (document.hidden || active?.id !== otherId) {
               showNotification(
                 `Message de ${msg.sender}`,
-                msg.content.replace(/\[FILE:.+\]/, "📎 Fichier"),
+                msg.content.replace(/\[FILE:.+\]/, "[Fichier]"),
               );
             }
           }

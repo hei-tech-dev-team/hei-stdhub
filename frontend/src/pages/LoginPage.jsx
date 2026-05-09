@@ -43,7 +43,7 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-4xl">
         <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex min-h-[540px]">
-          {/* ── Left panel ── */}
+          {/* Left panel */}
           <div
             className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
             style={{
@@ -93,7 +93,7 @@ export default function LoginPage() {
             {/* Bottom badge */}
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
               <p className="text-white/80 text-xs font-medium">
-                🎓 Communauté HEI Madagascar
+                Communauté HEI Madagascar
               </p>
               <p className="text-white/50 text-xs mt-0.5">
                 Étudiants · Professeurs · Admin
@@ -101,7 +101,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* ── Right panel ── */}
+          {/* Right panel */}
           <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 py-10">
             {/* Mobile logo */}
             <div className="flex lg:hidden items-center gap-2 mb-8">
