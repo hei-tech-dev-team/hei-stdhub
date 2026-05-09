@@ -40,9 +40,9 @@ function RoleBadge({ role }) {
 
 function DateSeparator({ date }) {
   return (
-    <div className="flex items-center gap-3 my-4">
+    <div className="flex items-center gap-4 my-6">
       <div className="flex-1 h-px bg-white/10" />
-      <span className="text-white/50 text-xs font-medium shrink-0">
+      <span className="text-white/50 text-xs font-medium shrink-0 px-2">
         {formatDateLabel(date)}
       </span>
       <div className="flex-1 h-px bg-white/10" />
@@ -96,7 +96,7 @@ function MessageGroup({ messages, isOwn }) {
 
         if (isFileMessage(msg.content)) {
           return (
-            <div key={msg.id} className="flex items-end gap-2 mb-1 max-w-[75%] sm:max-w-sm">
+            <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[75%] sm:max-w-sm animate-message-in">
               {!isOwn && isFirst && (
                 <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
                   {msg.senderAvatar ? (
@@ -113,7 +113,7 @@ function MessageGroup({ messages, isOwn }) {
               {!isOwn && !isFirst && <div className="w-8 shrink-0" />}
               <div className="flex flex-col items-end">
                 <div
-                  className={`rounded-lg overflow-hidden ${
+                  className={`rounded-xl overflow-hidden ${
                     isOwn
                       ? "bg-gold text-navy-dark rounded-br-sm"
                       : "bg-white/10 backdrop-blur-sm border border-white/10 text-white rounded-bl-sm"
@@ -121,7 +121,7 @@ function MessageGroup({ messages, isOwn }) {
                 >
                   {renderContent(msg.content)}
                 </div>
-                <span className="text-navy-dark/50 text-[10px] mt-0.5 px-1">
+                <span className="text-navy-dark/50 text-[10px] mt-1 px-1">
                   {timeStr}
                 </span>
               </div>
@@ -132,9 +132,10 @@ function MessageGroup({ messages, isOwn }) {
         return (
           <div
             key={msg.id}
-            className={`group relative flex items-end gap-2 mb-0.5 max-w-[75%] sm:max-w-sm ${
+            className={`group relative flex items-end gap-2 mb-1 max-w-[75%] sm:max-w-sm ${
               isOwn ? "flex-row-reverse" : "flex-row"
-            }`}
+            } animate-message-in`}
+            style={{ animationDelay: `${idx * 0.03}s` }}
             onMouseEnter={() => setHoveredId(msg.id)}
             onMouseLeave={() => setHoveredId(null)}
           >
@@ -156,7 +157,7 @@ function MessageGroup({ messages, isOwn }) {
             <div className="flex flex-col">
               {isFirst && (
                 <span
-                  className={`text-[11px] font-semibold mb-0.5 ml-1 flex items-center ${
+                  className={`text-[11px] font-semibold mb-1 ml-1 flex items-center ${
                     isOwn ? "text-right text-navy-dark justify-end" : "text-gold"
                   }`}
                 >
@@ -164,10 +165,10 @@ function MessageGroup({ messages, isOwn }) {
                   {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
               )}
-              <div className="flex items-end gap-1.5">
+              <div className="flex items-end gap-2">
                 {!isOwn && (
                   <span
-                    className={`text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity select-none self-end pb-0.5 ${
+                    className={`text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-out select-none self-end pb-0.5 ${
                       hoveredId === msg.id ? "opacity-100" : ""
                     }`}
                     title={tooltipStr}
@@ -176,7 +177,7 @@ function MessageGroup({ messages, isOwn }) {
                   </span>
                 )}
                 <div
-                  className={`px-3 py-1.5 text-sm leading-relaxed ${
+                  className={`px-4 py-2 text-sm leading-relaxed ${
                     isOwn
                       ? "bg-gold text-navy-dark rounded-2xl rounded-br-sm"
                       : "bg-white/10 backdrop-blur-sm border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
@@ -185,9 +186,9 @@ function MessageGroup({ messages, isOwn }) {
                   {renderContent(msg.content)}
                 </div>
                 {isOwn && (
-                  <div className="flex items-center gap-0.5 self-end pb-0.5">
+                  <div className="flex items-center gap-1 self-end pb-0.5">
                     <span
-                      className={`text-[10px] select-none transition-opacity ${
+                      className={`text-[10px] select-none transition-opacity duration-200 ease-out ${
                         hoveredId === msg.id || !isFirst
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100"
@@ -370,22 +371,22 @@ export default function MessagePanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0 shadow-sm">
+      <div className="flex items-center gap-4 px-5 sm:px-6 py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0 shadow-sm">
         <button
           type="button"
           onClick={onOpenContacts}
-          className="lg:hidden w-8 h-8 rounded-lg bg-white/10 text-white
-                     flex items-center justify-center hover:bg-white/20 transition"
+          className="lg:hidden w-9 h-9 rounded-xl bg-white/10 text-white
+                     flex items-center justify-center hover:bg-white/20 transition-all duration-200 ease-out active:scale-95"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
         <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold text-base truncate flex items-center">
+          <h3 className="text-white font-bold text-base truncate flex items-center gap-1.5">
             {contact.name}
             {!contact.isGlobal && <RoleBadge role={contact.role} />}
           </h3>
-          <p className="text-white/50 text-xs">
+          <p className="text-white/50 text-xs mt-0.5">
             {contact.isGlobal
               ? "Chat global – tous les membres"
               : contact.role === "teacher"
@@ -401,7 +402,7 @@ export default function MessagePanel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 flex flex-col relative"
+        className="flex-1 overflow-y-auto px-5 sm:px-6 py-6 flex flex-col relative"
       >
         {loading && (
           <div className="flex justify-center py-10">
@@ -413,11 +414,11 @@ export default function MessagePanel({
         )}
 
         {!loading && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40">
+          <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
             <img
               src={HEI_WHITE_LOGO}
               alt="HEI"
-              className="w-14 h-14 object-contain rounded-full"
+              className="w-16 h-16 object-contain rounded-full"
             />
             <p className="text-white/70 text-sm">Démarrez la conversation...</p>
           </div>
@@ -429,7 +430,7 @@ export default function MessagePanel({
               return <DateSeparator key={`sep-${idx}`} date={item.date} />;
             }
             return (
-              <div key={`g-${idx}`} className="mb-0.5">
+              <div key={`g-${idx}`} className="mb-2 last:mb-0">
                 <MessageGroup
                   messages={item.messages}
                   isOwn={item.isOwn}
@@ -447,10 +448,11 @@ export default function MessagePanel({
               onScrollToBottom();
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="fixed bottom-20 right-6 w-10 h-10 rounded-full
+            className="fixed bottom-24 right-8 w-11 h-11 rounded-full
                        bg-white/10 backdrop-blur-xl border border-white/20
                        text-white flex items-center justify-center
-                       hover:bg-white/20 transition shadow-lg z-10"
+                       hover:bg-white/20 hover:scale-105 active:scale-95
+                       transition-all duration-200 ease-out shadow-lg z-10"
             title="Revenir en bas"
           >
             <FontAwesomeIcon icon={faChevronDown} className="text-sm" />
@@ -459,12 +461,12 @@ export default function MessagePanel({
       </div>
 
       {/* Input */}
-      <div className="px-4 sm:px-5 py-4 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2.5 border border-white/20 focus-within:border-gold transition">
+      <div className="px-5 sm:px-6 py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
+        <div className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 border border-white/20 focus-within:border-gold transition-all duration-200 ease-out shadow-sm">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-8 h-8 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition shrink-0"
+            className="w-9 h-9 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all duration-200 ease-out shrink-0 active:scale-90"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
           </button>
@@ -486,9 +488,9 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-8 h-8 rounded-lg bg-gold text-white
-                     flex items-center justify-center hover:opacity-90
-                     transition shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-9 h-9 rounded-xl bg-gold text-white
+                     flex items-center justify-center hover:bg-gold/90 hover:scale-105 active:scale-95
+                     transition-all duration-200 ease-out shrink-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {sending ? (
               <FontAwesomeIcon icon={faSpinner} className="text-sm animate-spin" />
