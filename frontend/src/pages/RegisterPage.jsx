@@ -13,6 +13,7 @@ import {
   AtSign,
   ArrowRight,
   CheckCircle,
+  GraduationCap,
 } from "lucide-react";
 
 const ALL_UES = [
@@ -79,6 +80,7 @@ export default function RegisterPage() {
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeError, setCodeError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+  const [isAlumni, setIsAlumni] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -100,7 +102,11 @@ export default function RegisterPage() {
       const { data } = await api.post("/auth/verify-invite", {
         code: form.inviteCode.trim().toUpperCase(),
       });
-      set("role", data.role);
+      if (data.role === "teacher") {
+        set("role", "teacher");
+      } else {
+        set("role", isAlumni ? "alumni" : "student");
+      }
       setCodeVerified(true);
     } catch (err) {
       setCodeError(err.response?.data?.error || "Code invalide ou expiré.");
@@ -122,6 +128,8 @@ export default function RegisterPage() {
       return "Les mots de passe ne correspondent pas.";
     if (form.role === "student" && !/^hei\.[a-zA-Z0-9._%+-]+@gmail\.com$/.test(form.email))
       return "Format email étudiant : hei.prenom@gmail.com";
+    if (form.role === "alumni" && !form.email.includes("@"))
+      return "Email invalide.";
     if (form.role === "teacher" && form.ues.length === 0)
       return "Veuillez sélectionner au moins une UE.";
     return null;
@@ -275,6 +283,31 @@ export default function RegisterPage() {
                   </div>
                 )}
 
+                {/* Alumni toggle */}
+                <div className="flex items-center gap-3 p-3 bg-surface rounded-xl">
+                  <div
+                    onClick={() => { setIsAlumni(false); set("role", "student"); }}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
+                      !isAlumni
+                        ? "bg-navy text-white shadow-sm"
+                        : "text-gray-400 hover:text-navy"
+                    }`}
+                  >
+                    Étudiant actuel
+                  </div>
+                  <div
+                    onClick={() => { setIsAlumni(true); set("role", "alumni"); }}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
+                      isAlumni
+                        ? "bg-navy text-white shadow-sm"
+                        : "text-gray-400 hover:text-navy"
+                    }`}
+                  >
+                    <GraduationCap size={12} className="inline mr-1" />
+                    Ancien étudiant
+                  </div>
+                </div>
+
                 <InputWrapper label="Code d'invitation" icon={Hash}>
                   <input
                     className="input-field pl-10 tracking-widest font-mono uppercase"
@@ -330,7 +363,11 @@ export default function RegisterPage() {
                   <span>
                     Code valide — inscription en tant que{" "}
                     <strong className="capitalize">
-                      {form.role === "student" ? "Étudiant" : "Professeur"}
+                      {form.role === "teacher"
+                        ? "Professeur"
+                        : form.role === "alumni"
+                          ? "Alumni"
+                          : "Étudiant"}
                     </strong>
                   </span>
                 </div>
@@ -365,9 +402,11 @@ export default function RegisterPage() {
                     type="email"
                     className="input-field pl-10"
                     placeholder={
-                      form.role === "student"
-                        ? "hei.jean@gmail.com"
-                        : "dr.nom@hei.mg"
+                      form.role === "alumni"
+                        ? "jean.rakoto@gmail.com"
+                        : form.role === "student"
+                          ? "hei.jean@gmail.com"
+                          : "dr.nom@hei.mg"
                     }
                     value={form.email}
                     onChange={(e) => {
@@ -382,7 +421,11 @@ export default function RegisterPage() {
                     <input
                       className="input-field pl-9"
                       placeholder={
-                        form.role === "student" ? "STD25001" : "PROF001"
+                        form.role === "alumni"
+                          ? "STD21001"
+                          : form.role === "student"
+                            ? "STD25001"
+                            : "PROF001"
                       }
                       value={form.ref}
                       onChange={(e) => {
