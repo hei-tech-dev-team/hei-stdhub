@@ -105,7 +105,7 @@
   }
 
   .status-dot {
-    @apply w-2.5 h-2.5 rounded-full border-2 border-[#1e1f22] shrink-0;
+    @apply w-3 h-3 rounded-full shrink-0 shadow-sm;
   }
 
   .status-online {
