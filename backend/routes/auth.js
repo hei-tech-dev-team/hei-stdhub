@@ -84,7 +84,7 @@ router.post("/register", async (req, res) => {
 
     const exists = await db.query(
       "SELECT id FROM users WHERE ref=$1 OR email=$2",
-      [ref.toUpperCase(), email],
+      [ref.toUpperCase(), email.toLowerCase()],
     );
     if (exists.rows.length)
       return res
@@ -100,7 +100,7 @@ router.post("/register", async (req, res) => {
         ref.toUpperCase(),
         capitalize(nom),
         capitalize(prenom),
-        email,
+        email.toLowerCase(),
         capitalize(pseudo),
         hash,
         role,
@@ -152,10 +152,12 @@ router.post("/forgot-password", async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email)
     return res.status(400).json({ error: "Adresse email requise." });
+  if (email.length > 254)
+    return res.status(400).json({ error: "Adresse email trop longue." });
 
   try {
     const { rows } = await db.query(
-      `SELECT id, email, prenom, pseudo FROM users WHERE LOWER(email)=LOWER($1)`,
+      `SELECT id, email, prenom, pseudo FROM users WHERE email=$1`,
       [email],
     );
 
