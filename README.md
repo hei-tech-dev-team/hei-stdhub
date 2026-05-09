@@ -6,7 +6,7 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 
 **Frontend:** React 19, Vite, Tailwind CSS, React Router 7, Socket.IO Client, Font Awesome, Lucide React, jsPDF, html2canvas, DOMPurify  
 **Backend:** Express 5, Socket.IO 4, PostgreSQL (Supabase), JWT (jsonwebtoken + bcryptjs), Nodemailer (Resend/SMTP), Cloudinary (file uploads), Multer, express-rate-limit  
-**Testing:** Mocha + Chai (81 frontend tests, 54 backend tests)  
+**Testing:** Mocha + Chai (101 frontend tests, 54 backend tests)  
 **Deployment:** Vercel (frontend) + Render (backend)
 
 ## Features
@@ -17,8 +17,9 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 - **Submissions** — Submit homework files/links by level, group, and UE
 - **Support links** — Curated external resources per UE (teachers can add/delete)
 - **Chat** — Real-time global & private messaging with Socket.IO, online/offline indicators, file/image sharing, seen/delivered status, **role badges** (BDE/Prof/Admin/Alumni)
-- **Suggestions** — Submit ideas anonymously or by name; BDE reviews with drag-and-drop Kanban, generates PDF reports shared to chat
+- **Suggestions** — Submit ideas (students, alumni, teachers, admin); BDE reviews with drag-and-drop Kanban, generates PDF reports shared to chat
 - **Admin** — User & invitation management, role changes (including alumni), stats dashboard with live polling; BDE members appear when filtering by "Étudiant"; seasonal forms: **class upgrade** (Sept, with failed refs list) and **L1 registration** (Nov, with manual STD ref entry)
 - **BDE** — Kanban board for suggestion triage (received/accepted/to-discuss/refused), PDF report generation with jsPDF
-- **Profile** — Avatar upload, pseudo change, password update
-- **UI/UX** — Glassmorphism design, smooth micro-animations, responsive mobile layout
+- **Profile** — Avatar upload, pseudo change, password update; glassmorphism redesign with staggered animations, animated cover header, rotating border avatar, role-based badges, password visibility toggles, toast notifications
+- **UI/UX** — Glassmorphism design, smooth micro-animations, responsive mobile layout; redesigned OnboardingModal with floating particles, spring transitions, gold sparkle dots; improved error feedback on admin forms
+- **Database migration** — `user_role` ENUM extended with `alumni` and `bde`; updated CHECK constraints for ref format, email validation, and level rules; migration script at `database/migration_alumni_support.sql`
