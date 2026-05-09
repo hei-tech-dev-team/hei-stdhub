@@ -10,13 +10,14 @@ const rateLimit = require("express-rate-limit");
 const app = express();
 const server = http.createServer(app);
 
-// ── Rate limiting ──
+// ── Rate limiting (disabled in test) ──
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === "test" ? 0 : 10,
   message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
 });
 
 // ── Socket.io ──
