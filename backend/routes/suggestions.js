@@ -5,10 +5,10 @@ const auth = require("../middleware/auth");
 
 // Students and teachers can submit suggestions
 router.post("/", auth, async (req, res) => {
-  if (!["student", "teacher"].includes(req.user.role))
+  if (!["student", "teacher", "alumni"].includes(req.user.role))
     return res
       .status(403)
-      .json({ error: "Réservé aux étudiants et professeurs." });
+      .json({ error: "Réservé aux étudiants, professeurs et alumni." });
 
   const { titre, contenu, anonyme } = req.body;
   if (!titre?.trim() || !contenu?.trim())
