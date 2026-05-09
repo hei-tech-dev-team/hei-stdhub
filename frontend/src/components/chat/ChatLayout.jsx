@@ -244,7 +244,7 @@ export default function ChatLayout() {
 
       {showContactList && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/40 z-10"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-10"
           onClick={() => setShowContactList(false)}
         />
       )}
