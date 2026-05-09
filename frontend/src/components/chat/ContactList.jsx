@@ -12,6 +12,22 @@ import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import Avatar from "../ui/Avatar";
 
+const ROLE_BADGE = {
+  bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
+  teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
+  admin: { label: "Admin", cls: "bg-red-500/20 text-red-300 border-red-500/30" },
+};
+
+function RoleBadge({ role }) {
+  const cfg = ROLE_BADGE[role];
+  if (!cfg) return null;
+  return (
+    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ml-1.5 ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
 function StatusDot({ online }) {
   return (
     <span
@@ -171,12 +187,15 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                   {contact.name}
                 </span>
                 {contact.role && (
-                  <span className="text-xs text-white/40 capitalize">
+                  <span className="text-xs text-white/40 capitalize flex items-center">
                     {contact.role === "teacher"
                       ? "Professeur"
                       : contact.role === "admin"
                         ? "Admin"
-                        : "Étudiant"}
+                        : contact.role === "bde"
+                          ? "BDE"
+                          : "Étudiant"}
+                    <RoleBadge role={contact.role} />
                   </span>
                 )}
               </div>
@@ -260,12 +279,13 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm text-white truncate block">
+                    <span className="font-semibold text-sm text-white truncate block flex items-center">
                       {u.pseudo}
+                      <RoleBadge role={u.role} />
                     </span>
                     <span className="text-xs text-white/40">
                       {u.ref} ·{" "}
-                      {u.role === "teacher" ? "Professeur" : "Étudiant"}
+                      {u.role === "teacher" ? "Professeur" : u.role === "bde" ? "BDE" : "Étudiant"}
                     </span>
                   </div>
                 </button>
