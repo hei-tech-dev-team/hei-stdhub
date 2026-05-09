@@ -113,7 +113,7 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
 // Generate an invitation code
 router.post("/invitations", auth, adminOnly, async (req, res) => {
   const { role } = req.body;
-  if (!["student", "teacher"].includes(role))
+  if (!["student", "teacher", "alumni"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
 
   // Generate an 8-character unique code
