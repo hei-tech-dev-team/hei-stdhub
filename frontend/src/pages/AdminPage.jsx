@@ -273,7 +273,7 @@ export default function AdminPage() {
               <span className="hidden sm:inline">Générer une invitation</span>
             </button>
           </div>
-          {/* ── TAB USERS ── */}
+          {/* Tab: Users */}
           {tab === "users" && (
             <>
               {/* Toolbar */}
@@ -472,7 +472,7 @@ export default function AdminPage() {
               )}
             </>
           )}
-          {/* ── TAB INVITATIONS ── */}
+          {/* Tab: Invitations */}
           {tab === "invitations" && (
             <div className="flex flex-col gap-3">
               {invitations.length === 0 && (

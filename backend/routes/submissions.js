@@ -26,7 +26,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// POST /api/submissions
+// Submit homework
 router.post("/", auth, upload.single("file"), async (req, res) => {
   const { nom, prenom, email, ref, level, groupe, ue, type, link } = req.body;
 
@@ -67,7 +67,7 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   }
 });
 
-// GET /api/submissions — prof voit seulement ses UEs, admin voit tout
+// Teachers see only their UEs, admins see everything
 router.get("/", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
@@ -83,7 +83,7 @@ router.get("/", auth, async (req, res) => {
       WHERE 1=1
     `;
 
-    // Profs voient seulement leurs UEs
+    // Filter by the teacher's assigned UEs
     if (req.user.role === "teacher") {
       const { rows: teacherRows } = await db.query(
         "SELECT ues FROM users WHERE id=$1",

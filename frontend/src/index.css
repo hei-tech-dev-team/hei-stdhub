@@ -30,7 +30,7 @@
 }
 
 @layer components {
-  /* ── Layout ── */
+  /* Layout */
   .sidebar-link {
     @apply flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm
            text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer;
@@ -41,12 +41,12 @@
            bg-gold text-navy-dark transition-all duration-200 cursor-pointer;
   }
 
-  /* ── Cards ── */
+  /* Cards */
   .card {
     @apply bg-white rounded-2xl shadow-card p-5;
   }
 
-  /* ── Badges ── */
+  /* Badges */
   .badge-td {
     @apply bg-cyan-100 text-cyan-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
   }
@@ -59,14 +59,14 @@
     @apply bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
   }
 
-  /* ── Inputs ── */
+  /* Inputs */
   .input-field {
     @apply w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white
            focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10
            transition-all duration-200 placeholder:text-gray-400;
   }
 
-  /* ── Buttons ── */
+  /* Buttons */
   .btn-primary {
     @apply bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm
            hover:bg-navy-dark transition-all duration-200 cursor-pointer;
@@ -87,7 +87,7 @@
            hover:bg-green-600 transition-all duration-200 cursor-pointer;
   }
 
-  /* ── Glassmorphism ── */
+  /* Glassmorphism */
   .glass {
     @apply bg-white/5 backdrop-blur-xl;
   }

@@ -7,11 +7,11 @@ const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
 async function main() {
-  console.log("🔍 Fetching all users...");
+  console.log("Fetching all users...");
   const { rows: users } = await db.query(
     "SELECT id, email, prenom, pseudo FROM users ORDER BY id",
   );
-  console.log(`📋 Found ${users.length} users`);
+  console.log(`Found ${users.length} users`);
 
   for (const user of users) {
     try {
@@ -32,17 +32,17 @@ async function main() {
       );
 
       const result = await sendPasswordResetEmail({ user, token });
-      console.log(`✅ ${user.email} → ${result.skipped ? "log only" : "sent"} (${result.resetUrl})`);
+      console.log(`${user.email} → ${result.skipped ? "log only" : "sent"} (${result.resetUrl})`);
     } catch (err) {
-      console.error(`❌ ${user.email} → ${err.message}`);
+      console.error(`${user.email} → ${err.message}`);
     }
   }
 
-  console.log("🏁 Done");
+  console.log("Done");
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error("💥 Fatal:", err);
+  console.error("Fatal:", err);
   process.exit(1);
 });

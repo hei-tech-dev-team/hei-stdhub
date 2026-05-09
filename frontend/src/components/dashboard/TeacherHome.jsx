@@ -115,7 +115,7 @@ export default function TeacherHome() {
 
           {teacherUes.length === 0 && (
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm px-4 py-3 rounded-xl mb-4">
-              ⚠️ Aucune UE assignée à votre compte. Contactez l'administrateur.
+              Aucune UE assignée à votre compte. Contactez l'administrateur.
             </div>
           )}
 

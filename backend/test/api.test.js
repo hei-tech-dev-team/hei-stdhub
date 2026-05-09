@@ -22,10 +22,8 @@ before(async () => {
   console.log("/auth/me body:", meRes.body);
 });
 
-// ══════════════════════════════════════════
-// AUTH TESTS
-// ══════════════════════════════════════════
-describe("🔐 AUTH", () => {
+// Auth tests
+describe("AUTH", () => {
   it("LOGIN réussi admin", async () => {
     const res = await agent
       .post("/api/auth/login")
@@ -104,10 +102,8 @@ describe("🔐 AUTH", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// SÉCURITÉ — INJECTION SQL
-// ══════════════════════════════════════════
-describe("🛡️ SÉCURITÉ — Injection SQL", () => {
+// Security — SQL injection & XSS
+describe("SÉCURITÉ — Injection SQL", () => {
   it("Injection SQL dans login ref → pas de bypass", async () => {
     const res = await agent
       .post("/api/auth/login")
@@ -132,10 +128,8 @@ describe("🛡️ SÉCURITÉ — Injection SQL", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// ADMIN — PRIVILEGE ESCALATION
-// ══════════════════════════════════════════
-describe("👑 ADMIN — Accès et privilege escalation", () => {
+// Admin access & privilege escalation
+describe("ADMIN — Accès et privilege escalation", () => {
   it("GET /admin/stats sans token → 401", async () => {
     const res = await agent.get("/api/admin/stats");
     expect(res.status).to.equal(401);
@@ -165,10 +159,8 @@ describe("👑 ADMIN — Accès et privilege escalation", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// MESSAGES
-// ══════════════════════════════════════════
-describe("💬 MESSAGES", () => {
+// Messages API
+describe("MESSAGES", () => {
   it("GET /messages/global sans token → 401", async () => {
     const res = await agent.get("/api/messages/global");
     expect(res.status).to.equal(401);
@@ -213,10 +205,8 @@ describe("💬 MESSAGES", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// SUBMISSIONS
-// ══════════════════════════════════════════
-describe("📁 SUBMISSIONS", () => {
+// Submissions API
+describe("SUBMISSIONS", () => {
   it("GET /submissions sans token → 401", async () => {
     const res = await agent.get("/api/submissions");
     expect(res.status).to.equal(401);
@@ -239,10 +229,8 @@ describe("📁 SUBMISSIONS", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// HEALTH CHECK
-// ══════════════════════════════════════════
-describe("❤️ HEALTH", () => {
+// Health check
+describe("HEALTH", () => {
   it("GET /api/health → 200", async () => {
     const res = await agent.get("/api/health");
     expect(res.status).to.equal(200);
