@@ -12,7 +12,15 @@ import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import Avatar from "../ui/Avatar";
 
-export default function ContactList({ contacts, activeId, onSelect }) {
+function StatusDot({ online }) {
+  return (
+    <span
+      className={`status-dot ${online ? "status-online" : "status-offline"}`}
+    />
+  );
+}
+
+export default function ContactList({ contacts, activeId, onSelect, onlineUsers }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -68,44 +76,54 @@ export default function ContactList({ contacts, activeId, onSelect }) {
         </div>
       );
     }
-    if (contact.avatar) {
-      return (
-        <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
-          <img
-            src={contact.avatar}
-            alt={contact.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      );
-    }
+    const online = onlineUsers.has(contact.id);
     return (
-      <Avatar
-        name={contact.name}
-        size="md"
-        color={isActive ? "bg-[#d4a017]" : "bg-[#3a3c42]"}
-      />
+      <div className="relative shrink-0">
+        {contact.avatar ? (
+          <div className="w-10 h-10 rounded-full overflow-hidden">
+            <img
+              src={contact.avatar}
+              alt={contact.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <Avatar
+            name={contact.name}
+            size="md"
+            color={isActive ? "bg-[#d4a017]" : "bg-[#3a3c42]"}
+          />
+        )}
+        <span className="absolute -bottom-0.5 -right-0.5">
+          <StatusDot online={online} />
+        </span>
+      </div>
     );
   };
 
   return (
-    <div className="w-full h-full bg-[#2b2d31] flex flex-col relative">
+    <div className="w-full h-full bg-[#2b2d31] glass-border flex flex-col relative">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 shrink-0 border-b border-[#1e1f22]">
         <div className="flex items-center gap-3 mb-3">
-          {user?.avatar ? (
-            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 border-[#d4a017]">
-              <img
-                src={user.avatar}
-                alt="moi"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-[#d4a017]/20 flex items-center justify-center shrink-0 border-2 border-[#d4a017]">
-              <FontAwesomeIcon icon={faUser} className="text-[#d4a017] text-xs" />
-            </div>
-          )}
+          <div className="relative shrink-0">
+            {user?.avatar ? (
+              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#d4a017]">
+                <img
+                  src={user.avatar}
+                  alt="moi"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#d4a017]/20 flex items-center justify-center border-2 border-[#d4a017]">
+                <FontAwesomeIcon icon={faUser} className="text-[#d4a017] text-xs" />
+              </div>
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5">
+              <StatusDot online={true} />
+            </span>
+          </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-white font-bold text-sm truncate">
               {user?.pseudo || user?.ref || "Chat"}
@@ -169,7 +187,7 @@ export default function ContactList({ contacts, activeId, onSelect }) {
 
       {/* Search modal */}
       {showSearch && (
-        <div className="absolute inset-0 bg-[#2b2d31] z-30 flex flex-col p-4">
+        <div className="absolute inset-0 bg-[#2b2d31]/95 glass backdrop-blur-2xl z-30 flex flex-col p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-bold text-sm">
               Nouvelle conversation
@@ -225,17 +243,22 @@ export default function ContactList({ contacts, activeId, onSelect }) {
                   onClick={() => handleStartConversation(u)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 hover:bg-white/5 transition text-left"
                 >
-                  {u.avatar ? (
-                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
-                      <img
-                        src={u.avatar}
-                        alt={u.pseudo}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <Avatar name={u.pseudo} size="md" color="bg-[#3a3c42]" />
-                  )}
+                  <div className="relative shrink-0">
+                    {u.avatar ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden">
+                        <img
+                          src={u.avatar}
+                          alt={u.pseudo}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <Avatar name={u.pseudo} size="md" color="bg-[#3a3c42]" />
+                    )}
+                    <span className="absolute -bottom-0.5 -right-0.5">
+                      <StatusDot online={onlineUsers.has(u.id)} />
+                    </span>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <span className="font-semibold text-sm text-white truncate block">
                       {u.pseudo}

@@ -92,6 +92,7 @@ io.on("connection", (socket) => {
     onlineUsers.set(userId, socket.id);
     socket.userId = userId;
     socket.join(`user:${userId}`);
+    io.emit("user:online", userId);
   });
 
   socket.on("message:global", (msg) => {
@@ -108,7 +109,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    if (socket.userId) onlineUsers.delete(socket.userId);
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+      io.emit("user:offline", socket.userId);
+    }
   });
 });
 
