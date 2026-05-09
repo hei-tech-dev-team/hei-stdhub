@@ -76,6 +76,15 @@ describe("📧 MAILER — sendPasswordResetEmail validation", () => {
       expect(err.message).to.equal("User email is required");
     }
   });
+
+  it("throws when user.email is only whitespace", async () => {
+    try {
+      await sendPasswordResetEmail({ user: { email: "   " }, token: "x" });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err.message).to.equal("User email is required");
+    }
+  });
 });
 
 describe("📧 MAILER — sendPasswordResetEmail with SMTP", () => {

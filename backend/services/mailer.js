@@ -98,7 +98,7 @@ const sendWithResend = async ({ user, subject, text, html }) => {
 };
 
 const sendPasswordResetEmail = async ({ user, token }) => {
-  if (!user?.email) throw new Error("User email is required");
+  if (!user?.email?.trim()) throw new Error("User email is required");
 
   const resetUrl = buildResetUrl(token);
   const transporter = createTransport();
