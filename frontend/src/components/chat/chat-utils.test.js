@@ -13,7 +13,7 @@ import {
   DAY,
 } from "./chat-utils.js";
 
-// ── isSameDay ──
+// isSameDay
 describe("isSameDay", () => {
   it("returns true for identical dates", () => {
     const a = new Date(2025, 5, 15, 10, 0);
@@ -40,7 +40,7 @@ describe("isSameDay", () => {
   });
 });
 
-// ── getDayDiff ──
+// getDayDiff
 describe("getDayDiff", () => {
   it("returns 0 for the same day", () => {
     const now = new Date();
@@ -74,7 +74,7 @@ describe("getDayDiff", () => {
   });
 });
 
-// ── formatTime ──
+// formatTime
 describe("formatTime", () => {
   it("formats time as HH:MM in French locale", () => {
     const d = new Date(2025, 0, 1, 14, 5, 0);
@@ -102,7 +102,7 @@ describe("formatTime", () => {
   });
 });
 
-// ── formatDateLabel ──
+// formatDateLabel
 describe("formatDateLabel", () => {
   it("returns 'Aujourd'hui' for today", () => {
     expect(formatDateLabel(new Date())).to.equal("Aujourd'hui");
@@ -176,7 +176,7 @@ describe("formatDateLabel", () => {
   });
 });
 
-// ── formatMessageTime ──
+// formatMessageTime
 describe("formatMessageTime", () => {
   it("returns only time for today", () => {
     const d = new Date();
@@ -213,7 +213,7 @@ describe("formatMessageTime", () => {
   });
 });
 
-// ── formatTooltipDate ──
+// formatTooltipDate
 describe("formatTooltipDate", () => {
   it("includes weekday, date and time", () => {
     const d = new Date(2025, 0, 15, 14, 30);
@@ -242,7 +242,7 @@ describe("formatTooltipDate", () => {
   });
 });
 
-// ── isFileMessage ──
+// isFileMessage
 describe("isFileMessage", () => {
   it("returns true for new format file messages", () => {
     expect(isFileMessage("[FILE:img.png:https://url.com/img:img]")).to.be.true;
@@ -277,7 +277,7 @@ describe("isFileMessage", () => {
   });
 });
 
-// ── parseFileContent ──
+// parseFileContent
 describe("parseFileContent", () => {
   it("parses new format with img type", () => {
     const result = parseFileContent("[FILE:photo.jpg:https://cld.com/a.jpg:img]");
@@ -358,7 +358,7 @@ describe("parseFileContent", () => {
   });
 });
 
-// ── shouldGroup ──
+// shouldGroup
 describe("shouldGroup", () => {
   const makeMsg = (overrides = {}) => ({
     id: 1,

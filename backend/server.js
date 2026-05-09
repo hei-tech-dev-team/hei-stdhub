@@ -10,7 +10,7 @@ const rateLimit = require("express-rate-limit");
 const app = express();
 const server = http.createServer(app);
 
-// ── Rate limiting (disabled in test) ──
+// Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "test" ? 0 : 10,
@@ -20,7 +20,7 @@ const loginLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === "test",
 });
 
-// ── Socket.io ──
+// Socket.io setup
 const io = new Server(server, {
   cors: {
     origin: [
@@ -32,8 +32,8 @@ const io = new Server(server, {
   },
 });
 
-// ── Middlewares ──
-app.use(compression()); // Gzip toutes les réponses
+// Middleware stack
+app.use(compression());
 app.use(
   cors({
     origin: "*",
@@ -46,18 +46,18 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"), {
-    maxAge: "7d", // Cache fichiers statiques 7 jours
+    maxAge: "7d",
   }),
 );
 
-// ── Keep-alive Render (ping toutes les 14 min) ──
+// Keep the Render instance awake — ping health endpoint every 14 minutes
 if (process.env.NODE_ENV === "production") {
   const https = require("https");
   setInterval(
     () => {
       https
         .get(process.env.BACKEND_URL + "/api/health", (res) => {
-          console.log("🏓 Keep-alive ping:", res.statusCode);
+          console.log("Keep-alive ping:", res.statusCode);
         })
         .on("error", (e) => console.error("Keep-alive error:", e.message));
     },
@@ -65,7 +65,7 @@ if (process.env.NODE_ENV === "production") {
   );
 }
 
-// ── Routes ──
+// Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/forgot-password", loginLimiter);
 app.use("/api/auth/reset-password", loginLimiter);
@@ -77,14 +77,14 @@ app.use("/api/submissions", require("./routes/submissions"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/admin", require("./routes/admin"));
 
-// ── Health check ──
+// Health check endpoint
 app.get("/api/health", (req, res) =>
   res.json({ status: "ok", time: new Date() }),
 );
 
 app.use((req, res) => res.status(404).json({ error: "Route introuvable." }));
 
-// ── Socket.io events ──
+// Socket.io event handlers
 const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
@@ -121,7 +121,7 @@ app.set("io", io);
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
   server.listen(PORT, () =>
-    console.log(`🚀 HEI STDhub API → http://localhost:${PORT}`),
+    console.log(`HEI STDhub API → http://localhost:${PORT}`),
   );
 }
 

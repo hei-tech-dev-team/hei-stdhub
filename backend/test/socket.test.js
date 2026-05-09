@@ -5,7 +5,7 @@ const { io: ioc } = require("socket.io-client");
 
 const { expect } = chai;
 
-describe("🔌 SOCKET.IO — Server events", () => {
+describe("SOCKET.IO — Server events", () => {
   let httpServer;
   let ioServer;
   let clientSocket1;
