@@ -11,10 +11,10 @@ describe("📧 MAILER — buildResetUrl", () => {
   });
 
   it("builds a correct reset URL", () => {
-    process.env.CLIENT_URL = "https://hei-stdhub.netlify.app";
+    process.env.CLIENT_URL = "https://hei-stdhub.vercel.app";
     const url = buildResetUrl("abc123");
     expect(url).to.equal(
-      "https://hei-stdhub.netlify.app/reset-password?token=abc123",
+      "https://hei-stdhub.vercel.app/reset-password?token=abc123",
     );
   });
 
