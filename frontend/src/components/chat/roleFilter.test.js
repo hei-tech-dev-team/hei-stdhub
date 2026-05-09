@@ -1,6 +1,10 @@
 /* global describe, it */
 import { expect } from "chai";
-import { expandRoleFilter } from "../../utils/roleFilter.js";
+import {
+  expandRoleFilter,
+  determineRegisterRole,
+  validateRegisterEmail,
+} from "../../utils/roleFilter.js";
 
 describe("expandRoleFilter", () => {
   it('returns "student,bde" for "student"', () => {
@@ -29,5 +33,69 @@ describe("expandRoleFilter", () => {
 
   it("passes through unknown roles unchanged", () => {
     expect(expandRoleFilter("some_role")).to.equal("some_role");
+  });
+});
+
+describe("determineRegisterRole", () => {
+  it('returns "teacher" when inviteRole is "teacher"', () => {
+    expect(determineRegisterRole("teacher", false)).to.equal("teacher");
+    expect(determineRegisterRole("teacher", true)).to.equal("teacher");
+  });
+
+  it('returns "alumni" when isAlumni is true and inviteRole is not teacher', () => {
+    expect(determineRegisterRole("student", true)).to.equal("alumni");
+    expect(determineRegisterRole("alumni", true)).to.equal("alumni");
+  });
+
+  it('returns "student" when isAlumni is false and inviteRole is not teacher', () => {
+    expect(determineRegisterRole("student", false)).to.equal("student");
+    expect(determineRegisterRole("alumni", false)).to.equal("student");
+  });
+});
+
+describe("validateRegisterEmail", () => {
+  it("accepts hei.*@gmail.com for student role", () => {
+    expect(validateRegisterEmail("hei.jean@gmail.com", "student")).to.be.true;
+    expect(
+      validateRegisterEmail("hei.jean_rakoto@gmail.com", "student"),
+    ).to.be.true;
+  });
+
+  it("rejects non-hei gmail for student role", () => {
+    expect(validateRegisterEmail("jean@gmail.com", "student")).to.be.false;
+  });
+
+  it("rejects missing @ for student role", () => {
+    expect(validateRegisterEmail("jean", "student")).to.be.false;
+  });
+
+  it("rejects empty email for student role", () => {
+    expect(validateRegisterEmail("", "student")).to.be.false;
+  });
+
+  it("accepts any email with @ for alumni role", () => {
+    expect(validateRegisterEmail("jean.rakoto@gmail.com", "alumni")).to.be.true;
+    expect(validateRegisterEmail("jean@yahoo.fr", "alumni")).to.be.true;
+  });
+
+  it("rejects email without @ for alumni role", () => {
+    expect(validateRegisterEmail("jeanrakoto", "alumni")).to.be.false;
+  });
+
+  it("rejects empty email for alumni role", () => {
+    expect(validateRegisterEmail("", "alumni")).to.be.false;
+  });
+
+  it("accepts any email for teacher role", () => {
+    expect(validateRegisterEmail("dr.nom@hei.mg", "teacher")).to.be.true;
+    expect(validateRegisterEmail("test@test.com", "teacher")).to.be.true;
+  });
+
+  it("returns false for null email", () => {
+    expect(validateRegisterEmail(null, "student")).to.be.false;
+  });
+
+  it("returns false for null role", () => {
+    expect(validateRegisterEmail("hei.jean@gmail.com", null)).to.be.false;
   });
 });
