@@ -6,7 +6,7 @@ import MessagePanel from "./MessagePanel";
 
 const GLOBAL_CONTACT = {
   id: "global",
-  name: "HEI STDhub — Chat Global",
+  name: "Chat global",
   isGlobal: true,
 };
 
@@ -52,13 +52,11 @@ export default function ChatLayout() {
       id: m.id,
       sender: m.sender_pseudo || "Inconnu",
       senderAvatar: m.sender_avatar || null,
+      senderId: m.sender_id,
       content: m.content,
       own: m.sender_id === user.id,
       seen: m.seen || false,
-      time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      createdAt: m.created_at,
     }),
     [user],
   );
@@ -90,7 +88,6 @@ export default function ChatLayout() {
     if (activeContact) loadMessages(activeContact);
   }, [activeContact, loadMessages]);
 
-  // Polling — seulement si l'utilisateur est en bas
   useEffect(() => {
     pollingRef.current = setInterval(() => {
       if (isAtBottomRef.current) {
@@ -118,7 +115,6 @@ export default function ChatLayout() {
     setIsAtBottom(true);
   };
 
-  // Déclencher refresh manuel quand on revient en bas
   const handleScrollToBottom = () => {
     setIsAtBottom(true);
     loadMessages(activeContactRef.current, true);
