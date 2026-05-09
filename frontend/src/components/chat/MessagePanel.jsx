@@ -99,7 +99,7 @@ function MessageGroup({ messages, isOwn }) {
                 <div
                   className={`rounded-lg overflow-hidden ${
                     isOwn
-                      ? "bg-navy text-white rounded-br-sm"
+                      ? "bg-gold text-white rounded-br-sm"
                       : "bg-white/10 backdrop-blur-sm border border-white/10 text-white rounded-bl-sm"
                   }`}
                 >
@@ -161,7 +161,7 @@ function MessageGroup({ messages, isOwn }) {
                 <div
                   className={`px-3 py-1.5 text-sm leading-relaxed ${
                     isOwn
-                      ? "bg-navy text-white rounded-2xl rounded-br-sm"
+                      ? "bg-gold text-white rounded-2xl rounded-br-sm"
                       : "bg-white/10 backdrop-blur-sm border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
                   }`}
                 >
@@ -180,10 +180,10 @@ function MessageGroup({ messages, isOwn }) {
                       {timeStr}
                     </span>
                     {!msg.seen && (
-                      <span className="text-white/30 text-[10px]">✓</span>
+                      <span className="text-white/50 text-[10px]">✓</span>
                     )}
                     {msg.seen && (
-                      <span className="text-gold text-[10px]">✓✓</span>
+                      <span className="text-white text-[10px]">✓✓</span>
                     )}
                   </div>
                 )}
