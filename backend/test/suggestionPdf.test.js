@@ -90,7 +90,7 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
     const text = buf.toString("utf8");
-    expect(text).to.include("Resume des suggestions");
+    expect(text).to.include("RESUME");
     expect(text).to.include("Acceptees");
     expect(text).to.include("Refusees");
   });
