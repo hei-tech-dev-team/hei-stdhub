@@ -115,6 +115,8 @@ router.post("/register", async (req, res) => {
       [newUser.id, inviteCode.toUpperCase()],
     );
 
+    await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [newUser.id]);
+
     res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
   } catch (err) {
     console.error(err);
