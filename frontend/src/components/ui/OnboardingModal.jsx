@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -18,7 +18,6 @@ import {
   faFileAlt,
   faLightbulb,
 } from "@fortawesome/free-solid-svg-icons";
-import { useNavigate } from "react-router-dom";
 
 const steps = [
   {
@@ -85,14 +84,12 @@ const steps = [
 export default function OnboardingModal() {
   const { firstLogin, dismissOnboarding } = useAuth();
   const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(0);
   const [animClass, setAnimClass] = useState("");
 
   const total = steps.length;
   const current = steps[step];
 
   const animate = useCallback((dir) => {
-    setDirection(dir);
     setAnimClass(
       dir > 0 ? "animate-slide-out-left" : "animate-slide-out-right",
     );
@@ -254,7 +251,6 @@ export default function OnboardingModal() {
                   key={i}
                   onClick={() => {
                     const dir = i > step ? 1 : -1;
-                    setDirection(dir);
                     setAnimClass(
                       dir > 0
                         ? "animate-slide-out-left"
