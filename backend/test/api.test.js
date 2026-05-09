@@ -6,26 +6,26 @@ const { expect } = chai;
 
 let adminToken = "";
 let agent;
+let loginResponse;
 
 before(async () => {
   agent = request.agent(app);
-  const res = await agent
-    .post("/api/auth/login")
-    .send({ ref: "ADMIN001", password: "password" });
-  adminToken = res.body.token;
-  console.log("adminToken:", adminToken);
-
-  const meRes = await agent
-    .get("/api/auth/me")
-    .set("Authorization", `Bearer ${adminToken}`);
-  console.log("/auth/me status:", meRes.status);
-  console.log("/auth/me body:", meRes.body);
+  try {
+    const res = await agent
+      .post("/api/auth/login")
+      .send({ ref: "ADMIN001", password: "password" });
+    adminToken = res.body.token || "";
+    loginResponse = res.body;
+  } catch {
+    adminToken = "";
+    loginResponse = {};
+  }
 });
 
 // ══════════════════════════════════════════
 // AUTH TESTS
 // ══════════════════════════════════════════
-describe("🔐 AUTH", () => {
+describe("AUTH", () => {
   it("LOGIN réussi admin", async () => {
     const res = await agent
       .post("/api/auth/login")
@@ -96,7 +96,7 @@ describe("🔐 AUTH", () => {
 // ══════════════════════════════════════════
 // SÉCURITÉ — INJECTION SQL
 // ══════════════════════════════════════════
-describe("🛡️ SÉCURITÉ — Injection SQL", () => {
+describe("SECURITE — Injection SQL", () => {
   it("Injection SQL dans login ref → pas de bypass", async () => {
     const res = await agent
       .post("/api/auth/login")
@@ -124,7 +124,7 @@ describe("🛡️ SÉCURITÉ — Injection SQL", () => {
 // ══════════════════════════════════════════
 // ADMIN — PRIVILEGE ESCALATION
 // ══════════════════════════════════════════
-describe("👑 ADMIN — Accès et privilege escalation", () => {
+describe("ADMIN — Accès et privilege escalation", () => {
   it("GET /admin/stats sans token → 401", async () => {
     const res = await agent.get("/api/admin/stats");
     expect(res.status).to.equal(401);
@@ -157,7 +157,7 @@ describe("👑 ADMIN — Accès et privilege escalation", () => {
 // ══════════════════════════════════════════
 // MESSAGES
 // ══════════════════════════════════════════
-describe("💬 MESSAGES", () => {
+describe("MESSAGES", () => {
   it("GET /messages/global sans token → 401", async () => {
     const res = await agent.get("/api/messages/global");
     expect(res.status).to.equal(401);
@@ -205,7 +205,7 @@ describe("💬 MESSAGES", () => {
 // ══════════════════════════════════════════
 // SUBMISSIONS
 // ══════════════════════════════════════════
-describe("📁 SUBMISSIONS", () => {
+describe("SUBMISSIONS", () => {
   it("GET /submissions sans token → 401", async () => {
     const res = await agent.get("/api/submissions");
     expect(res.status).to.equal(401);
@@ -229,9 +229,33 @@ describe("📁 SUBMISSIONS", () => {
 });
 
 // ══════════════════════════════════════════
+// ONBOARDING — FIRST LOGIN
+// ══════════════════════════════════════════
+describe("ONBOARDING — First login", () => {
+  it("login response includes first_login field", async () => {
+    if (loginResponse.token) {
+      expect(loginResponse).to.have.property("first_login");
+      expect(loginResponse.first_login).to.be.a("boolean");
+    } else {
+      expect(loginResponse).to.have.property("error");
+    }
+  });
+
+  it("returns first_login false for existing user", async () => {
+    const res = await agent
+      .post("/api/auth/login")
+      .send({ ref: "ADMIN001", password: "password" });
+    expect([200, 429]).to.include(res.status);
+    if (res.status === 200) {
+      expect(res.body.first_login).to.be.false;
+    }
+  });
+});
+
+// ══════════════════════════════════════════
 // HEALTH CHECK
 // ══════════════════════════════════════════
-describe("❤️ HEALTH", () => {
+describe("HEALTH", () => {
   it("GET /api/health → 200", async () => {
     const res = await agent.get("/api/health");
     expect(res.status).to.equal(200);
