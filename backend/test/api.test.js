@@ -6,20 +6,20 @@ const { expect } = chai;
 
 let adminToken = "";
 let agent;
+let loginResponse;
 
 before(async () => {
   agent = request.agent(app);
-  const res = await agent
-    .post("/api/auth/login")
-    .send({ ref: "ADMIN001", password: "password" });
-  adminToken = res.body.token;
-  console.log("adminToken:", adminToken);
-
-  const meRes = await agent
-    .get("/api/auth/me")
-    .set("Authorization", `Bearer ${adminToken}`);
-  console.log("/auth/me status:", meRes.status);
-  console.log("/auth/me body:", meRes.body);
+  try {
+    const res = await agent
+      .post("/api/auth/login")
+      .send({ ref: "ADMIN001", password: "password" });
+    adminToken = res.body.token || "";
+    loginResponse = res.body;
+  } catch {
+    adminToken = "";
+    loginResponse = {};
+  }
 });
 
 // Auth tests

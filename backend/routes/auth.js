@@ -95,7 +95,7 @@ router.post("/register", async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues)
  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
- RETURNING id, ref, nom, prenom, email, pseudo, role, level, ues`,
+ RETURNING id, ref, nom, prenom, email, pseudo, role, level, ues, first_login`,
       [
         ref.toUpperCase(),
         capitalize(nom),
@@ -115,7 +115,7 @@ router.post("/register", async (req, res) => {
       [newUser.id, inviteCode.toUpperCase()],
     );
 
-    res.status(201).json({ token: makeToken(newUser), user: newUser });
+    res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -129,7 +129,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, first_login
        FROM users WHERE ref=$1`,
       [ref.toUpperCase()],
     );
@@ -140,8 +140,13 @@ router.post("/login", async (req, res) => {
     if (!(await bcrypt.compare(password, user.password)))
       return res.status(401).json({ error: "Mot de passe incorrect." });
 
-    const { password: _, ...safeUser } = user;
-    res.json({ token: makeToken(safeUser), user: safeUser });
+    const isFirstLogin = user.first_login;
+    if (isFirstLogin) {
+      await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [user.id]);
+    }
+
+    const { password: _, first_login: __, ...safeUser } = user;
+    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
