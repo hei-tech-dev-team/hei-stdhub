@@ -26,6 +26,7 @@ import {
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
+import { expandRoleFilter } from "../utils/roleFilter";
 const ROLE_CONFIG = {
   student: {
     label: "Étudiant",
@@ -46,6 +47,11 @@ const ROLE_CONFIG = {
     label: "BDE",
     icon: faUsers,
     color: "bg-yellow-100 text-yellow-700",
+  },
+  alumni: {
+    label: "Alumni",
+    icon: faGraduationCap,
+    color: "bg-amber-100 text-amber-700",
   },
 };
 
@@ -140,7 +146,7 @@ export default function AdminPage() {
     setLoading(true);
     const params = {};
     if (search) params.q = search;
-    if (roleFilter) params.role = roleFilter;
+    if (roleFilter) params.role = expandRoleFilter(roleFilter);
     api
       .get("/admin/users", { params })
       .then(({ data }) => setUsers(data))
@@ -245,23 +251,6 @@ export default function AdminPage() {
   };
 
   // Nouveaux L1
-  const generateRef = (nom) => {
-    const prefix = `STD${currentYear}`;
-    return `${prefix}${nom.toUpperCase().slice(0, 3)}`;
-  };
-
-  const handleL1FieldChange = (field, value) => {
-    setNewL1((prev) => {
-      const updated = { ...prev, [field]: value };
-      if (field === "nom" || field === "prenom") {
-        const base = updated.nom || updated.prenom || "";
-        const ref = generateRef(base);
-        setGeneratedRef(ref);
-      }
-      return updated;
-    });
-  };
-
   const getGroupFromChar = (char) => {
     const c = char.toUpperCase();
     if (!c) return "";
@@ -272,7 +261,7 @@ export default function AdminPage() {
 
   const handleRegisterL1 = async (e) => {
     e.preventDefault();
-    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupChar.trim()) return;
+    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupChar.trim() || !generatedRef.trim()) return;
     setRegisterLoading(true);
     try {
       const group = getGroupFromChar(newL1.groupChar);
@@ -280,9 +269,9 @@ export default function AdminPage() {
         nom: newL1.nom.trim(),
         prenom: newL1.prenom.trim(),
         email: newL1.email.trim(),
-        ref: generatedRef,
+        ref: generatedRef.trim().toUpperCase(),
         pseudo: `${newL1.prenom.trim()}.${newL1.nom.trim()}`,
-        password: generatedRef,
+        password: generatedRef.trim().toUpperCase(),
         role: "student",
         level: "L1",
         groupe: group,
@@ -411,6 +400,7 @@ export default function AdminPage() {
                   <option value="teacher">Professeur</option>
                   <option value="admin">Admin</option>
                   <option value="bde">BDE</option>
+                  <option value="alumni">Alumni</option>
                 </select>
               </div>
 
@@ -489,6 +479,7 @@ export default function AdminPage() {
                                 <option value="bde">BDE</option>
                                 <option value="teacher">Professeur</option>
                                 <option value="student">Étudiant</option>
+                                <option value="alumni">Alumni</option>
                               </select>
                             </td>
                             <td className="py-3 px-4 text-gray-400 text-xs whitespace-nowrap">
@@ -555,6 +546,7 @@ export default function AdminPage() {
                             <option value="teacher">Professeur</option>
                             <option value="admin">Admin</option>
                             <option value="bde">BDE</option>
+                            <option value="alumni">Alumni</option>
                           </select>
                           {u.id !== user.id && (
                             <button
@@ -695,7 +687,7 @@ export default function AdminPage() {
                   </h2>
                   <p className="text-xs text-gray-400">
                     Inscrivez les nouveaux étudiants de première année. La
-                    référence est générée automatiquement.
+                    référence est saisie manuellement (ex: STD26001).
                   </p>
                 </div>
               </div>
@@ -718,7 +710,7 @@ export default function AdminPage() {
                       placeholder="Jean"
                       value={newL1.prenom}
                       onChange={(e) =>
-                        handleL1FieldChange("prenom", e.target.value)
+                        setNewL1((prev) => ({ ...prev, prenom: e.target.value }))
                       }
                       required
                     />
@@ -732,7 +724,7 @@ export default function AdminPage() {
                       placeholder="Rakoto"
                       value={newL1.nom}
                       onChange={(e) =>
-                        handleL1FieldChange("nom", e.target.value)
+                        setNewL1((prev) => ({ ...prev, nom: e.target.value }))
                       }
                       required
                     />
@@ -757,15 +749,17 @@ export default function AdminPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Référence générée
+                    Référence STD (saisie manuelle)
                   </label>
                   <input
-                    className="input-field bg-surface text-navy font-bold font-mono tracking-widest"
-                    value={generatedRef || "STD" + currentYear + "XXX"}
-                    readOnly
+                    className="input-field font-mono tracking-widest uppercase"
+                    placeholder={`STD${currentYear}001`}
+                    value={generatedRef}
+                    onChange={(e) => setGeneratedRef(e.target.value)}
+                    required
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Basée sur le prénom/nom et l'année en cours.
+                    Saisissez la référence selon le rang d&apos;entrée (ex: STD26001, STD26002…).
                   </p>
                 </div>
 
@@ -799,7 +793,7 @@ export default function AdminPage() {
 
                 <button
                   type="submit"
-                  disabled={registerLoading || !generatedRef}
+                  disabled={registerLoading || !generatedRef.trim()}
                   className="btn-primary flex items-center gap-2 disabled:opacity-60 mt-2"
                 >
                   {registerLoading ? (

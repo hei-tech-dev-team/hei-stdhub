@@ -16,6 +16,7 @@ const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
   teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
   admin: { label: "Admin", cls: "bg-red-500/20 text-red-300 border-red-500/30" },
+  alumni: { label: "Alumni", cls: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
 };
 
 function RoleBadge({ role }) {
@@ -287,7 +288,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                     </span>
                     <span className="text-xs text-white/40">
                       {u.ref} ·{" "}
-                      {u.role === "teacher" ? "Professeur" : u.role === "bde" ? "BDE" : "Étudiant"}
+                      {u.role === "teacher" ? "Professeur" : u.role === "bde" ? "BDE" : u.role === "alumni" ? "Alumni" : "Étudiant"}
                     </span>
                   </div>
                 </button>

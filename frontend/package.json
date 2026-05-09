@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "mocha 'src/components/chat/**/*.test.js'",
+    "test": "mocha 'src/**/*.test.js'",
     "release:patch": "node ../scripts/bump-version.js patch",
     "release:minor": "node ../scripts/bump-version.js minor",
     "release:major": "node ../scripts/bump-version.js major"
