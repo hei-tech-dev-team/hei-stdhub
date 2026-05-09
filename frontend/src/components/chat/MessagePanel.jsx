@@ -24,9 +24,9 @@ import {
 
 function DateSeparator({ date }) {
   return (
-    <div className="flex items-center gap-3 my-4">
+    <div className="flex items-center gap-3 my-5">
       <div className="flex-1 h-px bg-white/10" />
-      <span className="text-white/50 text-xs font-medium shrink-0">
+      <span className="text-white/40 text-[11px] font-medium shrink-0">
         {formatDateLabel(date)}
       </span>
       <div className="flex-1 h-px bg-white/10" />
@@ -67,131 +67,120 @@ function renderContent(content) {
   return <span dangerouslySetInnerHTML={{ __html: clean }} />;
 }
 
-function MessageGroup({ messages, isOwn }) {
-  const [hoveredId, setHoveredId] = useState(null);
+function MessageBubble({ msg, isOwn, isFirst, isGroupStart }) {
+  const [hovered, setHovered] = useState(false);
+  const date = new Date(msg.createdAt);
+  const timeStr = formatTime(date);
+  const tooltipStr = formatTooltipDate(date);
 
   return (
-    <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
-      {messages.map((msg, idx) => {
-        const isFirst = idx === 0;
-        const date = new Date(msg.createdAt);
-        const timeStr = formatTime(date);
-        const tooltipStr = formatTooltipDate(date);
+    <div
+      className={`flex items-end gap-2 mb-0.5 max-w-[75%] sm:max-w-md ${
+        isOwn ? "ml-auto flex-row-reverse" : "mr-auto flex-row"
+      }`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Avatar column */}
+      {!isOwn && isGroupStart ? (
+        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/10 mb-0.5">
+          {msg.senderAvatar ? (
+            <img
+              src={msg.senderAvatar}
+              alt={msg.sender}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Avatar name={msg.sender} size="sm" color="bg-gold" />
+          )}
+        </div>
+      ) : !isOwn ? (
+        <div className="w-7 shrink-0" />
+      ) : null}
 
-        if (isFileMessage(msg.content)) {
-          return (
-            <div key={msg.id} className="flex items-end gap-2 mb-1 max-w-[75%] sm:max-w-sm">
-              {!isOwn && isFirst && (
-                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
-                  {msg.senderAvatar ? (
-                    <img
-                      src={msg.senderAvatar}
-                      alt={msg.sender}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Avatar name={msg.sender} size="sm" color="bg-gold" />
-                  )}
-                </div>
-              )}
-              {!isOwn && !isFirst && <div className="w-8 shrink-0" />}
-              <div className="flex flex-col items-end">
-                <div
-                  className={`rounded-lg overflow-hidden ${
-                    isOwn
-                      ? "bg-navy text-white rounded-br-sm"
-                      : "bg-white/10 backdrop-blur-sm border border-white/10 text-white rounded-bl-sm"
-                  }`}
-                >
-                  {renderContent(msg.content)}
-                </div>
-                <span className="text-white/30 text-[10px] mt-0.5 px-1">
-                  {timeStr}
-                </span>
-              </div>
-            </div>
-          );
-        }
-
-        return (
-          <div
-            key={msg.id}
-            className={`group relative flex items-end gap-2 mb-0.5 max-w-[75%] sm:max-w-sm ${
-              isOwn ? "flex-row-reverse" : "flex-row"
+      <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
+        {/* Sender name */}
+        {isGroupStart && (
+          <span
+            className={`text-[11px] font-semibold mb-1 ${
+              isOwn ? "text-white/40 ml-auto" : "text-gold ml-1"
             }`}
-            onMouseEnter={() => setHoveredId(msg.id)}
-            onMouseLeave={() => setHoveredId(null)}
           >
-            {!isOwn && isFirst && (
-              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
-                {msg.senderAvatar ? (
-                  <img
-                    src={msg.senderAvatar}
-                    alt={msg.sender}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Avatar name={msg.sender} size="sm" color="bg-gold" />
-                )}
-              </div>
-            )}
-            {!isOwn && !isFirst && <div className="w-8 shrink-0" />}
+            {isOwn ? "Vous" : msg.sender}
+          </span>
+        )}
 
-            <div className="flex flex-col">
-              {isFirst && (
-                <span
-                  className={`text-[11px] font-semibold mb-0.5 ml-1 ${
-                    isOwn ? "text-right text-white/40" : "text-gold"
-                  }`}
-                >
-                  {isOwn ? "Vous" : msg.sender}
-                </span>
-              )}
-              <div className="flex items-end gap-1.5">
-                {!isOwn && (
-                  <span
-                    className={`text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity select-none self-end pb-0.5 ${
-                      hoveredId === msg.id ? "opacity-100" : ""
-                    }`}
-                    title={tooltipStr}
-                  >
-                    {timeStr}
-                  </span>
-                )}
-                <div
-                  className={`px-3 py-1.5 text-sm leading-relaxed ${
-                    isOwn
-                      ? "bg-navy text-white rounded-2xl rounded-br-sm"
-                      : "bg-white/10 backdrop-blur-sm border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
-                  }`}
-                >
-                  {renderContent(msg.content)}
-                </div>
-                {isOwn && (
-                  <div className="flex items-center gap-0.5 self-end pb-0.5">
-                    <span
-                      className={`text-[10px] select-none transition-opacity ${
-                        hoveredId === msg.id || !isFirst
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
-                      } text-white/30`}
-                      title={tooltipStr}
-                    >
-                      {timeStr}
-                    </span>
-                    {!msg.seen && (
-                      <span className="text-white/30 text-[10px]">✓</span>
-                    )}
-                    {msg.seen && (
-                      <span className="text-gold text-[10px]">✓✓</span>
-                    )}
-                  </div>
-                )}
+        <div className="flex items-end gap-1.5">
+          {/* Timestamp left (other's messages) */}
+          {!isOwn && (
+            <span
+              className={`text-[10px] text-white/30 select-none self-end pb-1.5 transition-opacity ${
+                hovered ? "opacity-100" : "opacity-0"
+              }`}
+              title={tooltipStr}
+            >
+              {timeStr}
+            </span>
+          )}
+
+          {/* Bubble */}
+          <div
+            className={`px-3 py-2 text-sm leading-relaxed ${
+              isOwn
+                ? "bg-navy text-white rounded-2xl rounded-br-md"
+                : "bg-white/10 border border-white/10 text-white/90 rounded-2xl rounded-bl-md"
+            }`}
+          >
+            {isFileMessage(msg.content) ? (
+              <div
+                className={`rounded-lg overflow-hidden ${
+                  isOwn ? "text-white" : ""
+                }`}
+              >
+                {renderContent(msg.content)}
               </div>
-            </div>
+            ) : (
+              renderContent(msg.content)
+            )}
           </div>
-        );
-      })}
+
+          {/* Timestamp right + seen (own messages) */}
+          {isOwn && (
+            <div className="flex items-center gap-0.5 self-end pb-1.5">
+              <span
+                className={`text-[10px] text-white/30 select-none transition-opacity ${
+                  hovered ? "opacity-100" : "opacity-0"
+                }`}
+                title={tooltipStr}
+              >
+                {timeStr}
+              </span>
+              {!msg.seen && (
+                <span className="text-white/30 text-[10px]">✓</span>
+              )}
+              {msg.seen && (
+                <span className="text-gold text-[10px]">✓✓</span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MessageGroup({ messages, isOwn }) {
+  return (
+    <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
+      {messages.map((msg, idx) => (
+        <MessageBubble
+          key={msg.id}
+          msg={msg}
+          isOwn={isOwn}
+          isFirst={idx === 0}
+          isGroupStart={idx === 0}
+        />
+      ))}
     </div>
   );
 }
@@ -199,11 +188,11 @@ function MessageGroup({ messages, isOwn }) {
 function ContactAvatar({ contact, onlineUsers }) {
   if (contact.isGlobal) {
     return (
-      <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center shrink-0 ring-2 ring-white/10">
+      <div className="w-9 h-9 rounded-full bg-gold/20 flex items-center justify-center shrink-0 ring-2 ring-white/10">
         <img
           src={HEI_WHITE_LOGO}
           alt="HEI"
-          className="w-5 h-5 object-contain"
+          className="w-4 h-4 object-contain"
         />
       </div>
     );
@@ -212,7 +201,7 @@ function ContactAvatar({ contact, onlineUsers }) {
   return (
     <div className="relative shrink-0">
       {contact.avatar ? (
-        <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/10">
+        <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-white/10">
           <img
             src={contact.avatar}
             alt={contact.name}
@@ -353,23 +342,23 @@ export default function MessagePanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0 shadow-sm">
+      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
         <button
           type="button"
           onClick={onOpenContacts}
-          className="lg:hidden w-8 h-8 rounded-lg bg-white/10 text-white
+          className="lg:hidden w-8 h-8 rounded-full bg-white/10 text-white
                      flex items-center justify-center hover:bg-white/20 transition"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
         <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold text-base truncate">
+          <h3 className="text-white font-semibold text-sm truncate leading-tight">
             {contact.name}
           </h3>
-          <p className="text-white/50 text-xs">
+          <p className="text-white/40 text-[11px]">
             {contact.isGlobal
-              ? "Chat global – tous les membres"
+              ? "Chat global"
               : contact.role === "teacher"
                 ? "Professeur"
                 : "Étudiant"}
@@ -397,9 +386,9 @@ export default function MessagePanel({
             <img
               src={HEI_WHITE_LOGO}
               alt="HEI"
-              className="w-14 h-14 object-contain rounded-full"
+              className="w-14 h-14 object-contain rounded-full opacity-60"
             />
-            <p className="text-white/70 text-sm">Démarrez la conversation...</p>
+            <p className="text-white/60 text-sm">Démarrez la conversation...</p>
           </div>
         )}
 
@@ -427,26 +416,26 @@ export default function MessagePanel({
               onScrollToBottom();
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="fixed bottom-20 right-6 w-10 h-10 rounded-full
+            className="fixed bottom-20 right-6 w-9 h-9 rounded-full
                        bg-white/10 backdrop-blur-xl border border-white/20
                        text-white flex items-center justify-center
                        hover:bg-white/20 transition shadow-lg z-10"
             title="Revenir en bas"
           >
-            <FontAwesomeIcon icon={faChevronDown} className="text-sm" />
+            <FontAwesomeIcon icon={faChevronDown} className="text-xs" />
           </button>
         )}
       </div>
 
       {/* Input */}
-      <div className="px-4 sm:px-5 py-4 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2.5 border border-white/20 focus-within:border-gold transition">
+      <div className="px-4 sm:px-5 py-3 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
+        <div className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 border border-white/20 focus-within:border-gold transition">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-8 h-8 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition shrink-0"
+            className="w-7 h-7 rounded-full text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition shrink-0"
           >
-            <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
+            <FontAwesomeIcon icon={faPaperclip} className="text-xs" />
           </button>
           <input
             ref={fileRef}
@@ -466,14 +455,14 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-8 h-8 rounded-lg bg-gold text-white
+            className="w-7 h-7 rounded-full bg-gold text-white
                      flex items-center justify-center hover:opacity-90
                      transition shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {sending ? (
-              <FontAwesomeIcon icon={faSpinner} className="text-sm animate-spin" />
+              <FontAwesomeIcon icon={faSpinner} className="text-xs animate-spin" />
             ) : (
-              <FontAwesomeIcon icon={faPaperPlane} className="text-sm" />
+              <FontAwesomeIcon icon={faPaperPlane} className="text-xs" />
             )}
           </button>
         </div>
