@@ -31,6 +31,7 @@ function showNotification(title, body) {
     });
     setTimeout(() => n.close(), 5000);
   } catch {
+    // Notification non supportée ou refusée
   }
 }
 
@@ -41,6 +42,7 @@ export default function ChatLayout() {
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
@@ -117,6 +119,7 @@ export default function ChatLayout() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeContact) loadMessages(activeContact);
   }, [activeContact, loadMessages]);
 
@@ -167,6 +170,18 @@ export default function ChatLayout() {
               );
             }
           }
+        });
+
+        socket.on("user:online", (userId) => {
+          setOnlineUsers((prev) => new Set(prev).add(userId));
+        });
+
+        socket.on("user:offline", (userId) => {
+          setOnlineUsers((prev) => {
+            const next = new Set(prev);
+            next.delete(userId);
+            return next;
+          });
         });
 
         socket.on("message:seen", ({ messageId }) => {
@@ -223,6 +238,7 @@ export default function ChatLayout() {
           contacts={contacts}
           activeId={activeContact.id}
           onSelect={handleSelectContact}
+          onlineUsers={onlineUsers}
         />
       </div>
 
@@ -243,6 +259,7 @@ export default function ChatLayout() {
           isAtBottom={isAtBottom}
           onAtBottomChange={setIsAtBottom}
           onScrollToBottom={handleScrollToBottom}
+          onlineUsers={onlineUsers}
         />
       </div>
     </div>

@@ -86,4 +86,33 @@
     @apply bg-green-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm
            hover:bg-green-600 transition-all duration-200 cursor-pointer;
   }
+
+  /* ── Glassmorphism ── */
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl;
+  }
+
+  .glass-heavy {
+    @apply bg-white/10 backdrop-blur-2xl;
+  }
+
+  .glass-border {
+    @apply border border-white/10;
+  }
+
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl;
+  }
+
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full border-2 border-[#1e1f22] shrink-0;
+  }
+
+  .status-online {
+    @apply bg-green-500;
+  }
+
+  .status-offline {
+    @apply bg-[#3a3c42];
+  }
 }
