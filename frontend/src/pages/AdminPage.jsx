@@ -352,35 +352,37 @@ export default function AdminPage() {
             />
           </div>
           {/* Tabs */}
-          <div className="flex gap-2 mb-5 flex-wrap">
-            {[
-              { key: "users", label: "Utilisateurs" },
-              { key: "invitations", label: "Invitations" },
-              ...(isSeptember
-                ? [{ key: "upgrade", label: "Passage de classe" }]
-                : []),
-              ...(isNovember ? [{ key: "new-l1", label: "Nouveaux L1" }] : []),
-            ].map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className={
-                  "px-4 py-2 rounded-xl text-sm font-bold transition " +
-                  (tab === t.key
-                    ? "bg-navy text-white"
-                    : "bg-white text-navy border border-contact hover:bg-surface")
-                }
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="flex items-center justify-between gap-2 mb-5 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { key: "users", label: "Utilisateurs" },
+                { key: "invitations", label: "Invitations" },
+                ...(isSeptember
+                  ? [{ key: "upgrade", label: "Passage de classe" }]
+                  : []),
+                ...(isNovember ? [{ key: "new-l1", label: "Nouveaux L1" }] : []),
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTab(t.key)}
+                  className={
+                    "px-4 py-2 rounded-xl text-sm font-bold transition " +
+                    (tab === t.key
+                      ? "bg-navy text-white"
+                      : "bg-white text-navy border border-contact hover:bg-surface")
+                  }
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-            {/* Bouton générer invitation */}
-            <button
-              type="button"
-              onClick={() => setShowInvModal(true)}
-                className="btn-primary flex items-center gap-2 text-sm"
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowInvModal(true)}
+                className="bg-white/70 backdrop-blur-xl border border-white/50 shadow-sm hover:bg-white/90 rounded-full px-5 py-2.5 text-sm font-semibold text-navy transition-all duration-200 cursor-pointer flex items-center gap-2"
               >
                 <FontAwesomeIcon icon={faPlus} />
                 <span className="hidden sm:inline">Générer une invitation</span>
@@ -388,11 +390,12 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setShowBulkModal(true)}
-                className="btn-secondary flex items-center gap-2 text-sm"
+                className="bg-white/50 backdrop-blur-xl border border-white/30 shadow-sm hover:bg-white/80 rounded-full px-5 py-2.5 text-sm font-semibold text-gray-600 transition-all duration-200 cursor-pointer flex items-center gap-2"
               >
                 <FontAwesomeIcon icon={faMagic} />
                 <span className="hidden sm:inline">Génération multiple</span>
               </button>
+            </div>
           </div>
           {/* Tab: Users */}
           {tab === "users" && (
