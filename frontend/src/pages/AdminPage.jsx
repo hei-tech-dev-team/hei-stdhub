@@ -134,6 +134,15 @@ export default function AdminPage() {
   const [invLoading, setInvLoading] = useState(false);
   const [invError, setInvError] = useState("");
 
+  // Bulk invitation modal
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkRole, setBulkRole] = useState("student");
+  const [bulkCount, setBulkCount] = useState(10);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkError, setBulkError] = useState("");
+  const [bulkCodes, setBulkCodes] = useState([]);
+  const [allCopied, setAllCopied] = useState(false);
+
   // Charger stats
   useEffect(() => {
     api
@@ -369,11 +378,19 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setShowInvModal(true)}
-              className="ml-auto btn-primary flex items-center gap-2 text-sm"
-            >
-              <FontAwesomeIcon icon={faPlus} />
-              <span className="hidden sm:inline">Générer une invitation</span>
-            </button>
+                className="btn-primary flex items-center gap-2 text-sm"
+              >
+                <FontAwesomeIcon icon={faPlus} />
+                <span className="hidden sm:inline">Générer une invitation</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBulkModal(true)}
+                className="btn-secondary flex items-center gap-2 text-sm"
+              >
+                <FontAwesomeIcon icon={faMagic} />
+                <span className="hidden sm:inline">Génération multiple</span>
+              </button>
           </div>
           {/* Tab: Users */}
           {tab === "users" && (
@@ -944,7 +961,7 @@ export default function AdminPage() {
             </div>
 
             <p className="text-sm text-gray-400 mb-4">
-              Le code sera valable <strong>7 jours</strong> et ne pourra être
+              Le code sera valable <strong>14 jours</strong> et ne pourra être
               utilisé qu'une seule fois.
             </p>
 
@@ -987,6 +1004,148 @@ export default function AdminPage() {
                 "Générer le code"
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal génération multiple */}
+      {showBulkModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-navy text-base">
+                Génération multiple d'invitations
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setShowBulkModal(false); setBulkCodes([]); setAllCopied(false); }}
+                className="text-gray-400 hover:text-navy transition"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+
+            {bulkCodes.length === 0 ? (
+              <>
+                <p className="text-sm text-gray-400 mb-4">
+                  Générez jusqu'à <strong>1 000 codes</strong> en une seule fois.
+                  Chaque code sera valable <strong>14 jours</strong> et à usage unique.
+                </p>
+
+                {bulkError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4">
+                    {bulkError}
+                  </div>
+                )}
+
+                <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
+                  Rôle des invités
+                </label>
+                <div className="flex gap-2 mb-4">
+                  {["student", "teacher", "alumni"].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => { setBulkRole(r); setBulkError(""); }}
+                      className={
+                        "flex-1 py-3 rounded-xl text-sm font-bold border transition " +
+                        (bulkRole === r
+                          ? "bg-navy text-white border-navy"
+                          : "bg-white text-navy border-contact hover:bg-surface")
+                      }
+                    >
+                      {ROLE_CONFIG[r].label}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
+                  Nombre de codes
+                </label>
+                <input
+                  type="number"
+                  className="input-field mb-6"
+                  min={1}
+                  max={1000}
+                  value={bulkCount}
+                  onChange={(e) => setBulkCount(Math.min(1000, Math.max(1, parseInt(e.target.value) || 1)))}
+                />
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setBulkLoading(true);
+                    setBulkError("");
+                    try {
+                      const { data } = await api.post("/admin/invitations/bulk", {
+                        role: bulkRole,
+                        count: bulkCount,
+                      });
+                      setBulkCodes(data.codes);
+                      loadInvitations();
+                    } catch (err) {
+                      setBulkError(err.response?.data?.error || "Erreur lors de la génération.");
+                    } finally {
+                      setBulkLoading(false);
+                    }
+                  }}
+                  disabled={bulkLoading}
+                  className="btn-primary w-full text-center py-3 disabled:opacity-60"
+                >
+                  {bulkLoading ? (
+                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                  ) : (
+                    `Générer ${bulkCount} code${bulkCount > 1 ? "s" : ""}`
+                  )}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCheck} />
+                  {bulkCodes.length} code{bulkCodes.length > 1 ? "s" : ""} généré{bulkCodes.length > 1 ? "s" : ""} avec succès
+                </div>
+
+                <div className="flex-1 overflow-y-auto mb-4 space-y-2">
+                  {bulkCodes.map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="flex items-center justify-between bg-surface rounded-xl px-4 py-3"
+                    >
+                      <span className="font-mono font-bold text-navy tracking-widest text-sm">
+                        {inv.code}
+                      </span>
+                      <span className={"text-xs font-bold px-2 py-0.5 rounded-full " + ROLE_CONFIG[inv.role]?.color}>
+                        {ROLE_CONFIG[inv.role]?.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = bulkCodes.map((i) => i.code).join("\n");
+                      navigator.clipboard.writeText(text);
+                      setAllCopied(true);
+                      setTimeout(() => setAllCopied(false), 2000);
+                    }}
+                    className={"flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition " + (allCopied ? "bg-green-100 text-green-600" : "bg-navy/10 text-navy hover:bg-navy/20")}
+                  >
+                    <FontAwesomeIcon icon={allCopied ? faCheck : faCopy} />
+                    {allCopied ? "Tous copiés !" : "Copier tous les codes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setBulkCodes([]); setAllCopied(false); }}
+                    className="flex-1 py-3 rounded-xl text-sm font-bold bg-white text-navy border border-contact hover:bg-surface transition"
+                  >
+                    Générer encore
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
