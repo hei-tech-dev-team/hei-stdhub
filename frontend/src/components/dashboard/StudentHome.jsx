@@ -42,7 +42,7 @@ export default function StudentHome() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-navy">
-              Bonjour, {user?.prenom} 👋
+              Bonjour, {user?.prenom}
             </h1>
             <p className="text-sm text-gray-400 mt-0.5">
               {posts.length} contenu(s) disponible(s)

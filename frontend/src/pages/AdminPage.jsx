@@ -17,10 +17,16 @@ import {
   faTimes,
   faCheck,
   faArrowUp,
+  faGraduationCap,
+  faArrowRight,
+  faBan,
+  faUserPlus,
+  faMagic,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
+import { expandRoleFilter } from "../utils/roleFilter";
 const ROLE_CONFIG = {
   student: {
     label: "Étudiant",
@@ -41,6 +47,11 @@ const ROLE_CONFIG = {
     label: "BDE",
     icon: faUsers,
     color: "bg-yellow-100 text-yellow-700",
+  },
+  alumni: {
+    label: "Alumni",
+    icon: faGraduationCap,
+    color: "bg-amber-100 text-amber-700",
   },
 };
 
@@ -74,6 +85,26 @@ export default function AdminPage() {
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
+  // Passage de classe (Septembre)
+  const [failedRefs, setFailedRefs] = useState([]);
+  const [failedInput, setFailedInput] = useState("");
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeDone, setUpgradeDone] = useState(false);
+
+  // Nouveaux L1 (Novembre)
+  const [newL1, setNewL1] = useState({
+    nom: "", prenom: "", email: "", groupChar: "",
+  });
+  const [generatedRef, setGeneratedRef] = useState("");
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerDone, setRegisterDone] = useState(false);
+
+  const now = new Date();
+  const month = now.getMonth();
+  const currentYear = now.getFullYear().toString().slice(-2);
+  const isSeptember = month === 8;
+  const isNovember = month === 10;
+
   const mainRef = useRef();
   // Afficher bouton "remonter en haut"
   useEffect(() => {
@@ -101,6 +132,7 @@ export default function AdminPage() {
   const [showInvModal, setShowInvModal] = useState(false);
   const [invRole, setInvRole] = useState("student");
   const [invLoading, setInvLoading] = useState(false);
+  const [invError, setInvError] = useState("");
 
   // Charger stats
   useEffect(() => {
@@ -115,7 +147,7 @@ export default function AdminPage() {
     setLoading(true);
     const params = {};
     if (search) params.q = search;
-    if (roleFilter) params.role = roleFilter;
+    if (roleFilter) params.role = expandRoleFilter(roleFilter);
     api
       .get("/admin/users", { params })
       .then(({ data }) => setUsers(data))
@@ -124,6 +156,7 @@ export default function AdminPage() {
   }, [search, roleFilter]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadUsers();
   }, [loadUsers]);
 
@@ -169,12 +202,14 @@ export default function AdminPage() {
   // Créer invitation
   const handleCreateInvitation = async () => {
     setInvLoading(true);
+    setInvError("");
     try {
       const { data } = await api.post("/admin/invitations", { role: invRole });
       setInvitations((prev) => [data, ...prev]);
       setShowInvModal(false);
       setTab("invitations");
     } catch (err) {
+      setInvError(err.response?.data?.error || "Erreur lors de la création.");
       console.error(err);
     } finally {
       setInvLoading(false);
@@ -188,6 +223,69 @@ export default function AdminPage() {
       setInvitations((prev) => prev.filter((i) => i.id !== id));
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // Passage de classe
+  const handleAddFailedRef = () => {
+    const ref = failedInput.trim().toUpperCase();
+    if (!ref) return;
+    if (failedRefs.includes(ref)) return;
+    setFailedRefs((prev) => [...prev, ref]);
+    setFailedInput("");
+  };
+
+  const handleRemoveFailedRef = (ref) => {
+    setFailedRefs((prev) => prev.filter((r) => r !== ref));
+  };
+
+  const handleUpgrade = async () => {
+    setUpgradeLoading(true);
+    try {
+      await api.post("/admin/class-upgrade", { failed_refs: failedRefs });
+      setUpgradeDone(true);
+      setFailedRefs([]);
+      loadUsers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
+
+  // Nouveaux L1
+  const getGroupFromChar = (char) => {
+    const c = char.toUpperCase();
+    if (!c) return "";
+    const groups = ["X1", "X2", "X3", "X4"];
+    const index = c.charCodeAt(0) - 65;
+    return groups[index % groups.length];
+  };
+
+  const handleRegisterL1 = async (e) => {
+    e.preventDefault();
+    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupChar.trim() || !generatedRef.trim()) return;
+    setRegisterLoading(true);
+    try {
+      const group = getGroupFromChar(newL1.groupChar);
+      await api.post("/auth/register", {
+        nom: newL1.nom.trim(),
+        prenom: newL1.prenom.trim(),
+        email: newL1.email.trim(),
+        ref: generatedRef.trim().toUpperCase(),
+        pseudo: `${newL1.prenom.trim()}.${newL1.nom.trim()}`,
+        password: generatedRef.trim().toUpperCase(),
+        role: "student",
+        level: "L1",
+        groupe: group,
+      });
+      setRegisterDone(true);
+      setNewL1({ nom: "", prenom: "", email: "", groupChar: "" });
+      setGeneratedRef("");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRegisterLoading(false);
     }
   };
 
@@ -243,10 +341,14 @@ export default function AdminPage() {
             />
           </div>
           {/* Tabs */}
-          <div className="flex gap-2 mb-5">
+          <div className="flex gap-2 mb-5 flex-wrap">
             {[
               { key: "users", label: "Utilisateurs" },
               { key: "invitations", label: "Invitations" },
+              ...(isSeptember
+                ? [{ key: "upgrade", label: "Passage de classe" }]
+                : []),
+              ...(isNovember ? [{ key: "new-l1", label: "Nouveaux L1" }] : []),
             ].map((t) => (
               <button
                 key={t.key}
@@ -273,7 +375,7 @@ export default function AdminPage() {
               <span className="hidden sm:inline">Générer une invitation</span>
             </button>
           </div>
-          {/* ── TAB USERS ── */}
+          {/* Tab: Users */}
           {tab === "users" && (
             <>
               {/* Toolbar */}
@@ -301,6 +403,7 @@ export default function AdminPage() {
                   <option value="teacher">Professeur</option>
                   <option value="admin">Admin</option>
                   <option value="bde">BDE</option>
+                  <option value="alumni">Alumni</option>
                 </select>
               </div>
 
@@ -379,6 +482,7 @@ export default function AdminPage() {
                                 <option value="bde">BDE</option>
                                 <option value="teacher">Professeur</option>
                                 <option value="student">Étudiant</option>
+                                <option value="alumni">Alumni</option>
                               </select>
                             </td>
                             <td className="py-3 px-4 text-gray-400 text-xs whitespace-nowrap">
@@ -445,6 +549,7 @@ export default function AdminPage() {
                             <option value="teacher">Professeur</option>
                             <option value="admin">Admin</option>
                             <option value="bde">BDE</option>
+                            <option value="alumni">Alumni</option>
                           </select>
                           {u.id !== user.id && (
                             <button
@@ -472,7 +577,240 @@ export default function AdminPage() {
               )}
             </>
           )}
-          {/* ── TAB INVITATIONS ── */}
+          {/* Tab: Passage de classe (Septembre) */}
+          {tab === "upgrade" && (
+            <div className="bg-white rounded-2xl shadow-card p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faGraduationCap} className="text-lg" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-navy text-base">
+                    Passage de classe — Septembre {now.getFullYear()}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Saisissez les étudiants qui{" "}
+                    <strong className="text-red-500">ne passent pas</strong>{" "}
+                    dans la classe supérieure. Tous les autres seront
+                    automatiquement promus.
+                  </p>
+                </div>
+              </div>
+
+              {upgradeDone && (
+                <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCheck} />
+                  Passage de classe effectué avec succès !
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  className="input-field flex-1 font-mono uppercase"
+                  placeholder="Référence STD (ex: STD25001)"
+                  value={failedInput}
+                  onChange={(e) => setFailedInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddFailedRef();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddFailedRef}
+                  className="btn-primary"
+                >
+                  <FontAwesomeIcon icon={faBan} className="text-sm" />
+                </button>
+              </div>
+
+              {failedRefs.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                    Étudiants en échec ({failedRefs.length})
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {failedRefs.map((ref) => (
+                      <span
+                        key={ref}
+                        className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full"
+                      >
+                        {ref}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFailedRef(ref)}
+                          className="hover:text-red-800"
+                        >
+                          <FontAwesomeIcon icon={faTimes} size="xs" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                <p className="text-xs text-blue-700">
+                  <FontAwesomeIcon icon={faArrowRight} className="mr-1" />
+                  Les étudiants <strong>L3</strong> qui passent deviendront{" "}
+                  <strong>AlumniHEI</strong>.
+                  <br />
+                  Les étudiants <strong>L1</strong> passeront en <strong>L2</strong>, les <strong>L2</strong> en <strong>L3</strong>.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleUpgrade}
+                disabled={upgradeLoading}
+                className="btn-primary flex items-center gap-2 disabled:opacity-60"
+              >
+                {upgradeLoading ? (
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                ) : (
+                  <FontAwesomeIcon icon={faArrowRight} />
+                )}
+                Valider le passage de classe
+              </button>
+            </div>
+          )}
+
+          {/* Tab: Nouveaux L1 (Novembre) */}
+          {tab === "new-l1" && (
+            <div className="bg-white rounded-2xl shadow-card p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faUserPlus} className="text-lg" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-navy text-base">
+                    Nouveaux étudiants L1 — STD{currentYear}XXX
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Inscrivez les nouveaux étudiants de première année. La
+                    référence est saisie manuellement (ex: STD26001).
+                  </p>
+                </div>
+              </div>
+
+              {registerDone && (
+                <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCheck} />
+                  Étudiant inscrit avec succès !
+                </div>
+              )}
+
+              <form onSubmit={handleRegisterL1} className="flex flex-col gap-4 max-w-lg">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                      Prénom
+                    </label>
+                    <input
+                      className="input-field"
+                      placeholder="Jean"
+                      value={newL1.prenom}
+                      onChange={(e) =>
+                        setNewL1((prev) => ({ ...prev, prenom: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                      Nom
+                    </label>
+                    <input
+                      className="input-field"
+                      placeholder="Rakoto"
+                      value={newL1.nom}
+                      onChange={(e) =>
+                        setNewL1((prev) => ({ ...prev, nom: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                    Email HEI
+                  </label>
+                  <input
+                    type="email"
+                    className="input-field"
+                    placeholder="hei.jean@gmail.com"
+                    value={newL1.email}
+                    onChange={(e) =>
+                      setNewL1((prev) => ({ ...prev, email: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                    Référence STD (saisie manuelle)
+                  </label>
+                  <input
+                    className="input-field font-mono tracking-widest uppercase"
+                    placeholder={`STD${currentYear}001`}
+                    value={generatedRef}
+                    onChange={(e) => setGeneratedRef(e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Saisissez la référence selon le rang d&apos;entrée (ex: STD26001, STD26002…).
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                    Caractère de groupe
+                  </label>
+                  <input
+                    className="input-field max-w-[120px] text-center text-lg font-bold tracking-widest uppercase"
+                    placeholder="A"
+                    maxLength={1}
+                    value={newL1.groupChar}
+                    onChange={(e) =>
+                      setNewL1((prev) => ({
+                        ...prev,
+                        groupChar: e.target.value,
+                      }))
+                    }
+                    required
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Saisissez une lettre (A-Z). Le groupe sera déterminé
+                    automatiquement :{" "}
+                    <strong className="text-navy">
+                      {newL1.groupChar
+                        ? `${newL1.groupChar.toUpperCase()} → ${getGroupFromChar(newL1.groupChar)}`
+                        : "ex: A → X1, B → X2, C → X3"}
+                    </strong>
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={registerLoading || !generatedRef.trim()}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-60 mt-2"
+                >
+                  {registerLoading ? (
+                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                  ) : (
+                    <FontAwesomeIcon icon={faMagic} />
+                  )}
+                  Inscrire l'étudiant
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Tab: Invitations */}
           {tab === "invitations" && (
             <div className="flex flex-col gap-3">
               {invitations.length === 0 && (
@@ -610,15 +948,21 @@ export default function AdminPage() {
               utilisé qu'une seule fois.
             </p>
 
+            {invError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                {invError}
+              </div>
+            )}
+
             <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
               Rôle de l'invité
             </label>
             <div className="flex gap-2 mb-6">
-              {["student", "teacher"].map((r) => (
+              {["student", "teacher", "alumni"].map((r) => (
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setInvRole(r)}
+                  onClick={() => { setInvRole(r); setInvError(""); }}
                   className={
                     "flex-1 py-3 rounded-xl text-sm font-bold border transition " +
                     (invRole === r
