@@ -74,7 +74,7 @@ router.post("/register", async (req, res) => {
 
   try {
     const invite = await db.query(
-      `SELECT * FROM invitations WHERE code=$1 AND used=FALSE AND expires_at > NOW()`,
+      `SELECT * FROM invitations WHERE code=$1 AND use_count < max_uses AND expires_at > NOW()`,
       [inviteCode.toUpperCase()],
     );
     if (!invite.rows.length)
@@ -111,7 +111,7 @@ router.post("/register", async (req, res) => {
 
     const newUser = rows[0];
     await db.query(
-      `UPDATE invitations SET used=TRUE, used_by=$1 WHERE code=$2`,
+      `UPDATE invitations SET use_count = use_count + 1, used_by = $1 WHERE code = $2 AND use_count < max_uses`,
       [newUser.id, inviteCode.toUpperCase()],
     );
 
@@ -292,7 +292,7 @@ router.post("/verify-invite", async (req, res) => {
   if (!code) return res.status(400).json({ error: "Code requis." });
   try {
     const { rows } = await db.query(
-      `SELECT * FROM invitations WHERE code=$1 AND used=FALSE AND expires_at > NOW()`,
+      `SELECT * FROM invitations WHERE code=$1 AND use_count < max_uses AND expires_at > NOW()`,
       [code.toUpperCase()],
     );
     if (!rows.length)
