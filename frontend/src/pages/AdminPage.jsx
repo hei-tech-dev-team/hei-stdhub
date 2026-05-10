@@ -131,6 +131,7 @@ export default function AdminPage() {
   // Modal invitation
   const [showInvModal, setShowInvModal] = useState(false);
   const [invRole, setInvRole] = useState("student");
+  const [invMaxUses, setInvMaxUses] = useState(1);
   const [invLoading, setInvLoading] = useState(false);
   const [invError, setInvError] = useState("");
 
@@ -138,6 +139,7 @@ export default function AdminPage() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkRole, setBulkRole] = useState("student");
   const [bulkCount, setBulkCount] = useState(10);
+  const [bulkMaxUses, setBulkMaxUses] = useState(1);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState("");
   const [bulkCodes, setBulkCodes] = useState([]);
@@ -213,7 +215,7 @@ export default function AdminPage() {
     setInvLoading(true);
     setInvError("");
     try {
-      const { data } = await api.post("/admin/invitations", { role: invRole });
+      const { data } = await api.post("/admin/invitations", { role: invRole, max_uses: invMaxUses });
       setInvitations((prev) => [data, ...prev]);
       setShowInvModal(false);
       setTab("invitations");
@@ -845,6 +847,8 @@ export default function AdminPage() {
 
               {invitations.map((inv) => {
                 const expired = new Date(inv.expires_at) < new Date();
+                const multi = inv.max_uses > 1;
+                const full = inv.use_count >= inv.max_uses;
                 const isCopied = copiedId === inv.id;
                 return (
                   <div
@@ -857,15 +861,15 @@ export default function AdminPage() {
                         <span className="font-mono font-bold text-navy text-lg tracking-widest">
                           {inv.code}
                         </span>
-                        {inv.used && (
+                        {full && !expired && (
                           <span
-                            className="bg-green-100 text-green-600 text-xs font-bold
+                            className="bg-gray-200 text-gray-600 text-xs font-bold
                                            px-2 py-0.5 rounded-full"
                           >
-                            Utilisé
+                            Épuisé
                           </span>
                         )}
-                        {!inv.used && expired && (
+                        {!full && expired && (
                           <span
                             className="bg-red-100 text-red-500 text-xs font-bold
                                            px-2 py-0.5 rounded-full"
@@ -873,12 +877,20 @@ export default function AdminPage() {
                             Expiré
                           </span>
                         )}
-                        {!inv.used && !expired && (
+                        {!full && !expired && (
                           <span
                             className="bg-gold/10 text-gold text-xs font-bold
                                            px-2 py-0.5 rounded-full"
                           >
                             Actif
+                          </span>
+                        )}
+                        {multi && (
+                          <span
+                            className="bg-blue-100 text-blue-700 text-xs font-bold
+                                           px-2 py-0.5 rounded-full"
+                          >
+                            {inv.use_count}/{inv.max_uses}
                           </span>
                         )}
                         <span
@@ -891,12 +903,14 @@ export default function AdminPage() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-400">
-                        Expire le{" "}
+                        {multi
+                          ? `${inv.use_count} utilisés sur ${inv.max_uses} — expire le `
+                          : "Expire le "}
                         {new Date(inv.expires_at).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      {!inv.used && !expired && (
+                      {!full && !expired && (
                         <button
                           type="button"
                           onClick={() => handleCopy(inv.id, inv.code)}
@@ -961,8 +975,7 @@ export default function AdminPage() {
             </div>
 
             <p className="text-sm text-gray-400 mb-4">
-              Le code sera valable <strong>14 jours</strong> et ne pourra être
-              utilisé qu'une seule fois.
+              Le code sera valable <strong>14 jours</strong>.
             </p>
 
             {invError && (
@@ -991,6 +1004,18 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
+
+            <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
+              Utilisations max
+            </label>
+            <input
+              type="number"
+              className="input-field mb-6"
+              min={1}
+              max={10000}
+              value={invMaxUses}
+              onChange={(e) => setInvMaxUses(Math.max(1, parseInt(e.target.value) || 1))}
+            />
 
             <button
               type="button"
@@ -1029,7 +1054,7 @@ export default function AdminPage() {
               <>
                 <p className="text-sm text-gray-400 mb-4">
                   Générez jusqu'à <strong>1 000 codes</strong> en une seule fois.
-                  Chaque code sera valable <strong>14 jours</strong> et à usage unique.
+                  Chaque code sera valable <strong>14 jours</strong>.
                 </p>
 
                 {bulkError && (
@@ -1064,11 +1089,23 @@ export default function AdminPage() {
                 </label>
                 <input
                   type="number"
-                  className="input-field mb-6"
+                  className="input-field mb-4"
                   min={1}
                   max={1000}
                   value={bulkCount}
                   onChange={(e) => setBulkCount(Math.min(1000, Math.max(1, parseInt(e.target.value) || 1)))}
+                />
+
+                <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
+                  Utilisations max par code
+                </label>
+                <input
+                  type="number"
+                  className="input-field mb-6"
+                  min={1}
+                  max={10000}
+                  value={bulkMaxUses}
+                  onChange={(e) => setBulkMaxUses(Math.max(1, parseInt(e.target.value) || 1))}
                 />
 
                 <button
@@ -1080,6 +1117,7 @@ export default function AdminPage() {
                       const { data } = await api.post("/admin/invitations/bulk", {
                         role: bulkRole,
                         count: bulkCount,
+                        max_uses: bulkMaxUses,
                       });
                       setBulkCodes(data.codes);
                       loadInvitations();
