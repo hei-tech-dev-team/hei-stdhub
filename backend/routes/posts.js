@@ -3,21 +3,21 @@ const multer = require("multer");
 const path = require("path");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { log, timeLog } = require("console");
+
 
 const router = express.Router();
 
-// Upload fichier dans /uploads
+// Store uploaded files locally
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 Mo
+  limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-// GET /api/posts  (filtres : ?ue=WEB1&type=td)
+// UE and type filters: ?ue=WEB1&type=td
 const UES_BY_LEVEL = {
   L1: [
     "WEB1",
@@ -72,7 +72,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /api/posts  (prof/admin uniquement)
+// Teachers and admins can create posts
 router.post("/", auth, upload.single("file"), async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
@@ -109,7 +109,7 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   }
 });
 
-// DELETE /api/posts/:id
+// Teachers and admins can delete posts
 router.delete("/:id", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
