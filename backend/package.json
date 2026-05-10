@@ -28,7 +28,8 @@
     "multer-storage-cloudinary": "^2.2.1",
     "nodemailer": "^8.0.4",
     "pg": "^8.19.0",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "axios": "^1.16.0",

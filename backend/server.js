@@ -6,6 +6,21 @@ const http = require("http");
 const { Server } = require("socket.io");
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
+const webpush = require("web-push");
+
+// VAPID keys — auto-generated if missing
+if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  const vapidKeys = webpush.generateVAPIDKeys();
+  process.env.VAPID_PUBLIC_KEY ||= vapidKeys.publicKey;
+  process.env.VAPID_PRIVATE_KEY ||= vapidKeys.privateKey;
+  console.info("VAPID keys generated (set in .env to persist)");
+}
+
+webpush.setVapidDetails(
+  "mailto:hei@stdhub.app",
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY,
+);
 
 const app = express();
 const server = http.createServer(app);
@@ -75,11 +90,17 @@ app.use("/api/posts", require("./routes/posts"));
 app.use("/api/supports", require("./routes/supports"));
 app.use("/api/submissions", require("./routes/submissions"));
 app.use("/api/messages", require("./routes/messages"));
+app.use("/api/push", require("./routes/push"));
 app.use("/api/admin", require("./routes/admin"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) =>
   res.json({ status: "ok", time: new Date() }),
+);
+
+// Expose VAPID public key for push subscriptions
+app.get("/api/push/vapid-key", (req, res) =>
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY }),
 );
 
 app.use((req, res) => res.status(404).json({ error: "Route introuvable." }));
@@ -137,6 +158,20 @@ io.on("connection", (socket) => {
 });
 
 app.set("io", io);
+
+// Ensure push_subscriptions table exists
+const { pool } = require("./db");
+pool.query(`
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id         SERIAL       PRIMARY KEY,
+    user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint   TEXT         NOT NULL,
+    auth_key   TEXT         NOT NULL,
+    p256dh_key TEXT         NOT NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, endpoint)
+  )
+`).catch((err) => console.error("Failed to create push_subscriptions table:", err));
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
