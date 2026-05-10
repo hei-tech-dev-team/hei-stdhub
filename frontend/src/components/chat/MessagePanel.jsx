@@ -353,6 +353,13 @@ export default function MessagePanel({
     <div className="flex flex-col h-full min-w-0">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
+        <button
+          type="button"
+          onClick={onOpenContacts}
+          className="lg:hidden w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95"
+        >
+          <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
+        </button>
         <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
         <div className="flex-1 min-w-0">
           <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center gap-1.5">
@@ -369,13 +376,6 @@ export default function MessagePanel({
                   : "Étudiant"}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onOpenContacts}
-          className="lg:hidden w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95"
-        >
-          <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
-        </button>
       </div>
 
       {/* Messages */}
