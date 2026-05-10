@@ -143,7 +143,34 @@ const sendPasswordResetEmail = async ({ user, token }) => {
   return { skipped: true, resetUrl };
 };
 
+const sendEmail = async ({ user, subject, text, html }) => {
+  if (!user?.email?.trim()) throw new Error("User email is required");
+
+  if (process.env.RESEND_API_KEY) {
+    const result = await sendWithResend({ user, subject, text, html });
+    console.info(`Email envoyé via Resend à ${user.email}`);
+    return { skipped: false, provider: "resend", result };
+  }
+
+  const transporter = createTransport();
+  if (transporter) {
+    await transporter.sendMail({
+      from: getFromAddress(),
+      to: user.email,
+      subject,
+      text,
+      html,
+    });
+    console.info(`Email envoyé via SMTP à ${user.email}`);
+    return { skipped: false };
+  }
+
+  console.info(`Email non envoyé à ${user.email} (aucun fournisseur configuré)`);
+  return { skipped: true };
+};
+
 module.exports = {
   buildResetUrl,
   sendPasswordResetEmail,
+  sendEmail,
 };
