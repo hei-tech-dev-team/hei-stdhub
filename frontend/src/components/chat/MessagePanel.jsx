@@ -23,16 +23,16 @@ import {
 } from "./chat-utils";
 
 const ROLE_BADGE = {
-  bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
-  teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
-  admin: { label: "Admin", cls: "bg-red-500/20 text-red-300 border-red-500/30" },
+  bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300" },
+  teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300" },
+  admin: { label: "Admin", cls: "bg-red-500/20 text-red-300" },
 };
 
 function RoleBadge({ role }) {
   const cfg = ROLE_BADGE[role];
   if (!cfg) return null;
   return (
-    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ml-1.5 ${cfg.cls}`}>
+    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 ${cfg.cls}`}>
       {cfg.label}
     </span>
   );
@@ -40,9 +40,9 @@ function RoleBadge({ role }) {
 
 function DateSeparator({ date }) {
   return (
-    <div className="flex items-center gap-4 my-6">
+    <div className="flex items-center gap-3 my-4">
       <div className="flex-1 h-px bg-white/10" />
-      <span className="text-white/50 text-xs font-medium shrink-0 px-2">
+      <span className="text-white/40 text-xs font-medium shrink-0 px-1">
         {formatDateLabel(date)}
       </span>
       <div className="flex-1 h-px bg-white/10" />
@@ -59,8 +59,7 @@ function renderContent(content) {
           <img
             src={parsed.url}
             alt={parsed.filename}
-            className="max-w-56 max-h-56 object-cover rounded-lg
-                          cursor-pointer hover:opacity-90 transition block"
+            className="max-w-56 max-h-56 object-cover rounded-lg cursor-pointer hover:opacity-90 transition block"
           />
         </a>
       );
@@ -70,17 +69,21 @@ function renderContent(content) {
         href={parsed.url}
         target="_blank"
         rel="noreferrer"
-        className="flex items-center gap-2 text-blue-300
-                      hover:text-blue-200 hover:underline text-xs font-medium"
+        className="flex items-center gap-2 text-blue-300 hover:text-blue-200 hover:underline text-xs font-medium max-w-full"
       >
         <FontAwesomeIcon icon={faFile} />
-        <span>{parsed.filename}</span>
+        <span className="truncate">{parsed.filename}</span>
       </a>
     );
   }
 
   const clean = DOMPurify.sanitize(content);
-  return <span dangerouslySetInnerHTML={{ __html: clean }} />;
+  return (
+    <span
+      className="break-words overflow-wrap-anywhere whitespace-pre-wrap"
+      dangerouslySetInnerHTML={{ __html: clean }}
+    />
+  );
 }
 
 function MessageGroup({ messages, isOwn }) {
@@ -96,9 +99,9 @@ function MessageGroup({ messages, isOwn }) {
 
         if (isFileMessage(msg.content)) {
           return (
-            <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%] xl:max-w-[60%] animate-message-in">
+            <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[85%] sm:max-w-[75%] min-w-0">
               {!isOwn && isFirst && (
-                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
+                <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
                   {msg.senderAvatar ? (
                     <img
                       src={msg.senderAvatar}
@@ -110,13 +113,13 @@ function MessageGroup({ messages, isOwn }) {
                   )}
                 </div>
               )}
-              {!isOwn && !isFirst && <div className="w-8 shrink-0" />}
-              <div className="flex flex-col items-end">
+              {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
+              <div className="flex flex-col items-end min-w-0">
                 <div
                   className={`rounded-xl overflow-hidden ${
                     isOwn
-                      ? "bg-gold text-navy-dark rounded-br-sm"
-                      : "bg-white/10 backdrop-blur-sm border border-white/10 text-white rounded-bl-sm"
+                      ? "bg-gold text-navy-dark"
+                      : "bg-white/10 border border-white/10 text-white"
                   }`}
                 >
                   {renderContent(msg.content)}
@@ -132,7 +135,7 @@ function MessageGroup({ messages, isOwn }) {
         return (
           <div
             key={msg.id}
-            className={`group relative flex items-end gap-2 mb-1 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%] xl:max-w-[60%] ${
+            className={`group relative flex items-end gap-2 mb-1 max-w-[85%] sm:max-w-[75%] min-w-0 ${
               isOwn ? "flex-row-reverse" : "flex-row"
             } animate-message-in`}
             style={{ animationDelay: `${idx * 0.03}s` }}
@@ -140,7 +143,7 @@ function MessageGroup({ messages, isOwn }) {
             onMouseLeave={() => setHoveredId(null)}
           >
             {!isOwn && isFirst && (
-              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
+              <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
                 {msg.senderAvatar ? (
                   <img
                     src={msg.senderAvatar}
@@ -152,23 +155,23 @@ function MessageGroup({ messages, isOwn }) {
                 )}
               </div>
             )}
-            {!isOwn && !isFirst && <div className="w-8 shrink-0" />}
+            {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
 
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0 max-w-full">
               {isFirst && (
                 <span
                   className={`text-[11px] font-semibold mb-1 ml-1 flex items-center ${
-                    isOwn ? "text-right text-navy-dark justify-end" : "text-gold"
+                    isOwn ? "justify-end text-navy-dark" : "text-gold"
                   }`}
                 >
                   {isOwn ? "Vous" : msg.sender}
                   {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
               )}
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2 min-w-0 max-w-full">
                 {!isOwn && (
                   <span
-                    className={`text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-out select-none self-end pb-0.5 ${
+                    className={`text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 select-none self-end pb-0.5 shrink-0 ${
                       hoveredId === msg.id ? "opacity-100" : ""
                     }`}
                     title={tooltipStr}
@@ -177,18 +180,18 @@ function MessageGroup({ messages, isOwn }) {
                   </span>
                 )}
                 <div
-                  className={`px-4 py-2 text-sm leading-relaxed ${
+                  className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
                     isOwn
                       ? "bg-gold text-navy-dark rounded-2xl rounded-br-sm"
-                      : "bg-white/10 backdrop-blur-sm border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
+                      : "bg-white/10 border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
                   }`}
                 >
                   {renderContent(msg.content)}
                 </div>
                 {isOwn && (
-                  <div className="flex items-center gap-1 self-end pb-0.5">
+                  <div className="flex items-center gap-1 self-end pb-0.5 shrink-0">
                     <span
-                      className={`text-[10px] select-none transition-opacity duration-200 ease-out ${
+                      className={`text-[10px] select-none transition-opacity duration-200 ${
                         hoveredId === msg.id || !isFirst
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100"
@@ -197,12 +200,9 @@ function MessageGroup({ messages, isOwn }) {
                     >
                       {timeStr}
                     </span>
-                    {!msg.seen && (
-                      <span className="text-white/50 text-[10px]">✓</span>
-                    )}
-                    {msg.seen && (
-                      <span className="text-white text-[10px]">✓✓</span>
-                    )}
+                    <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                      {msg.seen ? "✓✓" : "✓"}
+                    </span>
                   </div>
                 )}
               </div>
@@ -369,24 +369,23 @@ export default function MessagePanel({
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-w-0">
       {/* Header */}
-      <div className="flex items-center gap-4 px-5 sm:px-6 py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0 shadow-sm">
+      <div className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
         <button
           type="button"
           onClick={onOpenContacts}
-          className="lg:hidden w-9 h-9 rounded-xl bg-white/10 text-white
-                     flex items-center justify-center hover:bg-white/20 transition-all duration-200 ease-out active:scale-95"
+          className="lg:hidden w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
         <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold text-base truncate flex items-center gap-1.5">
+          <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center gap-1.5">
             {contact.name}
             {!contact.isGlobal && <RoleBadge role={contact.role} />}
           </h3>
-          <p className="text-white/50 text-xs mt-0.5">
+          <p className="text-white/40 text-xs mt-0.5 truncate">
             {contact.isGlobal
               ? "Chat global – tous les membres"
               : contact.role === "teacher"
@@ -402,7 +401,7 @@ export default function MessagePanel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-5 sm:px-6 py-6 flex flex-col relative"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 sm:py-6 flex flex-col relative"
       >
         {loading && (
           <div className="flex justify-center py-10">
@@ -414,13 +413,13 @@ export default function MessagePanel({
         )}
 
         {!loading && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
+          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40 select-none">
             <img
               src={HEI_WHITE_LOGO}
               alt="HEI"
-              className="w-16 h-16 object-contain rounded-full"
+              className="w-14 h-14 object-contain rounded-full opacity-60"
             />
-            <p className="text-white/70 text-sm">Démarrez la conversation...</p>
+            <p className="text-white/50 text-xs sm:text-sm">Aucun message pour l'instant.</p>
           </div>
         )}
 
@@ -441,18 +440,18 @@ export default function MessagePanel({
 
         <div ref={bottomRef} />
 
-        {!isAtBottom && (
+        {!isAtBottom && messages.length > 0 && (
           <button
             type="button"
             onClick={() => {
               onScrollToBottom();
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="fixed bottom-24 right-4 sm:right-8 w-11 h-11 rounded-full
+            className="fixed bottom-28 sm:bottom-32 right-6 sm:right-10 w-11 h-11 rounded-full
                        bg-white/10 backdrop-blur-xl border border-white/20
                        text-white flex items-center justify-center
                        hover:bg-white/20 hover:scale-105 active:scale-95
-                       transition-all duration-200 ease-out shadow-lg z-10"
+                       transition-all duration-200 shadow-lg z-10"
             title="Revenir en bas"
           >
             <FontAwesomeIcon icon={faChevronDown} className="text-sm" />
@@ -461,12 +460,12 @@ export default function MessagePanel({
       </div>
 
       {/* Input */}
-      <div className="px-5 sm:px-6 py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 sm:gap-3 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all duration-200 ease-out shadow-sm">
+      <div className="px-4 sm:px-6 py-3 sm:py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
+        <div className="flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-11 h-11 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all duration-200 ease-out shrink-0 active:scale-90"
+            className="w-10 h-10 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all shrink-0 active:scale-90"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
           </button>
@@ -477,8 +476,7 @@ export default function MessagePanel({
             onChange={handleFile}
           />
           <input
-            className="flex-1 text-sm text-white bg-transparent
-                       focus:outline-none placeholder:text-white/30"
+            className="flex-1 min-w-0 text-sm text-white bg-transparent focus:outline-none placeholder:text-white/30"
             placeholder="Écrire un message..."
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -488,9 +486,7 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-11 h-11 rounded-xl bg-gold text-white
-                     flex items-center justify-center hover:bg-gold/90 hover:scale-105 active:scale-95
-                     transition-all duration-200 ease-out shrink-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-10 h-10 rounded-xl bg-gold text-white flex items-center justify-center hover:bg-gold/90 hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {sending ? (
               <FontAwesomeIcon icon={faSpinner} className="text-sm animate-spin" />
