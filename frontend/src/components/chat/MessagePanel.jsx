@@ -38,6 +38,19 @@ function RoleBadge({ role }) {
   );
 }
 
+function ChatAvatar({ avatar, name }) {
+  const [failed, setFailed] = useState(false);
+  if (!avatar || failed) return <Avatar name={name} size="sm" color="bg-gold" />;
+  return (
+    <img
+      src={avatar}
+      alt={name}
+      className="w-full h-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function DateSeparator({ date }) {
   return (
     <div className="flex items-center gap-3 my-4">
@@ -102,15 +115,7 @@ function MessageGroup({ messages, isOwn }) {
             <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0">
               {!isOwn && isFirst && (
                 <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
-                  {msg.senderAvatar ? (
-                    <img
-                      src={msg.senderAvatar}
-                      alt={msg.sender}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Avatar name={msg.sender} size="sm" color="bg-gold" />
-                  )}
+                  <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} />
                 </div>
               )}
               {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
@@ -144,15 +149,7 @@ function MessageGroup({ messages, isOwn }) {
           >
             {!isOwn && isFirst && (
               <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
-                {msg.senderAvatar ? (
-                  <img
-                    src={msg.senderAvatar}
-                    alt={msg.sender}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Avatar name={msg.sender} size="sm" color="bg-gold" />
-                )}
+                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} />
               </div>
             )}
             {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
@@ -193,6 +190,21 @@ function MessageGroup({ messages, isOwn }) {
   );
 }
 
+function HeaderAvatar({ avatar, name }) {
+  const [failed, setFailed] = useState(false);
+  if (!avatar || failed) return <Avatar name={name} size="md" color="bg-gold" />;
+  return (
+    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/10">
+      <img
+        src={avatar}
+        alt={name}
+        className="w-full h-full object-cover"
+        onError={() => setFailed(true)}
+      />
+    </div>
+  );
+}
+
 function ContactAvatar({ contact, onlineUsers }) {
   if (contact.isGlobal) {
     return (
@@ -208,17 +220,7 @@ function ContactAvatar({ contact, onlineUsers }) {
   const online = onlineUsers.has(contact.id);
   return (
     <div className="relative shrink-0">
-      {contact.avatar ? (
-        <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/10">
-          <img
-            src={contact.avatar}
-            alt={contact.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      ) : (
-        <Avatar name={contact.name} size="md" color="bg-gold" />
-      )}
+      <HeaderAvatar avatar={contact.avatar} name={contact.name} />
       <span className="absolute -bottom-0.5 -right-0.5">
         <span
           className={`status-dot ${online ? "status-online" : "status-offline"}`}
