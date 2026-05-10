@@ -135,7 +135,7 @@ function MessageGroup({ messages, isOwn }) {
         return (
           <div
             key={msg.id}
-            className={`group relative flex items-end gap-2 mb-1 max-w-[95%] sm:max-w-[75%] min-w-0 ${
+            className={`group relative flex items-end gap-2 mb-2 max-w-[95%] sm:max-w-[75%] min-w-0 ${
               isOwn ? "flex-row-reverse" : "flex-row"
             } animate-message-in`}
             style={{ animationDelay: `${idx * 0.03}s` }}
@@ -143,7 +143,7 @@ function MessageGroup({ messages, isOwn }) {
             onMouseLeave={() => setHoveredId(null)}
           >
             {!isOwn && isFirst && (
-              <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
+              <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
                 {msg.senderAvatar ? (
                   <img
                     src={msg.senderAvatar}
@@ -157,51 +157,32 @@ function MessageGroup({ messages, isOwn }) {
             )}
             {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
 
-            <div className="flex flex-col min-w-0 max-w-full">
+            <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
               {isFirst && (
                 <span
                   className={`text-[11px] font-semibold mb-1 ml-1 flex items-center ${
-                    isOwn ? "justify-end text-navy-dark" : "text-gold"
+                    isOwn ? "text-navy-dark" : "text-gold"
                   }`}
                 >
                   {isOwn ? "Vous" : msg.sender}
                   {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
               )}
-              <div className="flex items-end gap-2 min-w-0 max-w-full">
-                {!isOwn && (
-                  <span
-                    className={`text-[10px] text-white/30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 select-none self-end pb-0.5 shrink-0 ${
-                      hoveredId === msg.id ? "sm:opacity-100" : ""
-                    }`}
-                    title={tooltipStr}
-                  >
-                    {timeStr}
-                  </span>
-                )}
-                <div
-                  className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
-                    isOwn
-                      ? "bg-gold text-navy-dark rounded-2xl rounded-br-sm"
-                      : "bg-white/10 border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
-                  }`}
-                >
-                  {renderContent(msg.content)}
-                </div>
+              <div
+                className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
+                  isOwn
+                    ? "bg-gold text-navy-dark rounded-2xl rounded-br-sm"
+                    : "bg-white/10 border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
+                }`}
+              >
+                {renderContent(msg.content)}
+              </div>
+              <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+                <span className="text-[10px] text-white/30">{timeStr}</span>
                 {isOwn && (
-                  <div className="flex items-center gap-1 self-end pb-0.5 shrink-0">
-                    <span
-                      className={`text-[10px] select-none transition-opacity duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-white/30 ${
-                        hoveredId === msg.id || !isFirst ? "sm:opacity-100" : ""
-                      }`}
-                      title={tooltipStr}
-                    >
-                      {timeStr}
-                    </span>
-                    <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
-                      {msg.seen ? "✓✓" : "✓"}
-                    </span>
-                  </div>
+                  <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                    {msg.seen ? "✓✓" : "✓"}
+                  </span>
                 )}
               </div>
             </div>
