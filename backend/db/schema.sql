@@ -154,6 +154,16 @@ CREATE INDEX idx_password_reset_user_active
   ON password_reset_tokens(user_id, expires_at)
   WHERE used_at IS NULL;
 
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id         SERIAL       PRIMARY KEY,
+  user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint   TEXT         NOT NULL,
+  auth_key   TEXT         NOT NULL,
+  p256dh_key TEXT         NOT NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, endpoint)
+);
+
 CREATE OR REPLACE FUNCTION fn_set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN

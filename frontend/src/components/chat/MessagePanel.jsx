@@ -171,8 +171,8 @@ function MessageGroup({ messages, isOwn }) {
               <div className="flex items-end gap-2 min-w-0 max-w-full">
                 {!isOwn && (
                   <span
-                    className={`text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 select-none self-end pb-0.5 shrink-0 ${
-                      hoveredId === msg.id ? "opacity-100" : ""
+                    className={`text-[10px] text-white/30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 select-none self-end pb-0.5 shrink-0 ${
+                      hoveredId === msg.id ? "sm:opacity-100" : ""
                     }`}
                     title={tooltipStr}
                   >
@@ -191,11 +191,9 @@ function MessageGroup({ messages, isOwn }) {
                 {isOwn && (
                   <div className="flex items-center gap-1 self-end pb-0.5 shrink-0">
                     <span
-                      className={`text-[10px] select-none transition-opacity duration-200 ${
-                        hoveredId === msg.id || !isFirst
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
-                      } text-white/30`}
+                      className={`text-[10px] select-none transition-opacity duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-white/30 ${
+                        hoveredId === msg.id || !isFirst ? "sm:opacity-100" : ""
+                      }`}
                       title={tooltipStr}
                     >
                       {timeStr}
