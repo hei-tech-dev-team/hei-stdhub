@@ -55,77 +55,77 @@ export default function App() {
   return (
     <>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/archives"
-          element={
-            <ProtectedRoute>
-              <ArchivesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/td"
-          element={
-            <ProtectedRoute>
-              <TDPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/suggestions"
-          element={
-            <ProtectedRoute>
-              <SuggestionPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bde"
-          element={
-            <BDERoute>
-              <BDEPage />
-            </BDERoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/archives"
+        element={
+          <ProtectedRoute>
+            <ArchivesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/td"
+        element={
+          <ProtectedRoute>
+            <TDPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        // Open to both students and teachers
+        path="/suggestions"
+        element={
+          <ProtectedRoute>
+            <SuggestionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/bde"
+        element={
+          <BDERoute>
+            <BDEPage />
+          </BDERoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
 
+      </Routes>
       {user && firstLogin && <OnboardingModal />}
     </>
   );

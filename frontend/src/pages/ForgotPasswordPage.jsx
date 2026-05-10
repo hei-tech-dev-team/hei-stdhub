@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
 
       <div className="relative w-full max-w-4xl">
         <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex min-h-[540px]">
-          {/* ── Left panel ── */}
+          {/* Left panel */}
           <div
             className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
             style={{
@@ -87,7 +87,7 @@ export default function ForgotPasswordPage() {
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
               <p className="text-white/80 text-xs font-medium">
-                🔐 Sécurité renforcée
+                Sécurité renforcée
               </p>
               <p className="text-white/50 text-xs mt-0.5">
                 Lien valable 1 heure seulement
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          {/* ── Right panel ── */}
+          {/* Right panel */}
           <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 py-10">
             {/* Mobile logo */}
             <div className="flex lg:hidden items-center gap-2 mb-8">
@@ -180,7 +180,7 @@ export default function ForgotPasswordPage() {
                   </p>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 text-amber-700 text-xs px-4 py-3 rounded-2xl text-left w-full">
-                  <p className="font-semibold mb-1">📬 Vérifiez vos spams</p>
+                  <p className="font-semibold mb-1">Vérifiez vos spams</p>
                   <p>
                     L'email peut parfois atterrir dans le dossier courrier
                     indésirable.

@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+  const [isAlumni, setIsAlumni] = useState(false);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -43,7 +44,7 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-4xl">
         <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex min-h-[540px]">
-          {/* ── Left panel ── */}
+          {/* Left panel */}
           <div
             className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
             style={{
@@ -101,7 +102,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* ── Right panel ── */}
+          {/* Right panel */}
           <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 py-10">
             {/* Mobile logo */}
             <div className="flex lg:hidden items-center gap-2 mb-8">
@@ -128,6 +129,30 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* Alumni toggle */}
+            <div className="flex items-center gap-3 mb-4 p-3 bg-surface rounded-xl">
+              <div
+                onClick={() => setIsAlumni(false)}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
+                  !isAlumni
+                    ? "bg-navy text-white shadow-sm"
+                    : "text-gray-400 hover:text-navy"
+                }`}
+              >
+                Étudiant actuel
+              </div>
+              <div
+                onClick={() => setIsAlumni(true)}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
+                  isAlumni
+                    ? "bg-navy text-white shadow-sm"
+                    : "text-gray-400 hover:text-navy"
+                }`}
+              >
+                Ancien étudiant
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div>
                 <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
@@ -140,7 +165,7 @@ export default function LoginPage() {
                   />
                   <input
                     className="input-field pl-10"
-                    placeholder="STD25XXX ou PROFXXX"
+                    placeholder={isAlumni ? "STD23XXX ou STD24XXX" : "STD25XXX ou PROFXXX"}
                     value={form.ref}
                     onChange={(e) => {
                       set("ref", e.target.value);
