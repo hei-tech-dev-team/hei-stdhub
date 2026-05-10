@@ -230,7 +230,7 @@ export default function ChatLayout() {
       <div
         className={`
         lg:relative lg:translate-x-0 lg:w-72 lg:flex lg:shrink-0
-        fixed inset-y-0 left-0 z-20 w-[80vw] max-w-72
+        fixed inset-y-0 left-0 z-20 w-[85vw] max-w-80
         transform transition-transform duration-300 ease-out
         ${showContactList ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
@@ -245,7 +245,7 @@ export default function ChatLayout() {
 
       {showContactList && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-10 animate-fade-in"
+          className="lg:hidden fixed inset-0 bg-black/50 z-10 animate-fade-in"
           onClick={() => setShowContactList(false)}
         />
       )}
