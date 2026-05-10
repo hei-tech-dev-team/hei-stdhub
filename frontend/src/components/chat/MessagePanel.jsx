@@ -372,7 +372,8 @@ export default function MessagePanel({
         <button
           type="button"
           onClick={onOpenContacts}
-          className="lg:hidden w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95 shrink-0"
+          title="Liste des contacts"
+          className="w-9 h-9 rounded-xl bg-gold text-navy flex items-center justify-center hover:bg-gold-light transition-all active:scale-95 shrink-0 shadow-lg shadow-gold/20"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
