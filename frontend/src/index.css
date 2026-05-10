@@ -18,6 +18,11 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  input, textarea, select {
+    font-size: 16px;
+    touch-action: manipulation;
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
   }
