@@ -43,10 +43,10 @@ export default function Sidebar() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 rounded-xl
-                   bg-navy text-white flex items-center justify-center shadow-lg"
+        className="lg:hidden fixed top-3 left-3 z-50 touch-target rounded-xl
+                   bg-navy text-white shadow-lg"
       >
-        <FontAwesomeIcon icon={faBars} />
+        <FontAwesomeIcon icon={faBars} className="text-base" />
       </button>
 
       {open && (
@@ -75,9 +75,9 @@ export default function Sidebar() {
           </div>
           <button
             onClick={() => setOpen(false)}
-            className="lg:hidden text-white/50 hover:text-white transition"
+            className="lg:hidden touch-target text-white/50 hover:text-white transition"
           >
-            <FontAwesomeIcon icon={faTimes} />
+            <FontAwesomeIcon icon={faTimes} className="text-base" />
           </button>
         </div>
 

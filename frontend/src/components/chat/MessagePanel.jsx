@@ -96,7 +96,7 @@ function MessageGroup({ messages, isOwn }) {
 
         if (isFileMessage(msg.content)) {
           return (
-            <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[75%] sm:max-w-sm animate-message-in">
+            <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%] xl:max-w-[60%] animate-message-in">
               {!isOwn && isFirst && (
                 <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
                   {msg.senderAvatar ? (
@@ -132,7 +132,7 @@ function MessageGroup({ messages, isOwn }) {
         return (
           <div
             key={msg.id}
-            className={`group relative flex items-end gap-2 mb-1 max-w-[75%] sm:max-w-sm ${
+            className={`group relative flex items-end gap-2 mb-1 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%] xl:max-w-[60%] ${
               isOwn ? "flex-row-reverse" : "flex-row"
             } animate-message-in`}
             style={{ animationDelay: `${idx * 0.03}s` }}
@@ -448,7 +448,7 @@ export default function MessagePanel({
               onScrollToBottom();
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="fixed bottom-24 right-8 w-11 h-11 rounded-full
+            className="fixed bottom-24 right-4 sm:right-8 w-11 h-11 rounded-full
                        bg-white/10 backdrop-blur-xl border border-white/20
                        text-white flex items-center justify-center
                        hover:bg-white/20 hover:scale-105 active:scale-95
@@ -462,11 +462,11 @@ export default function MessagePanel({
 
       {/* Input */}
       <div className="px-5 sm:px-6 py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 border border-white/20 focus-within:border-gold transition-all duration-200 ease-out shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-3 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all duration-200 ease-out shadow-sm">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-9 h-9 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all duration-200 ease-out shrink-0 active:scale-90"
+            className="w-11 h-11 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all duration-200 ease-out shrink-0 active:scale-90"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
           </button>
@@ -488,7 +488,7 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-9 h-9 rounded-xl bg-gold text-white
+            className="w-11 h-11 rounded-xl bg-gold text-white
                      flex items-center justify-center hover:bg-gold/90 hover:scale-105 active:scale-95
                      transition-all duration-200 ease-out shrink-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
