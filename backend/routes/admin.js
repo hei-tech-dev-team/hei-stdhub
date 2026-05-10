@@ -110,15 +110,22 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
   }
 });
 
+const generateInviteCode = (role) => {
+  const prefixes = { student: "HEI-STD", teacher: "HEI-PROF", alumni: "HEI-ALUM" };
+  const random = Array.from({ length: 6 }, () =>
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(Math.random() * 36)],
+  ).join("");
+  return `${prefixes[role]}-${random}`;
+};
+
 // Generate an invitation code
 router.post("/invitations", auth, adminOnly, async (req, res) => {
   const { role } = req.body;
   if (!["student", "teacher", "alumni"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
 
-  // Generate an 8-character unique code
-  const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-  const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const code = generateInviteCode(role);
+  const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
 
   try {
     const { rows } = await db.query(
@@ -128,6 +135,33 @@ router.post("/invitations", auth, adminOnly, async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Bulk generate invitation codes
+router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
+  const { role, count } = req.body;
+  if (!["student", "teacher", "alumni"].includes(role))
+    return res.status(400).json({ error: "Rôle invalide." });
+  const qty = Math.min(Math.max(parseInt(count) || 1, 1), 1000);
+
+  const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const codes = [];
+
+  try {
+    for (let i = 0; i < qty; i++) {
+      const code = generateInviteCode(role);
+      const { rows } = await db.query(
+        `INSERT INTO invitations (code, role, created_by, expires_at)
+         VALUES ($1, $2, $3, $4) RETURNING *`,
+        [code, role, req.user.id, expires_at],
+      );
+      codes.push(rows[0]);
+    }
+    res.status(201).json({ count: codes.length, codes });
+  } catch (err) {
+    console.error("ERREUR bulk invitations:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
