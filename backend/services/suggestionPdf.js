@@ -6,7 +6,6 @@ const WHITE = [255, 255, 255];
 const GREEN = [16, 185, 129];
 const AMBER = [245, 158, 11];
 const RED = [239, 68, 68];
-const DARK = [30, 41, 59];
 const GRAY = [100, 116, 139];
 const LIGHT_GRAY = [148, 163, 184];
 
@@ -14,9 +13,9 @@ function generateSuggestionReport(suggestions) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const margin = 18;
+  const margin = 20;
   const contentW = pageW - margin * 2;
-  const dateFr = new Date().toLocaleDateString("fr-FR");
+  const dateFr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
   const acceptes = suggestions.filter((s) => s.statut === "accepte");
   const aDiscuter = suggestions.filter((s) => s.statut === "a_discuter");
@@ -26,197 +25,229 @@ function generateSuggestionReport(suggestions) {
   function addFooter(pageNum, totalPages) {
     doc.setPage(pageNum);
     doc.setFillColor(...NAVY);
-    doc.rect(0, pageH - 14, pageW, 14, "F");
+    doc.rect(0, pageH - 16, pageW, 16, "F");
     doc.setDrawColor(...GOLD);
-    doc.setLineWidth(0.5);
-    doc.line(0, pageH - 14, pageW, pageH - 14);
+    doc.setLineWidth(0.8);
+    doc.line(0, pageH - 16, pageW, pageH - 16);
     doc.setTextColor(...LIGHT_GRAY);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text("HEI STDhub — Bureau Des Etudiants", margin, pageH - 5);
-    doc.text(`Page ${pageNum}/${totalPages}`, pageW - margin, pageH - 5, { align: "right" });
+    doc.text("HEI STDhub — Bureau Des Etudiants", margin, pageH - 6);
+    doc.text(`Page ${pageNum}/${totalPages}`, pageW - margin, pageH - 6, { align: "right" });
   }
 
   function checkPage(y, needed) {
-    if (y + (needed || 30) > pageH - 20) {
+    if (y + (needed || 30) > pageH - 22) {
       doc.addPage();
-      return margin + 5;
+      return margin + 10;
     }
     return y;
   }
 
   let y = margin + 5;
 
-  // ── HEADER ──
+  // ═══════════════════════════════════
+  // HEADER
+  // ═══════════════════════════════════
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 48, "F");
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(1);
-  doc.line(0, 48, pageW, 48);
+  doc.rect(0, 0, pageW, 52, "F");
 
-  doc.setFillColor(...GOLD);
-  doc.circle(margin + 4, 12, 1.5, "F");
-  doc.circle(margin + 12, 12, 1.5, "F");
-  doc.circle(margin + 20, 12, 1.5, "F");
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(1.5);
+  doc.line(0, 52, pageW, 52);
+
+  for (let i = 0; i < 3; i++) {
+    doc.setFillColor(...GOLD);
+    doc.circle(margin + 4 + i * 8, 14, 1.8, "F");
+  }
 
   doc.setTextColor(...GOLD);
-  doc.setFontSize(22);
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   doc.text("HEI STDhub", margin, 20);
 
   doc.setTextColor(...WHITE);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("Rapport officiel du Bureau Des Etudiants", margin, 33);
+  doc.text("Rapport officiel du Bureau Des Etudiants", margin, 34);
 
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setTextColor(...LIGHT_GRAY);
-  doc.text(dateFr, pageW - margin, 18, { align: "right" });
-  doc.text(`Ref: BDE-RPT-${Date.now().toString(36).toUpperCase()}`, pageW - margin, 28, { align: "right" });
+  doc.text(dateFr, pageW - margin, 16, { align: "right" });
+  doc.text(`R\xe9f: BDE-RPT-${Date.now().toString(36).toUpperCase()}`, pageW - margin, 26, { align: "right" });
 
-  y = 58;
+  y = 62;
 
-  // ── SUMMARY CARD ──
-  doc.setFillColor(245, 247, 250);
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(margin, y, contentW, 36, 4, 4, "FD");
-
-  doc.setFillColor(...GOLD);
-  doc.rect(margin, y, 3, 36, "F");
-
-  doc.setTextColor(...NAVY);
-  doc.setFontSize(10);
+  // ═══════════════════════════════════
+  // SUMMARY
+  // ═══════════════════════════════════
   doc.setFont("helvetica", "bold");
-  doc.text("RESUME", margin + 10, y + 10);
+  doc.setFontSize(14);
+  doc.setTextColor(...NAVY);
+  doc.text("RESUME", margin, y);
+  y += 4;
 
-  const summaryColW = (contentW - 16) / 4;
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, margin + 40, y);
+  y += 8;
+
   const summaryItems = [
     { label: "Acceptees", count: acceptes.length, color: GREEN },
     { label: "A approfondir", count: aDiscuter.length, color: AMBER },
     { label: "Refusees", count: refuses.length, color: RED },
     { label: "Total", count: total, color: NAVY },
   ];
+
+  const cardW = (contentW - 12) / 4;
+
   summaryItems.forEach((item, i) => {
-    const x = margin + 10 + i * summaryColW;
+    const cx = margin + i * (cardW + 4);
+
+    doc.setFillColor(248, 249, 253);
+    doc.setDrawColor(...item.color);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(cx, y, cardW, 34, 4, 4, "FD");
+
     doc.setFillColor(...item.color);
-    doc.circle(x + summaryColW / 2, y + 17, 5, "F");
+    doc.rect(cx, y, cardW, 3, "F");
+
+    doc.setFillColor(...item.color);
+    doc.circle(cx + cardW / 2, y + 14, 7, "F");
     doc.setTextColor(...WHITE);
-    doc.setFontSize(7);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text(String(item.count), x + summaryColW / 2, y + 18.5, { align: "center" });
+    doc.text(String(item.count), cx + cardW / 2, y + 16, { align: "center" });
+
     doc.setTextColor(...GRAY);
-    doc.setFontSize(6);
+    doc.setFontSize(6.5);
     doc.setFont("helvetica", "normal");
-    doc.text(item.label, x + summaryColW / 2, y + 27, { align: "center" });
+    doc.text(item.label, cx + cardW / 2, y + 28, { align: "center" });
   });
 
-  y += 48;
+  y += 44;
 
-  // ── SECTION RENDERER ──
-  function renderSection(items, label, accentColor, sectionNum) {
+  // ═══════════════════════════════════
+  // SECTIONS
+  // ═══════════════════════════════════
+  function renderSection(items, label, accentColor, icon) {
     if (items.length === 0) return;
 
-    y = checkPage(y, 45 + items.length * 30);
+    y = checkPage(y, 50 + items.length * 30);
 
     doc.setFillColor(...accentColor);
-    doc.rect(margin, y, 3, 14, "F");
+    doc.rect(margin, y, 4, 18, "F");
 
     doc.setTextColor(...NAVY);
     doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text(`${sectionNum}. ${label} (${items.length})`, margin + 10, y + 10);
+    doc.text(`${icon} ${label} (${items.length})`, margin + 12, y + 12);
 
     doc.setDrawColor(220, 225, 235);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y + 18, pageW - margin, y + 18);
+    doc.setLineWidth(0.4);
+    doc.line(margin, y + 22, pageW - margin, y + 22);
 
-    y += 26;
+    y += 30;
 
-    items.forEach((s) => {
+    items.forEach((s, idx) => {
       y = checkPage(y, 40);
 
-      const titleLines = doc.splitTextToSize(s.titre, contentW - 20);
+      const titleLines = doc.splitTextToSize(s.titre, contentW - 24);
       const titleH = titleLines.length * 5;
       const contentMax = s.contenu.length > 150 ? s.contenu.substring(0, 150) + "..." : s.contenu;
-      const contentLines = doc.splitTextToSize(contentMax, contentW - 20);
-      const contentH = contentLines.length * 3.5;
+      const contentLines = doc.splitTextToSize(contentMax, contentW - 24);
+      const contentH = contentLines.length * 4;
       const auteur = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
 
-      let cardH = 8 + titleH + 3 + contentH + 10;
+      let cardH = 14 + titleH + 4 + contentH + 12;
 
       if (s.justification) {
-        const justLines = doc.splitTextToSize(s.justification, contentW - 32);
-        cardH += 10 + 12 + justLines.length * 3.5;
+        const justLines = doc.splitTextToSize(s.justification, contentW - 40);
+        const justBoxH = 18 + justLines.length * 4;
+        cardH += justBoxH + 4;
       }
 
       // Card shadow
-      doc.setFillColor(235, 238, 245);
-      doc.roundedRect(margin + 0.5, y + 0.5, contentW, cardH, 4, 4, "F");
+      doc.setFillColor(232, 235, 242);
+      doc.roundedRect(margin + 0.8, y + 0.8, contentW, cardH, 5, 5, "F");
 
       // Card body
       doc.setFillColor(...WHITE);
-      doc.setDrawColor(210, 215, 225);
+      doc.setDrawColor(215, 220, 230);
       doc.setLineWidth(0.5);
-      doc.roundedRect(margin, y, contentW, cardH, 4, 4, "FD");
+      doc.roundedRect(margin, y, contentW, cardH, 5, 5, "FD");
 
-      // Left accent bar
+      // Left accent stripe
       doc.setFillColor(...accentColor);
-      doc.rect(margin + 0.5, y + 2, 2.5, cardH - 4, "F");
+      doc.roundedRect(margin + 1, y + 3, 3, cardH - 6, 1.5, 1.5, "F");
 
-      // Gold corner accent
+      // Gold number badge
       doc.setFillColor(...GOLD);
-      doc.circle(margin + contentW - 6, y + 6, 1.5, "F");
+      doc.circle(margin + contentW - 10, y + 10, 4, "F");
+      doc.setTextColor(...WHITE);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text(String(idx + 1), margin + contentW - 10, y + 11.5, { align: "center" });
 
       // Title
       doc.setTextColor(...NAVY);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(titleLines, margin + 10, y + 8);
+      doc.text(titleLines, margin + 12, y + 10);
 
       // Content
-      doc.setTextColor(...GRAY);
+      doc.setTextColor(80, 90, 110);
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text(contentLines, margin + 10, y + 8 + titleH + 3);
+      doc.text(contentLines, margin + 12, y + 10 + titleH + 4);
 
       // Author
+      const authorY = y + 10 + titleH + 4 + contentH + 4;
+      doc.setFillColor(245, 246, 250);
+      doc.roundedRect(margin + 10, authorY, contentW - 20, 10, 3, 3, "F");
       doc.setTextColor(...LIGHT_GRAY);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
-      doc.text(`— ${auteur}`, margin + 10, y + 8 + titleH + 3 + contentH + 5);
+      doc.text(`Propos\xe9 par ${auteur}`, margin + 16, authorY + 7);
+
+      y = authorY + 14;
 
       // Justification
       if (s.justification) {
-        const justY = y + 8 + titleH + 3 + contentH + 9;
-        const justLines = doc.splitTextToSize(s.justification, contentW - 32);
-        const justH = 12 + justLines.length * 3.5;
+        y = checkPage(y, 30);
+        const justLines = doc.splitTextToSize(s.justification, contentW - 40);
+        const justH = 16 + justLines.length * 4;
 
-        doc.setFillColor(255, 245, 245);
+        doc.setFillColor(254, 245, 245);
         doc.setDrawColor(...RED);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(margin + 8, justY, contentW - 16, justH, 3, 3, "FD");
+        doc.setLineWidth(0.4);
+        doc.roundedRect(margin + 10, y, contentW - 20, justH, 4, 4, "FD");
+
+        doc.setFillColor(...RED);
+        doc.rect(margin + 10, y, 3, justH, "F");
 
         doc.setTextColor(...RED);
         doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
-        doc.text("Justification du BDE :", margin + 14, justY + 6);
+        doc.text("Justification du BDE :", margin + 20, y + 7);
 
-        doc.setTextColor(180, 40, 40);
-        doc.setFontSize(7);
+        doc.setTextColor(160, 50, 50);
+        doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
-        doc.text(justLines, margin + 14, justY + 12);
+        doc.text(justLines, margin + 20, y + 13);
+
+        y += justH + 6;
       }
 
-      y += cardH + 8;
+      y += 4;
     });
 
-    y += 4;
+    y += 6;
   }
 
-  renderSection(acceptes, "Suggestions acceptees", GREEN, 1);
-  renderSection(aDiscuter, "A approfondir", AMBER, 2);
-  renderSection(refuses, "Suggestions refusees", RED, 3);
+  renderSection(acceptes, "Suggestions acceptees", GREEN, "1.");
+  renderSection(aDiscuter, "A approfondir", AMBER, "2.");
+  renderSection(refuses, "Suggestions refusees", RED, "3.");
 
   // ── FOOTER ON ALL PAGES ──
   const totalPages = doc.internal.getNumberOfPages();

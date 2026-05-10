@@ -41,6 +41,26 @@ describe("SOCKET.IO — Server events", () => {
         ioServer.to(`user:${senderId}`).emit("message:seen", { messageId });
       });
 
+      socket.on("bde:join", () => {
+        socket.join("bde");
+      });
+
+      socket.on("bde:drag-start", ({ suggestionId }) => {
+        socket.to("bde").emit("bde:drag-start", { suggestionId, bySocket: socket.id });
+      });
+
+      socket.on("bde:drag-over", ({ columnId }) => {
+        socket.to("bde").emit("bde:drag-over", { columnId, bySocket: socket.id });
+      });
+
+      socket.on("bde:drag-end", () => {
+        socket.to("bde").emit("bde:drag-end", { bySocket: socket.id });
+      });
+
+      socket.on("bde:update", ({ id, statut, justification }) => {
+        socket.to("bde").emit("bde:update", { id, statut, justification });
+      });
+
       socket.on("disconnect", () => {
         if (socket.userId) {
           onlineUsers.delete(socket.userId);
@@ -201,6 +221,92 @@ describe("SOCKET.IO — Server events", () => {
           msg: { text: "secret", sender: "user1" },
         });
       }, 150);
+    });
+  });
+
+  describe("SOCKET.IO — BDE events", () => {
+    it("bde:drag-start est reçu par les autres membres BDE", (done) => {
+      clientSocket1.emit("bde:join");
+      clientSocket2.emit("bde:join");
+
+      setTimeout(() => {
+        clientSocket2.on("bde:drag-start", (data) => {
+          expect(data).to.have.property("suggestionId", 5);
+          expect(data).to.have.property("bySocket");
+          done();
+        });
+
+        clientSocket1.emit("bde:drag-start", { suggestionId: 5 });
+      }, 100);
+    });
+
+    it("bde:drag-over est reçu par les autres membres BDE", (done) => {
+      clientSocket1.emit("bde:join");
+      clientSocket2.emit("bde:join");
+
+      setTimeout(() => {
+        clientSocket2.on("bde:drag-over", (data) => {
+          expect(data).to.have.property("columnId", "accepte");
+          done();
+        });
+
+        clientSocket1.emit("bde:drag-over", { columnId: "accepte" });
+      }, 100);
+    });
+
+    it("bde:drag-end est reçu par les autres membres BDE", (done) => {
+      clientSocket1.emit("bde:join");
+      clientSocket2.emit("bde:join");
+
+      setTimeout(() => {
+        clientSocket2.on("bde:drag-end", (data) => {
+          expect(data).to.have.property("bySocket");
+          done();
+        });
+
+        clientSocket1.emit("bde:drag-end");
+      }, 100);
+    });
+
+    it("bde:update est reçu par les autres membres BDE", (done) => {
+      clientSocket1.emit("bde:join");
+      clientSocket2.emit("bde:join");
+
+      setTimeout(() => {
+        clientSocket2.on("bde:update", (data) => {
+          expect(data).to.have.property("id", 10);
+          expect(data).to.have.property("statut", "accepte");
+          expect(data).to.have.property("justification", null);
+          done();
+        });
+
+        clientSocket1.emit("bde:update", { id: 10, statut: "accepte", justification: null });
+      }, 100);
+    });
+
+    it("bde:events ne sont pas reçus par les clients non-BDE", (done) => {
+      const clientSocket3 = ioc(`http://localhost:${PORT}`, {
+        transports: ["websocket"],
+      });
+
+      clientSocket3.on("connect", () => {
+        clientSocket1.emit("bde:join");
+
+        let received = false;
+        clientSocket3.on("bde:drag-start", () => {
+          received = true;
+        });
+
+        setTimeout(() => {
+          clientSocket1.emit("bde:drag-start", { suggestionId: 1 });
+        }, 50);
+
+        setTimeout(() => {
+          expect(received).to.be.false;
+          clientSocket3.close();
+          done();
+        }, 200);
+      });
     });
   });
 });
