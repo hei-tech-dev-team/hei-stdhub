@@ -240,4 +240,17 @@ async function sendPushNotification(userId, { title, body, tag, url }) {
   }
 }
 
+// Delete all messages (admin only)
+router.delete("/all", auth, async (req, res) => {
+  if (req.user.role !== "admin")
+    return res.status(403).json({ error: "Accès refusé." });
+  try {
+    const { rowCount } = await db.query("DELETE FROM messages");
+    res.json({ deleted: rowCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 module.exports = router;
