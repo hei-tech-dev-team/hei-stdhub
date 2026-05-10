@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 import Sidebar from "../components/layout/Sidebar";
@@ -11,7 +11,26 @@ import {
   faSave,
   faSpinner,
   faCheck,
+  faEye,
+  faEyeSlash,
+  faUserGraduate,
+  faChalkboardTeacher,
+  faUserShield,
+  faUsers,
+  faGraduationCap,
+  faEnvelope,
+  faIdCard,
+  faPen,
+  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
+
+const ROLE_LABEL = {
+  student: { label: "Étudiant", icon: faUserGraduate, cls: "bg-cyan-500/20 text-cyan-300" },
+  teacher: { label: "Professeur", icon: faChalkboardTeacher, cls: "bg-purple-500/20 text-purple-300" },
+  admin: { label: "Admin", icon: faUserShield, cls: "bg-red-500/20 text-red-300" },
+  bde: { label: "BDE", icon: faUsers, cls: "bg-yellow-500/20 text-yellow-300" },
+  alumni: { label: "Alumni", icon: faGraduationCap, cls: "bg-amber-500/20 text-amber-300" },
+};
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
@@ -32,8 +51,19 @@ export default function ProfilePage() {
   const [errorPseudo, setErrorPseudo] = useState("");
   const [errorPwd, setErrorPwd] = useState("");
 
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+  }, []);
+
+  const roleCfg = ROLE_LABEL[user?.role] || ROLE_LABEL.student;
   const avatarUrl = user?.avatar || null;
-  // ── Changer avatar ──
+
   const handleAvatar = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -52,7 +82,6 @@ export default function ProfilePage() {
     }
   };
 
-  // ── Changer pseudo ──
   const handlePseudo = async (e) => {
     e.preventDefault();
     setErrorPseudo("");
@@ -69,7 +98,6 @@ export default function ProfilePage() {
     }
   };
 
-  // ── Changer mot de passe ──
   const handlePassword = async (e) => {
     e.preventDefault();
     setErrorPwd("");
@@ -100,175 +128,352 @@ export default function ProfilePage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar title="Mon Profil" />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto w-full">
-          {/* Avatar */}
-          <div className="bg-white rounded-2xl shadow-sm border border-contact p-6 mb-6 flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-navy flex items-center justify-center overflow-hidden border-4 border-gold">
-                {loadingAvatar ? (
-                  <FontAwesomeIcon
-                    icon={faSpinner}
-                    className="text-white text-2xl animate-spin"
-                  />
-                ) : avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <FontAwesomeIcon
-                    icon={faUser}
-                    className="text-white text-3xl"
-                  />
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="absolute bottom-0 right-0 w-8 h-8 rounded-full
-                           bg-gold text-white flex items-center justify-center
-                           shadow-md hover:opacity-90 transition"
+        <main className="flex-1 overflow-y-auto relative">
+          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+            {/* Animated profile header */}
+            <div
+              className={`transition-all duration-700 ease-out ${
+                visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              }`}
+            >
+              <div
+                className="rounded-2xl overflow-hidden mb-6"
+                style={{
+                  background: "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                }}
               >
-                <FontAwesomeIcon icon={faCamera} className="text-xs" />
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatar}
-              />
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-navy text-lg">{user?.pseudo}</p>
-              <p className="text-gray-400 text-sm">{user?.ref}</p>
-              <span className="inline-block mt-1 bg-navy/10 text-navy text-xs px-3 py-1 rounded-full font-semibold">
-                {user?.role === "teacher"
-                  ? "Professeur"
-                  : user?.role === "admin"
-                    ? "Admin"
-                    : `Étudiant ${user?.level || ""}`}
-              </span>
-            </div>
-          </div>
-
-          {/* Infos readonly */}
-          <div className="bg-white rounded-2xl shadow-sm border border-contact p-6 mb-6">
-            <h2 className="font-bold text-navy text-sm uppercase tracking-wide mb-4">
-              Informations
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                ["Nom", user?.nom],
-                ["Prénom", user?.prenom],
-                ["Email", user?.email],
-                ["Référence", user?.ref],
-              ].map(([label, val]) => (
-                <div key={label}>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-                    {label}
-                  </p>
-                  <p className="font-semibold text-navy text-sm truncate">
-                    {val}
-                  </p>
+                {/* Cover accent */}
+                <div className="h-24 sm:h-28 relative overflow-hidden">
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
+                    }}
+                  />
+                  <div className="absolute inset-0 opacity-30">
+                    <div
+                      className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent)" }}
+                    />
+                    <div
+                      className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1), transparent)" }}
+                    />
+                  </div>
                 </div>
-              ))}
+
+                {/* Avatar + info */}
+                <div className="px-6 pb-6 -mt-12 relative">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
+                    <div className="relative group shrink-0">
+                      <div
+                        className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
+                        style={{
+                          border: "3px solid rgba(212,175,55,0.6)",
+                          boxShadow: "0 0 20px rgba(212,175,55,0.15)",
+                          background: loadingAvatar
+                            ? "rgba(10,26,51,0.8)"
+                            : avatarUrl
+                              ? "transparent"
+                              : "linear-gradient(135deg, rgba(10,26,51,0.9), rgba(0,25,72,0.9))",
+                        }}
+                      >
+                        {loadingAvatar ? (
+                          <FontAwesomeIcon icon={faSpinner} className="text-gold text-2xl animate-spin" />
+                        ) : avatarUrl ? (
+                          <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <FontAwesomeIcon icon={faUser} className="text-gold text-3xl" />
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
+                        style={{
+                          background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                          boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
+                          color: "white",
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faCamera} className="text-xs" />
+                      </button>
+                      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+                    </div>
+
+                    <div className="flex-1 text-center sm:text-left min-w-0">
+                      <h1 className="text-white font-bold text-xl truncate">{user?.pseudo}</h1>
+                      <p className="text-white/50 text-sm mt-0.5">{user?.ref}</p>
+                      <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}>
+                          <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
+                          {roleCfg.label}
+                        </span>
+                        {user?.level && (
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10 text-white/70">
+                            {user.level}
+                          </span>
+                        )}
+                        {user?.promo && (
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10 text-white/70">
+                            Promo {user.promo}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Changer pseudo */}
-          <div className="bg-white rounded-2xl shadow-sm border border-contact p-6 mb-6">
-            <h2 className="font-bold text-navy text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
-              <FontAwesomeIcon icon={faUser} className="text-gold" />
-              Modifier le pseudo
-            </h2>
-            {errorPseudo && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2 rounded-xl mb-3">
-                {errorPseudo}
-              </div>
-            )}
-            {successPseudo && (
-              <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-2 rounded-xl mb-3 flex items-center gap-2">
-                <FontAwesomeIcon icon={faCheck} /> Pseudo mis à jour !
-              </div>
-            )}
-            <form onSubmit={handlePseudo} className="flex gap-3">
-              <input
-                className="input-field flex-1"
-                value={pseudo}
-                onChange={(e) => setPseudo(e.target.value)}
-                placeholder="Nouveau pseudo"
-              />
-              <button
-                type="submit"
-                disabled={loadingPseudo}
-                className="btn-primary px-4 disabled:opacity-60"
+            {/* Info cards with staggered entrance */}
+            {[
+              {
+                key: "info",
+                title: "Informations",
+                icon: faIdCard,
+                content: (
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      ["Nom", user?.nom, faUser],
+                      ["Prénom", user?.prenom, faUser],
+                      ["Email", user?.email, faEnvelope],
+                      ["Référence", user?.ref, faIdCard],
+                    ].map(([label, val, icon]) => (
+                      <div key={label} className="group">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <FontAwesomeIcon icon={icon} className="text-gold text-[10px] opacity-60" />
+                          <p className="text-xs text-white/40 uppercase tracking-wide font-semibold">{label}</p>
+                        </div>
+                        <p className="font-semibold text-white text-sm truncate group-hover:text-gold transition-colors duration-200">
+                          {val || "—"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ),
+              },
+              {
+                key: "pseudo",
+                title: "Modifier le pseudo",
+                icon: faPen,
+                content: (
+                  <>
+                    {errorPseudo && (
+                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3"
+                        style={{
+                          background: "rgba(220,38,38,0.1)",
+                          border: "1px solid rgba(220,38,38,0.2)",
+                          color: "#fca5a5",
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faTimes} className="text-xs shrink-0" />
+                        {errorPseudo}
+                      </div>
+                    )}
+                    {successPseudo && (
+                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3 animate-slide-up"
+                        style={{
+                          background: "rgba(34,197,94,0.1)",
+                          border: "1px solid rgba(34,197,94,0.2)",
+                          color: "#86efac",
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faCheck} className="text-xs" />
+                        Pseudo mis à jour !
+                      </div>
+                    )}
+                    <form onSubmit={handlePseudo} className="flex gap-3">
+                      <input
+                        className="flex-1 text-sm rounded-xl px-4 py-2.5 transition-all duration-200 placeholder:text-white/30"
+                        style={{
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          color: "white",
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)";
+                          e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                          e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                        }}
+                        value={pseudo}
+                        onChange={(e) => setPseudo(e.target.value)}
+                        placeholder="Nouveau pseudo"
+                      />
+                      <button
+                        type="submit"
+                        disabled={loadingPseudo}
+                        className="px-4 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50 active:scale-95"
+                        style={{
+                          background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                          color: "white",
+                          boxShadow: "0 2px 12px rgba(212,175,55,0.25)",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                      >
+                        {loadingPseudo ? (
+                          <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                        ) : (
+                          <FontAwesomeIcon icon={faSave} />
+                        )}
+                      </button>
+                    </form>
+                  </>
+                ),
+              },
+              {
+                key: "password",
+                title: "Modifier le mot de passe",
+                icon: faLock,
+                content: (
+                  <>
+                    {errorPwd && (
+                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3"
+                        style={{
+                          background: "rgba(220,38,38,0.1)",
+                          border: "1px solid rgba(220,38,38,0.2)",
+                          color: "#fca5a5",
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faTimes} className="text-xs shrink-0" />
+                        {errorPwd}
+                      </div>
+                    )}
+                    {successPwd && (
+                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3 animate-slide-up"
+                        style={{
+                          background: "rgba(34,197,94,0.1)",
+                          border: "1px solid rgba(34,197,94,0.2)",
+                          color: "#86efac",
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faCheck} className="text-xs" />
+                        Mot de passe mis à jour !
+                      </div>
+                    )}
+                    <form onSubmit={handlePassword} className="flex flex-col gap-3">
+                      <PwdInput
+                        value={currentPwd}
+                        setValue={setCurrentPwd}
+                        placeholder="Mot de passe actuel"
+                        show={showCurrent}
+                        toggle={() => setShowCurrent((p) => !p)}
+                      />
+                      <PwdInput
+                        value={newPwd}
+                        setValue={setNewPwd}
+                        placeholder="Nouveau mot de passe"
+                        show={showNew}
+                        toggle={() => setShowNew((p) => !p)}
+                      />
+                      <PwdInput
+                        value={confirmPwd}
+                        setValue={setConfirmPwd}
+                        placeholder="Confirmer le nouveau mot de passe"
+                        show={showConfirm}
+                        toggle={() => setShowConfirm((p) => !p)}
+                      />
+                      <button
+                        type="submit"
+                        disabled={loadingPwd}
+                        className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2"
+                        style={{
+                          background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                          color: "white",
+                          boxShadow: "0 2px 12px rgba(212,175,55,0.25)",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                      >
+                        {loadingPwd ? (
+                          <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                        ) : (
+                          <FontAwesomeIcon icon={faLock} />
+                        )}
+                        Mettre à jour
+                      </button>
+                    </form>
+                  </>
+                ),
+              },
+            ].map((section, i) => (
+              <div
+                key={section.key}
+                className={`transition-all duration-700 ease-out mb-5 ${
+                  visible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: `${150 + i * 100}ms` }}
               >
-                {loadingPseudo ? (
-                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                ) : (
-                  <FontAwesomeIcon icon={faSave} />
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Changer mot de passe */}
-          <div className="bg-white rounded-2xl shadow-sm border border-contact p-6 mb-6">
-            <h2 className="font-bold text-navy text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
-              <FontAwesomeIcon icon={faLock} className="text-gold" />
-              Modifier le mot de passe
-            </h2>
-            {errorPwd && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2 rounded-xl mb-3">
-                {errorPwd}
+                <div
+                  className="rounded-2xl overflow-hidden p-5 sm:p-6"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <h2 className="text-white font-bold text-sm uppercase tracking-wide mb-4 flex items-center gap-2.5">
+                    <span
+                      className="w-7 h-7 rounded-lg flex items-center justify-center"
+                      style={{
+                        background: "rgba(212,175,55,0.15)",
+                      }}
+                    >
+                      <FontAwesomeIcon icon={section.icon} className="text-gold text-xs" />
+                    </span>
+                    {section.title}
+                  </h2>
+                  {section.content}
+                </div>
               </div>
-            )}
-            {successPwd && (
-              <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-2 rounded-xl mb-3 flex items-center gap-2">
-                <FontAwesomeIcon icon={faCheck} /> Mot de passe mis à jour !
-              </div>
-            )}
-            <form onSubmit={handlePassword} className="flex flex-col gap-3">
-              <input
-                type="password"
-                className="input-field"
-                placeholder="Mot de passe actuel"
-                value={currentPwd}
-                onChange={(e) => setCurrentPwd(e.target.value)}
-              />
-              <input
-                type="password"
-                className="input-field"
-                placeholder="Nouveau mot de passe"
-                value={newPwd}
-                onChange={(e) => setNewPwd(e.target.value)}
-              />
-              <input
-                type="password"
-                className="input-field"
-                placeholder="Confirmer le nouveau mot de passe"
-                value={confirmPwd}
-                onChange={(e) => setConfirmPwd(e.target.value)}
-              />
-              <button
-                type="submit"
-                disabled={loadingPwd}
-                className="btn-primary disabled:opacity-60"
-              >
-                {loadingPwd ? (
-                  <FontAwesomeIcon
-                    icon={faSpinner}
-                    className="animate-spin mr-2"
-                  />
-                ) : null}
-                Mettre à jour
-              </button>
-            </form>
+            ))}
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function PwdInput({ value, setValue, placeholder, show, toggle }) {
+  return (
+    <div className="relative">
+      <input
+        type={show ? "text" : "password"}
+        className="w-full text-sm rounded-xl px-4 py-2.5 pr-10 transition-all duration-200 placeholder:text-white/30"
+        style={{
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          color: "white",
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)";
+          e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+          e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+        }}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={toggle}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-gold transition-colors duration-200"
+      >
+        <FontAwesomeIcon icon={show ? faEyeSlash : faEye} className="text-sm" />
+      </button>
     </div>
   );
 }

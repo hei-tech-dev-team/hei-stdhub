@@ -10,7 +10,7 @@ DROP TYPE IF EXISTS user_level  CASCADE;
 DROP TYPE IF EXISTS post_type   CASCADE;
 DROP TYPE IF EXISTS submit_type CASCADE;
 
-CREATE TYPE user_role   AS ENUM ('student', 'teacher', 'admin');
+CREATE TYPE user_role   AS ENUM ('student', 'teacher', 'admin', 'bde', 'alumni');
 CREATE TYPE user_level  AS ENUM ('L1', 'L2', 'L3');
 CREATE TYPE post_type   AS ENUM ('cours', 'td', 'examen');
 CREATE TYPE submit_type AS ENUM ('TD', 'Examen');
@@ -28,17 +28,17 @@ CREATE TABLE users (
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_student_level CHECK (
-    (role = 'student' AND level IS NOT NULL)
-    OR (role IN ('teacher','admin') AND level IS NULL)
+    (role IN ('student', 'bde') AND level IS NOT NULL)
+    OR (role IN ('teacher','admin','alumni') AND level IS NULL)
   ),
   CONSTRAINT chk_ref_format CHECK (
-    (role = 'student' AND ref ~ '^STD[0-9]{5,}$')
+    (role IN ('student', 'alumni', 'bde') AND ref ~ '^STD[0-9]{5,}$')
     OR (role = 'teacher' AND ref ~ '^PROF[0-9]{3,}$')
     OR (role = 'admin'   AND ref ~ '^ADMIN[0-9]{3,}$')
   ),
   CONSTRAINT chk_student_email CHECK (
-    (role = 'student' AND email ~ '^hei\.[a-zA-Z0-9._%+-]+@gmail\.com$')
-    OR role IN ('teacher','admin')
+    (role = 'student' AND email ~ '^hei\.[a-zA-Z0-9._%+-]+(\.\d+)?@gmail\.com$')
+    OR role IN ('teacher','admin','bde','alumni')
   )
 );
 
