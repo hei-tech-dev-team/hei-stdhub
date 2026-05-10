@@ -1,4 +1,7 @@
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
@@ -7,34 +10,41 @@ const CloudinaryStorage = require("multer-storage-cloudinary");
 const webpush = require("web-push");
 const router = express.Router();
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-const chatStorage = new CloudinaryStorage({
-  cloudinary,
-  params: async (req, file) => ({
-    folder: "hei-stdhub/chat",
-    resource_type: "auto",
-    allowed_formats: [
-      "jpg",
-      "jpeg",
-      "png",
-      "gif",
-      "webp",
-      "pdf",
-      "docx",
-      "xlsx",
-    ],
-  }),
-});
+const useCloudinary =
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET;
 
-const chatUpload = multer({
-  storage: chatStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).single("file");
+let chatUpload;
+if (useCloudinary) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  chatUpload = multer({
+    storage: new CloudinaryStorage({
+      cloudinary,
+      params: { folder: "hei-stdhub/chat", resource_type: "auto" },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }).single("file");
+} else {
+  chatUpload = multer({
+    storage: multer.diskStorage({
+      destination: UPLOAD_DIR,
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || "";
+        const name = crypto.randomBytes(16).toString("hex") + ext;
+        cb(null, name);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }).single("file");
+}
 
 // Search users by ref or pseudo
 router.get("/search", auth, async (req, res) => {
@@ -187,15 +197,20 @@ router.patch("/:id/seen", auth, async (req, res) => {
   }
 });
 
-// Upload a file to Cloudinary for chat sharing
+// Upload a file to Cloudinary (or local disk) for chat sharing
 router.post("/upload", auth, (req, res) => {
   chatUpload(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
+
     const isImage = req.file.mimetype?.startsWith("image/");
+    const url = req.file.secure_url
+      || (req.file.path ? `/uploads/chat/${req.file.filename}` : null);
+    if (!url) return res.status(500).json({ error: "Upload échoué." });
+
     res.json({
-      filename: req.file.originalname,
-      url: req.file.secure_url || req.file.path,
+      filename: req.file.originalname || req.file.originalname,
+      url,
       isImage,
     });
   });
