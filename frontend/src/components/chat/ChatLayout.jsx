@@ -230,7 +230,7 @@ export default function ChatLayout() {
       <div
         className={`
         lg:relative lg:translate-x-0 lg:w-72 lg:flex lg:shrink-0
-        fixed inset-y-0 left-0 z-20 w-72
+        fixed inset-y-0 left-0 z-20 w-[80vw] max-w-72
         transform transition-transform duration-300 ease-out
         ${showContactList ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
