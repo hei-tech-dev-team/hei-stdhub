@@ -137,15 +137,10 @@ export default function ProfilePage() {
               }`}
             >
               <div
-                className="rounded-2xl overflow-hidden mb-6"
-                style={{
-                  background: "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                }}
+                className="rounded-2xl overflow-hidden mb-6 bg-white card"
               >
                 {/* Cover accent */}
-                <div className="h-24 sm:h-28 relative overflow-hidden">
+                <div className="h-24 sm:h-28 relative overflow-hidden bg-gradient-to-r from-navy to-navy-dark">
                   <div
                     className="absolute inset-0"
                     style={{
@@ -169,15 +164,10 @@ export default function ProfilePage() {
                   <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
                     <div className="relative group shrink-0">
                       <div
-                        className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
+                        className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 bg-white"
                         style={{
                           border: "3px solid rgba(212,175,55,0.6)",
                           boxShadow: "0 0 20px rgba(212,175,55,0.15)",
-                          background: loadingAvatar
-                            ? "rgba(10,26,51,0.8)"
-                            : avatarUrl
-                              ? "transparent"
-                              : "linear-gradient(135deg, rgba(10,26,51,0.9), rgba(0,25,72,0.9))",
                         }}
                       >
                         {loadingAvatar ? (
@@ -204,20 +194,20 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="flex-1 text-center sm:text-left min-w-0">
-                      <h1 className="text-white font-bold text-xl truncate">{user?.pseudo}</h1>
-                      <p className="text-white/50 text-sm mt-0.5">{user?.ref}</p>
+                      <h1 className="text-navy font-bold text-xl truncate">{user?.pseudo}</h1>
+                      <p className="text-gray-500 text-sm mt-0.5">{user?.ref}</p>
                       <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
                         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}>
                           <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
                           {roleCfg.label}
                         </span>
                         {user?.level && (
-                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10 text-white/70">
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
                             {user.level}
                           </span>
                         )}
                         {user?.promo && (
-                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10 text-white/70">
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
                             Promo {user.promo}
                           </span>
                         )}
@@ -235,7 +225,7 @@ export default function ProfilePage() {
                 title: "Informations",
                 icon: faIdCard,
                 content: (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                       ["Nom", user?.nom, faUser],
                       ["Prénom", user?.prenom, faUser],
@@ -245,9 +235,9 @@ export default function ProfilePage() {
                       <div key={label} className="group">
                         <div className="flex items-center gap-2 mb-1.5">
                           <FontAwesomeIcon icon={icon} className="text-gold text-[10px] opacity-60" />
-                          <p className="text-xs text-white/40 uppercase tracking-wide font-semibold">{label}</p>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">{label}</p>
                         </div>
-                        <p className="font-semibold text-white text-sm truncate group-hover:text-gold transition-colors duration-200">
+                        <p className="font-semibold text-navy text-sm truncate group-hover:text-gold transition-colors duration-200">
                           {val || "—"}
                         </p>
                       </div>
@@ -287,19 +277,9 @@ export default function ProfilePage() {
                     )}
                     <form onSubmit={handlePseudo} className="flex gap-3">
                       <input
-                        className="flex-1 text-sm rounded-xl px-4 py-2.5 transition-all duration-200 placeholder:text-white/30"
+                        className="flex-1 text-sm rounded-xl px-4 py-2.5 transition-all duration-200 placeholder:text-gray-400 input-field"
                         style={{
-                          background: "rgba(255,255,255,0.06)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          color: "white",
-                        }}
-                        onFocus={(e) => {
-                          e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)";
-                          e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                          e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                          color: "#001948",
                         }}
                         value={pseudo}
                         onChange={(e) => setPseudo(e.target.value)}
@@ -412,16 +392,8 @@ export default function ProfilePage() {
                 }`}
                 style={{ transitionDelay: `${150 + i * 100}ms` }}
               >
-                <div
-                  className="rounded-2xl overflow-hidden p-5 sm:p-6"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    backdropFilter: "blur(16px)",
-                    WebkitBackdropFilter: "blur(16px)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <h2 className="text-white font-bold text-sm uppercase tracking-wide mb-4 flex items-center gap-2.5">
+                <div className="rounded-2xl overflow-hidden p-5 sm:p-6 bg-white card">
+                  <h2 className="text-navy font-bold text-sm uppercase tracking-wide mb-4 flex items-center gap-2.5">
                     <span
                       className="w-7 h-7 rounded-lg flex items-center justify-center"
                       style={{
@@ -448,19 +420,9 @@ function PwdInput({ value, setValue, placeholder, show, toggle }) {
     <div className="relative">
       <input
         type={show ? "text" : "password"}
-        className="w-full text-sm rounded-xl px-4 py-2.5 pr-10 transition-all duration-200 placeholder:text-white/30"
+        className="w-full text-sm rounded-xl px-4 py-2.5 pr-10 transition-all duration-200 placeholder:text-gray-400 input-field"
         style={{
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          color: "white",
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)";
-          e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-          e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+          color: "#001948",
         }}
         placeholder={placeholder}
         value={value}
@@ -470,7 +432,7 @@ function PwdInput({ value, setValue, placeholder, show, toggle }) {
         type="button"
         tabIndex={-1}
         onClick={toggle}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-gold transition-colors duration-200"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold transition-colors duration-200"
       >
         <FontAwesomeIcon icon={show ? faEyeSlash : faEye} className="text-sm" />
       </button>

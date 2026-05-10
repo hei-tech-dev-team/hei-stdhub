@@ -14,6 +14,8 @@
     @apply bg-surface text-navy-dark;
     margin: 0;
     padding: 0;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   ::-webkit-scrollbar {
@@ -123,6 +125,11 @@
 
   .animate-message-in {
     animation: message-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Responsive touch-friendly minimum */
+  .touch-target {
+    @apply min-w-[44px] min-h-[44px] flex items-center justify-center;
   }
 
   @keyframes fade-in {
