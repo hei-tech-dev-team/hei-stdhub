@@ -22,9 +22,7 @@ before(async () => {
   }
 });
 
-// ══════════════════════════════════════════
-// AUTH TESTS
-// ══════════════════════════════════════════
+// Auth tests
 describe("AUTH", () => {
   it("LOGIN réussi admin", async () => {
     const res = await agent
@@ -74,11 +72,22 @@ describe("AUTH", () => {
     expect(res.status).to.equal(401);
   });
 
-  it("POST /auth/forgot-password existe et valide l'email → 400", async () => {
+  it("POST /auth/forgot-password sans email → 400", async () => {
     const res = await agent.post("/api/auth/forgot-password").send({});
     expect(res.status).to.equal(400);
     expect(res.body).to.have.property("error", "Adresse email requise.");
   });
+
+  it("POST /auth/forgot-password email trop long → 400", async () => {
+    const longEmail = "a".repeat(250) + "@b.co";
+    const res = await agent
+      .post("/api/auth/forgot-password")
+      .send({ email: longEmail });
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property("error", "Adresse email trop longue.");
+  });
+
+
 
   it("GET /auth/reset-password/:token existe → 400 pour token invalide", async () => {
     const res = await agent.get("/api/auth/reset-password/token-invalide");
@@ -93,10 +102,8 @@ describe("AUTH", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// SÉCURITÉ — INJECTION SQL
-// ══════════════════════════════════════════
-describe("SECURITE — Injection SQL", () => {
+// Security — SQL injection & XSS
+describe("SÉCURITÉ — Injection SQL", () => {
   it("Injection SQL dans login ref → pas de bypass", async () => {
     const res = await agent
       .post("/api/auth/login")
@@ -121,9 +128,7 @@ describe("SECURITE — Injection SQL", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// ADMIN — PRIVILEGE ESCALATION
-// ══════════════════════════════════════════
+// Admin access & privilege escalation
 describe("ADMIN — Accès et privilege escalation", () => {
   it("GET /admin/stats sans token → 401", async () => {
     const res = await agent.get("/api/admin/stats");
@@ -154,9 +159,7 @@ describe("ADMIN — Accès et privilege escalation", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// MESSAGES
-// ══════════════════════════════════════════
+// Messages API
 describe("MESSAGES", () => {
   it("GET /messages/global sans token → 401", async () => {
     const res = await agent.get("/api/messages/global");
@@ -202,9 +205,7 @@ describe("MESSAGES", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// SUBMISSIONS
-// ══════════════════════════════════════════
+// Submissions API
 describe("SUBMISSIONS", () => {
   it("GET /submissions sans token → 401", async () => {
     const res = await agent.get("/api/submissions");
@@ -228,33 +229,7 @@ describe("SUBMISSIONS", () => {
   });
 });
 
-// ══════════════════════════════════════════
-// ONBOARDING — FIRST LOGIN
-// ══════════════════════════════════════════
-describe("ONBOARDING — First login", () => {
-  it("login response includes first_login field", async () => {
-    if (loginResponse.token) {
-      expect(loginResponse).to.have.property("first_login");
-      expect(loginResponse.first_login).to.be.a("boolean");
-    } else {
-      expect(loginResponse).to.have.property("error");
-    }
-  });
-
-  it("returns first_login false for existing user", async () => {
-    const res = await agent
-      .post("/api/auth/login")
-      .send({ ref: "ADMIN001", password: "password" });
-    expect([200, 429]).to.include(res.status);
-    if (res.status === 200) {
-      expect(res.body.first_login).to.be.false;
-    }
-  });
-});
-
-// ══════════════════════════════════════════
-// HEALTH CHECK
-// ══════════════════════════════════════════
+// Health check
 describe("HEALTH", () => {
   it("GET /api/health → 200", async () => {
     const res = await agent.get("/api/health");

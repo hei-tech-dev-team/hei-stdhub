@@ -84,7 +84,7 @@ router.post("/register", async (req, res) => {
 
     const exists = await db.query(
       "SELECT id FROM users WHERE ref=$1 OR email=$2",
-      [ref.toUpperCase(), email],
+      [ref.toUpperCase(), email.toLowerCase()],
     );
     if (exists.rows.length)
       return res
@@ -100,7 +100,7 @@ router.post("/register", async (req, res) => {
         ref.toUpperCase(),
         capitalize(nom),
         capitalize(prenom),
-        email,
+        email.toLowerCase(),
         capitalize(pseudo),
         hash,
         role,
@@ -114,6 +114,8 @@ router.post("/register", async (req, res) => {
       `UPDATE invitations SET used=TRUE, used_by=$1 WHERE code=$2`,
       [newUser.id, inviteCode.toUpperCase()],
     );
+
+    await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [newUser.id]);
 
     res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
   } catch (err) {
@@ -157,10 +159,12 @@ router.post("/forgot-password", async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email)
     return res.status(400).json({ error: "Adresse email requise." });
+  if (email.length > 254)
+    return res.status(400).json({ error: "Adresse email trop longue." });
 
   try {
     const { rows } = await db.query(
-      `SELECT id, email, prenom, pseudo FROM users WHERE LOWER(email)=LOWER($1)`,
+      `SELECT id, email, prenom, pseudo FROM users WHERE email=$1`,
       [email],
     );
 
@@ -337,13 +341,13 @@ router.patch("/password", auth, async (req, res) => {
   }
 });
 
-// ── PATCH /api/auth/avatar — Cloudinary uniquement ──
+// Avatar upload via Cloudinary
 router.patch("/avatar", auth, (req, res) => {
   avatarUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
     try {
-      // secure_url = URL Cloudinary complète
+      // Cloudinary returns the full URL
       const avatarUrl = req.file.secure_url || req.file.path;
       const { rows } = await db.query(
         `UPDATE users SET avatar=$1 WHERE id=$2

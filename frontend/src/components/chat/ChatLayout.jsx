@@ -1,14 +1,39 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import { getSocket, disconnectSocket } from "../../socket";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
 const GLOBAL_CONTACT = {
   id: "global",
-  name: "HEI STDhub — Chat Global",
+  name: "Chat global",
   isGlobal: true,
 };
+
+function requestNotifyPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
+function showNotification(title, body) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  if (!document.hidden) return;
+
+  try {
+    const n = new Notification(title, {
+      body,
+      icon: "/hei-logo.png",
+      tag: "hei-chat",
+    });
+    setTimeout(() => n.close(), 5000);
+  } catch {
+    // Browser doesn't support notifications or permission denied
+  }
+}
 
 export default function ChatLayout() {
   const { user } = useAuth();
@@ -17,10 +42,11 @@ export default function ChatLayout() {
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
-  const pollingRef = useRef(null);
+  const messagesRef = useRef(messages);
 
   useEffect(() => {
     activeContactRef.current = activeContact;
@@ -29,6 +55,14 @@ export default function ChatLayout() {
   useEffect(() => {
     isAtBottomRef.current = isAtBottom;
   }, [isAtBottom]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    requestNotifyPermission();
+  }, []);
 
   useEffect(() => {
     api
@@ -52,13 +86,12 @@ export default function ChatLayout() {
       id: m.id,
       sender: m.sender_pseudo || "Inconnu",
       senderAvatar: m.sender_avatar || null,
+      senderId: m.sender_id,
+      senderRole: m.sender_role || null,
       content: m.content,
       own: m.sender_id === user.id,
       seen: m.seen || false,
-      time: new Date(m.created_at).toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      createdAt: m.created_at,
     }),
     [user],
   );
@@ -87,18 +120,89 @@ export default function ChatLayout() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeContact) loadMessages(activeContact);
   }, [activeContact, loadMessages]);
 
-  // Polling — seulement si l'utilisateur est en bas
+  // Socket.IO with push notifications
   useEffect(() => {
-    pollingRef.current = setInterval(() => {
-      if (isAtBottomRef.current) {
-        loadMessages(activeContactRef.current, true);
-      }
-    }, 3000);
-    return () => clearInterval(pollingRef.current);
-  }, [loadMessages]);
+    let socket;
+
+    getSocket()
+      .then((s) => {
+        socket = s;
+        socket.emit("user:join", user.id);
+
+        socket.on("message:global", (data) => {
+          const msg = formatMsg(data);
+          setMessages((prev) => {
+            const existing = prev["global"] || [];
+            if (existing.some((m) => m.id === msg.id)) return prev;
+            return { ...prev, global: [...existing, msg] };
+          });
+
+          if (!msg.own) {
+            const active = activeContactRef.current;
+            if (document.hidden || !active?.isGlobal) {
+              showNotification(
+                "HEI STDhub – Chat global",
+                `${msg.sender}: ${msg.content.replace(/\[FILE:.+\]/, "[Fichier]")}`,
+              );
+            }
+          }
+        });
+
+        socket.on("message:private", (data) => {
+          const msg = formatMsg(data);
+          const otherId = msg.senderId === user.id ? data.receiver_id : msg.senderId;
+
+          setMessages((prev) => {
+            const existing = prev[otherId] || [];
+            if (existing.some((m) => m.id === msg.id)) return prev;
+            return { ...prev, [otherId]: [...existing, msg] };
+          });
+
+          if (!msg.own) {
+            const active = activeContactRef.current;
+            if (document.hidden || active?.id !== otherId) {
+              showNotification(
+                `Message de ${msg.sender}`,
+                msg.content.replace(/\[FILE:.+\]/, "[Fichier]"),
+              );
+            }
+          }
+        });
+
+        socket.on("user:online", (userId) => {
+          setOnlineUsers((prev) => new Set(prev).add(userId));
+        });
+
+        socket.on("user:offline", (userId) => {
+          setOnlineUsers((prev) => {
+            const next = new Set(prev);
+            next.delete(userId);
+            return next;
+          });
+        });
+
+        socket.on("message:seen", ({ messageId }) => {
+          setMessages((prev) => {
+            const updated = { ...prev };
+            for (const key of Object.keys(updated)) {
+              updated[key] = updated[key].map((m) =>
+                m.id === messageId ? { ...m, seen: true } : m,
+              );
+            }
+            return updated;
+          });
+        });
+      })
+      .catch(console.error);
+
+    return () => {
+      disconnectSocket();
+    };
+  }, [user, formatMsg]);
 
   const sendMessage = async (content) => {
     try {
@@ -106,7 +210,6 @@ export default function ChatLayout() {
         ? { content, is_global: true }
         : { content, receiver_id: activeContact.id, is_global: false };
       await api.post("/messages", payload);
-      loadMessages(activeContact, true);
     } catch (err) {
       console.error(err);
     }
@@ -118,10 +221,8 @@ export default function ChatLayout() {
     setIsAtBottom(true);
   };
 
-  // Déclencher refresh manuel quand on revient en bas
   const handleScrollToBottom = () => {
     setIsAtBottom(true);
-    loadMessages(activeContactRef.current, true);
   };
 
   return (
@@ -130,7 +231,7 @@ export default function ChatLayout() {
         className={`
         lg:relative lg:translate-x-0 lg:w-72 lg:flex lg:shrink-0
         fixed inset-y-0 left-0 z-20 w-72
-        transform transition-transform duration-300
+        transform transition-transform duration-300 ease-out
         ${showContactList ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
       >
@@ -138,12 +239,13 @@ export default function ChatLayout() {
           contacts={contacts}
           activeId={activeContact.id}
           onSelect={handleSelectContact}
+          onlineUsers={onlineUsers}
         />
       </div>
 
       {showContactList && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/40 z-10"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-10 animate-fade-in"
           onClick={() => setShowContactList(false)}
         />
       )}
@@ -158,6 +260,7 @@ export default function ChatLayout() {
           isAtBottom={isAtBottom}
           onAtBottomChange={setIsAtBottom}
           onScrollToBottom={handleScrollToBottom}
+          onlineUsers={onlineUsers}
         />
       </div>
     </div>
