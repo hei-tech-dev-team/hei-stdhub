@@ -120,18 +120,19 @@ const generateInviteCode = (role) => {
 
 // Generate an invitation code
 router.post("/invitations", auth, adminOnly, async (req, res) => {
-  const { role } = req.body;
+  const { role, max_uses } = req.body;
   if (!["student", "teacher", "alumni"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
 
   const code = generateInviteCode(role);
   const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+  const uses = Math.max(parseInt(max_uses) || 1, 1);
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO invitations (code, role, created_by, expires_at)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [code, role, req.user.id, expires_at],
+      `INSERT INTO invitations (code, role, max_uses, created_by, expires_at)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [code, role, uses, req.user.id, expires_at],
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -141,10 +142,11 @@ router.post("/invitations", auth, adminOnly, async (req, res) => {
 
 // Bulk generate invitation codes
 router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
-  const { role, count } = req.body;
+  const { role, count, max_uses } = req.body;
   if (!["student", "teacher", "alumni"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
   const qty = Math.min(Math.max(parseInt(count) || 1, 1), 1000);
+  const uses = Math.max(parseInt(max_uses) || 1, 1);
 
   const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
   const codes = [];
@@ -153,9 +155,9 @@ router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
     for (let i = 0; i < qty; i++) {
       const code = generateInviteCode(role);
       const { rows } = await db.query(
-        `INSERT INTO invitations (code, role, created_by, expires_at)
-         VALUES ($1, $2, $3, $4) RETURNING *`,
-        [code, role, req.user.id, expires_at],
+        `INSERT INTO invitations (code, role, max_uses, created_by, expires_at)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [code, role, uses, req.user.id, expires_at],
       );
       codes.push(rows[0]);
     }
