@@ -108,6 +108,26 @@ io.on("connection", (socket) => {
     io.to(`user:${senderId}`).emit("message:seen", { messageId });
   });
 
+  socket.on("bde:join", () => {
+    socket.join("bde");
+  });
+
+  socket.on("bde:drag-start", ({ suggestionId }) => {
+    socket.to("bde").emit("bde:drag-start", { suggestionId, bySocket: socket.id });
+  });
+
+  socket.on("bde:drag-over", ({ columnId }) => {
+    socket.to("bde").emit("bde:drag-over", { columnId, bySocket: socket.id });
+  });
+
+  socket.on("bde:drag-end", () => {
+    socket.to("bde").emit("bde:drag-end", { bySocket: socket.id });
+  });
+
+  socket.on("bde:update", ({ id, statut, justification }) => {
+    socket.to("bde").emit("bde:update", { id, statut, justification });
+  });
+
   socket.on("disconnect", () => {
     if (socket.userId) {
       onlineUsers.delete(socket.userId);

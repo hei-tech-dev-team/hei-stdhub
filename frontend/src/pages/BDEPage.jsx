@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faInbox,
@@ -12,6 +12,7 @@ import api from "../api/axios";
 import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
 import jsPDF from "jspdf";
+import { getSocket } from "../socket";
 
 const COLUMNS = [
   {
@@ -68,10 +69,10 @@ const LIGHT_GRAY = [148, 163, 184];
 
 const generatePDF = (suggestions) => {
   const doc = new jsPDF();
-  const date = new Date().toLocaleDateString("fr-FR");
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const margin = 18;
+  const margin = 20;
   const contentW = pageW - margin * 2;
 
   const acceptes = suggestions.filter((s) => s.statut === "accepte");
@@ -82,197 +83,248 @@ const generatePDF = (suggestions) => {
   const addFooter = (pageNum, totalPages) => {
     doc.setPage(pageNum);
     doc.setFillColor(...NAVY);
-    doc.rect(0, pageH - 14, pageW, 14, "F");
+    doc.rect(0, pageH - 16, pageW, 16, "F");
     doc.setDrawColor(...GOLD);
-    doc.setLineWidth(0.5);
-    doc.line(0, pageH - 14, pageW, pageH - 14);
+    doc.setLineWidth(0.8);
+    doc.line(0, pageH - 16, pageW, pageH - 16);
     doc.setTextColor(...LIGHT_GRAY);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text("HEI STDhub — Bureau Des Etudiants", margin, pageH - 5);
-    doc.text(`Page ${pageNum}/${totalPages}`, pageW - margin, pageH - 5, { align: "right" });
+    doc.text("HEI STDhub — Bureau Des Etudiants", margin, pageH - 6);
+    doc.text(`Page ${pageNum}/${totalPages}`, pageW - margin, pageH - 6, { align: "right" });
   };
 
   const checkPage = (y, needed = 30) => {
-    if (y + needed > pageH - 18) {
+    if (y + needed > pageH - 22) {
       doc.addPage();
-      return margin + 5;
+      return margin + 10;
     }
     return y;
   };
 
   let y = margin + 5;
 
-  // ── HEADER ──
+  // ═══════════════════════════════════════════════
+  // HEADER
+  // ═══════════════════════════════════════════════
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 48, "F");
+  doc.rect(0, 0, pageW, 52, "F");
+
+  // Gold accent line under header
   doc.setDrawColor(...GOLD);
-  doc.setLineWidth(1);
-  doc.line(0, 48, pageW, 48);
+  doc.setLineWidth(1.5);
+  doc.line(0, 52, pageW, 52);
 
-  doc.setFillColor(...GOLD);
-  doc.circle(margin + 4, 12, 1.5, "F");
-  doc.circle(margin + 12, 12, 1.5, "F");
-  doc.circle(margin + 20, 12, 1.5, "F");
+  // Gold decorative dots
+  for (let i = 0; i < 3; i++) {
+    doc.setFillColor(...GOLD);
+    doc.circle(margin + 4 + i * 8, 14, 1.8, "F");
+  }
 
+  // Brand name
   doc.setTextColor(...GOLD);
-  doc.setFontSize(22);
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   doc.text("HEI STDhub", margin, 20);
 
+  // Subtitle
   doc.setTextColor(...WHITE);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("Rapport officiel du Bureau Des Etudiants", margin, 33);
+  doc.text("Rapport officiel du Bureau Des Etudiants", margin, 34);
 
-  doc.setFontSize(8);
+  // Date and reference in header
+  doc.setFontSize(7);
   doc.setTextColor(...LIGHT_GRAY);
-  doc.text(date, pageW - margin, 18, { align: "right" });
-  doc.text(`Ref: BDE-RPT-${Date.now().toString(36).toUpperCase()}`, pageW - margin, 28, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.text(date, pageW - margin, 16, { align: "right" });
+  doc.text(`R\xe9f: BDE-RPT-${Date.now().toString(36).toUpperCase()}`, pageW - margin, 26, { align: "right" });
 
-  y = 58;
+  y = 62;
 
-  // ── SUMMARY CARD ──
-  doc.setFillColor(245, 247, 250);
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(margin, y, contentW, 36, 4, 4, "FD");
-
-  doc.setFillColor(...GOLD);
-  doc.rect(margin, y, 3, 36, "F");
-
-  doc.setTextColor(...NAVY);
-  doc.setFontSize(10);
+  // ═══════════════════════════════════════════════
+  // SUMMARY SECTION
+  // ═══════════════════════════════════════════════
+  // Section label
   doc.setFont("helvetica", "bold");
-  doc.text("RESUME", margin + 10, y + 10);
+  doc.setFontSize(14);
+  doc.setTextColor(...NAVY);
+  doc.text("R\xc9SUM\xc9", margin, y);
+  y += 4;
 
-  const summaryColW = (contentW - 16) / 4;
+  // Gold underline for section title
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, margin + 40, y);
+  y += 8;
+
   const summaryItems = [
-    { label: "Acceptees", count: acceptes.length, color: GREEN },
-    { label: "A approfondir", count: aDiscuter.length, color: AMBER },
-    { label: "Refusees", count: refuses.length, color: RED },
-    { label: "Total", count: total, color: NAVY },
+    { label: "Acceptees", count: acceptes.length, color: GREEN, icon: "v" },
+    { label: "A approfondir", count: aDiscuter.length, color: AMBER, icon: "~" },
+    { label: "Refusees", count: refuses.length, color: RED, icon: "x" },
+    { label: "Total", count: total, color: NAVY, icon: "#" },
   ];
+
+  const cardW = (contentW - 12) / 4;
+
   summaryItems.forEach((item, i) => {
-    const x = margin + 10 + i * summaryColW;
+    const cx = margin + i * (cardW + 4);
+
+    // Card background
+
+    // Card background
+    doc.setFillColor(248, 249, 253);
+    doc.setDrawColor(...item.color);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(cx, y, cardW, 34, 4, 4, "FD");
+
+    // Top accent bar
     doc.setFillColor(...item.color);
-    doc.circle(x + summaryColW / 2, y + 17, 5, "F");
+    doc.rect(cx, y, cardW, 3, "F");
+
+    // Circle with count
+    doc.setFillColor(...item.color);
+    doc.circle(cx + cardW / 2, y + 14, 7, "F");
     doc.setTextColor(...WHITE);
-    doc.setFontSize(7);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text(String(item.count), x + summaryColW / 2, y + 18.5, { align: "center" });
+    doc.text(String(item.count), cx + cardW / 2, y + 16, { align: "center" });
+
+    // Label below circle
     doc.setTextColor(...GRAY);
-    doc.setFontSize(6);
+    doc.setFontSize(6.5);
     doc.setFont("helvetica", "normal");
-    doc.text(item.label, x + summaryColW / 2, y + 27, { align: "center" });
+    doc.text(item.label, cx + cardW / 2, y + 28, { align: "center" });
   });
 
-  y += 48;
+  y += 44;
 
-  // ── SECTION RENDERER ──
-  const renderSection = (items, label, accentColor, sectionNum) => {
+  // ═══════════════════════════════════════════════
+  // SECTION RENDERER
+  // ═══════════════════════════════════════════════
+  const renderSection = (items, label, accentColor, icon) => {
     if (items.length === 0) return;
 
-    y = checkPage(y, 40 + items.length * 35);
+    y = checkPage(y, 50 + items.length * 30);
 
+    // Section colored accent bar
     doc.setFillColor(...accentColor);
-    doc.rect(margin, y, 3, 14, "F");
+    doc.rect(margin, y, 4, 18, "F");
 
+    // Section title
     doc.setTextColor(...NAVY);
     doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text(`${sectionNum}. ${label} (${items.length})`, margin + 10, y + 10);
+    doc.text(`${icon} ${label} (${items.length})`, margin + 12, y + 12);
 
+    // Separator line
     doc.setDrawColor(220, 225, 235);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y + 18, pageW - margin, y + 18);
+    doc.setLineWidth(0.4);
+    doc.line(margin, y + 22, pageW - margin, y + 22);
 
-    y += 26;
+    y += 30;
 
-    items.forEach((s) => {
+    items.forEach((s, idx) => {
       y = checkPage(y, 40);
 
-      const titleLines = doc.splitTextToSize(s.titre, contentW - 20);
+      const titleLines = doc.splitTextToSize(s.titre, contentW - 24);
       const titleH = titleLines.length * 5;
       const contentMax = s.contenu.length > 150 ? s.contenu.substring(0, 150) + "..." : s.contenu;
-      const contentLines = doc.splitTextToSize(contentMax, contentW - 20);
-      const contentH = contentLines.length * 3.5;
+      const contentLines = doc.splitTextToSize(contentMax, contentW - 24);
+      const contentH = contentLines.length * 4;
       const auteur = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
 
-      let cardH = 8 + titleH + 3 + contentH + 10;
+      let cardH = 14 + titleH + 4 + contentH + 12;
 
       if (s.justification) {
-        const justLines = doc.splitTextToSize(s.justification, contentW - 32);
-        cardH += 10 + 12 + justLines.length * 3.5;
+        const justLines = doc.splitTextToSize(s.justification, contentW - 40);
+        const justBoxH = 18 + justLines.length * 4;
+        cardH += justBoxH + 4;
       }
 
       // Card shadow
-      doc.setFillColor(235, 238, 245);
-      doc.roundedRect(margin + 0.5, y + 0.5, contentW, cardH, 4, 4, "F");
+      doc.setFillColor(232, 235, 242);
+      doc.roundedRect(margin + 0.8, y + 0.8, contentW, cardH, 5, 5, "F");
 
       // Card body
       doc.setFillColor(...WHITE);
-      doc.setDrawColor(210, 215, 225);
+      doc.setDrawColor(215, 220, 230);
       doc.setLineWidth(0.5);
-      doc.roundedRect(margin, y, contentW, cardH, 4, 4, "FD");
+      doc.roundedRect(margin, y, contentW, cardH, 5, 5, "FD");
 
-      // Left accent bar
+      // Left accent stripe
       doc.setFillColor(...accentColor);
-      doc.rect(margin + 0.5, y + 2, 2.5, cardH - 4, "F");
+      doc.roundedRect(margin + 1, y + 3, 3, cardH - 6, 1.5, 1.5, "F");
 
-      // Gold corner accent (top-right)
+      // Gold number badge
       doc.setFillColor(...GOLD);
-      doc.circle(margin + contentW - 6, y + 6, 1.5, "F");
+      doc.circle(margin + contentW - 10, y + 10, 4, "F");
+      doc.setTextColor(...WHITE);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text(String(idx + 1), margin + contentW - 10, y + 11.5, { align: "center" });
 
       // Title
       doc.setTextColor(...NAVY);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(titleLines, margin + 10, y + 8);
+      doc.text(titleLines, margin + 12, y + 10);
 
       // Content
-      doc.setTextColor(...GRAY);
+      doc.setTextColor(80, 90, 110);
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text(contentLines, margin + 10, y + 8 + titleH + 3);
+      doc.text(contentLines, margin + 12, y + 10 + titleH + 4);
 
       // Author
+      const authorY = y + 10 + titleH + 4 + contentH + 4;
+      doc.setFillColor(245, 246, 250);
+      doc.roundedRect(margin + 10, authorY, contentW - 20, 10, 3, 3, "F");
       doc.setTextColor(...LIGHT_GRAY);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
-      doc.text(`— ${auteur}`, margin + 10, y + 8 + titleH + 3 + contentH + 5);
+      doc.text(`Propos\xe9 par ${auteur}`, margin + 16, authorY + 7);
+
+      y = authorY + 14;
 
       // Justification
       if (s.justification) {
-        const justY = y + 8 + titleH + 3 + contentH + 9;
-        const justLines = doc.splitTextToSize(s.justification, contentW - 32);
-        const justH = 12 + justLines.length * 3.5;
+        y = checkPage(y, 30);
+        const justLines = doc.splitTextToSize(s.justification, contentW - 40);
+        const justH = 16 + justLines.length * 4;
 
-        doc.setFillColor(255, 245, 245);
+        // Justification box
+        doc.setFillColor(254, 245, 245);
         doc.setDrawColor(...RED);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(margin + 8, justY, contentW - 16, justH, 3, 3, "FD");
+        doc.setLineWidth(0.4);
+        doc.roundedRect(margin + 10, y, contentW - 20, justH, 4, 4, "FD");
+
+        // Small red accent bar
+        doc.setFillColor(...RED);
+        doc.rect(margin + 10, y, 3, justH, "F");
 
         doc.setTextColor(...RED);
         doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
-        doc.text("Justification du BDE :", margin + 14, justY + 6);
+        doc.text("Justification du BDE :", margin + 20, y + 7);
 
-        doc.setTextColor(180, 40, 40);
-        doc.setFontSize(7);
+        doc.setTextColor(160, 50, 50);
+        doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
-        doc.text(justLines, margin + 14, justY + 12);
+        doc.text(justLines, margin + 20, y + 13);
+
+        y += justH + 6;
       }
 
-      y += cardH + 8;
+      y += 4;
     });
 
-    y += 4;
+    y += 6;
   };
 
-  renderSection(acceptes, "Suggestions acceptees", GREEN, 1);
-  renderSection(aDiscuter, "A approfondir", AMBER, 2);
-  renderSection(refuses, "Suggestions refusees", RED, 3);
+  renderSection(acceptes, "Suggestions acceptees", GREEN, "1.");
+  renderSection(aDiscuter, "A approfondir", AMBER, "2.");
+  renderSection(refuses, "Suggestions refusees", RED, "3.");
 
   // ── FOOTER ON ALL PAGES ──
   const totalPages = doc.internal.getNumberOfPages();
@@ -280,7 +332,7 @@ const generatePDF = (suggestions) => {
     addFooter(i, totalPages);
   }
 
-  doc.save(`BDE_Rapport_${date.replace(/\//g, "-")}.pdf`);
+  doc.save(`BDE_Rapport_${new Date().toLocaleDateString("fr-FR").replace(/\//g, "-")}.pdf`);
 };
 
 export default function BDEPage() {
@@ -292,6 +344,10 @@ export default function BDEPage() {
   const [dragOver, setDragOver] = useState(null);
   const [justModal, setJustModal] = useState(null);
   const [error, setError] = useState("");
+  const [remoteDragId, setRemoteDragId] = useState(null);
+  const [remoteDragOver, setRemoteDragOver] = useState(null);
+  const boardRef = useRef(null);
+  const dragCounter = useRef(1);
 
   useEffect(() => {
     api
@@ -301,17 +357,74 @@ export default function BDEPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    let socket;
+    getSocket()
+      .then((s) => {
+        socket = s;
+        s.emit("bde:join");
+        s.on("bde:drag-start", ({ suggestionId, bySocket }) => {
+          if (bySocket !== s.id) setRemoteDragId(suggestionId);
+        });
+        s.on("bde:drag-over", ({ columnId, bySocket }) => {
+          if (bySocket !== s.id) setRemoteDragOver(columnId);
+        });
+        s.on("bde:drag-end", ({ bySocket }) => {
+          if (bySocket !== s.id) {
+            setRemoteDragId(null);
+            setRemoteDragOver(null);
+          }
+        });
+        s.on("bde:update", ({ id, statut, justification }) => {
+          setSuggestions((prev) =>
+            prev.map((s) =>
+              s.id === id ? { ...s, statut, justification } : s,
+            ),
+          );
+        });
+      })
+      .catch(console.error);
+    return () => {
+      if (socket) {
+        socket.off("bde:drag-start");
+        socket.off("bde:drag-over");
+        socket.off("bde:drag-end");
+        socket.off("bde:update");
+      }
+    };
+  }, []);
+
   const getByStatut = (statut) =>
     suggestions.filter((s) => s.statut === statut);
 
+  const emitDragStart = useCallback((id) => {
+    getSocket().then((s) => s.emit("bde:drag-start", { suggestionId: id }));
+  }, []);
+
+  const emitDragOver = useCallback((colId) => {
+    getSocket().then((s) => s.emit("bde:drag-over", { columnId: colId }));
+  }, []);
+
+  const emitDragEnd = useCallback(() => {
+    getSocket().then((s) => s.emit("bde:drag-end"));
+  }, []);
+
+  const emitUpdate = useCallback((id, statut, justification) => {
+    getSocket().then((s) => s.emit("bde:update", { id, statut, justification }));
+  }, []);
+
   const handleDragStart = (e, id) => {
     setDragId(id);
-    e.dataTransfer.effectAllowed = "move";
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+    }
+    emitDragStart(id);
   };
 
   const handleDragOver = (e, colId) => {
     e.preventDefault();
     setDragOver(colId);
+    emitDragOver(colId);
   };
 
   const handleDrop = async (e, newStatut) => {
@@ -322,17 +435,75 @@ export default function BDEPage() {
     const suggestion = suggestions.find((s) => s.id === dragId);
     if (!suggestion || suggestion.statut === newStatut) {
       setDragId(null);
+      emitDragEnd();
       return;
     }
 
     if (newStatut === "refuse") {
       setJustModal({ id: dragId, justification: "" });
       setDragId(null);
+      emitDragEnd();
       return;
     }
 
     await updateStatut(dragId, newStatut, null);
     setDragId(null);
+    emitDragEnd();
+  };
+
+  // Touch drag-and-drop for mobile
+  const touchDrag = useRef(null);
+
+  const handleTouchStart = (e, id) => {
+    const touch = e.touches[0];
+    touchDrag.current = { id, startX: touch.clientX, startY: touch.clientY };
+    setDragId(id);
+    emitDragStart(id);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchDrag.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (el) {
+      const colEl = el.closest("[data-column-id]");
+      if (colEl) {
+        const colId = colEl.getAttribute("data-column-id");
+        setDragOver(colId);
+        emitDragOver(colId);
+      } else {
+        setDragOver(null);
+      }
+    }
+  };
+
+  const handleTouchEnd = async (e) => {
+    if (!touchDrag.current) return;
+    const id = touchDrag.current.id;
+    touchDrag.current = null;
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (el) {
+      const colEl = el.closest("[data-column-id]");
+      if (colEl) {
+        const newStatut = colEl.getAttribute("data-column-id");
+        const suggestion = suggestions.find((s) => s.id === id);
+        if (suggestion && suggestion.statut !== newStatut) {
+          if (newStatut === "refuse") {
+            setJustModal({ id, justification: "" });
+            setDragId(null);
+            setDragOver(null);
+            emitDragEnd();
+            return;
+          }
+          await updateStatut(id, newStatut, null);
+        }
+      }
+    }
+    setDragId(null);
+    setDragOver(null);
+    emitDragEnd();
   };
 
   const updateStatut = async (id, statut, justification) => {
@@ -344,6 +515,7 @@ export default function BDEPage() {
       setSuggestions((prev) =>
         prev.map((s) => (s.id === id ? { ...s, ...data } : s)),
       );
+      emitUpdate(id, statut, justification);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de la mise à jour.");
     }
@@ -371,10 +543,8 @@ export default function BDEPage() {
     try {
       const { data } = await api.post("/suggestions/confirm");
 
-      // Générer et télécharger le PDF
       generatePDF(data.suggestions);
 
-      // Vider les suggestions du state
       setSuggestions([]);
       setDone(true);
       setTimeout(() => setDone(false), 5000);
@@ -446,16 +616,24 @@ export default function BDEPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+            <div
+              ref={boardRef}
+              className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 items-start"
+            >
               {COLUMNS.map((col) => (
                 <div
                   key={col.id}
+                  data-column-id={col.id}
                   onDragOver={(e) => handleDragOver(e, col.id)}
                   onDragLeave={() => setDragOver(null)}
                   onDrop={(e) => handleDrop(e, col.id)}
-                  className={`rounded-2xl border-2 border-dashed ${col.border} ${col.bg} p-3 min-h-64 transition-all ${
-                    dragOver === col.id ? "scale-[1.02] shadow-lg" : ""
+                  className={`rounded-2xl border-2 border-dashed ${col.border} ${col.bg} p-3 min-h-48 sm:min-h-64 transition-all ${
+                    dragOver === col.id || remoteDragOver === col.id
+                      ? "scale-[1.02] shadow-lg"
+                      : ""
                   }`}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                 >
                   {/* Header colonne */}
                   <div className="flex items-center gap-2 mb-3 px-1">
@@ -475,7 +653,7 @@ export default function BDEPage() {
                   {/* Cards */}
                   <div className="flex flex-col gap-2">
                     {getByStatut(col.id).length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-10 text-gray-300">
+                      <div className="flex flex-col items-center justify-center py-8 sm:py-10 text-gray-300">
                         <FontAwesomeIcon
                           icon={col.icon}
                           className="text-2xl mb-2"
@@ -483,42 +661,51 @@ export default function BDEPage() {
                         <p className="text-xs">Glisser ici</p>
                       </div>
                     )}
-                    {getByStatut(col.id).map((s) => (
-                      <div
-                        key={s.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, s.id)}
-                        className={`bg-white rounded-xl shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition border-l-4 ${col.cardBorder} select-none`}
-                      >
-                        <p className="font-bold text-navy text-xs mb-1 leading-tight">
-                          {s.titre}
-                        </p>
-                        <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 mb-2">
-                          {s.contenu}
-                        </p>
-                        <div className="flex items-center gap-1.5 pt-2 border-t border-surface">
-                          <div className="w-5 h-5 rounded-full bg-navy flex items-center justify-center text-white text-xs font-bold shrink-0">
-                            {s.anonyme ? "?" : `${s.prenom?.[0]}${s.nom?.[0]}`}
+                    {getByStatut(col.id).map((s) => {
+                      const isBeingDragged =
+                        dragId === s.id || remoteDragId === s.id;
+                      return (
+                        <div
+                          key={s.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, s.id)}
+                          onTouchStart={(e) => handleTouchStart(e, s.id)}
+                          className={`bg-white rounded-xl shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition border-l-4 ${col.cardBorder} select-none touch-manipulation ${
+                            isBeingDragged
+                              ? "opacity-40 scale-95"
+                              : ""
+                          }`}
+                        >
+                          <p className="font-bold text-navy text-xs mb-1 leading-tight">
+                            {s.titre}
+                          </p>
+                          <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 mb-2">
+                            {s.contenu}
+                          </p>
+                          <div className="flex items-center gap-1.5 pt-2 border-t border-surface">
+                            <div className="w-5 h-5 rounded-full bg-navy flex items-center justify-center text-white text-xs font-bold shrink-0">
+                              {s.anonyme ? "?" : `${s.prenom?.[0]}${s.nom?.[0]}`}
+                            </div>
+                            <span className="text-xs text-gray-400 truncate flex-1">
+                              {s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`}
+                            </span>
+                            <span className="text-xs text-gray-300 shrink-0">
+                              {new Date(s.created_at).toLocaleDateString("fr-FR")}
+                            </span>
                           </div>
-                          <span className="text-xs text-gray-400 truncate flex-1">
-                            {s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`}
-                          </span>
-                          <span className="text-xs text-gray-300 shrink-0">
-                            {new Date(s.created_at).toLocaleDateString("fr-FR")}
-                          </span>
+                          {s.statut === "refuse" && s.justification && (
+                            <div className="mt-2 bg-red-50 rounded-lg px-2 py-1.5">
+                              <p className="text-xs text-red-500 font-semibold">
+                                Justification :
+                              </p>
+                              <p className="text-xs text-red-400 mt-0.5 line-clamp-2">
+                                {s.justification}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        {s.statut === "refuse" && s.justification && (
-                          <div className="mt-2 bg-red-50 rounded-lg px-2 py-1.5">
-                            <p className="text-xs text-red-500 font-semibold">
-                              Justification :
-                            </p>
-                            <p className="text-xs text-red-400 mt-0.5 line-clamp-2">
-                              {s.justification}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
