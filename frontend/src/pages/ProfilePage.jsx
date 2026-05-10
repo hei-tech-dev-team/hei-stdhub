@@ -25,11 +25,27 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const ROLE_LABEL = {
-  student: { label: "Étudiant", icon: faUserGraduate, cls: "bg-cyan-500/20 text-cyan-300" },
-  teacher: { label: "Professeur", icon: faChalkboardTeacher, cls: "bg-purple-500/20 text-purple-300" },
-  admin: { label: "Admin", icon: faUserShield, cls: "bg-red-500/20 text-red-300" },
+  student: {
+    label: "Étudiant",
+    icon: faUserGraduate,
+    cls: "bg-cyan-500/20 text-cyan-300",
+  },
+  teacher: {
+    label: "Professeur",
+    icon: faChalkboardTeacher,
+    cls: "bg-purple-500/20 text-purple-300",
+  },
+  admin: {
+    label: "Admin",
+    icon: faUserShield,
+    cls: "bg-red-500/20 text-red-300",
+  },
   bde: { label: "BDE", icon: faUsers, cls: "bg-yellow-500/20 text-yellow-300" },
-  alumni: { label: "Alumni", icon: faGraduationCap, cls: "bg-amber-500/20 text-amber-300" },
+  alumni: {
+    label: "Alumni",
+    icon: faGraduationCap,
+    cls: "bg-amber-500/20 text-amber-300",
+  },
 };
 
 export default function ProfilePage() {
@@ -133,13 +149,16 @@ export default function ProfilePage() {
             {/* Animated profile header */}
             <div
               className={`transition-all duration-700 ease-out ${
-                visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                visible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-6"
               }`}
             >
               <div
                 className="rounded-2xl overflow-hidden mb-6"
                 style={{
-                  background: "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
+                  background:
+                    "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
                   border: "1px solid rgba(255,255,255,0.08)",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
                 }}
@@ -149,17 +168,24 @@ export default function ProfilePage() {
                   <div
                     className="absolute inset-0"
                     style={{
-                      background: "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
+                      background:
+                        "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
                     }}
                   />
                   <div className="absolute inset-0 opacity-30">
                     <div
                       className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent)" }}
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(212,175,55,0.3), transparent)",
+                      }}
                     />
                     <div
                       className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1), transparent)" }}
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(255,255,255,0.1), transparent)",
+                      }}
                     />
                   </div>
                 </div>
@@ -181,11 +207,21 @@ export default function ProfilePage() {
                         }}
                       >
                         {loadingAvatar ? (
-                          <FontAwesomeIcon icon={faSpinner} className="text-gold text-2xl animate-spin" />
+                          <FontAwesomeIcon
+                            icon={faSpinner}
+                            className="text-gold text-2xl animate-spin"
+                          />
                         ) : avatarUrl ? (
-                          <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                          <img
+                            src={avatarUrl}
+                            alt="avatar"
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
-                          <FontAwesomeIcon icon={faUser} className="text-gold text-3xl" />
+                          <FontAwesomeIcon
+                            icon={faUser}
+                            className="text-gold text-3xl"
+                          />
                         )}
                       </div>
                       <button
@@ -193,22 +229,38 @@ export default function ProfilePage() {
                         onClick={() => fileRef.current?.click()}
                         className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
                         style={{
-                          background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                          background:
+                            "linear-gradient(135deg, #D4AF37, #B8860B)",
                           boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
                           color: "white",
                         }}
                       >
                         <FontAwesomeIcon icon={faCamera} className="text-xs" />
                       </button>
-                      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatar}
+                      />
                     </div>
 
                     <div className="flex-1 text-center sm:text-left min-w-0">
-                      <h1 className="text-gray-900 font-bold text-xl truncate">{user?.pseudo}</h1>
-                      <p className="text-gray-500 text-sm mt-0.5">{user?.ref}</p>
+                      <h1 className="text-gold-light font-bold text-xl truncate">
+                        {user?.pseudo}
+                      </h1>
+                      <p className="text-gray-500 text-sm mt-0.5">
+                        {user?.ref}
+                      </p>
                       <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
-                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}>
-                          <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
+                        <span
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}
+                        >
+                          <FontAwesomeIcon
+                            icon={roleCfg.icon}
+                            className="mr-1.5"
+                          />
                           {roleCfg.label}
                         </span>
                         {user?.level && (
@@ -244,8 +296,13 @@ export default function ProfilePage() {
                     ].map(([label, val, icon]) => (
                       <div key={label} className="group">
                         <div className="flex items-center gap-2 mb-1.5">
-                          <FontAwesomeIcon icon={icon} className="text-gold text-[10px] opacity-60" />
-                          <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">{label}</p>
+                          <FontAwesomeIcon
+                            icon={icon}
+                            className="text-gold text-[10px] opacity-60"
+                          />
+                          <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">
+                            {label}
+                          </p>
                         </div>
                         <p className="font-semibold text-gray-800 text-sm truncate group-hover:text-gold transition-colors duration-200">
                           {val || "—"}
@@ -262,19 +319,24 @@ export default function ProfilePage() {
                 content: (
                   <>
                     {errorPseudo && (
-                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3"
+                      <div
+                        className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3"
                         style={{
                           background: "rgba(220,38,38,0.1)",
                           border: "1px solid rgba(220,38,38,0.2)",
                           color: "#fca5a5",
                         }}
                       >
-                        <FontAwesomeIcon icon={faTimes} className="text-xs shrink-0" />
+                        <FontAwesomeIcon
+                          icon={faTimes}
+                          className="text-xs shrink-0"
+                        />
                         {errorPseudo}
                       </div>
                     )}
                     {successPseudo && (
-                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3 animate-slide-up"
+                      <div
+                        className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3 animate-slide-up"
                         style={{
                           background: "rgba(34,197,94,0.1)",
                           border: "1px solid rgba(34,197,94,0.2)",
@@ -310,15 +372,23 @@ export default function ProfilePage() {
                         disabled={loadingPseudo}
                         className="px-4 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50 active:scale-95"
                         style={{
-                          background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                          background:
+                            "linear-gradient(135deg, #D4AF37, #B8860B)",
                           color: "white",
                           boxShadow: "0 2px 12px rgba(212,175,55,0.25)",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = "0.9";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = "1";
+                        }}
                       >
                         {loadingPseudo ? (
-                          <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                          <FontAwesomeIcon
+                            icon={faSpinner}
+                            className="animate-spin"
+                          />
                         ) : (
                           <FontAwesomeIcon icon={faSave} />
                         )}
@@ -334,19 +404,24 @@ export default function ProfilePage() {
                 content: (
                   <>
                     {errorPwd && (
-                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3"
+                      <div
+                        className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3"
                         style={{
                           background: "rgba(220,38,38,0.1)",
                           border: "1px solid rgba(220,38,38,0.2)",
                           color: "#fca5a5",
                         }}
                       >
-                        <FontAwesomeIcon icon={faTimes} className="text-xs shrink-0" />
+                        <FontAwesomeIcon
+                          icon={faTimes}
+                          className="text-xs shrink-0"
+                        />
                         {errorPwd}
                       </div>
                     )}
                     {successPwd && (
-                      <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3 animate-slide-up"
+                      <div
+                        className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl mb-3 animate-slide-up"
                         style={{
                           background: "rgba(34,197,94,0.1)",
                           border: "1px solid rgba(34,197,94,0.2)",
@@ -357,7 +432,10 @@ export default function ProfilePage() {
                         Mot de passe mis à jour !
                       </div>
                     )}
-                    <form onSubmit={handlePassword} className="flex flex-col gap-3">
+                    <form
+                      onSubmit={handlePassword}
+                      className="flex flex-col gap-3"
+                    >
                       <PwdInput
                         value={currentPwd}
                         setValue={setCurrentPwd}
@@ -384,15 +462,23 @@ export default function ProfilePage() {
                         disabled={loadingPwd}
                         className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2"
                         style={{
-                          background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                          background:
+                            "linear-gradient(135deg, #D4AF37, #B8860B)",
                           color: "white",
                           boxShadow: "0 2px 12px rgba(212,175,55,0.25)",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = "0.9";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = "1";
+                        }}
                       >
                         {loadingPwd ? (
-                          <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                          <FontAwesomeIcon
+                            icon={faSpinner}
+                            className="animate-spin"
+                          />
                         ) : (
                           <FontAwesomeIcon icon={faLock} />
                         )}
@@ -426,7 +512,10 @@ export default function ProfilePage() {
                         background: "rgba(212,175,55,0.15)",
                       }}
                     >
-                      <FontAwesomeIcon icon={section.icon} className="text-gold text-xs" />
+                      <FontAwesomeIcon
+                        icon={section.icon}
+                        className="text-gold text-xs"
+                      />
                     </span>
                     {section.title}
                   </h2>
