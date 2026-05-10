@@ -23,3 +23,7 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 - **Profile** — Avatar upload, pseudo change, password update; glassmorphism redesign with staggered animations, animated cover header, rotating border avatar, role-based badges, password visibility toggles, toast notifications
 - **UI/UX** — Glassmorphism design, smooth micro-animations, responsive mobile layout; redesigned OnboardingModal with floating particles, spring transitions, gold sparkle dots; improved error feedback on admin forms
 - **Database migration** — `user_role` ENUM extended with `alumni` and `bde`; updated CHECK constraints for ref format, email validation, and level rules; migration script at `database/migration_alumni_support.sql`
+
+---
+
+&copy; 2026 HEI STDhub. All rights reserved.
