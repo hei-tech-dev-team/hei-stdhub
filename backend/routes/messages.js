@@ -4,6 +4,7 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const CloudinaryStorage = require("multer-storage-cloudinary");
+const webpush = require("web-push");
 const router = express.Router();
 
 cloudinary.config({
@@ -146,6 +147,14 @@ router.post("/", auth, async (req, res) => {
     } else {
       io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
       io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
+
+      // Send push notification to receiver
+      sendPushNotification(receiver_id, {
+        title: userRows[0]?.pseudo || "Message",
+        body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
+        tag: `private-${req.user.id}`,
+        url: "/chat",
+      }).catch(() => {});
     }
 
     res.status(201).json(fullMsg);
@@ -191,5 +200,29 @@ router.post("/upload", auth, (req, res) => {
     });
   });
 });
+
+// Send push notification to a user
+async function sendPushNotification(userId, { title, body, tag, url }) {
+  const { rows } = await db.query(
+    `SELECT endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
+     FROM push_subscriptions WHERE user_id=$1`,
+    [userId],
+  );
+  if (!rows.length) return;
+
+  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
+  for (const sub of rows) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
+        payload,
+      );
+    } catch (err) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]).catch(() => {});
+      }
+    }
+  }
+}
 
 module.exports = router;
