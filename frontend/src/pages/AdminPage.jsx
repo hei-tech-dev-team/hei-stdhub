@@ -316,7 +316,7 @@ export default function AdminPage() {
       >
         <div className="flex-1 p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-6 text-center">
             <h1 className="text-xl sm:text-2xl font-bold text-navy">
               Panneau d'administration
             </h1>

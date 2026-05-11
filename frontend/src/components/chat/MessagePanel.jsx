@@ -299,7 +299,7 @@ export default function MessagePanel({
         `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}]`,
       );
     } catch {
-      await onSend(`[Fichier : ${file.name}]`);
+      alert("Échec de l'upload du fichier.");
     } finally {
       setSending(false);
       e.target.value = "";
@@ -352,10 +352,10 @@ export default function MessagePanel({
   return (
     <div className="flex flex-col h-full min-w-0">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
+      <div className="relative flex flex-col items-center justify-center gap-1.5 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
         <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
-        <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center gap-1.5">
+        <div className="min-w-0 text-center">
+          <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center justify-center gap-1.5">
             {contact.name}
             {!contact.isGlobal && <RoleBadge role={contact.role} />}
           </h3>
@@ -373,7 +373,7 @@ export default function MessagePanel({
           type="button"
           onClick={onOpenContacts}
           title="Liste des contacts"
-          className="w-9 h-9 rounded-xl bg-gold text-navy flex items-center justify-center hover:bg-gold-light transition-all active:scale-95 shrink-0 shadow-lg shadow-gold/20"
+          className="absolute right-4 sm:right-6 w-9 h-9 rounded-xl bg-gold text-navy flex items-center justify-center hover:bg-gold-light transition-all active:scale-95 shrink-0 shadow-lg shadow-gold/20"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
