@@ -205,11 +205,11 @@ router.post("/upload", auth, (req, res) => {
 
     const isImage = req.file.mimetype?.startsWith("image/");
     const url = req.file.secure_url
-      || (req.file.path ? `/uploads/chat/${req.file.filename}` : null);
+      || (req.file.path ? `${req.protocol}://${req.get("host")}/uploads/chat/${req.file.filename}` : null);
     if (!url) return res.status(500).json({ error: "Upload échoué." });
 
     res.json({
-      filename: req.file.originalname || req.file.originalname,
+      filename: req.file.originalname || req.file.filename,
       url,
       isImage,
     });
