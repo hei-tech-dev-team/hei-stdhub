@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -37,7 +37,7 @@ function StatusDot({ online }) {
   );
 }
 
-export default function ContactList({ contacts, activeId, onSelect, onlineUsers }) {
+export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -45,9 +45,29 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
-  const filtered = contacts.filter((c) =>
+  const sorted = useMemo(() => {
+    return [...contacts].sort((a, b) => {
+      const aUnread = a.isGlobal
+        ? (unread?.global || 0)
+        : ((unread?.contacts?.[a.id]?.unread || 0) + (unread?.contacts?.[a.id]?.pending || 0));
+      const bUnread = b.isGlobal
+        ? (unread?.global || 0)
+        : ((unread?.contacts?.[b.id]?.unread || 0) + (unread?.contacts?.[b.id]?.pending || 0));
+      if (aUnread && !bUnread) return -1;
+      if (!aUnread && bUnread) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [contacts, unread]);
+
+  const filtered = sorted.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const getUnreadCount = (contact) => {
+    if (contact.isGlobal) return unread?.global || 0;
+    const c = unread?.contacts?.[contact.id];
+    return (c?.unread || 0) + (c?.pending || 0);
+  };
 
   const handleSearch = async (q) => {
     setSearchQuery(q);
@@ -202,6 +222,11 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers 
                   </span>
                 )}
               </div>
+              {getUnreadCount(contact) > 0 && (
+                <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
+                  {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
+                </span>
+              )}
             </button>
           );
         })}
