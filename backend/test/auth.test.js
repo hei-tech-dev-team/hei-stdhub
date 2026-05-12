@@ -197,3 +197,19 @@ describe("AUTH — PATCH /avatar", () => {
     expect(res.status).to.equal(400);
   });
 });
+
+describe("AUTH — PATCH /profile", () => {
+  itWithToken("returns 409 on duplicate pseudo", async () => {
+    const { rows } = await (require("../db")).query(
+      "SELECT pseudo FROM users WHERE id != 1 LIMIT 1",
+    );
+    if (!rows.length) return;
+    const existingPseudo = rows[0].pseudo;
+    const res = await agent
+      .patch("/api/auth/profile")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ pseudo: existingPseudo });
+    expect(res.status).to.equal(409);
+    expect(res.body).to.have.property("error", "Pseudo déjà pris.");
+  });
+});
