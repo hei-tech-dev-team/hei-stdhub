@@ -197,6 +197,28 @@ router.patch("/:id/seen", auth, async (req, res) => {
   }
 });
 
+// Delete a message (only the sender can delete their own message)
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `DELETE FROM messages WHERE id=$1 AND sender_id=$2
+       RETURNING id, is_global, receiver_id, sender_id`,
+      [req.params.id, req.user.id],
+    );
+    if (!rows.length)
+      return res.status(404).json({ error: "Message introuvable ou non autorisé." });
+
+    const msg = rows[0];
+    const io = req.app.get("io");
+    io.emit("message:deleted", { messageId: msg.id, isGlobal: msg.is_global, receiverId: msg.receiver_id, senderId: msg.sender_id });
+
+    res.json({ message: "Message supprimé." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 // Upload a file to Cloudinary (or local disk) for chat sharing
 router.post("/upload", auth, (req, res) => {
   chatUpload(req, res, (err) => {
