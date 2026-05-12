@@ -149,6 +149,11 @@ router.post("/register", async (req, res) => {
 
     await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [newUser.id]);
 
+    try {
+      const io = req.app.get("io");
+      if (io) io.emit("user:registered", newUser);
+    } catch (_) {}
+
     res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
   } catch (err) {
     console.error(err);
