@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import { getSocket, disconnectSocket } from "../../socket";
@@ -45,6 +45,7 @@ export default function ChatLayout() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [unread, setUnread] = useState({ global: 0, contacts: {} });
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
@@ -60,6 +61,23 @@ export default function ChatLayout() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  const fetchUnread = useCallback(async () => {
+    try {
+      const { data } = await api.get("/messages/unread");
+      setUnread(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const markGlobalRead = useCallback(async (messageId) => {
+    try {
+      await api.post("/messages/global/read", { messageId });
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   useEffect(() => {
     requestNotifyPermission();
@@ -81,7 +99,32 @@ export default function ChatLayout() {
         setContacts([GLOBAL_CONTACT, ...formatted]);
       })
       .catch(console.error);
-  }, []);
+    fetchUnread();
+  }, [fetchUnread]);
+
+  const markSeen = useCallback(async (contact) => {
+    if (contact.isGlobal) {
+      const msgs = messagesRef.current["global"] || [];
+      const last = msgs[msgs.length - 1];
+      if (last) markGlobalRead(last.id);
+      setUnread((prev) => ({ ...prev, global: 0 }));
+      return;
+    }
+    const msgs = messagesRef.current[contact.id] || [];
+    for (const msg of msgs) {
+      if (!msg.own && !msg.seen) {
+        try {
+          await api.patch(`/messages/${msg.id}/seen`);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
+    setUnread((prev) => ({
+      ...prev,
+      contacts: { ...prev.contacts, [contact.id]: { ...prev.contacts[contact.id], unread: 0 } },
+    }));
+  }, [markGlobalRead]);
 
   const formatMsg = useCallback(
     (m) => ({
@@ -122,9 +165,11 @@ export default function ChatLayout() {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (activeContact) loadMessages(activeContact);
-  }, [activeContact, loadMessages]);
+    if (activeContact) {
+      loadMessages(activeContact);
+      markSeen(activeContact);
+    }
+  }, [activeContact, loadMessages, markSeen]);
 
   // Socket.IO with push notifications
   useEffect(() => {
@@ -151,6 +196,9 @@ export default function ChatLayout() {
                 `${msg.sender}: ${msg.content.replace(/\[FILE:.+\]/, "[Fichier]")}`,
               );
             }
+            if (!active?.isGlobal) {
+              setUnread((prev) => ({ ...prev, global: prev.global + 1 }));
+            }
           }
         });
 
@@ -171,6 +219,18 @@ export default function ChatLayout() {
                 `Message de ${msg.sender}`,
                 msg.content.replace(/\[FILE:.+\]/, "[Fichier]"),
               );
+            }
+            if (active?.id !== otherId) {
+              setUnread((prev) => ({
+                ...prev,
+                contacts: {
+                  ...prev.contacts,
+                  [otherId]: {
+                    unread: (prev.contacts[otherId]?.unread || 0) + 1,
+                    pending: prev.contacts[otherId]?.pending || 0,
+                  },
+                },
+              }));
             }
           }
         });
@@ -197,6 +257,16 @@ export default function ChatLayout() {
             }
             return updated;
           });
+          setUnread((prev) => {
+            const updated = { ...prev, contacts: { ...prev.contacts } };
+            for (const cid of Object.keys(updated.contacts)) {
+              updated.contacts[cid] = { ...updated.contacts[cid] };
+              if (updated.contacts[cid].pending > 0) {
+                updated.contacts[cid].pending = Math.max(0, updated.contacts[cid].pending - 1);
+              }
+            }
+            return updated;
+          });
         });
 
         socket.on("message:deleted", ({ messageId }) => {
@@ -207,6 +277,19 @@ export default function ChatLayout() {
             }
             return updated;
           });
+        });
+
+        socket.on("unread:update", ({ contactId, unread: u, pending }) => {
+          setUnread((prev) => ({
+            ...prev,
+            contacts: {
+              ...prev.contacts,
+              [contactId]: {
+                unread: u ?? prev.contacts[contactId]?.unread ?? 0,
+                pending: pending ?? prev.contacts[contactId]?.pending ?? 0,
+              },
+            },
+          }));
         });
       })
       .catch(console.error);
@@ -219,6 +302,13 @@ export default function ChatLayout() {
   const deleteMessage = async (messageId) => {
     try {
       await api.delete(`/messages/${messageId}`);
+      setMessages((prev) => {
+        const updated = { ...prev };
+        for (const key of Object.keys(updated)) {
+          updated[key] = updated[key].filter((m) => m.id !== messageId);
+        }
+        return updated;
+      });
     } catch (err) {
       console.error(err);
     }
@@ -260,6 +350,7 @@ export default function ChatLayout() {
           activeId={activeContact.id}
           onSelect={handleSelectContact}
           onlineUsers={onlineUsers}
+          unread={unread}
         />
       </div>
 
