@@ -25,6 +25,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { getSocket } from "../socket";
 import Sidebar from "../components/layout/Sidebar";
 import { expandRoleFilter } from "../utils/roleFilter";
 const ROLE_CONFIG = {
@@ -170,6 +171,18 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadUsers();
   }, [loadUsers]);
+
+  // Real-time new user registration
+  useEffect(() => {
+    getSocket()
+      .then((socket) => {
+        socket.on("user:registered", (newUser) => {
+          const { first_login, ...safeUser } = newUser;
+          setUsers((prev) => [safeUser, ...prev]);
+        });
+      })
+      .catch(console.error);
+  }, []);
 
   // Charger invitations
   const loadInvitations = useCallback(() => {
