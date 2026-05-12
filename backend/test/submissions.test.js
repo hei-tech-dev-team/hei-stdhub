@@ -83,7 +83,7 @@ describe("SUBMISSIONS — GET /", () => {
     expect(res.status).to.equal(401);
   });
 
-  itWithToken("returns 403 for student role", async () => {
+  itWithToken("returns 403 for student role", async function () {
     let studentTokenLocal = "";
     try {
       const loginRes = await agent
