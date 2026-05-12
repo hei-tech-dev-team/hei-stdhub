@@ -70,7 +70,7 @@ hei-stdhub-v2/
 │   ├── services/
 │   │   ├── mailer.js                # Nodemailer + Resend
 │   │   └── suggestionPdf.js         # PDF report generator
-│   ├── test/                        # 7 test files (144 tests)
+│   ├── test/                        # 7 test files (177 tests)
 │   └── uploads/                     # Local file uploads
 ├── frontend/
 │   ├── package.json
@@ -108,6 +108,7 @@ hei-stdhub-v2/
 │           └── ui/                  # Avatar, Badge, OnboardingModal
 └── database/
     ├── migration_alumni_support.sql
+    ├── migration_chat_seen_pseudo_unique.sql
     ├── migration_first_login.sql
     ├── migration_invitations.sql
     ├── migration_multi_use_invitations.sql
@@ -162,6 +163,9 @@ hei-stdhub-v2/
 | POST | `/api/messages` | Yes | Send message (global/private) + push |
 | PATCH | `/api/messages/:id/seen` | Yes | Mark message as seen |
 | POST | `/api/messages/upload` | Yes | Upload chat file |
+| GET | `/api/messages/unread` | Yes | Unread counts (global + per-contact) |
+| POST | `/api/messages/global/read` | Yes | Mark global chat read |
+| DELETE | `/api/messages/:id` | Yes | Delete own message (sender only) |
 
 ### Suggestions Routes (`/api/suggestions`)
 | Method | Path | Auth | Role | Description |
@@ -229,11 +233,11 @@ hei-stdhub-v2/
 | nom | VARCHAR(100) NOT NULL | |
 | prenom | VARCHAR(100) NOT NULL | |
 | email | VARCHAR(150) UNIQUE NOT NULL | Students: hei.*@gmail.com |
-| pseudo | VARCHAR(100) NOT NULL | |
+| pseudo | VARCHAR(100) NOT NULL UNIQUE | |
 | password | VARCHAR(255) NOT NULL | bcrypt hash |
 | role | ENUM(user_role) NOT NULL | student, teacher, admin, bde, alumni |
 | level | ENUM(user_level) | L1, L2, L3 (student/bde only) |
-| avatar | VARCHAR(500) | Cloudinary URL |
+| avatar | VARCHAR(500) | Cloudinary URL (local fallback) |
 | ues | TEXT[] | Teacher UE codes |
 | first_login | BOOLEAN DEFAULT TRUE | Triggers onboarding |
 | created_at | TIMESTAMP DEFAULT NOW() | |
@@ -317,6 +321,13 @@ hei-stdhub-v2/
 | seen_at | TIMESTAMP | |
 | created_at | TIMESTAMP DEFAULT NOW() | |
 
+#### `global_chat_read`
+| Column | Type | Notes |
+|--------|------|-------|
+| user_id | INTEGER PK | FK users ON DELETE CASCADE |
+| last_read_msg_id | INTEGER NOT NULL DEFAULT 0 | |
+| updated_at | TIMESTAMP NOT NULL DEFAULT NOW() | |
+
 #### `suggestions`
 | Column | Type | Notes |
 |--------|------|-------|
@@ -382,6 +393,8 @@ WEB1, WEB2, WEB3, PROG1, PROG2, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1,
 - **Private Chat**: Sent to `user:{userId}` room + echo to sender.
 - **Online/Offline**: `user:join` / `user:leave`, tracked in `onlineUsers` Map.
 - **Seen Status**: `message:seen` event notifies sender.
+- **Message Deletion**: `message:deleted` event broadcast to all clients with `{ messageId, isGlobal, receiverId, senderId }`.
+- **Unread Counts**: `unread:update` event sent to sender after private message with `{ contactId, unread, pending }`.
 - **BDE Sync**: BDE members join `bde` room. Drag-and-drop events (`bde:drag-start`, `bde:drag-over`, `bde:drag-end`, `bde:update`) broadcast in real-time.
 - **Push Notifications**: Private messages trigger Web Push to all subscribed devices. Invalid subscriptions cleaned up.
 
@@ -452,8 +465,16 @@ cd backend && npm start
 
 ### Testing
 ```bash
-cd backend && npm test    # 144 tests (Mocha/Chai/Supertest)
+cd backend && npm test    # 177 tests (Mocha/Chai/Supertest)
 ```
+
+### API Documentation
+See `ALL_ABOUT_API.md` for:
+- API concepts (HTTP methods, status codes, REST)
+- WebSocket vs HTTP comparison
+- Nodemailer / email service explanation
+- Complete route reference table for all endpoints
+- Database tables reference
 
 ### Version Bumping
 ```bash
@@ -498,3 +519,175 @@ npm run release:major   # 1.3.2 -> 2.0.0
 - Admin refs: `ADMIN\d{3,}`
 - Posts: 21 valid UE codes, types cours/td/examen
 - Submissions: types TD/Examen, groups by level
+
+---
+
+## Error Handling: `try/catch`
+
+### What it is
+
+`try/catch` is a JavaScript construct for handling runtime errors (exceptions) gracefully without crashing the application.
+
+### How it works
+
+```
+┌─────────────────────────────────────────┐
+│  try {                                  │
+│    // Code that MIGHT throw an error    │
+│    const result = riskyOperation();     │
+│    res.json(result);                    │
+│  } catch (err) {                        │
+│    // Runs ONLY if try block threw      │
+│    console.error(err);                  │
+│    res.status(500).json({ error })      │
+│  }                                      │
+└─────────────────────────────────────────┘
+```
+
+| Block | Runs when | Purpose |
+|-------|-----------|---------|
+| `try` | Always (first) | Wrap code that could fail (DB queries, file reads, network calls) |
+| `catch` | Only if `try` throws | Handle the error: log it, return a user-friendly message, clean up resources |
+| `finally` | Always (after try/catch) | Optional cleanup (close connections, reset state) - NOT used in this project |
+
+### In this project (backend)
+
+Every route handler follows this exact pattern:
+
+```js
+router.get("/example", auth, async (req, res) => {
+  try {
+    // 1. Do the work (DB query, file upload, etc.)
+    const { rows } = await db.query("SELECT * FROM table WHERE id=$1", [id]);
+    // 2. Return success
+    res.json(rows);
+  } catch (err) {
+    // 3. Log the REAL error for debugging
+    console.error(err);
+    // 4. Return a SAFE, user-friendly message (never expose internals)
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+```
+
+### In this project (frontend)
+
+Used in async handlers to catch API failures:
+
+```js
+try {
+  const { data } = await api.post("/messages", payload);
+  // Success: use data
+} catch (err) {
+  // Failure: show error to user
+  setError(err.response?.data?.error || "Erreur.");
+}
+```
+
+### Why not just `console.log` the error?
+
+| Without try/catch | With try/catch |
+|------------------|----------------|
+| App crashes | App continues running |
+| User sees blank screen | User sees error message |
+| No log of what happened | Error is logged for debugging |
+| Database connection leaks | (if in finally) Connection released |
+
+---
+
+## HTTP Communication: `fetch` / `axios`
+
+### What it is
+
+`fetch` is the browser's built-in function for making HTTP requests. `axios` is a third-party library that wraps `fetch` with extra features.
+
+### In this project we use `axios` (not raw `fetch`)
+
+**Why axios over fetch:**
+
+| Feature | `fetch` | `axios` |
+|---------|---------|---------|
+| JSON body parsing | Manual `.json()` | Automatic |
+| Error handling | Only rejects on network error | Rejects on ANY non-2xx status |
+| Request/response interceptors | Manual | Built-in (auth token injection) |
+| Upload progress | Complex | Built-in |
+| Base URL configuration | Manual concatenation | `baseURL` option |
+| Timeout | Manual AbortController | `timeout` option |
+
+### How axios works in this project
+
+**1. Configured instance** (`frontend/src/api/axios.js`):
+```js
+const api = axios.create({ baseURL: "http://localhost:3001/api" });
+
+// Auto-inject auth token
+api.interceptors.request.use((config) => {
+  config.headers.Authorization = `Bearer ${localStorage.getItem("hei_token")}`;
+  return config;
+});
+
+// Auto-redirect on 401
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem("hei_token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  },
+);
+```
+
+**2. Usage throughout the app:**
+```js
+// GET — fetch data
+const { data } = await api.get("/messages/global");
+
+// POST — create data
+const { data } = await api.post("/messages", { content, is_global: true });
+
+// PATCH — update data
+const { data } = await api.patch("/auth/profile", { pseudo: "NewName" });
+
+// DELETE — remove data
+await api.delete(`/messages/${messageId}`);
+
+// POST with multipart (file upload)
+const fd = new FormData();
+fd.append("file", file);
+const { data } = await api.post("/messages/upload", fd, {
+  headers: { "Content-Type": "multipart/form-data" },
+});
+```
+
+### What happens when you call these:
+
+```
+                ┌──────────┐         ┌──────────┐         ┌──────────┐
+  Frontend      │  axios   │ ──HTTP──→│  Express │ ──SQL──→│PostgreSQL│
+  (React)       │ instance │ ←─JSON── │  Route   │ ←─rows─ │          │
+                └──────────┘         └──────────┘         └──────────┘
+                       │                    │
+                  Auth token            try/catch
+               auto-injected           error handler
+```
+
+### Common status codes returned
+
+| Code | Meaning | Example |
+|------|---------|---------|
+| 200 | OK (success) | GET /messages/global |
+| 201 | Created (success) | POST /auth/register |
+| 400 | Bad request (client error) | Missing field, invalid input |
+| 401 | Unauthorized (not logged in) | No token or invalid token |
+| 403 | Forbidden (wrong role) | Student accessing admin route |
+| 404 | Not found | Message doesn't exist |
+| 409 | Conflict | Duplicate email/pseudo |
+| 500 | Server error | Database down, uncaught exception |
+
+---
+
+## API Routes Summary
+
+See `ALL_ABOUT_API.md` for a complete guide on what an API is, how HTTP methods work, and detailed usage of every endpoint in this project.

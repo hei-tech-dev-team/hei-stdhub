@@ -481,19 +481,37 @@ frontend/src/
 
 @constants GLOBAL_CONTACT - { id: "global", name: "Chat global", isGlobal: true }
 
-@state contacts, activeContact, messages, showContactList, loadingMessages, onlineUsers, isAtBottom
+@state contacts, activeContact, messages, showContactList, loadingMessages, onlineUsers, isAtBottom, unread
+@state unread: { global: number, contacts: { [contactId]: { unread, pending } } }
+
+@ref activeContactRef, isAtBottomRef, messagesRef - Refs to avoid stale closures in socket handlers
 
 @function requestNotifyPermission() - Requests Notification API permission
 @function showNotification(title, body) - Shows browser notification if tab is hidden
 
 @effect Init - request notification permission, subscribe to push
-@effect Fetch contacts - GET /messages/contacts
-@function formatMsg(m) - Normalizes raw message shape
+@effect Fetch contacts - GET /messages/contacts, then fetchUnread
+
+@async @function fetchUnread() - GET /messages/unread, sets unread state
+@async @function markGlobalRead(messageId) - POST /messages/global/read
+@async @function markSeen(contact) - Marks messages as seen when entering a conversation.
+  For global: calls markGlobalRead(lastMsg.id), sets global unread to 0.
+  For private: PATCH /messages/:id/seen on each unseen message, sets contact unread to 0.
+
+@function formatMsg(m) - Normalizes raw message shape (adds own, seen, senderAvatar, etc.)
 @async @function loadMessages(contact, silent?) - GET /messages/global or /messages/private/:id
 @effect Load messages on contact change
-@effect Socket setup: listen for message:global, message:private, user:online/offline, message:seen
-@async @function sendMessage(content) - POST /messages
-@function handleSelectContact(contact) - Switch active contact
+@effect Socket setup: listen for:
+  - message:global — append to global chat, increment unread if not active tab
+  - message:private — append to contact chat, increment unread if not active conversation
+  - user:online / user:offline — update onlineUsers Set
+  - message:seen — update seen flag in all message lists, decrement pending count
+  - message:deleted — filter out deleted message from all lists
+  - unread:update — update unread/pending for a contact (sent by server after sending)
+
+@async @function sendMessage(content) - POST /messages (global or private)
+@async @function deleteMessage(messageId) - DELETE /messages/:id, removes from local state
+@function handleSelectContact(contact) - Switch active contact, scroll to bottom
 
 @changelog 1.3.4
   - Chat contact toggle moved to right of chat name on mobile header
@@ -516,8 +534,14 @@ frontend/src/
 @function RoleBadge({ role }) - Role badge component
 @function StatusDot({ online }) - Online/offline dot component
 @function ContactAvatar({ contact, isActive }) - Avatar with fallback
+@param {Object} unread - { global: number, contacts: { [contactId]: { unread, pending } } }
+
+@function getUnreadCount(contact) - Returns total unread (unread + pending) for a contact
+@computed sorted - Contacts sorted by unread count (highest first), then alphabetically
 @function handleSearch(q) - GET /messages/search?q=
 @function handleStartConversation(u) - Starts private chat with searched user
+
+_unread badge:_ Gold pill badge showing unread count (capped at 99+) next to contact name
 ```
 
 ### `components/chat/MessagePanel.jsx`
@@ -528,13 +552,15 @@ frontend/src/
 @param {Array} messages
 @param {boolean} loading
 @param {Function} onSend
+@param {Function} onDelete
 @param {Function} onOpenContacts
 @param {boolean} isAtBottom
 @param {Function} onAtBottomChange
 @param {Function} onScrollToBottom
 @param {Set} onlineUsers
 @description Full message panel with grouped messages, date separators, file sharing,
-  image preview, read receipts, auto-scroll.
+  image preview, read receipts, message deletion (trash icon on hover for own messages),
+  scroll-to-bottom button, auto-scroll.
 
 @state text, sending
 @ref bottomRef, fileRef, scrollRef
@@ -546,11 +572,16 @@ frontend/src/
 @function handleKey(e) - Send on Enter (not Shift+Enter)
 @async @function handleFile(e) - POST /messages/upload, sends [FILE:...] message
 
+_Scroll-to-bottom button:_ Fixed position chevron-down button appears when not at bottom,
+  scrolls to latest messages on click.
+
 @function RoleBadge({ role }) - Role badge in chat header
 @function ChatAvatar({ avatar, name }) - Avatar with error fallback
 @function DateSeparator({ date }) - Horizontal line with date label
 @function renderContent(content) - Renders file/image or sanitized HTML (DOMPurify)
-@function MessageGroup({ messages, isOwn }) - Renders message group with bubbles
+@function MessageGroup({ messages, isOwn, onDelete }) - Renders message group with bubbles.
+  Shows trash icon on hover for own messages with confirmation dialog (Supprimer ce message ?).
+@function handleDelete(msgId) - Calls onDelete after user confirmation
 @function HeaderAvatar({ avatar, name }) - Header avatar
 @function ContactAvatar({ contact, onlineUsers }) - Contact avatar with status dot
 ```
