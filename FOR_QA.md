@@ -7,14 +7,14 @@ backend/
 └── test/
     ├── api.test.js              # 27 tests — Auth, admin, messages, submissions, health
     ├── routes.test.js           # 41 tests — Posts, supports, suggestions, admin, auth, messages edge cases
-    ├── messages.test.js         # 13 tests — Message search, contacts, CRUD, seen, upload
+    ├── messages.test.js         # 13 tests — Message search, contacts, CRUD, seen, upload, DELETE
     ├── security.test.js         # 38 tests — JWT attacks, SQL injection, XSS, authorization, input validation
     ├── socket.test.js           # 12 tests — Socket.io events, BDE sync, private messaging
     ├── mailer.test.js           # 14 tests — Email URL building, sending, fallbacks
     └── suggestionPdf.test.js    # 14 tests — PDF generation, content, sections, endpoint
 ```
 
-**Total: ~144 tests**
+**Total: 177 tests**
 
 ### Test Runner & Config
 
@@ -63,6 +63,8 @@ cd backend && npm test
 | MESSAGES | Post global | 201 with id |
 | MESSAGES | Post private no receiver | 400 |
 | MESSAGES | Search no token | 401 |
+| MESSAGES | DELETE no token | 401 |
+| MESSAGES | DELETE non-existent | 404 |
 | SUBMISSIONS | List no token | 401 |
 | SUBMISSIONS | List admin token | 200 (array) |
 | SUBMISSIONS | Create missing fields | 400 |
@@ -141,6 +143,9 @@ cd backend && npm test
 | INPUT VALIDATION | Unicode (French + Chinese) | 201 |
 | INPUT VALIDATION | Empty pseudo update | 400 |
 | INPUT VALIDATION | Whitespace pseudo | 400 |
+| AUTH (pseudo) | Register duplicate pseudo | 409 |
+| AUTH (pseudo) | PATCH /profile duplicate pseudo | 409 |
+| AUTH (avatar) | PATCH /avatar no file | 400 |
 | INPUT VALIDATION | Special chars message | 201 |
 | HTTP TAMPERING | PUT on messages/global | 404 |
 | HTTP TAMPERING | DELETE on auth/me | 404 |
@@ -259,10 +264,10 @@ it("protected route", async () => {
 
 ## Pre-Production Checklist
 
-- [ ] All 144 tests pass: `cd backend && npm test`
+- [ ] All 177 tests pass: `cd backend && npm test`
 - [ ] No lint errors: `cd frontend && npm run lint`
 - [ ] Frontend builds: `cd frontend && npm run build`
-- [ ] Database migrations applied
+- [ ] Database migrations applied (including migration_chat_seen_pseudo_unique.sql)
 - [ ] Environment variables set in production
 - [ ] CORS `origin` restricted to production URL
 - [ ] `JWT_SECRET` is a production-worthy random string
