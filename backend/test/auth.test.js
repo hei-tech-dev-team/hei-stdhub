@@ -7,6 +7,7 @@ const { expect } = chai;
 let agent;
 let adminToken = "";
 let studentToken = "";
+let inviteCode = "";
 
 const itWithToken = (desc, fn) => {
   it(desc, function () {
@@ -32,6 +33,17 @@ before(async () => {
     studentToken = res.body.token || "";
   } catch {
     studentToken = "";
+  }
+  if (adminToken) {
+    try {
+      const res = await agent
+        .post("/api/admin/invitations")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ role: "student" });
+      inviteCode = res.body.code || "";
+    } catch {
+      inviteCode = "";
+    }
   }
 });
 
@@ -102,12 +114,12 @@ describe("AUTH — POST /register", () => {
       pseudo: "dupuser",
       password: "password123",
       role: "student",
-      inviteCode: "STUDENT-INVITE-001",
+      inviteCode,
     });
     expect(res.status).to.equal(409);
     expect(res.body).to.have.property(
       "error",
-      "Référence ou email déjà utilisé.",
+      "Référence déjà utilisée.",
     );
   });
 });
@@ -130,11 +142,9 @@ describe("AUTH — POST /verify-invite", () => {
   itWithToken("returns 200 with valid invite code", async () => {
     const res = await agent
       .post("/api/auth/verify-invite")
-      .send({ code: "STUDENT-INVITE-001" });
-    expect([200, 400, 500]).to.include(res.status);
-    if (res.status === 200) {
-      expect(res.body).to.have.property("role");
-    }
+      .send({ code: inviteCode });
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property("role");
   });
 });
 

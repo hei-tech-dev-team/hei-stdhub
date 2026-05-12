@@ -7,6 +7,7 @@ import {
   faSpinner,
   faFile,
   faChevronDown,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -99,8 +100,14 @@ function renderContent(content) {
   );
 }
 
-function MessageGroup({ messages, isOwn }) {
+function MessageGroup({ messages, isOwn, onDelete }) {
   const [hoveredId, setHoveredId] = useState(null);
+
+  const handleDelete = (msgId) => {
+    if (window.confirm("Supprimer ce message ?")) {
+      onDelete?.(msgId);
+    }
+  };
 
   return (
     <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
@@ -177,9 +184,19 @@ function MessageGroup({ messages, isOwn }) {
               <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
                 <span className="text-[10px] text-white/30">{timeStr}</span>
                 {isOwn && (
-                  <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
-                    {msg.seen ? "✓✓" : "✓"}
-                  </span>
+                  <>
+                    <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                      {msg.seen ? "✓✓" : "✓"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(msg.id)}
+                      className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
+                      title="Supprimer"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -235,6 +252,7 @@ export default function MessagePanel({
   messages,
   loading,
   onSend,
+  onDelete,
   onOpenContacts,
   isAtBottom,
   onAtBottomChange,
@@ -415,6 +433,7 @@ export default function MessagePanel({
                 <MessageGroup
                   messages={item.messages}
                   isOwn={item.isOwn}
+                  onDelete={onDelete}
                 />
               </div>
             );
