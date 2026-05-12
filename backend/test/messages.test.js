@@ -144,4 +144,48 @@ describe("MESSAGES — Auth & validation", () => {
       expect(res.body).to.have.property("error");
     });
   });
+
+  describe("GET /messages/unread", () => {
+    it("retourne 401 sans token", async () => {
+      const res = await agent.get("/api/messages/unread");
+      expect(res.status).to.equal(401);
+    });
+
+    const itUnreadToken = adminToken ? it : it.skip;
+    itUnreadToken("retourne les compteurs avec token", async () => {
+      const res = await agent
+        .get("/api/messages/unread")
+        .set("Authorization", `Bearer ${adminToken}`);
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property("global");
+      expect(res.body).to.have.property("contacts");
+      expect(typeof res.body.global).to.equal("number");
+    });
+  });
+
+  describe("POST /messages/global/read", () => {
+    it("retourne 401 sans token", async () => {
+      const res = await agent.post("/api/messages/global/read").send({ messageId: 1 });
+      expect(res.status).to.equal(401);
+    });
+
+    const itGlobalReadToken = adminToken ? it : it.skip;
+    itGlobalReadToken("retourne 400 sans messageId", async () => {
+      const res = await agent
+        .post("/api/messages/global/read")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({});
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error");
+    });
+
+    itGlobalReadToken("retourne 200 avec messageId valide", async () => {
+      const res = await agent
+        .post("/api/messages/global/read")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ messageId: 1 });
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property("success", true);
+    });
+  });
 });
