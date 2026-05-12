@@ -47,8 +47,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
 
   const sorted = useMemo(() => {
     return [...contacts].sort((a, b) => {
-      if (a.isGlobal) return 1;
-      if (b.isGlobal) return -1;
+      if (a.isGlobal) return -1;
+      if (b.isGlobal) return 1;
       const aUnread = (unread?.contacts?.[a.id]?.unread || 0) + (unread?.contacts?.[a.id]?.pending || 0);
       const bUnread = (unread?.contacts?.[b.id]?.unread || 0) + (unread?.contacts?.[b.id]?.pending || 0);
       if (aUnread && !bUnread) return -1;
