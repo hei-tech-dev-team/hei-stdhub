@@ -198,6 +198,16 @@ export default function ChatLayout() {
             return updated;
           });
         });
+
+        socket.on("message:deleted", ({ messageId }) => {
+          setMessages((prev) => {
+            const updated = { ...prev };
+            for (const key of Object.keys(updated)) {
+              updated[key] = updated[key].filter((m) => m.id !== messageId);
+            }
+            return updated;
+          });
+        });
       })
       .catch(console.error);
 
@@ -205,6 +215,14 @@ export default function ChatLayout() {
       disconnectSocket();
     };
   }, [user, formatMsg]);
+
+  const deleteMessage = async (messageId) => {
+    try {
+      await api.delete(`/messages/${messageId}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const sendMessage = async (content) => {
     try {
@@ -258,6 +276,7 @@ export default function ChatLayout() {
           messages={messages[activeContact.id] || []}
           loading={loadingMessages}
           onSend={sendMessage}
+          onDelete={deleteMessage}
           onOpenContacts={() => setShowContactList(true)}
           isAtBottom={isAtBottom}
           onAtBottomChange={setIsAtBottom}

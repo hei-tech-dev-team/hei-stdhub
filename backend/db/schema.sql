@@ -21,10 +21,12 @@ CREATE TABLE users (
   nom        VARCHAR(100) NOT NULL,
   prenom     VARCHAR(100) NOT NULL,
   email      VARCHAR(150) NOT NULL UNIQUE,
-  pseudo     VARCHAR(100) NOT NULL,
+  pseudo     VARCHAR(100) NOT NULL UNIQUE,
   password   VARCHAR(255) NOT NULL,
   role       user_role    NOT NULL,
   level      user_level   NULL,
+  avatar     VARCHAR      NULL,
+  ues        TEXT[]       DEFAULT '{}',
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_student_level CHECK (
@@ -125,6 +127,8 @@ CREATE TABLE messages (
   receiver_id INTEGER   NULL REFERENCES users(id) ON DELETE SET NULL,
   content     TEXT      NOT NULL CHECK (content <> ''),
   is_global   BOOLEAN   NOT NULL DEFAULT FALSE,
+  seen        BOOLEAN   NOT NULL DEFAULT FALSE,
+  seen_at     TIMESTAMP NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_message_receiver CHECK (
     (is_global = TRUE  AND receiver_id IS NULL)
