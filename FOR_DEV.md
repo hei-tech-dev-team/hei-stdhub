@@ -70,7 +70,7 @@ hei-stdhub-v2/
 │   ├── services/
 │   │   ├── mailer.js                # Nodemailer + Resend
 │   │   └── suggestionPdf.js         # PDF report generator
-│   ├── test/                        # 7 test files (177 tests)
+│   ├── test/                        # 13 test files (200 passing)
 │   └── uploads/                     # Local file uploads
 ├── frontend/
 │   ├── package.json
@@ -465,7 +465,7 @@ cd backend && npm start
 
 ### Testing
 ```bash
-cd backend && npm test    # 177 tests (Mocha/Chai/Supertest)
+cd backend && npm test    # 200 tests (Mocha/Chai/Supertest)
 ```
 
 ### API Documentation
