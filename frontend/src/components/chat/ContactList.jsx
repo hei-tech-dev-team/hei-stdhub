@@ -47,12 +47,10 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
 
   const sorted = useMemo(() => {
     return [...contacts].sort((a, b) => {
-      const aUnread = a.isGlobal
-        ? (unread?.global || 0)
-        : ((unread?.contacts?.[a.id]?.unread || 0) + (unread?.contacts?.[a.id]?.pending || 0));
-      const bUnread = b.isGlobal
-        ? (unread?.global || 0)
-        : ((unread?.contacts?.[b.id]?.unread || 0) + (unread?.contacts?.[b.id]?.pending || 0));
+      if (a.isGlobal) return 1;
+      if (b.isGlobal) return -1;
+      const aUnread = (unread?.contacts?.[a.id]?.unread || 0) + (unread?.contacts?.[a.id]?.pending || 0);
+      const bUnread = (unread?.contacts?.[b.id]?.unread || 0) + (unread?.contacts?.[b.id]?.pending || 0);
       if (aUnread && !bUnread) return -1;
       if (!aUnread && bUnread) return 1;
       return a.name.localeCompare(b.name);
