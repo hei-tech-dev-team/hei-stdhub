@@ -128,4 +128,20 @@ describe("MESSAGES — Auth & validation", () => {
       expect(res.status).to.equal(401);
     });
   });
+
+  describe("DELETE /messages/:id", () => {
+    it("retourne 401 sans token", async () => {
+      const res = await agent.delete("/api/messages/1");
+      expect(res.status).to.equal(401);
+    });
+
+    const itDeleteToken = adminToken ? it : it.skip;
+    itDeleteToken("retourne 404 pour message inexistant", async () => {
+      const res = await agent
+        .delete("/api/messages/999999")
+        .set("Authorization", `Bearer ${adminToken}`);
+      expect(res.status).to.equal(404);
+      expect(res.body).to.have.property("error");
+    });
+  });
 });
