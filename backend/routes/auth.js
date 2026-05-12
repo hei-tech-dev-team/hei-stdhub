@@ -1,11 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const path = require("path");
+const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const cloudinary = require("cloudinary").v2;
-const CloudinaryStorage = require("multer-storage-cloudinary");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
 const capitalize = (str) =>
@@ -15,22 +15,45 @@ const capitalize = (str) =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const useCloudinary =
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET;
 
-const avatarStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "hei-stdhub/avatars",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    transformation: [{ width: 200, height: 200, crop: "fill" }],
-  },
-});
+let avatarUpload;
+if (useCloudinary) {
+  const cloudinary = require("cloudinary").v2;
+  const CloudinaryStorage = require("multer-storage-cloudinary");
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  const avatarStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+      folder: "hei-stdhub/avatars",
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+      transformation: [{ width: 200, height: 200, crop: "fill" }],
+    },
+  });
+  avatarUpload = multer({ storage: avatarStorage }).single("avatar");
+} else {
+  const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "avatars");
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  avatarUpload = multer({
+    storage: multer.diskStorage({
+      destination: UPLOAD_DIR,
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || "";
+        const name = crypto.randomBytes(16).toString("hex") + ext;
+        cb(null, name);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }).single("avatar");
+}
 
-const avatarUpload = multer({ storage: avatarStorage }).single("avatar");
 const router = express.Router();
 
 const makeToken = (user) =>
@@ -82,14 +105,23 @@ router.post("/register", async (req, res) => {
         .status(400)
         .json({ error: "Code d'invitation invalide ou expiré." });
 
-    const exists = await db.query(
-      "SELECT id FROM users WHERE ref=$1 OR email=$2",
-      [ref.toUpperCase(), email.toLowerCase()],
+    const existingRef = await db.query(
+      "SELECT id FROM users WHERE ref=$1", [ref.toUpperCase()],
     );
-    if (exists.rows.length)
-      return res
-        .status(409)
-        .json({ error: "Référence ou email déjà utilisé." });
+    if (existingRef.rows.length)
+      return res.status(409).json({ error: "Référence déjà utilisée." });
+
+    const existingEmail = await db.query(
+      "SELECT id FROM users WHERE email=$1", [email.toLowerCase()],
+    );
+    if (existingEmail.rows.length)
+      return res.status(409).json({ error: "Email déjà utilisé." });
+
+    const existingPseudo = await db.query(
+      "SELECT id FROM users WHERE pseudo=$1", [capitalize(pseudo)],
+    );
+    if (existingPseudo.rows.length)
+      return res.status(409).json({ error: "Pseudo déjà pris." });
 
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await db.query(
@@ -307,6 +339,13 @@ router.patch("/profile", auth, async (req, res) => {
   const { pseudo } = req.body;
   if (!pseudo?.trim()) return res.status(400).json({ error: "Pseudo requis." });
   try {
+    const existing = await db.query(
+      "SELECT id FROM users WHERE pseudo=$1 AND id!=$2",
+      [pseudo.trim(), req.user.id],
+    );
+    if (existing.rows.length)
+      return res.status(409).json({ error: "Pseudo déjà pris." });
+
     const { rows } = await db.query(
       `UPDATE users SET pseudo=$1 WHERE id=$2
        RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
@@ -341,14 +380,16 @@ router.patch("/password", auth, async (req, res) => {
   }
 });
 
-// Avatar upload via Cloudinary
+// Avatar upload via Cloudinary (or local disk)
 router.patch("/avatar", auth, (req, res) => {
   avatarUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
     try {
-      // Cloudinary returns the full URL
-      const avatarUrl = req.file.secure_url || req.file.path;
+      const avatarUrl = req.file.secure_url
+        || (req.file.path ? `${req.protocol}://${req.get("host")}/uploads/avatars/${req.file.filename}` : null);
+      if (!avatarUrl) return res.status(500).json({ error: "Upload échoué." });
+
       const { rows } = await db.query(
         `UPDATE users SET avatar=$1 WHERE id=$2
          RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
