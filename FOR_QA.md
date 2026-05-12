@@ -14,7 +14,7 @@ backend/
     └── suggestionPdf.test.js    # 14 tests — PDF generation, content, sections, endpoint
 ```
 
-**Total: 177 tests**
+**Total: 200 passing + 11 pending (conditional)**
 
 ### Test Runner & Config
 
@@ -264,7 +264,7 @@ it("protected route", async () => {
 
 ## Pre-Production Checklist
 
-- [ ] All 177 tests pass: `cd backend && npm test`
+- [ ] All 200 tests pass: `cd backend && npm test`
 - [ ] No lint errors: `cd frontend && npm run lint`
 - [ ] Frontend builds: `cd frontend && npm run build`
 - [ ] Database migrations applied (including migration_chat_seen_pseudo_unique.sql)
