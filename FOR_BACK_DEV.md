@@ -22,7 +22,7 @@ backend/
 ├── services/
 │   ├── mailer.js             # Email (SMTP + Resend)
 │   └── suggestionPdf.js      # PDF reports for BDE
-├── test/                     # 7 test files (177 tests)
+├── test/                     # 13 test files (200 passing)
 ├── scripts/                  # Utilities
 └── uploads/                  # Local file storage
 ```
