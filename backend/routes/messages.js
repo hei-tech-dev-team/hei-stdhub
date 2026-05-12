@@ -152,15 +152,32 @@ router.post("/", auth, async (req, res) => {
     };
 
     const io = req.app.get("io");
+    const senderName = userRows[0]?.pseudo || "Inconnu";
+
     if (is_global) {
       io.emit("message:global", fullMsg);
+
+      // Send push notification to all subscribed users for global messages
+      sendPushToAll({
+        title: "HEI STDhub – Chat global",
+        body: `${senderName}: ${content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200)}`,
+        tag: "global-chat",
+        url: "/chat",
+      }).catch(() => {});
     } else {
       io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
       io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
 
+      // Notify sender that their message is pending (receiver hasn't seen it)
+      io.to(`user:${req.user.id}`).emit("unread:update", {
+        contactId: receiver_id,
+        unread: 0,
+        pending: 1,
+      });
+
       // Send push notification to receiver
       sendPushNotification(receiver_id, {
-        title: userRows[0]?.pseudo || "Message",
+        title: senderName || "Message",
         body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
         tag: `private-${req.user.id}`,
         url: "/chat",
@@ -193,6 +210,72 @@ router.patch("/:id/seen", auth, async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Get unread counts for the current user
+router.get("/unread", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { rows: globalRows } = await db.query(
+      `SELECT COALESCE(g.last_read_msg_id, 0) AS last_read
+       FROM global_chat_read g WHERE g.user_id=$1`,
+      [userId],
+    );
+    const lastRead = globalRows[0]?.last_read || 0;
+    const { rows: globalUnread } = await db.query(
+      `SELECT COUNT(*)::int AS count FROM messages
+       WHERE is_global=TRUE AND id > $1`,
+      [lastRead],
+    );
+
+    const { rows: privateUnread } = await db.query(
+      `SELECT
+         CASE WHEN sender_id=$1 THEN receiver_id ELSE sender_id END AS contact_id,
+         COUNT(*) FILTER (WHERE receiver_id=$1 AND seen=FALSE)::int AS unread,
+         COUNT(*) FILTER (WHERE sender_id=$1 AND seen=FALSE)::int AS pending
+       FROM messages
+       WHERE is_global=FALSE
+         AND ($1 IN (sender_id, receiver_id))
+       GROUP BY contact_id`,
+      [userId],
+    );
+
+    const contacts = {};
+    for (const row of privateUnread) {
+      contacts[row.contact_id] = {
+        unread: parseInt(row.unread, 10),
+        pending: parseInt(row.pending, 10),
+      };
+    }
+
+    res.json({
+      global: parseInt(globalUnread[0]?.count, 10) || 0,
+      contacts,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Mark global chat as read up to a given message id
+router.post("/global/read", auth, async (req, res) => {
+  const { messageId } = req.body;
+  if (!messageId) return res.status(400).json({ error: "messageId requis." });
+  try {
+    await db.query(
+      `INSERT INTO global_chat_read (user_id, last_read_msg_id, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (user_id)
+       DO UPDATE SET last_read_msg_id = GREATEST(global_chat_read.last_read_msg_id, $2), updated_at = NOW()`,
+      [req.user.id, messageId],
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
@@ -237,6 +320,29 @@ router.post("/upload", auth, (req, res) => {
     });
   });
 });
+
+// Send push notification to all subscribed users
+async function sendPushToAll({ title, body, tag, url }) {
+  const { rows } = await db.query(
+    `SELECT DISTINCT ON (endpoint) endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
+     FROM push_subscriptions`,
+  );
+  if (!rows.length) return;
+
+  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
+  for (const sub of rows) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
+        payload,
+      );
+    } catch (err) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]).catch(() => {});
+      }
+    }
+  }
+}
 
 // Send push notification to a user
 async function sendPushNotification(userId, { title, body, tag, url }) {

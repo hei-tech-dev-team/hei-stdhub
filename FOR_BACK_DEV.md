@@ -22,7 +22,7 @@ backend/
 ├── services/
 │   ├── mailer.js             # Email (SMTP + Resend)
 │   └── suggestionPdf.js      # PDF reports for BDE
-├── test/                     # 7 test files (144 tests)
+├── test/                     # 7 test files (177 tests)
 ├── scripts/                  # Utilities
 └── uploads/                  # Local file storage
 ```
@@ -70,6 +70,18 @@ backend/
 @event message:seen
 @param {Object} payload { messageId, senderId }
 @description Forwards seen status to sender's room
+
+@event message:deleted
+@param {Object} payload { messageId, isGlobal, receiverId, senderId }
+@description Broadcasts message deletion to all connected clients
+
+@event unread:update
+@param {Object} payload { contactId, unread, pending }
+@description Sends unread count update to sender after sending private message
+
+@event user:registered
+@param {Object} user - New user object (id, ref, pseudo, role)
+@description Broadcasts new registration to admin panel for live updates
 
 @event bde:join
 @description Joins the "bde" room for real-time Kanban sync
@@ -250,6 +262,15 @@ backend/
 @returns {JSON} Updated user object
 @status 200 - Success
 @status 400 - Missing pseudo
+@status 500 - Server error
+
+@route PATCH /avatar
+@middleware auth, multer(avatarUpload)
+@description Uploads avatar to Cloudinary (hei-stdhub/avatars, 200x200 cropped)
+  with local disk fallback. Updates user record with URL.
+@returns {JSON} Updated user object with new avatar URL
+@status 200 - Success
+@status 400 - Upload error or missing file
 @status 500 - Server error
 
 @route PATCH /password
@@ -459,7 +480,7 @@ backend/
   File size limit: 10MB.
 ```
 
-### Internal Function
+### Internal Functions
 
 ```js
 @async
@@ -469,6 +490,15 @@ backend/
 @description
   1. Fetches push subscriptions for userId
   2. Sends Web Push notification to each subscription
+  3. On 410/404 error, deletes invalid subscription
+@returns {Promise<void>}
+
+@async
+@function sendPushToAll
+@param {Object} options { title, body, tag, url }
+@description
+  1. Fetches ALL push subscriptions (DISTINCT on endpoint)
+  2. Sends Web Push notification to every subscription
   3. On 410/404 error, deletes invalid subscription
 @returns {Promise<void>}
 ```
@@ -527,6 +557,33 @@ backend/
 @returns {JSON} { filename, url, isImage }
 @status 200
 @status 400 - Upload error
+
+@route GET /unread
+@middleware auth
+@description
+  1. Reads global_chat_read.last_read_msg_id for current user
+  2. Counts global messages after that id
+  3. Groups private messages by contact, counts unread (received, not seen)
+     and pending (sent, not seen by receiver)
+@returns {JSON} { global: number, contacts: { [contactId]: { unread, pending } } }
+@status 200
+
+@route POST /global/read
+@middleware auth
+@param {body} { messageId }
+@description Upserts global_chat_read to mark last read message id.
+  Uses ON CONFLICT with GREATEST() to never regress.
+@returns {JSON} { success: true }
+@status 200
+@status 400 - Missing messageId
+
+@route DELETE /:id
+@middleware auth
+@description Hard-deletes message only if sender_id matches current user.
+  Emits "message:deleted" socket event with message metadata.
+@returns {JSON} { message: "Message supprimé." }
+@status 200
+@status 404 - Message introuvable ou non autorisé
 ```
 
 ---
@@ -700,6 +757,8 @@ backend/
 **users** — Core user accounts
 - ref: UNIQUE, format by role (STD\d{5,}/PROF\d{3,}/ADMIN\d{3,})
 - email: UNIQUE, students must match hei.xxx@gmail.com
+- pseudo: UNIQUE, checked on register and profile update
+- avatar: VARCHAR (Cloudinary URL or local path)
 - ues: TEXT[] (teacher UE assignments)
 - first_login: BOOLEAN DEFAULT TRUE
 - level: NULL for teacher/admin/alumni, required for student/bde
@@ -734,6 +793,11 @@ backend/
 **push_subscriptions** — Web Push endpoints
 - UNIQUE(user_id, endpoint)
 
+**global_chat_read** — Per-user global chat read tracking
+- user_id: PK, FK users ON DELETE CASCADE
+- last_read_msg_id: INTEGER DEFAULT 0
+- updated_at: TIMESTAMP
+
 ### Valid UE Codes
 WEB1, WEB2, WEB3, PROG1, PROG2, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1, DONNEES2, THEORIE1-P1, THEORIE1-P2, MGT2, IA1, MOB1, SECU1, SECU2
 
@@ -748,3 +812,5 @@ WEB1, WEB2, WEB3, PROG1, PROG2, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1,
 3. `migration_student_email_suffix.sql` — email constraint update
 4. `migration_multi_use_invitations.sql` — max_uses/use_count
 5. `migration_alumni_support.sql` — alumni/bde roles
+6. `migration_chat_seen_pseudo_unique.sql` — avatar/ues columns, unique pseudo,
+   seen/seen_at columns, global_chat_read table
