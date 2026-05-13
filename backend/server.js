@@ -191,6 +191,16 @@ pool.query(`
   )
 `).catch((err) => console.error("Failed to create push_subscriptions table:", err));
 
+// Ensure global_chat_read table exists (for unread message tracking)
+pool.query(`
+  CREATE TABLE IF NOT EXISTS global_chat_read (
+    user_id            INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_read_msg_id   INTEGER   NOT NULL DEFAULT 0,
+    updated_at         TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id)
+  )
+`).catch((err) => console.error("Failed to create global_chat_read table:", err));
+
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
   server.listen(PORT, () =>
