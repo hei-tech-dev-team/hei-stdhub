@@ -71,6 +71,8 @@ psql "$DATABASE_URL" -f database/migration_first_login.sql
 psql "$DATABASE_URL" -f database/migration_student_email_suffix.sql
 psql "$DATABASE_URL" -f database/migration_multi_use_invitations.sql
 psql "$DATABASE_URL" -f database/migration_alumni_support.sql
+psql "$DATABASE_URL" -f database/migration_chat_seen_pseudo_unique.sql
+psql "$DATABASE_URL" -f database/migration_scale_500.sql
 ```
 
 ### 2. Backend
