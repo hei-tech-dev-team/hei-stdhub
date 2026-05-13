@@ -25,6 +25,7 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 - **UI/UX** — Glassmorphism design, smooth micro-animations, responsive mobile layout; redesigned OnboardingModal with floating particles, spring transitions, gold sparkle dots; improved error feedback on admin forms; message timestamps always visible on mobile
 - **PWA** — Service worker for push notifications; works even when the browser is closed (mobile); Web Push API with VAPID keys; **global chat push notifications** sent to all subscribed users
 - **Database migrations** — Invitations table, first_login column, email constraints, multi-use invitations, alumni/bde roles, and chat improvements (seen/seen_at, unique pseudo, avatar, global_chat_read table)
+- **Scalability (500+ users)** — Pagination on all list endpoints (`limit`/`offset`/`before` cursors), database indexes (GIN on `users.ues`, composite on `messages`, `suggestions`, `invitations`), batch push notifications with concurrency control, batch bulk invitation INSERT, batch message seen marking, DB pool config (`max: 25`)
 
 ---
 

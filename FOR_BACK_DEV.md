@@ -128,6 +128,7 @@ backend/
 ```js
 @type Pool
 @description PostgreSQL connection pool using DATABASE_URL env var
+@config max: 25, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000
 @exports { query: (text, params) => pool.query(text, params), pool }
 
 @event pool:connect
@@ -330,8 +331,10 @@ backend/
 @middleware auth, adminOnly
 @param {query} q? - ILIKE search on ref/pseudo/email
 @param {query} role? - comma-separated role filter
-@description Builds dynamic SQL with optional filters
-@returns {JSON} Array of user objects
+@param {query} limit? - page size (default 50, max 200)
+@param {query} offset? - page offset (default 0)
+@description Builds dynamic SQL with optional filters, paginated
+@returns {JSON} { users: Array, total: number, limit: number, offset: number }
 @status 200 - Success
 @status 500 - Server error
 
@@ -367,7 +370,7 @@ backend/
 @route POST /invitations/bulk
 @middleware auth, adminOnly
 @param {body} { role, count?, max_uses? }
-@description Generates up to 1000 invitation codes in a loop
+@description Generates up to 1000 invitation codes in batches of 100 (batch INSERT)
 @returns {JSON} { count, codes: Array }
 @status 201 - Created
 @status 400 - Invalid role
@@ -375,7 +378,9 @@ backend/
 
 @route GET /invitations
 @middleware auth, adminOnly
-@returns {JSON} Array of invitations (ORDER BY created_at DESC)
+@param {query} limit? - page size (default 50, max 200)
+@param {query} offset? - page offset (default 0)
+@returns {JSON} { invitations: Array, total: number, limit: number, offset: number }
 @status 200 - Success
 @status 500 - Server error
 
@@ -396,8 +401,10 @@ backend/
 @param {query} ue? - filter by UE code
 @param {query} type? - filter by post type (cours/td/examen)
 @param {query} level? - expands to all UEs for that level
-@description Fetches posts with LEFT JOIN on users for author info
-@returns {JSON} Array of post objects
+@param {query} limit? - page size (default 50, max 200)
+@param {query} offset? - page offset (default 0)
+@description Fetches posts with LEFT JOIN on users for author info, paginated
+@returns {JSON} { posts: Array, total: number, limit: number, offset: number }
 @status 200
 
 @route POST /
@@ -436,10 +443,13 @@ backend/
 
 @route GET /
 @middleware auth
-@param {query} type?, groupe?, ue?
-@description Lists submissions. Teachers see only their assigned UEs submissions.
-  If teacher has no UEs, returns empty array.
-@returns {JSON} Array of submission objects
+@param {query} type?, groupe?, ue?, search?
+@param {query} limit? - page size (default 50, max 200)
+@param {query} offset? - page offset (default 0)
+@description Lists submissions with pagination and server-side search.
+  Teachers see only their assigned UEs submissions.
+  Search matches ref, nom, prenom, email, groupe (ILIKE).
+@returns {JSON} { submissions: Array, total: number, limit: number, offset: number }
 @status 200
 @status 403 - Forbidden role (student/bde)
 ```
@@ -480,16 +490,23 @@ backend/
   File size limit: 10MB.
 ```
 
-### Internal Functions
+### Helpers
 
 ```js
+@function sendPushWithConcurrency
+@param {Array} subscriptions
+@param {string} payload
+@description Sends push notifications in batches of CONCURRENCY_LIMIT (10)
+  using Promise.allSettled. On 410/404 error, deletes invalid subscription.
+@returns {Promise<Array>} Results
+
 @async
 @function sendPushNotification
 @param {number} userId
 @param {Object} options { title, body, tag, url }
 @description
   1. Fetches push subscriptions for userId
-  2. Sends Web Push notification to each subscription
+  2. Sends Web Push notification with concurrency limit of 10
   3. On 410/404 error, deletes invalid subscription
 @returns {Promise<void>}
 
@@ -498,7 +515,7 @@ backend/
 @param {Object} options { title, body, tag, url }
 @description
   1. Fetches ALL push subscriptions (DISTINCT on endpoint)
-  2. Sends Web Push notification to every subscription
+  2. Sends Web Push notification with concurrency limit of 10
   3. On 410/404 error, deletes invalid subscription
 @returns {Promise<void>}
 ```
@@ -515,18 +532,30 @@ backend/
 
 @route GET /contacts
 @middleware auth
-@description Lists all users except current user, sorted: teachers first, then admins, then others
-@returns {JSON} Array of user objects
+@param {query} q? - ILIKE search on pseudo/ref
+@param {query} limit? - page size (default 200)
+@param {query} offset? - page offset (default 0)
+@description Lists users with optional server-side search and pagination,
+  sorted: teachers first, then admins, then others
+@returns {JSON} { users: Array, total: number }
 
 @route GET /global
 @middleware auth
-@description Returns last 200 global messages (ASC order) with sender info
+@param {query} before? - cursor: load messages older than this id
+@param {query} limit? - page size (default 200, max 500)
+@description Returns global messages with optional cursor pagination.
+  Without before: returns the last N messages (ASC order).
+  With before: returns N messages older than the given id (DESC then reversed).
 @returns {JSON} Array of message objects
 
 @route GET /private/:userId
 @middleware auth
 @param {params} userId
-@description Returns full private message history between current user and userId
+@param {query} before? - cursor: load messages older than this id
+@param {query} limit? - page size (default 100, max 500)
+@description Returns private message history with optional cursor pagination.
+  Without before: returns the last N messages (ASC order).
+  With before: returns N messages older than the given id (DESC then reversed).
 @returns {JSON} Array of message objects
 
 @route POST /
@@ -542,11 +571,21 @@ backend/
 @status 201
 @status 400 - Empty message or missing receiver for private
 
+@route PATCH /seen
+@middleware auth
+@param {body} { ids: number[] }
+@description Batch marks multiple messages as seen in one query.
+  Emits "message:seen" to each sender's room.
+  Replaces N+1 individual PATCH calls with a single query.
+@returns {JSON} { updated: number }
+@status 200
+@status 400 - Missing or empty ids array
+
 @route PATCH /:id/seen
 @middleware auth
 @param {params} id
-@description Marks message as seen (only if receiver matches current user),
-  emits "message:seen" to sender's room
+@description Marks a single message as seen (only if receiver matches current user),
+  emits "message:seen" to sender's room. Legacy endpoint.
 @returns {JSON} Updated message
 @status 200
 @status 404 - Message not found
@@ -602,9 +641,11 @@ backend/
 
 @route GET /
 @middleware auth
-@description Lists all suggestions (BDE only).
+@param {query} limit? - page size (default 50, max 200)
+@param {query} offset? - page offset (default 0)
+@description Lists suggestions with pagination (BDE only).
   Anonymizes nom/prenom/email/ref when anonyme=true using CASE statements.
-@returns {JSON} Array of suggestion objects
+@returns {JSON} { suggestions: Array, total: number, limit: number, offset: number }
 @status 200
 @status 403 - Forbidden role
 
@@ -814,3 +855,8 @@ WEB1, WEB2, WEB3, PROG1, PROG2, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1,
 5. `migration_alumni_support.sql` — alumni/bde roles
 6. `migration_chat_seen_pseudo_unique.sql` — avatar/ues columns, unique pseudo,
    seen/seen_at columns, global_chat_read table
+7. `migration_scale_500.sql` — performance indexes for 500+ users:
+   GIN on users.ues, composite on messages(sender_id, receiver_id),
+   composite on messages(is_global, created_at), indexes on
+   suggestions(student_id, statut, created_at),
+   invitations(expires_at, use_count), push_subscriptions(endpoint)
