@@ -158,6 +158,15 @@ CREATE INDEX idx_password_reset_user_active
   ON password_reset_tokens(user_id, expires_at)
   WHERE used_at IS NULL;
 
+-- Indexes for scale (500+ users)
+CREATE INDEX IF NOT EXISTS idx_users_ues_gin ON users USING GIN (ues);
+CREATE INDEX IF NOT EXISTS idx_messages_global_created ON messages(is_global, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_receiver ON messages(sender_id, receiver_id);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver_sender ON messages(receiver_id, sender_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_expires ON invitations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_invitations_use_count ON invitations(use_count);
+CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id         SERIAL       PRIMARY KEY,
   user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
