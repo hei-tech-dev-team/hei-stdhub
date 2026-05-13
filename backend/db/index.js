@@ -7,7 +7,6 @@ const pool = new Pool({
 pool.on("connect", () => console.log("PostgreSQL connecté"));
 pool.on("error", (err) => {
   console.error("PG error:", err);
-  process.exit(-1);
 });
 
 module.exports = {

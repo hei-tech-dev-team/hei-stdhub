@@ -37,10 +37,10 @@ export default function TeacherInbox() {
   const filtered = submissions.filter((s) => {
     const q = search.toLowerCase();
     const matchSearch =
-      s.ref.toLowerCase().includes(q) ||
-      s.email.toLowerCase().includes(q) ||
-      s.groupe.toLowerCase().includes(q) ||
-      (s.nom + " " + s.prenom).toLowerCase().includes(q);
+      (s.ref || "").toLowerCase().includes(q) ||
+      (s.email || "").toLowerCase().includes(q) ||
+      (s.groupe || "").toLowerCase().includes(q) ||
+      ((s.nom || "") + " " + (s.prenom || "")).toLowerCase().includes(q);
     const matchType = activeType === "Tous" || s.type === activeType;
     const matchUE = activeUE === "Tous" || s.ue === activeUE;
     return matchSearch && matchType && matchUE;
