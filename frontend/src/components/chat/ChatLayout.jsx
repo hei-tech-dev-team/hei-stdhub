@@ -88,7 +88,7 @@ export default function ChatLayout() {
     api
       .get("/messages/contacts")
       .then(({ data }) => {
-        const formatted = data.map((c) => ({
+        const formatted = (data || []).map((c) => ({
           id: c.id,
           name: c.pseudo,
           role: c.role,
@@ -153,7 +153,7 @@ export default function ChatLayout() {
         }
         setMessages((prev) => ({
           ...prev,
-          [contact.id]: data.map(formatMsg),
+          [contact.id]: (data || []).map(formatMsg),
         }));
       } catch (err) {
         console.error(err);

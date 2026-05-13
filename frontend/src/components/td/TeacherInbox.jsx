@@ -27,7 +27,7 @@ export default function TeacherInbox() {
       .then(({ data }) => {
         setSubmissions(data);
         // Extraire les UE uniques pour le filtre
-        const uniqueUes = ["Tous", ...new Set(data.map((s) => s.ue))];
+        const uniqueUes = ["Tous", ...new Set((data || []).map((s) => s.ue))];
         setUes(uniqueUes);
       })
       .catch(console.error)
