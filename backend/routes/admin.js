@@ -4,7 +4,6 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-// Restrict to admin role
 const adminOnly = (req, res, next) => {
   console.log("adminOnly check — role:", req.user?.role);
   if (req.user.role !== "admin")
@@ -12,7 +11,6 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-// Get platform statistics
 router.get("/stats", auth, adminOnly, async (req, res) => {
   try {
     const [users, posts, submissions, messages] = await Promise.all([
@@ -37,10 +35,13 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
   }
 });
 
-// List all users with optional filters
 router.get("/users", auth, adminOnly, async (req, res) => {
   try {
-    const { q, role } = req.query;
+    const { q, role, limit = 50, offset = 0 } = req.query;
+    const pageLimit = Math.min(parseInt(limit) || 50, 200);
+    const pageOffset = Math.max(parseInt(offset) || 0, 0);
+
+    let countQuery = "SELECT COUNT(*) FROM users WHERE 1=1";
     let query = `
       SELECT id, ref, nom, prenom, email, pseudo, role, level, created_at
       FROM users WHERE 1=1
@@ -48,7 +49,9 @@ router.get("/users", auth, adminOnly, async (req, res) => {
     const params = [];
     if (q) {
       params.push(`%${q}%`);
-      query += ` AND (ref ILIKE $${params.length} OR pseudo ILIKE $${params.length} OR email ILIKE $${params.length})`;
+      const filter = ` AND (ref ILIKE $${params.length} OR pseudo ILIKE $${params.length} OR email ILIKE $${params.length})`;
+      countQuery += filter;
+      query += filter;
     }
     if (role) {
       const roles = role.split(",").map((r) => r.trim()).filter(Boolean);
@@ -57,18 +60,32 @@ router.get("/users", auth, adminOnly, async (req, res) => {
           params.push(r);
           return `$${params.length}`;
         });
-        query += ` AND role IN (${placeholders.join(",")})`;
+        const filter = ` AND role IN (${placeholders.join(",")})`;
+        countQuery += filter;
+        query += filter;
       }
     }
     query += " ORDER BY ref ASC";
-    const { rows } = await db.query(query, params);
-    res.json(rows);
+    params.push(pageLimit);
+    query += ` LIMIT $${params.length}`;
+    params.push(pageOffset);
+    query += ` OFFSET $${params.length}`;
+
+    const [dataResult, countResult] = await Promise.all([
+      db.query(query, params),
+      db.query(countQuery, params.slice(0, params.length - 2)),
+    ]);
+    res.json({
+      users: dataResult.rows,
+      total: parseInt(countResult.rows[0]?.count || 0),
+      limit: pageLimit,
+      offset: pageOffset,
+    });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-// Change a user's role
 router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
   console.log(
     "PATCH ROLE appelé — user:",
@@ -96,7 +113,6 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
   }
 });
 
-// Delete a user (cannot delete yourself)
 router.delete("/users/:id", auth, adminOnly, async (req, res) => {
   if (parseInt(req.params.id) === req.user.id)
     return res
@@ -118,14 +134,13 @@ const generateInviteCode = (role) => {
   return `${prefixes[role]}-${random}`;
 };
 
-// Generate an invitation code
 router.post("/invitations", auth, adminOnly, async (req, res) => {
   const { role, max_uses } = req.body;
   if (!["student", "teacher", "alumni"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
 
   const code = generateInviteCode(role);
-  const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+  const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
   const uses = Math.max(parseInt(max_uses) || 1, 1);
 
   try {
@@ -140,7 +155,6 @@ router.post("/invitations", auth, adminOnly, async (req, res) => {
   }
 });
 
-// Bulk generate invitation codes
 router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
   const { role, count, max_uses } = req.body;
   if (!["student", "teacher", "alumni"].includes(role))
@@ -149,17 +163,26 @@ router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
   const uses = Math.max(parseInt(max_uses) || 1, 1);
 
   const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-  const codes = [];
 
   try {
-    for (let i = 0; i < qty; i++) {
-      const code = generateInviteCode(role);
-      const { rows } = await db.query(
-        `INSERT INTO invitations (code, role, max_uses, created_by, expires_at)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [code, role, uses, req.user.id, expires_at],
+    const codes = [];
+    const batchSize = 100;
+    for (let i = 0; i < qty; i += batchSize) {
+      const currentBatchSize = Math.min(batchSize, qty - i);
+      const valueStrings = [];
+      const valueParams = [];
+      let paramIdx = 1;
+      for (let j = 0; j < currentBatchSize; j++) {
+        const code = generateInviteCode(role);
+        codes.push({ code, role, max_uses: uses, created_by: req.user.id, expires_at });
+        valueStrings.push(`($${paramIdx}, $${paramIdx + 1}, $${paramIdx + 2}, $${paramIdx + 3}, $${paramIdx + 4})`);
+        valueParams.push(code, role, uses, req.user.id, expires_at);
+        paramIdx += 5;
+      }
+      await db.query(
+        `INSERT INTO invitations (code, role, max_uses, created_by, expires_at) VALUES ${valueStrings.join(", ")}`,
+        valueParams,
       );
-      codes.push(rows[0]);
     }
     res.status(201).json({ count: codes.length, codes });
   } catch (err) {
@@ -168,19 +191,30 @@ router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
   }
 });
 
-// List all invitation codes
 router.get("/invitations", auth, adminOnly, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT * FROM invitations ORDER BY created_at DESC`,
-    );
-    res.json(rows);
+    const { limit = 50, offset = 0 } = req.query;
+    const pageLimit = Math.min(parseInt(limit) || 50, 200);
+    const pageOffset = Math.max(parseInt(offset) || 0, 0);
+
+    const [dataResult, countResult] = await Promise.all([
+      db.query(
+        `SELECT * FROM invitations ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+        [pageLimit, pageOffset],
+      ),
+      db.query("SELECT COUNT(*) FROM invitations"),
+    ]);
+    res.json({
+      invitations: dataResult.rows,
+      total: parseInt(countResult.rows[0]?.count || 0),
+      limit: pageLimit,
+      offset: pageOffset,
+    });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-// Delete an invitation code
 router.delete("/invitations/:id", auth, adminOnly, async (req, res) => {
   try {
     await db.query("DELETE FROM invitations WHERE id=$1", [req.params.id]);

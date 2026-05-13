@@ -48,7 +48,6 @@ if (useCloudinary) {
   });
 }
 
-// Submit homework
 router.post("/", auth, upload.single("file"), async (req, res) => {
   const { nom, prenom, email, ref, level, groupe, ue, type, link } = req.body;
 
@@ -90,14 +89,16 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   }
 });
 
-// Teachers see only their UEs, admins see everything
 router.get("/", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
 
   try {
-    const { type, groupe, ue } = req.query;
+    const { type, groupe, ue, search, limit = 50, offset = 0 } = req.query;
+    const pageLimit = Math.min(parseInt(limit) || 50, 200);
+    const pageOffset = Math.max(parseInt(offset) || 0, 0);
     const params = [];
+    const countParams = [];
 
     let q = `
       SELECT s.*, u.pseudo AS student_pseudo
@@ -105,37 +106,65 @@ router.get("/", auth, async (req, res) => {
       LEFT JOIN users u ON s.student_id = u.id
       WHERE 1=1
     `;
+    let countQ = "SELECT COUNT(*) FROM submissions s WHERE 1=1";
 
-    // Filter by the teacher's assigned UEs
     if (req.user.role === "teacher") {
-      const { rows: teacherRows } = await db.query(
-        "SELECT ues FROM users WHERE id=$1",
-        [req.user.id],
-      );
-      const teacherUes = teacherRows[0]?.ues || [];
+      const teacherUes = req.user.ues || [];
       if (teacherUes.length === 0) {
-        return res.json([]);
+        return res.json({ submissions: [], total: 0, limit: pageLimit, offset: pageOffset });
       }
       params.push(teacherUes);
-      q += ` AND s.ue = ANY($${params.length})`;
+      countParams.push(teacherUes);
+      const filter = ` AND s.ue = ANY($${params.length})`;
+      q += filter;
+      countQ += filter;
     }
 
     if (type) {
       params.push(type);
-      q += ` AND s.type=$${params.length}`;
+      countParams.push(type);
+      const filter = ` AND s.type=$${params.length}`;
+      q += filter;
+      countQ += filter;
     }
     if (groupe) {
       params.push(groupe);
-      q += ` AND s.groupe=$${params.length}`;
+      countParams.push(groupe);
+      const filter = ` AND s.groupe=$${params.length}`;
+      q += filter;
+      countQ += filter;
     }
     if (ue) {
       params.push(ue);
-      q += ` AND s.ue=$${params.length}`;
+      countParams.push(ue);
+      const filter = ` AND s.ue=$${params.length}`;
+      q += filter;
+      countQ += filter;
+    }
+    if (search) {
+      params.push(`%${search}%`);
+      countParams.push(`%${search}%`);
+      const filter = ` AND (s.ref ILIKE $${params.length} OR s.nom ILIKE $${params.length} OR s.prenom ILIKE $${params.length} OR s.email ILIKE $${params.length} OR s.groupe ILIKE $${params.length})`;
+      q += filter;
+      countQ += filter;
     }
 
     q += " ORDER BY s.created_at DESC";
-    const { rows } = await db.query(q, params);
-    res.json(rows);
+    params.push(pageLimit);
+    q += ` LIMIT $${params.length}`;
+    params.push(pageOffset);
+    q += ` OFFSET $${params.length}`;
+
+    const [dataResult, countResult] = await Promise.all([
+      db.query(q, params),
+      db.query(countQ, countParams),
+    ]);
+    res.json({
+      submissions: dataResult.rows,
+      total: parseInt(countResult.rows[0]?.count || 0),
+      limit: pageLimit,
+      offset: pageOffset,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
