@@ -154,21 +154,32 @@ export default function AdminPage() {
       .catch(console.error);
   }, []);
 
-  // Charger utilisateurs
+  // Pagination
+  const [userPage, setUserPage] = useState(0);
+  const [userTotal, setUserTotal] = useState(0);
+  const [invPage, setInvPage] = useState(0);
+  const [invTotal, setInvTotal] = useState(0);
+  const PAGE_SIZE = 50;
+
+  useEffect(() => { setUserPage(0); }, [search, roleFilter]);
+
+  // Charger utilisateurs avec pagination
   const loadUsers = useCallback(() => {
     setLoading(true);
-    const params = {};
+    const params = { limit: PAGE_SIZE, offset: userPage * PAGE_SIZE };
     if (search) params.q = search;
     if (roleFilter) params.role = expandRoleFilter(roleFilter);
     api
       .get("/admin/users", { params })
-      .then(({ data }) => setUsers(data))
+      .then(({ data }) => {
+        setUsers(data.users || data);
+        setUserTotal(data.total || 0);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [search, roleFilter]);
+  }, [search, roleFilter, userPage]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadUsers();
   }, [loadUsers]);
 
@@ -187,10 +198,13 @@ export default function AdminPage() {
   // Charger invitations
   const loadInvitations = useCallback(() => {
     api
-      .get("/admin/invitations")
-      .then(({ data }) => setInvitations(data))
+      .get("/admin/invitations", { params: { limit: PAGE_SIZE, offset: invPage * PAGE_SIZE } })
+      .then(({ data }) => {
+        setInvitations(data.invitations || data);
+        setInvTotal(data.total || 0);
+      })
       .catch(console.error);
-  }, []);
+  }, [invPage]);
 
   useEffect(() => {
     if (tab === "invitations") loadInvitations();
@@ -601,6 +615,32 @@ export default function AdminPage() {
                     ))}
                   </div>
 
+                  {/* Pagination */}
+                  {userTotal > PAGE_SIZE && (
+                    <div className="flex items-center justify-center gap-4 py-4">
+                      <button
+                        type="button"
+                        disabled={userPage === 0}
+                        onClick={() => setUserPage((p) => Math.max(0, p - 1))}
+                        className="px-4 py-2 rounded-xl text-sm font-bold bg-navy/10 text-navy hover:bg-navy/20 disabled:opacity-30 transition"
+                      >
+                        Précédent
+                      </button>
+                      <span className="text-sm text-gray-500">
+                        Page {userPage + 1} / {Math.ceil(userTotal / PAGE_SIZE)}
+                        ({userTotal} total)
+                      </span>
+                      <button
+                        type="button"
+                        disabled={(userPage + 1) * PAGE_SIZE >= userTotal}
+                        onClick={() => setUserPage((p) => p + 1)}
+                        className="px-4 py-2 rounded-xl text-sm font-bold bg-navy/10 text-navy hover:bg-navy/20 disabled:opacity-30 transition"
+                      >
+                        Suivant
+                      </button>
+                    </div>
+                  )}
+
                   {users.length === 0 && (
                     <div className="text-center py-16">
                       <p className="text-gray-400 text-sm">
@@ -848,6 +888,32 @@ export default function AdminPage() {
           {/* Tab: Invitations */}
           {tab === "invitations" && (
             <div className="flex flex-col gap-3">
+              {/* Pagination */}
+              {invTotal > PAGE_SIZE && (
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    type="button"
+                    disabled={invPage === 0}
+                    onClick={() => setInvPage((p) => Math.max(0, p - 1))}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-navy/10 text-navy hover:bg-navy/20 disabled:opacity-30 transition"
+                  >
+                    Précédent
+                  </button>
+                  <span className="text-sm text-gray-500">
+                    Page {invPage + 1} / {Math.ceil(invTotal / PAGE_SIZE)}
+                    ({invTotal} total)
+                  </span>
+                  <button
+                    type="button"
+                    disabled={(invPage + 1) * PAGE_SIZE >= invTotal}
+                    onClick={() => setInvPage((p) => p + 1)}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-navy/10 text-navy hover:bg-navy/20 disabled:opacity-30 transition"
+                  >
+                    Suivant
+                  </button>
+                </div>
+              )}
+
               {invitations.length === 0 && (
                 <div className="text-center py-16">
                   <FontAwesomeIcon

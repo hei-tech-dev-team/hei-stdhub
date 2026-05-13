@@ -32,7 +32,6 @@ function showNotification(title, body) {
     });
     setTimeout(() => n.close(), 5000);
   } catch {
-    // Browser doesn't support notifications or permission denied
   }
 }
 
@@ -46,6 +45,7 @@ export default function ChatLayout() {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
+  const [contactTotal, setContactTotal] = useState(0);
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
@@ -86,9 +86,9 @@ export default function ChatLayout() {
 
   useEffect(() => {
     api
-      .get("/messages/contacts")
+      .get("/messages/contacts", { params: { limit: 500 } })
       .then(({ data }) => {
-        const formatted = data.map((c) => ({
+        const formatted = (data.users || data).map((c) => ({
           id: c.id,
           name: c.pseudo,
           role: c.role,
@@ -97,6 +97,7 @@ export default function ChatLayout() {
           avatar: c.avatar || null,
         }));
         setContacts([GLOBAL_CONTACT, ...formatted]);
+        if (data.total) setContactTotal(data.total);
       })
       .catch(console.error);
     fetchUnread();
@@ -111,13 +112,12 @@ export default function ChatLayout() {
       return;
     }
     const msgs = messagesRef.current[contact.id] || [];
-    for (const msg of msgs) {
-      if (!msg.own && !msg.seen) {
-        try {
-          await api.patch(`/messages/${msg.id}/seen`);
-        } catch (err) {
-          console.error(err);
-        }
+    const unseenIds = msgs.filter((m) => !m.own && !m.seen).map((m) => m.id);
+    if (unseenIds.length > 0) {
+      try {
+        await api.patch("/messages/seen", { ids: unseenIds });
+      } catch (err) {
+        console.error(err);
       }
     }
     setUnread((prev) => ({
@@ -147,13 +147,13 @@ export default function ChatLayout() {
       try {
         let data;
         if (contact.isGlobal) {
-          ({ data } = await api.get("/messages/global"));
+          ({ data } = await api.get("/messages/global", { params: { limit: 200 } }));
         } else {
-          ({ data } = await api.get(`/messages/private/${contact.id}`));
+          ({ data } = await api.get(`/messages/private/${contact.id}`, { params: { limit: 100 } }));
         }
         setMessages((prev) => ({
           ...prev,
-          [contact.id]: data.map(formatMsg),
+          [contact.id]: (Array.isArray(data) ? data : data.messages || data).map(formatMsg),
         }));
       } catch (err) {
         console.error(err);
@@ -164,6 +164,28 @@ export default function ChatLayout() {
     [formatMsg],
   );
 
+  const loadOlderMessages = useCallback(async (contact) => {
+    const currentMsgs = messagesRef.current[contact.id] || [];
+    if (currentMsgs.length === 0) return;
+    const oldestId = currentMsgs[0].id;
+    try {
+      let data;
+      if (contact.isGlobal) {
+        ({ data } = await api.get("/messages/global", { params: { before: oldestId, limit: 100 } }));
+      } else {
+        ({ data } = await api.get(`/messages/private/${contact.id}`, { params: { before: oldestId, limit: 100 } }));
+      }
+      const msgs = (Array.isArray(data) ? data : data.messages || data).map(formatMsg);
+      if (msgs.length === 0) return;
+      setMessages((prev) => ({
+        ...prev,
+        [contact.id]: [...msgs.reverse(), ...(prev[contact.id] || [])],
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }, [formatMsg]);
+
   useEffect(() => {
     if (activeContact) {
       loadMessages(activeContact);
@@ -171,7 +193,6 @@ export default function ChatLayout() {
     }
   }, [activeContact, loadMessages, markSeen]);
 
-  // Socket.IO with push notifications
   useEffect(() => {
     let socket;
 
@@ -351,6 +372,7 @@ export default function ChatLayout() {
           onSelect={handleSelectContact}
           onlineUsers={onlineUsers}
           unread={unread}
+          totalContacts={contactTotal}
         />
       </div>
 
@@ -373,6 +395,7 @@ export default function ChatLayout() {
           onAtBottomChange={setIsAtBottom}
           onScrollToBottom={handleScrollToBottom}
           onlineUsers={onlineUsers}
+          onLoadOlder={() => loadOlderMessages(activeContact)}
         />
       </div>
     </div>
