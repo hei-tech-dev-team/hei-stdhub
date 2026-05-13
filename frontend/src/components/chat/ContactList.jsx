@@ -58,7 +58,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   }, [contacts, unread]);
 
   const filtered = sorted.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
+    (c.name || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   const getUnreadCount = (contact) => {
