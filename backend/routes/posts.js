@@ -7,7 +7,6 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-// Store uploaded files locally
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
@@ -17,7 +16,6 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-// UE and type filters: ?ue=WEB1&type=td
 const UES_BY_LEVEL = {
   L1: [
     "WEB1",
@@ -39,12 +37,15 @@ const UES_BY_LEVEL = {
 
 router.get("/", async (req, res) => {
   try {
-    const { ue, type, level } = req.query;
+    const { ue, type, level, limit = 50, offset = 0 } = req.query;
+    const pageLimit = Math.min(parseInt(limit) || 50, 200);
+    const pageOffset = Math.max(parseInt(offset) || 0, 0);
     let q = `
       SELECT p.*, u.pseudo AS author_pseudo, u.ref AS author_ref
       FROM posts p LEFT JOIN users u ON p.author_id = u.id
       WHERE 1=1
     `;
+    let countQ = "SELECT COUNT(*) FROM posts p WHERE 1=1";
     const params = [];
 
     if (level && UES_BY_LEVEL[level]) {
@@ -52,27 +53,45 @@ router.get("/", async (req, res) => {
         .map((_, i) => `$${params.length + i + 1}`)
         .join(",");
       params.push(...UES_BY_LEVEL[level]);
-      q += ` AND p.ue IN (${placeholders})`;
+      const filter = ` AND p.ue IN (${placeholders})`;
+      q += filter;
+      countQ += filter;
     }
     if (ue) {
       params.push(ue);
-      q += ` AND p.ue=$${params.length}`;
+      const filter = ` AND p.ue=$${params.length}`;
+      q += filter;
+      countQ += filter;
     }
     if (type) {
       params.push(type);
-      q += ` AND p.type=$${params.length}`;
+      const filter = ` AND p.type=$${params.length}`;
+      q += filter;
+      countQ += filter;
     }
 
     q += " ORDER BY p.created_at DESC";
-    const { rows } = await db.query(q, params);
-    res.json(rows);
+    params.push(pageLimit);
+    q += ` LIMIT $${params.length}`;
+    params.push(pageOffset);
+    q += ` OFFSET $${params.length}`;
+
+    const [dataResult, countResult] = await Promise.all([
+      db.query(q, params),
+      db.query(countQ, params.slice(0, params.length - 2)),
+    ]);
+    res.json({
+      posts: dataResult.rows,
+      total: parseInt(countResult.rows[0]?.count || 0),
+      limit: pageLimit,
+      offset: pageOffset,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-// Teachers and admins can create posts
 router.post("/", auth, upload.single("file"), async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
@@ -109,7 +128,6 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   }
 });
 
-// Teachers and admins can delete posts
 router.delete("/:id", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
