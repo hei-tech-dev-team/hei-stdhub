@@ -49,8 +49,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     return [...contacts].sort((a, b) => {
       if (a.isGlobal) return -1;
       if (b.isGlobal) return 1;
-      const aUnread = (unread?.contacts?.[a.id]?.unread || 0) + (unread?.contacts?.[a.id]?.pending || 0);
-      const bUnread = (unread?.contacts?.[b.id]?.unread || 0) + (unread?.contacts?.[b.id]?.pending || 0);
+      const aUnread = unread?.contacts?.[a.id]?.unread || 0;
+      const bUnread = unread?.contacts?.[b.id]?.unread || 0;
       if (aUnread && !bUnread) return -1;
       if (!aUnread && bUnread) return 1;
       return a.name.localeCompare(b.name);
@@ -64,7 +64,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   const getUnreadCount = (contact) => {
     if (contact.isGlobal) return unread?.global || 0;
     const c = unread?.contacts?.[contact.id];
-    return (c?.unread || 0) + (c?.pending || 0);
+    return c?.unread || 0;
   };
 
   const handleSearch = async (q) => {
