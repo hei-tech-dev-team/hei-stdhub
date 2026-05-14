@@ -9,8 +9,11 @@ export const getSocket = async () => {
   if (socket?.connected) return socket;
   if (connectionPromise) return connectionPromise;
 
+  const token = localStorage.getItem("hei_token");
+
   socket = io(SOCKET_URL, {
     transports: ["websocket", "polling"],
+    auth: { token },
   });
 
   connectionPromise = new Promise((resolve, reject) => {
@@ -37,4 +40,12 @@ export const disconnectSocket = () => {
     socket.disconnect();
     socket = null;
   }
+};
+
+export const refreshSocket = async () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  return getSocket();
 };
