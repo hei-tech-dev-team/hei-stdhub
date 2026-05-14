@@ -8,7 +8,20 @@ import { Analytics } from "@vercel/analytics/react";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js");
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      reg.addEventListener("updatefound", () => {
+        const newSW = reg.installing;
+        if (newSW) {
+          newSW.addEventListener("statechange", () => {
+            if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+              console.log("New SW version available — reload to update");
+            }
+          });
+        }
+      });
+    }).catch((err) => {
+      console.error("SW registration failed:", err);
+    });
   });
 }
 
