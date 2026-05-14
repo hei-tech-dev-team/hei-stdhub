@@ -31,7 +31,7 @@ describe("POSTS — CRUD & access control", () => {
     const res = await agent.get("/api/posts");
     // 200 if DB reachable, 500 if not — either is acceptable
     expect([200, 500]).to.include(res.status);
-    if (res.status === 200) expect(res.body).to.be.an("array");
+    if (res.status === 200) expect(res.body.posts).to.be.an("array");
   });
 
   it("GET /posts with UE filter", async () => {

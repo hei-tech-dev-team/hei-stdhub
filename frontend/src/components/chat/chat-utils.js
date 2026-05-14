@@ -76,7 +76,7 @@ export const formatTooltipDate = (date) =>
     year: "numeric",
   }) + ` à ${formatTime(date)}`;
 
-export const isFileMessage = (content) => content && content.startsWith("[FILE:");
+export const isFileMessage = (content) => Boolean(content && content.startsWith("[FILE:"));
 
 export const parseFileContent = (content) => {
   if (!content || !content.startsWith("[FILE:") || !content.endsWith("]")) return null;

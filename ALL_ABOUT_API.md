@@ -234,11 +234,12 @@ The configured instance (`api/axios.js`) automatically:
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/search?q=` | Yes | Search users by ref/pseudo |
-| GET | `/contacts` | Yes | List all users for contact list |
-| GET | `/global` | Yes | Last 200 global messages |
-| GET | `/private/:userId` | Yes | PM history between current user and userId |
+| GET | `/contacts` | Yes | List all users (?q=, ?limit=, ?offset=) |
+| GET | `/global` | Yes | Global messages (?before=, ?limit=) |
+| GET | `/private/:userId` | Yes | PM history (?before=, ?limit=) |
 | POST | `/` | Yes | Send message (global/private) + push notification |
-| PATCH | `/:id/seen` | Yes | Mark message as seen |
+| PATCH | `/seen` | Yes | Batch mark messages as seen `{ ids: number[] }` |
+| PATCH | `/:id/seen` | Yes | Mark single message as seen |
 | POST | `/upload` | Yes | Upload file for chat sharing |
 | GET | `/unread` | Yes | Unread counts (global + per-contact) |
 | POST | `/global/read` | Yes | Mark global chat read up to messageId |
@@ -272,7 +273,7 @@ The configured instance (`api/axios.js`) automatically:
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
 | POST | `/` | Yes | student/teacher/alumni/admin | Submit suggestion |
-| GET | `/` | Yes | bde | List suggestions (anonymized) |
+| GET | `/` | Yes | bde | List suggestions (?limit=, ?offset=) |
 | PATCH | `/:id` | Yes | bde | Update suggestion status |
 | POST | `/confirm` | Yes | bde | Confirm round: post summary to global chat |
 | POST | `/report` | Yes | bde/admin | Generate PDF report |
@@ -282,12 +283,12 @@ The configured instance (`api/axios.js`) automatically:
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
 | GET | `/stats` | Yes | admin | Platform stats (polled every 3s) |
-| GET | `/users` | Yes | admin | List users (?q=, ?role=) |
+| GET | `/users` | Yes | admin | List users (?q=, ?role=, ?limit=, ?offset=) |
 | PATCH | `/users/:id/role` | Yes | admin | Change user role |
 | DELETE | `/users/:id` | Yes | admin | Delete user (not self) |
 | POST | `/invitations` | Yes | admin | Generate invitation (14d expiry) |
-| POST | `/invitations/bulk` | Yes | admin | Bulk generate (up to 1000) |
-| GET | `/invitations` | Yes | admin | List invitations |
+| POST | `/invitations/bulk` | Yes | admin | Bulk generate (batch INSERT, up to 1000) |
+| GET | `/invitations` | Yes | admin | List invitations (?limit=, ?offset=) |
 | DELETE | `/invitations/:id` | Yes | admin | Delete invitation |
 
 ### Push (`/api/push`)

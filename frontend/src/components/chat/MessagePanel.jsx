@@ -258,12 +258,16 @@ export default function MessagePanel({
   onAtBottomChange,
   onScrollToBottom,
   onlineUsers,
+  onLoadOlder,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const scrollRef = useRef(null);
+  const prevScrollHeight = useRef(0);
+  const prevMsgCount = useRef(messages.length);
 
   useEffect(() => {
     if (isAtBottom) {
@@ -271,11 +275,27 @@ export default function MessagePanel({
     }
   }, [messages, isAtBottom]);
 
+  useEffect(() => {
+    if (messages.length > prevMsgCount.current) {
+      const el = scrollRef.current;
+      if (el && !isAtBottom) {
+        el.scrollTop = el.scrollHeight - prevScrollHeight.current;
+      }
+    }
+    prevMsgCount.current = messages.length;
+  }, [messages, isAtBottom]);
+
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
     onAtBottomChange(atBottom);
+
+    if (el.scrollTop < 80 && messages.length > 0 && !loadingOlder && onLoadOlder) {
+      prevScrollHeight.current = el.scrollHeight;
+      setLoadingOlder(true);
+      onLoadOlder().finally(() => setLoadingOlder(false));
+    }
   };
 
   const handleSend = async () => {

@@ -356,14 +356,17 @@ frontend/src/
 @function AdminPage
 @description Full admin panel with tabs: Users, Invitations, Passage de classe (September),
   Nouveaux L1 (November). Stats polling every 3s.
+  Users and invitations now paginated (50 per page) with server-side search.
 
 @constants ROLE_CONFIG - Role to label/icon/color mapping
+@constants PAGE_SIZE = 50
 
 @function StatCard({ icon, label, value, color })
 @param {Object} props - { icon: FontAwesomeIcon, label: string, value: number|string, color: string }
 @renders A stat card with icon, value, and label
 
 @state tab, stats, users, invitations, search, roleFilter, loading, copiedId
+@state userPage, userTotal, invPage, invTotal (pagination)
 @state failedRefs, failedInput, upgradeLoading, upgradeDone (class upgrade)
 @state newL1, generatedRef, registerLoading, registerDone (L1 registration)
 @state showInvModal, invRole, invMaxUses, invLoading, invError (invitation modal)
@@ -372,8 +375,9 @@ frontend/src/
 
 @effect Scroll listener - show/hide scroll-to-top button
 @effect Stats polling every 3s - GET /admin/stats
-@async @function loadUsers() - GET /admin/users?q=&role=
-@async @function loadInvitations() - GET /admin/invitations
+@effect Reset userPage on search/roleFilter change
+@async @function loadUsers() - GET /admin/users?q=&role=&limit=50&offset=N
+@async @function loadInvitations() - GET /admin/invitations?limit=50&offset=N
 @async @function handleRoleChange(userId, newRole) - PATCH /admin/users/:id/role
 @async @function handleDelete(userId, ref) - DELETE /admin/users/:id (with confirm)
 @async @function handleCreateInvitation() - POST /admin/invitations
@@ -478,11 +482,14 @@ frontend/src/
 @function ChatLayout
 @description Main chat orchestrator. Manages contacts, messages, Socket.IO connections,
   push subscriptions. Handles global + private messaging.
+  Supports infinite scroll (loadOlderMessages with cursor pagination).
+  Batch seen marking via PATCH /messages/seen (replaces N+1 individual calls).
 
 @constants GLOBAL_CONTACT - { id: "global", name: "Chat global", isGlobal: true }
 
 @state contacts, activeContact, messages, showContactList, loadingMessages, onlineUsers, isAtBottom, unread
 @state unread: { global: number, contacts: { [contactId]: { unread, pending } } }
+@state contactTotal - total number of contacts
 
 @ref activeContactRef, isAtBottomRef, messagesRef - Refs to avoid stale closures in socket handlers
 
@@ -490,16 +497,19 @@ frontend/src/
 @function showNotification(title, body) - Shows browser notification if tab is hidden
 
 @effect Init - request notification permission, subscribe to push
-@effect Fetch contacts - GET /messages/contacts, then fetchUnread
+@effect Fetch contacts - GET /messages/contacts?limit=500, then fetchUnread
 
 @async @function fetchUnread() - GET /messages/unread, sets unread state
 @async @function markGlobalRead(messageId) - POST /messages/global/read
-@async @function markSeen(contact) - Marks messages as seen when entering a conversation.
+@async @function markSeen(contact) - Batch marks messages as seen.
   For global: calls markGlobalRead(lastMsg.id), sets global unread to 0.
-  For private: PATCH /messages/:id/seen on each unseen message, sets contact unread to 0.
+  For private: collects all unseen message IDs, sends single PATCH /messages/seen.
+  Replaces individual PATCH /messages/:id/seen calls.
 
 @function formatMsg(m) - Normalizes raw message shape (adds own, seen, senderAvatar, etc.)
 @async @function loadMessages(contact, silent?) - GET /messages/global or /messages/private/:id
+@async @function loadOlderMessages(contact) - Cursor-based: GET ?before={oldestId}&limit=100
+  Prepends older messages to the list. Supports infinite scroll.
 @effect Load messages on contact change
 @effect Socket setup: listen for:
   - message:global — append to global chat, increment unread if not active tab
@@ -536,7 +546,7 @@ frontend/src/
 @function ContactAvatar({ contact, isActive }) - Avatar with fallback
 @param {Object} unread - { global: number, contacts: { [contactId]: { unread, pending } } }
 
-@function getUnreadCount(contact) - Returns total unread (unread + pending) for a contact
+@function getUnreadCount(contact) - Returns unread count (messages I haven't read) for a contact
 @computed sorted - Contacts sorted by unread count (highest first), then alphabetically
 @function handleSearch(q) - GET /messages/search?q=
 @function handleStartConversation(u) - Starts private chat with searched user
@@ -558,16 +568,18 @@ _unread badge:_ Gold pill badge showing unread count (capped at 99+) next to con
 @param {Function} onAtBottomChange
 @param {Function} onScrollToBottom
 @param {Set} onlineUsers
+@param {Function} onLoadOlder - Callback for infinite scroll (triggered when scrollTop < 80)
 @description Full message panel with grouped messages, date separators, file sharing,
   image preview, read receipts, message deletion (trash icon on hover for own messages),
-  scroll-to-bottom button, auto-scroll.
+  scroll-to-bottom button, auto-scroll, infinite scroll (load older on scroll to top).
 
-@state text, sending
-@ref bottomRef, fileRef, scrollRef
+@state text, sending, loadingOlder
+@ref bottomRef, fileRef, scrollRef, prevScrollHeight
 
 @useMemo grouped - Groups by sender within 5min gap, inserts date separators
 @effect Auto-scroll on new messages (if already at bottom)
-@function handleScroll() - Detects scroll position
+@effect Preserve scroll position when older messages loaded (prevScrollHeight)
+@function handleScroll() - Detects scroll position + triggers loadOlder at top
 @function handleSend() - Trims and sends message
 @function handleKey(e) - Send on Enter (not Shift+Enter)
 @async @function handleFile(e) - POST /messages/upload, sends [FILE:...] message
@@ -650,10 +662,11 @@ _Scroll-to-bottom button:_ Fixed position chevron-down button appears when not a
 
 ```jsx
 @function TeacherInbox
-@description Filterable table of student submissions with search, type/UE filters, download links.
-@state submissions, search, typeFilter, ueFilter, loading
-@effect Fetch submissions - GET /submissions
-@function filtered - Client-side filtering by search + filters
+@description Filterable paginated table of student submissions with server-side search,
+  type/UE filters, download links. 50 per page, pagination controls.
+@state submissions, search, typeFilter, ueFilter, loading, page, total
+@effect Fetch submissions - GET /submissions?search=&type=&ue=&limit=50&offset=N
+@effect Reset page to 0 on filter/search change
 ```
 
 ### `components/ui/Avatar.jsx`

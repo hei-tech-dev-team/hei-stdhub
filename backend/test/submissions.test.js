@@ -106,7 +106,7 @@ describe("SUBMISSIONS — GET /", () => {
       .set("Authorization", `Bearer ${adminToken}`);
     expect([200, 500]).to.include(res.status);
     if (res.status === 200) {
-      expect(res.body).to.be.an("array");
+      expect(res.body.submissions).to.be.an("array");
     }
   });
 
@@ -138,7 +138,7 @@ describe("SUBMISSIONS — GET /", () => {
       .set("Authorization", `Bearer ${teacherToken}`);
     expect([200, 500]).to.include(res.status);
     if (res.status === 200) {
-      expect(res.body).to.be.an("array");
+      expect(res.body.submissions).to.be.an("array");
     }
   });
 });
