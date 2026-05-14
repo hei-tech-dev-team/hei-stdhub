@@ -6,7 +6,12 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+api_key = os.getenv("GOOGLE_API_KEY")
+if not api_key:
+    print("ERREUR: GOOGLE_API_KEY non définie dans .env")
+    print("Ajoutez GOOGLE_API_KEY=votre_cle dans le fichier .env")
+    exit(1)
+genai.configure(api_key=api_key)
 
 IGNORE_DIRS = {'node_modules', 'dist', '.git', 'uploads', 'test', 'scripts', '__pycache__', '.venv'}
 
@@ -148,6 +153,4 @@ def main():
     print("=" * 60)
 
 if __name__ == "__main__":
-    main()
-    main()
     main()
