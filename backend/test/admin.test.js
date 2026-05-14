@@ -140,7 +140,7 @@ describe("ADMIN — GET /users with filters", () => {
       .set("Authorization", `Bearer ${adminToken}`);
     expect([200, 500]).to.include(res.status);
     if (res.status === 200) {
-      expect(res.body).to.be.an("array");
+      expect(res.body.users).to.be.an("array");
     }
   });
 
@@ -157,7 +157,7 @@ describe("ADMIN — GET /users with filters", () => {
       .set("Authorization", `Bearer ${adminToken}`);
     expect([200, 500]).to.include(res.status);
     if (res.status === 200) {
-      res.body.forEach((u) => expect(u.role).to.equal("student"));
+      res.body.users.forEach((u) => expect(u.role).to.equal("student"));
     }
   });
 

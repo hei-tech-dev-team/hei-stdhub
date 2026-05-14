@@ -32,7 +32,6 @@ function showNotification(title, body) {
     });
     setTimeout(() => n.close(), 5000);
   } catch {
-    // Browser doesn't support notifications or permission denied
   }
 }
 
@@ -46,6 +45,7 @@ export default function ChatLayout() {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
+  const [contactTotal, setContactTotal] = useState(0);
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
@@ -86,9 +86,11 @@ export default function ChatLayout() {
 
   useEffect(() => {
     api
-      .get("/messages/contacts")
+      .get("/messages/contacts", { params: { limit: 500 } })
       .then(({ data }) => {
-        const formatted = (data || []).map((c) => ({
+        const usersList = Array.isArray(data) ? data : data?.users;
+        if (!Array.isArray(usersList)) return;
+        const formatted = usersList.map((c) => ({
           id: c.id,
           name: c.pseudo,
           role: c.role,
@@ -97,6 +99,7 @@ export default function ChatLayout() {
           avatar: c.avatar || null,
         }));
         setContacts([GLOBAL_CONTACT, ...formatted]);
+        if (data.total) setContactTotal(data.total);
       })
       .catch(console.error);
     fetchUnread();
@@ -111,13 +114,12 @@ export default function ChatLayout() {
       return;
     }
     const msgs = messagesRef.current[contact.id] || [];
-    for (const msg of msgs) {
-      if (!msg.own && !msg.seen) {
-        try {
-          await api.patch(`/messages/${msg.id}/seen`);
-        } catch (err) {
-          console.error(err);
-        }
+    const unseenIds = msgs.filter((m) => !m.own && !m.seen).map((m) => m.id);
+    if (unseenIds.length > 0) {
+      try {
+        await api.patch("/messages/seen", { ids: unseenIds });
+      } catch (err) {
+        console.error(err);
       }
     }
     setUnread((prev) => ({
@@ -133,7 +135,7 @@ export default function ChatLayout() {
       senderAvatar: m.sender_avatar || null,
       senderId: m.sender_id,
       senderRole: m.sender_role || null,
-      content: m.content,
+      content: m.content || "",
       own: m.sender_id === user.id,
       seen: m.seen || false,
       createdAt: m.created_at,
@@ -147,13 +149,15 @@ export default function ChatLayout() {
       try {
         let data;
         if (contact.isGlobal) {
-          ({ data } = await api.get("/messages/global"));
+          ({ data } = await api.get("/messages/global", { params: { limit: 200 } }));
         } else {
-          ({ data } = await api.get(`/messages/private/${contact.id}`));
+          ({ data } = await api.get(`/messages/private/${contact.id}`, { params: { limit: 100 } }));
         }
+        const msgList = Array.isArray(data) ? data : data?.messages;
+        if (!Array.isArray(msgList)) return;
         setMessages((prev) => ({
           ...prev,
-          [contact.id]: (data || []).map(formatMsg),
+          [contact.id]: msgList.map(formatMsg),
         }));
       } catch (err) {
         console.error(err);
@@ -164,6 +168,29 @@ export default function ChatLayout() {
     [formatMsg],
   );
 
+  const loadOlderMessages = useCallback(async (contact) => {
+    const currentMsgs = messagesRef.current[contact.id] || [];
+    if (currentMsgs.length === 0) return;
+    const oldestId = currentMsgs[0].id;
+    try {
+      let data;
+      if (contact.isGlobal) {
+        ({ data } = await api.get("/messages/global", { params: { before: oldestId, limit: 100 } }));
+      } else {
+        ({ data } = await api.get(`/messages/private/${contact.id}`, { params: { before: oldestId, limit: 100 } }));
+      }
+      const msgList = Array.isArray(data) ? data : data?.messages;
+      if (!Array.isArray(msgList) || msgList.length === 0) return;
+      const msgs = msgList.map(formatMsg);
+      setMessages((prev) => ({
+        ...prev,
+        [contact.id]: [...msgs.reverse(), ...(prev[contact.id] || [])],
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }, [formatMsg]);
+
   useEffect(() => {
     if (activeContact) {
       loadMessages(activeContact);
@@ -171,12 +198,13 @@ export default function ChatLayout() {
     }
   }, [activeContact, loadMessages, markSeen]);
 
-  // Socket.IO with push notifications
   useEffect(() => {
+    let cancelled = false;
     let socket;
 
     getSocket()
       .then((s) => {
+        if (cancelled) return;
         socket = s;
         socket.emit("user:join", user.id);
 
@@ -248,25 +276,36 @@ export default function ChatLayout() {
         });
 
         socket.on("message:seen", ({ messageId }) => {
+          let seenContactId = null;
           setMessages((prev) => {
             const updated = { ...prev };
             for (const key of Object.keys(updated)) {
-              updated[key] = updated[key].map((m) =>
-                m.id === messageId ? { ...m, seen: true } : m,
-              );
+              updated[key] = updated[key].map((m) => {
+                if (m.id === messageId) {
+                  seenContactId = key;
+                  return { ...m, seen: true };
+                }
+                return m;
+              });
             }
             return updated;
           });
-          setUnread((prev) => {
-            const updated = { ...prev, contacts: { ...prev.contacts } };
-            for (const cid of Object.keys(updated.contacts)) {
-              updated.contacts[cid] = { ...updated.contacts[cid] };
-              if (updated.contacts[cid].pending > 0) {
-                updated.contacts[cid].pending = Math.max(0, updated.contacts[cid].pending - 1);
-              }
-            }
-            return updated;
-          });
+          if (seenContactId && seenContactId !== "global") {
+            setUnread((prev) => {
+              const contact = prev.contacts[seenContactId];
+              if (!contact || !contact.pending) return prev;
+              return {
+                ...prev,
+                contacts: {
+                  ...prev.contacts,
+                  [seenContactId]: {
+                    ...contact,
+                    pending: Math.max(0, contact.pending - 1),
+                  },
+                },
+              };
+            });
+          }
         });
 
         socket.on("message:deleted", ({ messageId }) => {
@@ -291,11 +330,13 @@ export default function ChatLayout() {
             },
           }));
         });
+
+        if (cancelled) return;
       })
       .catch(console.error);
 
     return () => {
-      disconnectSocket();
+      cancelled = true;
     };
   }, [user, formatMsg]);
 
@@ -351,6 +392,7 @@ export default function ChatLayout() {
           onSelect={handleSelectContact}
           onlineUsers={onlineUsers}
           unread={unread}
+          totalContacts={contactTotal}
         />
       </div>
 
@@ -373,6 +415,7 @@ export default function ChatLayout() {
           onAtBottomChange={setIsAtBottom}
           onScrollToBottom={handleScrollToBottom}
           onlineUsers={onlineUsers}
+          onLoadOlder={() => loadOlderMessages(activeContact)}
         />
       </div>
     </div>

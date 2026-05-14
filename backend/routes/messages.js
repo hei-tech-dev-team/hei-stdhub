@@ -46,6 +46,43 @@ if (useCloudinary) {
   }).single("file");
 }
 
+const CONCURRENCY_LIMIT = 10;
+
+async function* batch(arr, size) {
+  for (let i = 0; i < arr.length; i += size) {
+    yield arr.slice(i, i + size);
+  }
+}
+
+async function sendPushWithConcurrency(subscriptions, payload) {
+  const results = [];
+  for (const batch of await iteratorToArray(batch(subscriptions, CONCURRENCY_LIMIT))) {
+    const batchResults = await Promise.allSettled(
+      batch.map((sub) =>
+        webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
+          payload,
+        ).catch(async (err) => {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]);
+          }
+          throw err;
+        })
+      ),
+    );
+    results.push(...batchResults);
+  }
+  return results;
+}
+
+async function iteratorToArray(iter) {
+  const arr = [];
+  for await (const item of iter) {
+    arr.push(item);
+  }
+  return arr;
+}
+
 // Search users by ref or pseudo
 router.get("/search", auth, async (req, res) => {
   const { q } = req.query;
@@ -66,58 +103,115 @@ router.get("/search", auth, async (req, res) => {
   }
 });
 
-// List all users except the caller, for contact selection
+// List contacts with optional search filter and pagination
 router.get("/contacts", auth, async (req, res) => {
   try {
+    const { q, limit = 200, offset = 0 } = req.query;
+    const params = [req.user.id];
+    let whereClause = "WHERE id != $1";
+    if (q?.trim()) {
+      params.push(`%${q.trim()}%`);
+      whereClause += ` AND (pseudo ILIKE $${params.length} OR ref ILIKE $${params.length})`;
+    }
+    params.push(parseInt(limit) || 200);
+    params.push(parseInt(offset) || 0);
     const { rows } = await db.query(
       `SELECT id, ref, pseudo, role, level, avatar
        FROM users
-       WHERE id != $1
+       ${whereClause}
        ORDER BY
          CASE role WHEN 'teacher' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END,
-         pseudo`,
-      [req.user.id],
+         pseudo
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
     );
-    res.json(rows);
+    const { rows: countRows } = await db.query(
+      `SELECT COUNT(*)::int AS total FROM users ${whereClause}`,
+      params.slice(0, -2),
+    );
+    res.json({ users: rows, total: countRows[0]?.total || 0 });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-// Get global chat messages (last 200)
+// Get global chat messages (paginated, last 200 by default, supports before cursor)
 router.get("/global", auth, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
-              u.role AS sender_role, u.avatar AS sender_avatar
-       FROM messages m
-       LEFT JOIN users u ON m.sender_id = u.id
-       WHERE m.is_global = TRUE
-       ORDER BY m.created_at ASC
-       LIMIT 200`,
-    );
+    const { before, limit = 200 } = req.query;
+    const msgLimit = Math.min(parseInt(limit) || 200, 500);
+    let query;
+    let params;
+    if (before) {
+      query = `
+        SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+               u.role AS sender_role, u.avatar AS sender_avatar
+        FROM messages m
+        LEFT JOIN users u ON m.sender_id = u.id
+        WHERE m.is_global = TRUE AND m.id < $1
+        ORDER BY m.created_at DESC
+        LIMIT $2`;
+      params = [before, msgLimit];
+    } else {
+      query = `
+        SELECT * FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+                 u.role AS sender_role, u.avatar AS sender_avatar
+          FROM messages m
+          LEFT JOIN users u ON m.sender_id = u.id
+          WHERE m.is_global = TRUE
+          ORDER BY m.created_at DESC
+          LIMIT $1
+        ) sub ORDER BY created_at ASC`;
+      params = [msgLimit];
+    }
+    const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-// Get private messages between the caller and another user
+// Get private messages between the caller and another user (paginated)
 router.get("/private/:userId", auth, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
-       FROM messages m
-       LEFT JOIN users u ON m.sender_id = u.id
-       WHERE m.is_global = FALSE
-         AND (
-           (m.sender_id = $1 AND m.receiver_id = $2)
-           OR
-           (m.sender_id = $2 AND m.receiver_id = $1)
-         )
-       ORDER BY m.created_at ASC`,
-      [req.user.id, req.params.userId],
-    );
+    const { before, limit = 100 } = req.query;
+    const msgLimit = Math.min(parseInt(limit) || 100, 500);
+    let query;
+    let params;
+    if (before) {
+      query = `
+        SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
+        FROM messages m
+        LEFT JOIN users u ON m.sender_id = u.id
+        WHERE m.is_global = FALSE
+          AND m.id < $1
+          AND (
+            (m.sender_id = $2 AND m.receiver_id = $3)
+            OR
+            (m.sender_id = $3 AND m.receiver_id = $2)
+          )
+        ORDER BY m.created_at DESC
+        LIMIT $4`;
+      params = [before, req.user.id, req.params.userId, msgLimit];
+    } else {
+      query = `
+        SELECT * FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
+          FROM messages m
+          LEFT JOIN users u ON m.sender_id = u.id
+          WHERE m.is_global = FALSE
+            AND (
+              (m.sender_id = $1 AND m.receiver_id = $2)
+              OR
+              (m.sender_id = $2 AND m.receiver_id = $1)
+            )
+          ORDER BY m.created_at DESC
+          LIMIT $3
+        ) sub ORDER BY created_at ASC`;
+      params = [req.user.id, req.params.userId, msgLimit];
+    }
+    const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
@@ -155,9 +249,8 @@ router.post("/", auth, async (req, res) => {
     const senderName = userRows[0]?.pseudo || "Inconnu";
 
     if (is_global) {
-      io.emit("message:global", fullMsg);
+      if (io) io.emit("message:global", fullMsg);
 
-      // Send push notification to all subscribed users for global messages
       sendPushToAll({
         title: "HEI STDhub – Chat global",
         body: `${senderName}: ${content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200)}`,
@@ -165,17 +258,17 @@ router.post("/", auth, async (req, res) => {
         url: "/chat",
       }).catch(() => {});
     } else {
-      io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
-      io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
+      if (io) {
+        io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
+        io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
 
-      // Notify sender that their message is pending (receiver hasn't seen it)
-      io.to(`user:${req.user.id}`).emit("unread:update", {
-        contactId: receiver_id,
-        unread: 0,
-        pending: 1,
-      });
+        io.to(`user:${req.user.id}`).emit("unread:update", {
+          contactId: receiver_id,
+          unread: 0,
+          pending: 1,
+        });
+      }
 
-      // Send push notification to receiver
       sendPushNotification(receiver_id, {
         title: senderName || "Message",
         body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
@@ -191,7 +284,33 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// Mark a message as seen
+// Mark messages as seen in batch
+router.patch("/seen", auth, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0)
+    return res.status(400).json({ error: "IDs requis." });
+  try {
+    const { rows } = await db.query(
+      `UPDATE messages SET seen=TRUE, seen_at=NOW()
+       WHERE id = ANY($1::int[]) AND receiver_id=$2
+       RETURNING id, sender_id`,
+      [ids, req.user.id],
+    );
+    const io = req.app.get("io");
+    if (io) {
+      for (const row of rows) {
+        io.to(`user:${row.sender_id}`).emit("message:seen", {
+          messageId: row.id,
+        });
+      }
+    }
+    res.json({ updated: rows.length });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Mark a single message as seen (kept for backward compatibility)
 router.patch("/:id/seen", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -204,9 +323,11 @@ router.patch("/:id/seen", auth, async (req, res) => {
       return res.status(404).json({ error: "Message introuvable." });
 
     const io = req.app.get("io");
-    io.to(`user:${rows[0].sender_id}`).emit("message:seen", {
-      messageId: rows[0].id,
-    });
+    if (io) {
+      io.to(`user:${rows[0].sender_id}`).emit("message:seen", {
+        messageId: rows[0].id,
+      });
+    }
 
     res.json(rows[0]);
   } catch (err) {
@@ -293,7 +414,7 @@ router.delete("/:id", auth, async (req, res) => {
 
     const msg = rows[0];
     const io = req.app.get("io");
-    io.emit("message:deleted", { messageId: msg.id, isGlobal: msg.is_global, receiverId: msg.receiver_id, senderId: msg.sender_id });
+    if (io) io.emit("message:deleted", { messageId: msg.id, isGlobal: msg.is_global, receiverId: msg.receiver_id, senderId: msg.sender_id });
 
     res.json({ message: "Message supprimé." });
   } catch (err) {
@@ -321,7 +442,6 @@ router.post("/upload", auth, (req, res) => {
   });
 });
 
-// Send push notification to all subscribed users
 async function sendPushToAll({ title, body, tag, url }) {
   const { rows } = await db.query(
     `SELECT DISTINCT ON (endpoint) endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
@@ -330,21 +450,9 @@ async function sendPushToAll({ title, body, tag, url }) {
   if (!rows.length) return;
 
   const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  for (const sub of rows) {
-    try {
-      await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
-        payload,
-      );
-    } catch (err) {
-      if (err.statusCode === 410 || err.statusCode === 404) {
-        db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]).catch(() => {});
-      }
-    }
-  }
+  await sendPushWithConcurrency(rows, payload);
 }
 
-// Send push notification to a user
 async function sendPushNotification(userId, { title, body, tag, url }) {
   const { rows } = await db.query(
     `SELECT endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
@@ -354,18 +462,7 @@ async function sendPushNotification(userId, { title, body, tag, url }) {
   if (!rows.length) return;
 
   const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  for (const sub of rows) {
-    try {
-      await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
-        payload,
-      );
-    } catch (err) {
-      if (err.statusCode === 410 || err.statusCode === 404) {
-        db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]).catch(() => {});
-      }
-    }
-  }
+  await sendPushWithConcurrency(rows, payload);
 }
 
 module.exports = router;

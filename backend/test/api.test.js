@@ -217,7 +217,7 @@ describe("SUBMISSIONS", () => {
       .get("/api/submissions")
       .set("Authorization", `Bearer ${adminToken}`);
     expect(res.status).to.equal(200);
-    expect(res.body).to.be.an("array");
+    expect(res.body.submissions).to.be.an("array");
   });
 
   it("POST /submissions champs manquants → 400", async () => {
