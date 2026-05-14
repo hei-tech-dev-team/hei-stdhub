@@ -276,25 +276,36 @@ export default function ChatLayout() {
         });
 
         socket.on("message:seen", ({ messageId }) => {
+          let seenContactId = null;
           setMessages((prev) => {
             const updated = { ...prev };
             for (const key of Object.keys(updated)) {
-              updated[key] = updated[key].map((m) =>
-                m.id === messageId ? { ...m, seen: true } : m,
-              );
+              updated[key] = updated[key].map((m) => {
+                if (m.id === messageId) {
+                  seenContactId = key;
+                  return { ...m, seen: true };
+                }
+                return m;
+              });
             }
             return updated;
           });
-          setUnread((prev) => {
-            const updated = { ...prev, contacts: { ...prev.contacts } };
-            for (const cid of Object.keys(updated.contacts)) {
-              updated.contacts[cid] = { ...updated.contacts[cid] };
-              if (updated.contacts[cid].pending > 0) {
-                updated.contacts[cid].pending = Math.max(0, updated.contacts[cid].pending - 1);
-              }
-            }
-            return updated;
-          });
+          if (seenContactId && seenContactId !== "global") {
+            setUnread((prev) => {
+              const contact = prev.contacts[seenContactId];
+              if (!contact || !contact.pending) return prev;
+              return {
+                ...prev,
+                contacts: {
+                  ...prev.contacts,
+                  [seenContactId]: {
+                    ...contact,
+                    pending: Math.max(0, contact.pending - 1),
+                  },
+                },
+              };
+            });
+          }
         });
 
         socket.on("message:deleted", ({ messageId }) => {
