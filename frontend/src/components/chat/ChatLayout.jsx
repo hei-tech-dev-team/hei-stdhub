@@ -88,7 +88,9 @@ export default function ChatLayout() {
     api
       .get("/messages/contacts", { params: { limit: 500 } })
       .then(({ data }) => {
-        const formatted = (data.users || data).map((c) => ({
+        const usersList = Array.isArray(data) ? data : data?.users;
+        if (!Array.isArray(usersList)) return;
+        const formatted = usersList.map((c) => ({
           id: c.id,
           name: c.pseudo,
           role: c.role,
@@ -133,7 +135,7 @@ export default function ChatLayout() {
       senderAvatar: m.sender_avatar || null,
       senderId: m.sender_id,
       senderRole: m.sender_role || null,
-      content: m.content,
+      content: m.content || "",
       own: m.sender_id === user.id,
       seen: m.seen || false,
       createdAt: m.created_at,
@@ -151,9 +153,11 @@ export default function ChatLayout() {
         } else {
           ({ data } = await api.get(`/messages/private/${contact.id}`, { params: { limit: 100 } }));
         }
+        const msgList = Array.isArray(data) ? data : data?.messages;
+        if (!Array.isArray(msgList)) return;
         setMessages((prev) => ({
           ...prev,
-          [contact.id]: (Array.isArray(data) ? data : data.messages || data).map(formatMsg),
+          [contact.id]: msgList.map(formatMsg),
         }));
       } catch (err) {
         console.error(err);
@@ -175,8 +179,9 @@ export default function ChatLayout() {
       } else {
         ({ data } = await api.get(`/messages/private/${contact.id}`, { params: { before: oldestId, limit: 100 } }));
       }
-      const msgs = (Array.isArray(data) ? data : data.messages || data).map(formatMsg);
-      if (msgs.length === 0) return;
+      const msgList = Array.isArray(data) ? data : data?.messages;
+      if (!Array.isArray(msgList) || msgList.length === 0) return;
+      const msgs = msgList.map(formatMsg);
       setMessages((prev) => ({
         ...prev,
         [contact.id]: [...msgs.reverse(), ...(prev[contact.id] || [])],
@@ -194,10 +199,12 @@ export default function ChatLayout() {
   }, [activeContact, loadMessages, markSeen]);
 
   useEffect(() => {
+    let cancelled = false;
     let socket;
 
     getSocket()
       .then((s) => {
+        if (cancelled) return;
         socket = s;
         socket.emit("user:join", user.id);
 
@@ -312,11 +319,13 @@ export default function ChatLayout() {
             },
           }));
         });
+
+        if (cancelled) return;
       })
       .catch(console.error);
 
     return () => {
-      disconnectSocket();
+      cancelled = true;
     };
   }, [user, formatMsg]);
 
