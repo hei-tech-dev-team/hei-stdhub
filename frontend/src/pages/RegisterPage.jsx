@@ -423,7 +423,7 @@ export default function RegisterPage() {
                       className="input-field pl-9"
                       placeholder={
                         form.role === "alumni"
-                          ? "STD21001"
+                          ? "STD21001 ou STD22001"
                           : form.role === "student"
                             ? "STD25001"
                             : "PROF001"
