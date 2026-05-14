@@ -6,6 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
+const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
 
 // Validate critical env vars at startup
@@ -33,6 +34,14 @@ webpush.setVapidDetails(
 const app = express();
 const server = http.createServer(app);
 
+const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
+app.use((req, res, next) => {
+  res.setTimeout(REQUEST_TIMEOUT, () => {
+    res.status(503).json({ error: "Requête expirée." });
+  });
+  next();
+});
+
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -43,7 +52,7 @@ const loginLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === "test",
 });
 
-// Socket.io setup
+// Socket.io setup — optimized for 1000+ concurrent connections
 const io = new Server(server, {
   cors: {
     origin: [
@@ -53,6 +62,27 @@ const io = new Server(server, {
     ],
     methods: ["GET", "POST"],
   },
+  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT || "20000", 10),
+  pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL || "25000", 10),
+  maxHttpBufferSize: parseInt(process.env.SOCKET_MAX_BUFFER || "1048576", 10), // 1MB
+  perMessageDeflate: {
+    threshold: parseInt(process.env.SOCKET_DEFLATE_THRESHOLD || "1024", 10), // only compress > 1KB
+  },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000, // recover sessions up to 2 minutes
+  },
+});
+
+// Socket auth middleware — verify JWT on connection
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  if (!token) return next(new Error("Token manquant."));
+  try {
+    socket.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    next(new Error("Token invalide."));
+  }
 });
 
 // Middleware stack
@@ -121,15 +151,32 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Erreur serveur." });
 });
 
-// Socket.io event handlers
+// Socket.io event handlers — optimized for scale
 const onlineUsers = new Map();
+const MAX_ONLINE_USERS = parseInt(process.env.MAX_ONLINE_USERS || "5000", 10);
 
 io.on("connection", (socket) => {
   socket.on("user:join", (userId) => {
+    if (onlineUsers.size >= MAX_ONLINE_USERS) {
+      socket.emit("error", { message: "Serveur saturé." });
+      return;
+    }
+
+    // Leave previous room for this userId (handles reconnection)
+    const prevSocketId = onlineUsers.get(userId);
+    if (prevSocketId) {
+      const prevSocket = io.sockets.sockets.get(prevSocketId);
+      if (prevSocket) {
+        prevSocket.leave(`user:${userId}`);
+      }
+    }
+
     onlineUsers.set(userId, socket.id);
     socket.userId = userId;
     socket.join(`user:${userId}`);
-    io.emit("user:online", userId);
+
+    // Broadcast to others only (not to self)
+    socket.broadcast.emit("user:online", userId);
   });
 
   socket.on("message:global", (msg) => {
@@ -137,11 +184,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("message:private", ({ receiverId, msg }) => {
+    if (!receiverId || !msg) return;
     io.to(`user:${receiverId}`).emit("message:private", msg);
     io.to(`user:${socket.userId}`).emit("message:private", msg);
   });
 
   socket.on("message:seen", ({ messageId, senderId }) => {
+    if (!messageId || !senderId) return;
     io.to(`user:${senderId}`).emit("message:seen", { messageId });
   });
 
@@ -168,7 +217,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     if (socket.userId) {
       onlineUsers.delete(socket.userId);
-      io.emit("user:offline", socket.userId);
+      socket.broadcast.emit("user:offline", socket.userId);
     }
   });
 });

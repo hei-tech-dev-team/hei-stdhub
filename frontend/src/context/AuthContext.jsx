@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/axios";
-import { disconnectSocket } from "../socket";
+import { refreshSocket } from "../socket";
 
 const AuthContext = createContext(null);
 
@@ -50,6 +50,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
+    refreshSocket().catch(() => {});
     return data.user;
   };
 
@@ -59,6 +60,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
+    refreshSocket().catch(() => {});
     return data.user;
   };
 
