@@ -216,7 +216,7 @@ export default function AdminPage() {
       const { data } = await api.patch(`/admin/users/${userId}/role`, {
         role: newRole,
       });
-      console.log("Réponse:", data);
+
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: data.role } : u)),
       );
