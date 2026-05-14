@@ -8,12 +8,22 @@ require("dotenv").config();
 const rateLimit = require("express-rate-limit");
 const webpush = require("web-push");
 
+// Validate critical env vars at startup
+const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"];
+const missingEnv = REQUIRED_ENV.filter((v) => !process.env[v]);
+if (missingEnv.length > 0) {
+  console.error(`Missing required env vars: ${missingEnv.join(", ")}`);
+  process.exit(1);
+}
+
 // VAPID keys — auto-generated if missing
 if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
   const vapidKeys = webpush.generateVAPIDKeys();
   process.env.VAPID_PUBLIC_KEY ||= vapidKeys.publicKey;
   process.env.VAPID_PRIVATE_KEY ||= vapidKeys.privateKey;
-  console.info("VAPID keys generated (set in .env to persist)");
+  console.info("VAPID keys generated — set these in production env:");
+  console.info(`  VAPID_PUBLIC_KEY=${vapidKeys.publicKey}`);
+  console.info(`  VAPID_PRIVATE_KEY=${vapidKeys.privateKey}`);
 }
 
 webpush.setVapidDetails(
@@ -82,6 +92,7 @@ if (process.env.NODE_ENV === "production") {
 
 // Route registration
 app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/register", loginLimiter);
 app.use("/api/auth/forgot-password", loginLimiter);
 app.use("/api/auth/reset-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
@@ -104,6 +115,13 @@ app.get("/api/push/vapid-key", (req, res) =>
 );
 
 app.use((req, res) => res.status(404).json({ error: "Route introuvable." }));
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({ error: "JSON malformé." });
+  }
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Erreur serveur." });
+});
 
 // Socket.io event handlers
 const onlineUsers = new Map();
@@ -172,6 +190,16 @@ pool.query(`
     UNIQUE (user_id, endpoint)
   )
 `).catch((err) => console.error("Failed to create push_subscriptions table:", err));
+
+// Ensure global_chat_read table exists (for unread message tracking)
+pool.query(`
+  CREATE TABLE IF NOT EXISTS global_chat_read (
+    user_id            INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_read_msg_id   INTEGER   NOT NULL DEFAULT 0,
+    updated_at         TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id)
+  )
+`).catch((err) => console.error("Failed to create global_chat_read table:", err));
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {

@@ -392,7 +392,7 @@ router.patch("/avatar", auth, (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
     try {
       const avatarUrl = req.file.secure_url
-        || (req.file.path ? `${req.protocol}://${req.get("host")}/uploads/avatars/${req.file.filename}` : null);
+        || (req.file.path ? `${req.protocol}://${req.get("host")}/uploads/avatars/${req.file.filename || req.file.originalname}` : null);
       if (!avatarUrl) return res.status(500).json({ error: "Upload échoué." });
 
       const { rows } = await db.query(

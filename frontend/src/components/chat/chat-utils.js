@@ -76,10 +76,10 @@ export const formatTooltipDate = (date) =>
     year: "numeric",
   }) + ` à ${formatTime(date)}`;
 
-export const isFileMessage = (content) => content.startsWith("[FILE:");
+export const isFileMessage = (content) => Boolean(content && content.startsWith("[FILE:"));
 
 export const parseFileContent = (content) => {
-  if (!content.startsWith("[FILE:") || !content.endsWith("]")) return null;
+  if (!content || !content.startsWith("[FILE:") || !content.endsWith("]")) return null;
   const inner = content.slice(6, -1);
 
   // new format: [FILE:filename:url:img] or [FILE:filename:url:file]
