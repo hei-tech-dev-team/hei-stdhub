@@ -53,12 +53,12 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       const bUnread = unread?.contacts?.[b.id]?.unread || 0;
       if (aUnread && !bUnread) return -1;
       if (!aUnread && bUnread) return 1;
-      return a.name.localeCompare(b.name);
+      return (a.name || "").localeCompare(b.name || "");
     });
   }, [contacts, unread]);
 
   const filtered = sorted.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
+    (c.name || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   const getUnreadCount = (contact) => {
@@ -75,8 +75,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     }
     setSearching(true);
     try {
-      const { data } = await api.get(`/messages/search?q=${q}`);
-      setSearchResults(data.filter((u) => u.id !== user.id));
+      const { data } = await api.get(`/messages/search?q=${encodeURIComponent(q)}`);
+      setSearchResults(Array.isArray(data) ? data.filter((u) => u.id !== user.id) : []);
     } catch (err) {
       console.error(err);
     } finally {

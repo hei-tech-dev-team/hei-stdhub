@@ -249,7 +249,7 @@ router.post("/", auth, async (req, res) => {
     const senderName = userRows[0]?.pseudo || "Inconnu";
 
     if (is_global) {
-      io.emit("message:global", fullMsg);
+      if (io) io.emit("message:global", fullMsg);
 
       sendPushToAll({
         title: "HEI STDhub – Chat global",
@@ -258,14 +258,16 @@ router.post("/", auth, async (req, res) => {
         url: "/chat",
       }).catch(() => {});
     } else {
-      io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
-      io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
+      if (io) {
+        io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
+        io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
 
-      io.to(`user:${req.user.id}`).emit("unread:update", {
-        contactId: receiver_id,
-        unread: 0,
-        pending: 1,
-      });
+        io.to(`user:${req.user.id}`).emit("unread:update", {
+          contactId: receiver_id,
+          unread: 0,
+          pending: 1,
+        });
+      }
 
       sendPushNotification(receiver_id, {
         title: senderName || "Message",
@@ -295,10 +297,12 @@ router.patch("/seen", auth, async (req, res) => {
       [ids, req.user.id],
     );
     const io = req.app.get("io");
-    for (const row of rows) {
-      io.to(`user:${row.sender_id}`).emit("message:seen", {
-        messageId: row.id,
-      });
+    if (io) {
+      for (const row of rows) {
+        io.to(`user:${row.sender_id}`).emit("message:seen", {
+          messageId: row.id,
+        });
+      }
     }
     res.json({ updated: rows.length });
   } catch (err) {
@@ -319,9 +323,11 @@ router.patch("/:id/seen", auth, async (req, res) => {
       return res.status(404).json({ error: "Message introuvable." });
 
     const io = req.app.get("io");
-    io.to(`user:${rows[0].sender_id}`).emit("message:seen", {
-      messageId: rows[0].id,
-    });
+    if (io) {
+      io.to(`user:${rows[0].sender_id}`).emit("message:seen", {
+        messageId: rows[0].id,
+      });
+    }
 
     res.json(rows[0]);
   } catch (err) {
@@ -408,7 +414,7 @@ router.delete("/:id", auth, async (req, res) => {
 
     const msg = rows[0];
     const io = req.app.get("io");
-    io.emit("message:deleted", { messageId: msg.id, isGlobal: msg.is_global, receiverId: msg.receiver_id, senderId: msg.sender_id });
+    if (io) io.emit("message:deleted", { messageId: msg.id, isGlobal: msg.is_global, receiverId: msg.receiver_id, senderId: msg.sender_id });
 
     res.json({ message: "Message supprimé." });
   } catch (err) {
