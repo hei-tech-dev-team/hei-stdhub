@@ -231,7 +231,7 @@ export default function AdminPage() {
     try {
       await api.delete(`/admin/users/${userId}`);
       setUsers((prev) => prev.filter((u) => u.id !== userId));
-      api.get("/admin/stats").then(({ data }) => setStats(data));
+      api.get("/admin/stats").then(({ data }) => setStats(data)).catch(console.error);
     } catch (err) {
       console.error(err);
     }
