@@ -76,7 +76,7 @@ def get_codebase(source_dirs, extensions):
     for source_dir in source_dirs:
         target_dir = BASE_DIR / source_dir
         if not target_dir.exists():
-            print(f"  ⚠️  Répertoire introuvable: {target_dir}")
+            print(f"  Répertoire introuvable: {target_dir}")
             continue
 
         for path in target_dir.rglob('*'):
@@ -89,20 +89,20 @@ def get_codebase(source_dirs, extensions):
                         context += f"\n\n--- FILE: {rel_path} ---\n{f.read()}"
                         total_files += 1
                 except Exception as e:
-                    print(f"  ❌ Erreur lecture {path.relative_to(BASE_DIR)}: {e}")
+                    print(f"  Erreur lecture {path.relative_to(BASE_DIR)}: {e}")
 
     return context, total_files
 
 def sync_documentation(code_content, prompt_type):
     """Synchronise la documentation via IA."""
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('models/gemini-2.5-flash')
     prompt = PROMPTS.get(prompt_type, PROMPTS["backend"])
     response = model.generate_content(prompt.format(code_content=code_content))
     return response.text
 
 def main():
     print("=" * 60)
-    print("🔄 DOC SYNC - Synchronisation automatique des FOR_*.md")
+    print("DOC SYNC - Synchronisation automatique des FOR_*.md")
     print("=" * 60)
 
     results = []
@@ -110,7 +110,7 @@ def main():
     for doc_file, config in DOC_MAPPINGS.items():
         doc_path = BASE_DIR / doc_file
 
-        print(f"\n📄 Traitement de {doc_file}...")
+        print(f"\nTraitement de {doc_file}...")
         print(f"   {config['description']}")
         print(f"   Répertoires: {', '.join(config['source_dirs'])}")
 
@@ -120,32 +120,34 @@ def main():
         )
 
         if not code_base:
-            print(f"  ⚠️  Aucun code source trouvé")
-            results.append((doc_file, "⚠️ Aucun code"))
+            print(f"  Aucun code source trouvé")
+            results.append((doc_file, "Aucun code"))
             continue
 
-        print(f"  ✓ {file_count} fichiers analysés")
+        print(f"  {file_count} fichiers analysés")
 
         try:
-            print(f"  🔄 Synchronisation via IA...")
+            print(f"  Synchronisation via IA...")
             updated_md = sync_documentation(code_base, config["prompt_type"])
 
             with open(doc_path, "w", encoding="utf-8") as f:
                 f.write(updated_md)
 
-            print(f"  ✅ {doc_file} mis à jour avec succès")
-            results.append((doc_file, f"✅ {file_count} fichiers"))
+            print(f"  {doc_file} mis à jour avec succès")
+            results.append((doc_file, f"OK {file_count} fichiers"))
 
         except Exception as e:
-            print(f"  ❌ Erreur: {e}")
-            results.append((doc_file, f"❌ {str(e)[:30]}"))
+            print(f"  Erreur: {e}")
+            results.append((doc_file, f"ERREUR {str(e)[:30]}"))
 
     print("\n" + "=" * 60)
-    print("📊 RÉSUMÉ")
+    print("RÉSUMÉ")
     print("=" * 60)
     for doc_file, status in results:
         print(f"{status} → {doc_file}")
     print("=" * 60)
 
 if __name__ == "__main__":
+    main()
+    main()
     main()
