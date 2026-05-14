@@ -165,7 +165,7 @@ export default function LoginPage() {
                   />
                   <input
                     className="input-field pl-10"
-                    placeholder={isAlumni ? "STD23XXX ou STD24XXX" : "STD25XXX ou PROFXXX"}
+                    placeholder={isAlumni ? "STD21XXX ou STD22XXX" : "STD25XXX ou PROFXXX"}
                     value={form.ref}
                     onChange={(e) => {
                       set("ref", e.target.value);
