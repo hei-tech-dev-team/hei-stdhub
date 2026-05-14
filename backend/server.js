@@ -21,9 +21,7 @@ if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
   const vapidKeys = webpush.generateVAPIDKeys();
   process.env.VAPID_PUBLIC_KEY ||= vapidKeys.publicKey;
   process.env.VAPID_PRIVATE_KEY ||= vapidKeys.privateKey;
-  console.info("VAPID keys generated — set these in production env:");
-  console.info(`  VAPID_PUBLIC_KEY=${vapidKeys.publicKey}`);
-  console.info(`  VAPID_PRIVATE_KEY=${vapidKeys.privateKey}`);
+  console.info("VAPID keys generated for this runtime. Configure persistent keys in production env.");
 }
 
 webpush.setVapidDetails(

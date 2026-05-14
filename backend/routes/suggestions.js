@@ -3,7 +3,6 @@ const router = express.Router();
 const db = require("../db");
 const auth = require("../middleware/auth");
 
-// Students and teachers can submit suggestions
 router.post("/", auth, async (req, res) => {
   if (!["student", "teacher", "alumni", "admin"].includes(req.user.role))
     return res
@@ -27,31 +26,43 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// BDE can see all suggestions
 router.get("/", auth, async (req, res) => {
   if (req.user.role !== "bde")
     return res.status(403).json({ error: "Accès réservé au BDE." });
 
   try {
-    const { rows } = await db.query(
-      `SELECT s.*,
-        CASE WHEN s.anonyme = true THEN 'Anonyme' ELSE u.nom END AS nom,
-        CASE WHEN s.anonyme = true THEN '' ELSE u.prenom END AS prenom,
-        CASE WHEN s.anonyme = true THEN '' ELSE u.email END AS email,
-        CASE WHEN s.anonyme = true THEN '' ELSE u.ref END AS ref,
-        u.role AS auteur_role
-       FROM suggestions s
-       JOIN users u ON s.student_id = u.id
-       ORDER BY s.created_at DESC`,
-    );
-    res.json(rows);
+    const { limit = 50, offset = 0 } = req.query;
+    const pageLimit = Math.min(parseInt(limit) || 50, 200);
+    const pageOffset = Math.max(parseInt(offset) || 0, 0);
+
+    const [dataResult, countResult] = await Promise.all([
+      db.query(
+        `SELECT s.*,
+          CASE WHEN s.anonyme = true THEN 'Anonyme' ELSE u.nom END AS nom,
+          CASE WHEN s.anonyme = true THEN '' ELSE u.prenom END AS prenom,
+          CASE WHEN s.anonyme = true THEN '' ELSE u.email END AS email,
+          CASE WHEN s.anonyme = true THEN '' ELSE u.ref END AS ref,
+          u.role AS auteur_role
+         FROM suggestions s
+         JOIN users u ON s.student_id = u.id
+         ORDER BY s.created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [pageLimit, pageOffset],
+      ),
+      db.query("SELECT COUNT(*) FROM suggestions"),
+    ]);
+    res.json({
+      suggestions: dataResult.rows,
+      total: parseInt(countResult.rows[0]?.count || 0),
+      limit: pageLimit,
+      offset: pageOffset,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-// BDE updates the status of a suggestion
 router.patch("/:id", auth, async (req, res) => {
   if (req.user.role !== "bde")
     return res.status(403).json({ error: "Accès réservé au BDE." });
@@ -80,8 +91,6 @@ router.patch("/:id", auth, async (req, res) => {
   }
 });
 
-// BDE confirms the suggestions round
-// Returns data for PDF generation, posts a summary to global chat, then deletes all suggestions
 router.post("/confirm", auth, async (req, res) => {
   if (req.user.role !== "bde")
     return res.status(403).json({ error: "Accès réservé au BDE." });
@@ -103,7 +112,6 @@ router.post("/confirm", auth, async (req, res) => {
         .status(400)
         .json({ error: "Aucune suggestion traitée à confirmer." });
 
-    // Post a summary to the global chat
     const date = new Date().toLocaleDateString("fr-FR");
     const acceptes = suggestions.filter((s) => s.statut === "accepte");
     const aDiscuter = suggestions.filter((s) => s.statut === "a_discuter");
@@ -134,17 +142,14 @@ router.post("/confirm", auth, async (req, res) => {
     }
     chatMsg += "\nLe rapport complet a été téléchargé.";
 
-    // Insert into global messages
     await db.query(
       `INSERT INTO messages (sender_id, content, is_global)
        VALUES ($1, $2, true)`,
       [req.user.id, chatMsg],
     );
 
-    // Clear all processed suggestions
     await db.query("DELETE FROM suggestions");
 
-    // Return suggestion data so the frontend can generate a PDF
     res.json({
       suggestions,
       message: "Confirmé, message posté dans le chat global.",
@@ -155,7 +160,6 @@ router.post("/confirm", auth, async (req, res) => {
   }
 });
 
-// Generate a PDF report from provided suggestions data
 router.post("/report", auth, async (req, res) => {
   if (req.user.role !== "bde" && req.user.role !== "admin")
     return res.status(403).json({ error: "Acces reserve au BDE." });

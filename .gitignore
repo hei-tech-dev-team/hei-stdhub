@@ -1,7 +1,5 @@
 cloudinary
 vercel.json
 .env
-<<<<<<< HEAD
-=======
-.env
->>>>>>> refs/remotes/origin/main
+scripts/venv/
+scripts/__pycache__/

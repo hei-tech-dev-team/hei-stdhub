@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -12,6 +12,7 @@ import api from "../../api/axios";
 import Badge from "../ui/Badge";
 
 const FILTER_OPTIONS = ["Tous", "TD", "Examen"];
+const PAGE_SIZE = 50;
 
 export default function TeacherInbox() {
   const [submissions, setSubmissions] = useState([]);
@@ -20,37 +21,45 @@ export default function TeacherInbox() {
   const [activeType, setActiveType] = useState("Tous");
   const [activeUE, setActiveUE] = useState("Tous");
   const [ues, setUes] = useState(["Tous"]);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  const loadSubmissions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { limit: PAGE_SIZE, offset: page * PAGE_SIZE };
+      if (activeType !== "Tous") params.type = activeType;
+      if (activeUE !== "Tous") params.ue = activeUE;
+      if (search.trim()) params.search = search.trim();
+      const { data } = await api.get("/submissions", { params });
+      const items = data.submissions || data;
+      setSubmissions(items);
+      setTotal(data.total || 0);
+      if (data.submissions) {
+        const uniqueUes = ["Tous", ...new Set(data.submissions.map((s) => s.ue))];
+        setUes(uniqueUes);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, activeType, activeUE, search]);
 
   useEffect(() => {
-    api
-      .get("/submissions")
-      .then(({ data }) => {
-        setSubmissions(data);
-        // Extraire les UE uniques pour le filtre
-        const uniqueUes = ["Tous", ...new Set((data || []).map((s) => s.ue))];
-        setUes(uniqueUes);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    setPage(0);
+  }, [activeType, activeUE, search]);
 
-  const filtered = submissions.filter((s) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      (s.ref || "").toLowerCase().includes(q) ||
-      (s.email || "").toLowerCase().includes(q) ||
-      (s.groupe || "").toLowerCase().includes(q) ||
-      ((s.nom || "") + " " + (s.prenom || "")).toLowerCase().includes(q);
-    const matchType = activeType === "Tous" || s.type === activeType;
-    const matchUE = activeUE === "Tous" || s.ue === activeUE;
-    return matchSearch && matchType && matchUE;
-  });
+  useEffect(() => {
+    loadSubmissions();
+  }, [loadSubmissions]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="flex flex-col h-full gap-4 sm:gap-5">
       {/* Toolbar */}
       <div className="flex flex-col gap-3">
-        {/* Recherche */}
         <div className="relative">
           <FontAwesomeIcon
             icon={faSearch}
@@ -65,11 +74,9 @@ export default function TeacherInbox() {
           />
         </div>
 
-        {/* Filtres */}
         <div className="flex flex-wrap items-center gap-2">
           <FontAwesomeIcon icon={faFilter} className="text-gray-400 text-sm" />
 
-          {/* Filtre type */}
           {FILTER_OPTIONS.map((opt) => (
             <button
               key={opt}
@@ -88,7 +95,6 @@ export default function TeacherInbox() {
 
           <div className="w-px h-5 bg-contact mx-1" />
 
-          {/* Filtre UE */}
           {ues.map((ue) => (
             <button
               key={ue}
@@ -106,9 +112,34 @@ export default function TeacherInbox() {
           ))}
 
           <span className="ml-auto text-xs text-gray-400 font-semibold shrink-0">
-            {filtered.length} rendu(s)
+            {submissions.length} / {total} rendu(s)
           </span>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4">
+            <button
+              type="button"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-navy/10 text-navy hover:bg-navy/20 disabled:opacity-30 transition"
+            >
+              Précédent
+            </button>
+            <span className="text-xs text-gray-500">
+              Page {page + 1} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-navy/10 text-navy hover:bg-navy/20 disabled:opacity-30 transition"
+            >
+              Suivant
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Spinner */}
@@ -122,7 +153,7 @@ export default function TeacherInbox() {
       )}
 
       {/* Vide */}
-      {!loading && filtered.length === 0 && (
+      {!loading && submissions.length === 0 && (
         <div
           className="flex flex-col items-center justify-center
                         py-16 sm:py-24 text-gray-300"
@@ -138,7 +169,7 @@ export default function TeacherInbox() {
       )}
 
       {/* Tableau md+ */}
-      {!loading && filtered.length > 0 && (
+      {!loading && submissions.length > 0 && (
         <>
           <div className="hidden md:block bg-white rounded-2xl shadow-card overflow-hidden">
             <table className="w-full text-sm">
@@ -165,7 +196,7 @@ export default function TeacherInbox() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => (
+                {submissions.map((s) => (
                   <tr
                     key={s.id}
                     className="border-b border-surface last:border-0
@@ -235,7 +266,7 @@ export default function TeacherInbox() {
 
           {/* Cartes mobile */}
           <div className="md:hidden flex flex-col gap-3">
-            {filtered.map((s) => (
+            {submissions.map((s) => (
               <div key={s.id} className="bg-white rounded-2xl shadow-card p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div>
