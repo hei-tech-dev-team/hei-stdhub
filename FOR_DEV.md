@@ -112,7 +112,8 @@ hei-stdhub-v2/
     ├── migration_first_login.sql
     ├── migration_invitations.sql
     ├── migration_multi_use_invitations.sql
-    └── migration_student_email_suffix.sql
+    ├── migration_student_email_suffix.sql
+    └── migration_scale_500.sql
 ```
 
 ---
@@ -136,7 +137,7 @@ hei-stdhub-v2/
 ### Posts Routes (`/api/posts`)
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| GET | `/api/posts` | No | Any | List posts (?ue=, ?type=, ?level=) |
+| GET | `/api/posts` | No | Any | List posts (?ue=, ?type=, ?level=, ?limit=, ?offset=) |
 | POST | `/api/posts` | Yes | teacher/admin | Create post (file or link) |
 | DELETE | `/api/posts/:id` | Yes | teacher/admin | Delete post |
 
@@ -144,7 +145,7 @@ hei-stdhub-v2/
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
 | POST | `/api/submissions` | Yes | Any | Submit homework (file or link) |
-| GET | `/api/submissions` | Yes | teacher/admin | List submissions (filtered by teacher's UEs) |
+| GET | `/api/submissions` | Yes | teacher/admin | List submissions (?ue=, ?type=, ?search=, ?limit=, ?offset=) |
 
 ### Supports Routes (`/api/supports`)
 | Method | Path | Auth | Role | Description |
@@ -157,11 +158,12 @@ hei-stdhub-v2/
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/api/messages/search?q=` | Yes | Search users by ref/pseudo |
-| GET | `/api/messages/contacts` | Yes | List all users |
-| GET | `/api/messages/global` | Yes | Last 200 global messages |
-| GET | `/api/messages/private/:userId` | Yes | Private messages with user |
+| GET | `/api/messages/contacts` | Yes | List all users (?q=, ?limit=, ?offset=) |
+| GET | `/api/messages/global` | Yes | Global messages (?before=, ?limit=, max 500) |
+| GET | `/api/messages/private/:userId` | Yes | Private messages (?before=, ?limit=) |
 | POST | `/api/messages` | Yes | Send message (global/private) + push |
-| PATCH | `/api/messages/:id/seen` | Yes | Mark message as seen |
+| PATCH | `/api/messages/seen` | Yes | Batch mark messages as seen |
+| PATCH | `/api/messages/:id/seen` | Yes | Mark single message as seen |
 | POST | `/api/messages/upload` | Yes | Upload chat file |
 | GET | `/api/messages/unread` | Yes | Unread counts (global + per-contact) |
 | POST | `/api/messages/global/read` | Yes | Mark global chat read |
@@ -171,7 +173,7 @@ hei-stdhub-v2/
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
 | POST | `/api/suggestions` | Yes | student/teacher/alumni/admin | Submit suggestion |
-| GET | `/api/suggestions` | Yes | bde | List suggestions (anonymized) |
+| GET | `/api/suggestions` | Yes | bde | List suggestions (?limit=, ?offset=) |
 | PATCH | `/api/suggestions/:id` | Yes | bde | Update suggestion status |
 | POST | `/api/suggestions/confirm` | Yes | bde | Confirm round: post summary to chat |
 | POST | `/api/suggestions/report` | Yes | bde/admin | Generate PDF report |
@@ -180,12 +182,12 @@ hei-stdhub-v2/
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
 | GET | `/api/admin/stats` | Yes | admin | Platform stats (polling 3s) |
-| GET | `/api/admin/users` | Yes | admin | List users (?q=, ?role=) |
+| GET | `/api/admin/users` | Yes | admin | List users (?q=, ?role=, ?limit=, ?offset=) |
 | PATCH | `/api/admin/users/:id/role` | Yes | admin | Change user role |
 | DELETE | `/api/admin/users/:id` | Yes | admin | Delete user (not self) |
 | POST | `/api/admin/invitations` | Yes | admin | Generate invitation (14d expiry) |
-| POST | `/api/admin/invitations/bulk` | Yes | admin | Bulk generate (up to 1000) |
-| GET | `/api/admin/invitations` | Yes | admin | List invitations |
+| POST | `/api/admin/invitations/bulk` | Yes | admin | Bulk generate (batch INSERT, up to 1000) |
+| GET | `/api/admin/invitations` | Yes | admin | List invitations (?limit=, ?offset=) |
 | DELETE | `/api/admin/invitations/:id` | Yes | admin | Delete invitation |
 
 ### Push Routes (`/api/push`)
