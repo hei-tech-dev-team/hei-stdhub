@@ -41,7 +41,7 @@ export default function TeacherHome() {
   useEffect(() => {
     api
       .get("/posts")
-      .then(({ data }) => setPosts(data))
+      .then(({ data }) => setPosts(Array.isArray(data) ? data : data?.posts || []))
       .catch(console.error)
       .finally(() => setFetching(false));
   }, []);

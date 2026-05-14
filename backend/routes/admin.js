@@ -5,7 +5,7 @@ const auth = require("../middleware/auth");
 const router = express.Router();
 
 const adminOnly = (req, res, next) => {
-  console.log("adminOnly check — role:", req.user?.role);
+
   if (req.user.role !== "admin")
     return res.status(403).json({ error: "Accès réservé à l'admin." });
   next();
@@ -109,7 +109,7 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error("ERREUR PATCH ROLE:", err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Erreur serveur." });
   }
 });
 

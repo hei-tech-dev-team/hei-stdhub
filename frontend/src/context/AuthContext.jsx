@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/axios";
+import { disconnectSocket } from "../socket";
 
 const AuthContext = createContext(null);
 
@@ -64,14 +65,21 @@ export function AuthProvider({ children }) {
   const dismissOnboarding = () => setFirstLogin(false);
 
   const logout = () => {
+    disconnectSocket();
     localStorage.removeItem("hei_token");
     localStorage.removeItem("hei_user");
     setUser(null);
   };
 
+  const setUserAndSync = (userData) => {
+    setUser(userData);
+    if (userData) localStorage.setItem("hei_user", JSON.stringify(userData));
+    else localStorage.removeItem("hei_user");
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, setUser, login, register, logout, loading, firstLogin, dismissOnboarding }}
+      value={{ user, setUser: setUserAndSync, login, register, logout, loading, firstLogin, dismissOnboarding }}
     >
       {children}
     </AuthContext.Provider>
@@ -79,4 +87,8 @@ export function AuthProvider({ children }) {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+};
