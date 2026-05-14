@@ -206,7 +206,7 @@ describe("MAILER — sendPasswordResetEmail with Resend", () => {
     expect(result.result.id).to.equal("email_12345");
   });
 
-  it("throwS when Resend returns a non-ok status", async () => {
+  it("falls back to skipped when Resend fails and no SMTP configured", async () => {
     global.fetch = async () => ({
       ok: false,
       status: 403,
@@ -218,16 +218,13 @@ describe("MAILER — sendPasswordResetEmail with Resend", () => {
       json: async () => ({}),
     });
 
-    try {
-      await sendPasswordResetEmail({
-        user: { email: "test@example.com" },
-        token: "tok",
-      });
-      expect.fail("Should have thrown");
-    } catch (err) {
-      expect(err.message).to.include("Resend email failed (403)");
-      expect(err.message).to.include("Forbidden");
-    }
+    const result = await sendPasswordResetEmail({
+      user: { email: "test@example.com" },
+      token: "tok",
+    });
+
+    expect(result.skipped).to.be.true;
+    expect(result.resetUrl).to.include("tok");
   });
 });
 

@@ -12,4 +12,4 @@ install:
 	@echo "Dependencies installed"
 
 docsync:
-	.venv/bin/python3 scripts/doc_sync.py
+	scripts/venv/bin/python3 scripts/doc_sync.py
