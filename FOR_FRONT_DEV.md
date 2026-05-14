@@ -546,7 +546,7 @@ frontend/src/
 @function ContactAvatar({ contact, isActive }) - Avatar with fallback
 @param {Object} unread - { global: number, contacts: { [contactId]: { unread, pending } } }
 
-@function getUnreadCount(contact) - Returns total unread (unread + pending) for a contact
+@function getUnreadCount(contact) - Returns unread count (messages I haven't read) for a contact
 @computed sorted - Contacts sorted by unread count (highest first), then alphabetically
 @function handleSearch(q) - GET /messages/search?q=
 @function handleStartConversation(u) - Starts private chat with searched user
