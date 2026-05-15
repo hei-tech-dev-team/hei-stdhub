@@ -200,13 +200,13 @@ export default function ArchiveGrid() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 lg:gap-4">
                 {year.ues.map((ue, ui) => (
                   <button
                     key={ue}
                     type="button"
                     onClick={() => handleSelectUE(ue)}
-                    className={`group relative px-5 py-3 rounded-xl text-sm font-bold
+                    className={`group relative px-5 lg:px-7 py-3 lg:py-4 rounded-xl lg:rounded-2xl text-sm lg:text-base font-bold
                       transition-all duration-300 active:scale-[0.95]
                       animate-slide-up ${
                         selectedUE === ue
