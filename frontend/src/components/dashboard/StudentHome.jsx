@@ -1,23 +1,41 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
   faExternalLinkAlt,
   faDownload,
   faBookOpen,
+  faSearch,
+  faLayerGroup,
+  faClipboardList,
+  faFileCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
 import Badge from "../ui/Badge";
-import Avatar from "../ui/Avatar";
+import UserAvatar from "../ui/UserAvatar";
 import { useAuth } from "../../context/AuthContext";
 
 const LEVELS = ["Tous", "L1", "L2", "L3"];
+const TYPES = [
+  { value: "Tous", label: "Tous", icon: faLayerGroup },
+  { value: "cours", label: "Cours", icon: faBookOpen },
+  { value: "td", label: "TD", icon: faClipboardList },
+  { value: "examen", label: "Examens", icon: faFileCircleCheck },
+];
+
+const TYPE_ICON = {
+  cours: faBookOpen,
+  td: faClipboardList,
+  examen: faFileCircleCheck,
+};
 
 export default function StudentHome() {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [filter, setFilter] = useState(user?.level || "Tous");
+  const [typeFilter, setTypeFilter] = useState("Tous");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,37 +52,91 @@ export default function StudentHome() {
     setFilter(level);
   };
 
+  const visiblePosts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return posts.filter((post) => {
+      const matchesType =
+        typeFilter === "Tous" || post.type?.toLowerCase() === typeFilter;
+      const haystack = [
+        post.title,
+        post.description,
+        post.ue,
+        post.author_pseudo,
+        post.type,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return matchesType && (!q || haystack.includes(q));
+    });
+  }, [posts, search, typeFilter]);
+
   return (
     <div className="flex flex-col h-full">
       <Navbar />
       <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-navy">
               Bonjour, {user?.prenom}
             </h1>
             <p className="text-sm text-gray-400 mt-0.5">
-              {posts.length} contenu(s) disponible(s)
+              {visiblePosts.length} contenu(s) affiché(s) sur {posts.length}
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {LEVELS.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => handleFilterChange(l)}
-                className={
-                  "px-4 py-1.5 rounded-full text-xs font-bold transition " +
-                  (filter === l
-                    ? "bg-navy text-white shadow-sm"
-                    : "bg-white border border-contact text-navy hover:border-navy")
-                }
-              >
-                {l}
-              </button>
-            ))}
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative min-w-0 sm:w-64">
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs"
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Rechercher un cours, une UE..."
+                className="w-full rounded-lg border border-contact bg-white pl-9 pr-3 py-2 text-sm text-navy placeholder:text-gray-300 focus:outline-none focus:border-gold"
+              />
+            </div>
+
+            <div className="inline-flex bg-white border border-contact rounded-lg p-1 w-fit">
+              {LEVELS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => handleFilterChange(l)}
+                  className={
+                    "px-3 py-1.5 rounded-md text-xs font-bold transition " +
+                    (filter === l
+                      ? "bg-navy text-white"
+                      : "text-navy hover:bg-surface")
+                  }
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4">
+          {TYPES.map((type) => (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() => setTypeFilter(type.value)}
+              className={
+                "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold whitespace-nowrap transition " +
+                (typeFilter === type.value
+                  ? "bg-navy text-white border-navy"
+                  : "bg-white text-navy border-contact hover:border-gold")
+              }
+            >
+              <FontAwesomeIcon icon={type.icon} className="text-xs" />
+              {type.label}
+            </button>
+          ))}
         </div>
 
         {loading && (
@@ -76,38 +148,36 @@ export default function StudentHome() {
           </div>
         )}
 
-        {!loading && posts.length === 0 && (
-  <div className="flex flex-col items-center justify-center py-20 text-center">
-    <div className="relative mb-8 animate-slide-up">
-      <div className="absolute inset-0 bg-gold/20 rounded-full scale-[2] opacity-30 animate-ping"></div>
-      <div className="absolute inset-0 bg-navy/10 rounded-full scale-150 blur-xl animate-pulse"></div>
-      <div className="absolute -top-2 -right-2 w-4 h-4 bg-gold/40 rounded-full animate-bounce"></div>
-      <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-navy/30 rounded-full animate-bounce" style={{ animationDelay: '0.3s', animationDuration: '0.8s' }}></div>
-      <div className="relative bg-white/80 backdrop-blur-sm border-2 border-gold/30 p-7 rounded-full shadow-lg hover:shadow-gold/20 hover:shadow-2xl transition-shadow duration-500">
-        <FontAwesomeIcon icon={faBookOpen} className="text-gold text-5xl animate-float" />
-      </div>
-    </div>
+        {!loading && visiblePosts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-5 bg-white border border-contact p-5 rounded-xl">
+              <FontAwesomeIcon icon={faBookOpen} className="text-gold text-3xl" />
+            </div>
+            <h2 className="text-xl font-bold text-navy mb-2">
+              Rien à afficher
+            </h2>
+            <p className="text-gray-400 max-w-sm leading-relaxed text-sm">
+              Aucun contenu ne correspond à ces filtres. Les professeurs publieront bientôt des cours, TD et examens ici.
+            </p>
+          </div>
+        )}
 
-    <h2 className="text-2xl font-bold text-navy mb-3 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
-      Rien à afficher
-    </h2>
-    <p className="text-gray-400 max-w-xs leading-relaxed animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}>
-      Aucun contenu disponible pour le moment.<br />
-      Les professeurs publieront bientôt des cours, TD et examens ici.
-    </p>
-  </div>
-)}
-        {!loading && (
+        {!loading && visiblePosts.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {posts.map((post) => (
+            {visiblePosts.map((post) => (
               <div
                 key={post.id}
-                className="bg-white rounded-2xl border border-contact/60 p-5
-                              hover:shadow-lg hover:border-gold/20 hover:-translate-y-0.5
-                              transition-all duration-300 group flex flex-col"
+                className="bg-white rounded-lg border border-contact/70 p-5
+                              hover:border-gold/40 transition-all duration-200 group flex flex-col"
               >
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <Badge type={post.type} />
+                  <span className="w-7 h-7 rounded-lg bg-surface text-navy flex items-center justify-center">
+                    <FontAwesomeIcon
+                      icon={TYPE_ICON[post.type?.toLowerCase()] || faLayerGroup}
+                      className="text-xs"
+                    />
+                  </span>
                   <span className="bg-navy/10 text-navy text-xs font-bold px-3 py-1 rounded-full">
                     {post.ue}
                   </span>
@@ -130,7 +200,7 @@ export default function StudentHome() {
 
                 <div className="flex items-center justify-between mt-auto pt-3 border-t border-surface/80">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Avatar
+                    <UserAvatar
                       name={post.author_pseudo || "?"}
                       size="sm"
                       color="bg-navy"
