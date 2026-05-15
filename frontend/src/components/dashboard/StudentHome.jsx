@@ -24,7 +24,7 @@ export default function StudentHome() {
     const params = filter !== "Tous" ? { level: filter } : {};
     api
       .get("/posts", { params })
-      .then(({ data }) => setPosts(data))
+      .then(({ data }) => setPosts(data.posts || []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [filter]);
