@@ -5,12 +5,11 @@ import {
   faPlus,
   faTimes,
   faSpinner,
-  faUser,
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import Avatar from "../ui/Avatar";
+import UserAvatar from "../ui/UserAvatar";
 
 const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
@@ -114,21 +113,13 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     const online = onlineUsers.has(contact.id);
     return (
       <div className="relative shrink-0">
-        {contact.avatar ? (
-          <div className="w-10 h-10 rounded-full overflow-hidden">
-            <img
-              src={contact.avatar}
-              alt={contact.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <Avatar
-            name={contact.name}
-            size="md"
-            color={isActive ? "bg-gold" : "bg-white/10"}
-          />
-        )}
+        <UserAvatar
+          avatar={contact.avatar}
+          name={contact.name}
+          size="lg"
+          color={isActive ? "bg-gold" : "bg-white/10"}
+          className="ring-2 ring-white/10"
+        />
         <span className="absolute -bottom-0.5 -right-0.5">
           <StatusDot online={online} />
         </span>
@@ -142,19 +133,14 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       <div className="px-5 pt-5 pb-4 shrink-0 border-b border-white/10">
         <div className="flex items-center gap-3 mb-4">
           <div className="relative shrink-0">
-            {user?.avatar ? (
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gold">
-                <img
-                  src={user.avatar}
-                  alt="moi"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center border-2 border-gold">
-                <FontAwesomeIcon icon={faUser} className="text-gold text-sm" />
-              </div>
-            )}
+            <UserAvatar
+              avatar={user?.avatar}
+              name={user?.pseudo || user?.ref}
+              size="lg"
+              color="bg-gold/20"
+              className="border-2 border-gold text-gold"
+              alt="Moi"
+            />
             <span className="absolute -bottom-0.5 -right-0.5">
               <StatusDot online={true} />
             </span>
@@ -194,8 +180,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
               onClick={() => onSelect(contact)}
               className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 active:scale-[0.98] ${
                 isActive
-                  ? "bg-gold/20"
-                  : "hover:bg-white/10"
+                  ? "bg-gold/20 border border-gold/20"
+                  : "border border-transparent hover:bg-white/10"
               }`}
             >
               <ContactAvatar contact={contact} isActive={isActive} />
@@ -289,17 +275,13 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                   className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left active:scale-[0.98]"
                 >
                   <div className="relative shrink-0">
-                    {u.avatar ? (
-                      <div className="w-10 h-10 rounded-full overflow-hidden">
-                        <img
-                          src={u.avatar}
-                          alt={u.pseudo}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <Avatar name={u.pseudo} size="md" color="bg-white/10" />
-                    )}
+                    <UserAvatar
+                      avatar={u.avatar}
+                      name={u.pseudo}
+                      size="lg"
+                      color="bg-white/10"
+                      className="ring-2 ring-white/10"
+                    />
                     <span className="absolute -bottom-0.5 -right-0.5">
                       <StatusDot online={onlineUsers.has(u.id)} />
                     </span>
