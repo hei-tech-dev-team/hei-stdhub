@@ -187,8 +187,10 @@ export default function ChatLayout() {
 
   useEffect(() => {
     if (activeContact) {
-      loadMessages(activeContact);
-      markSeen(activeContact);
+      (async () => {
+        await loadMessages(activeContact);
+        markSeen(activeContact);
+      })();
     }
   }, [activeContact, loadMessages, markSeen]);
 
