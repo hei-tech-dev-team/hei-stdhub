@@ -11,6 +11,7 @@ import {
   faBookOpen,
   faChevronRight,
   faGraduationCap,
+  faSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
@@ -20,7 +21,9 @@ const YEARS = [
     id: "L1",
     label: "PREMIERE ANNEE",
     subtitle: "Semestre 1 & 2",
-    gradient: "from-amber-300/30 via-yellow-200/20 to-transparent",
+    bg: "rgba(253,200,50,0.35)",
+    border: "rgba(253,200,50,0.5)",
+    shimmer: "rgba(255,215,0,0.4)",
     ues: [
       "WEB1", "PROG1", "SYS1", "DONNEES1",
       "THEORIE1-P1", "THEORIE1-P2",
@@ -31,16 +34,26 @@ const YEARS = [
     id: "L2",
     label: "DEUXIEME ANNEE",
     subtitle: "Semestre 3 & 4",
-    gradient: "from-amber-400/25 via-yellow-200/15 to-transparent",
+    bg: "rgba(250,180,50,0.35)",
+    border: "rgba(250,180,50,0.5)",
+    shimmer: "rgba(218,165,32,0.4)",
     ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
   },
   {
     id: "L3",
     label: "TROISIEME ANNEE",
     subtitle: "Semestre 5 & 6",
-    gradient: "from-yellow-500/20 via-amber-300/15 to-transparent",
+    bg: "rgba(230,160,30,0.35)",
+    border: "rgba(230,160,30,0.5)",
+    shimmer: "rgba(184,134,11,0.4)",
     ues: ["MOB1", "PROG5", "SECU1", "SECU2"],
   },
+];
+
+const DECORATIVE_CIRCLES = [
+  { top: "-20%", right: "-10%", w: 100, d: 0 },
+  { bottom: "-30%", left: "-15%", w: 80, d: 1.5 },
+  { top: "10%", left: "20%", w: 40, d: 3 },
 ];
 
 export default function ArchiveGrid() {
@@ -136,41 +149,83 @@ export default function ArchiveGrid() {
               }`}
               style={{ transitionDelay: `${yi * 150}ms` }}
             >
-              <div className={`relative overflow-hidden rounded-2xl mb-4 bg-gradient-to-r ${year.gradient}`}>
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm" />
-                <div className="relative px-5 py-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-navy/10 flex items-center justify-center shrink-0">
-                    <FontAwesomeIcon icon={faGraduationCap} className="text-navy text-lg" />
+              <div className="relative overflow-hidden rounded-2xl mb-5 group">
+                <div
+                  className="relative px-6 py-5 flex items-center gap-4 rounded-2xl overflow-hidden"
+                  style={{
+                    background: `linear-gradient(135deg, ${year.bg}, ${year.shimmer})`,
+                    border: `1px solid ${year.border}`,
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                  }}
+                >
+                  {DECORATIVE_CIRCLES.map((c, i) => (
+                    <div
+                      key={i}
+                      className="absolute rounded-full animate-pulse"
+                      style={{
+                        width: c.w,
+                        height: c.w,
+                        top: c.top,
+                        right: c.right,
+                        bottom: c.bottom,
+                        left: c.left,
+                        animationDelay: `${c.d}s`,
+                        background:
+                          "radial-gradient(circle, rgba(255,215,0,0.3), transparent)",
+                      }}
+                    />
+                  ))}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                      transform: "skewX(-20deg)",
+                    }}
+                  />
+                  <div className="w-12 h-12 rounded-xl bg-white/50 backdrop-blur-md flex items-center justify-center shrink-0 shadow-lg">
+                    <FontAwesomeIcon icon={faGraduationCap} className="text-navy text-xl" />
                   </div>
-                  <div>
-                    <h3 className="font-bold text-navy text-sm tracking-wide">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-navy text-base tracking-wide">
                       {year.label}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-navy/60 mt-0.5 font-medium">
                       {year.subtitle}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2.5">
-                {year.ues.map((ue) => (
+              <div className="flex flex-wrap gap-3">
+                {year.ues.map((ue, ui) => (
                   <button
                     key={ue}
                     type="button"
                     onClick={() => handleSelectUE(ue)}
-                    className={`group relative px-4 py-2.5 rounded-xl text-sm font-bold
-                      transition-all duration-300 active:scale-[0.97]
-                      ${
+                    className={`group relative px-5 py-3 rounded-xl text-sm font-bold
+                      transition-all duration-300 active:scale-[0.95]
+                      animate-slide-up ${
                         selectedUE === ue
-                          ? "bg-navy text-white shadow-lg shadow-navy/25"
-                          : "bg-white text-navy border-2 border-contact/60 hover:border-gold/40 hover:shadow-lg hover:shadow-gold/10 hover:-translate-y-0.5"
+                          ? "bg-navy text-white shadow-lg shadow-navy/30 scale-105"
+                          : "bg-white/80 backdrop-blur-sm text-navy border-2 border-amber-200/60 hover:border-gold/60 hover:shadow-xl hover:shadow-gold/15 hover:-translate-y-1"
                       }`}
+                    style={{ animationDelay: `${yi * 150 + ui * 60}ms`, animationFillMode: "backwards" }}
                   >
                     {selectedUE === ue && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-gold rounded-full border-2 border-white" />
+                      <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-gold rounded-full border-[3px] border-white animate-pulse" />
                     )}
                     <span className="relative z-10">{ue}</span>
+                    {selectedUE !== ue && (
+                      <span
+                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(253,200,50,0.1), transparent)",
+                        }}
+                      />
+                    )}
                   </button>
                 ))}
               </div>
@@ -193,7 +248,7 @@ export default function ArchiveGrid() {
               "lg:w-96 lg:shrink-0 " +
               "max-h-[85vh] lg:max-h-none lg:h-full " +
               "rounded-t-3xl lg:rounded-2xl " +
-              "bg-white shadow-modal lg:shadow-card " +
+              "bg-white/95 backdrop-blur-xl shadow-modal lg:shadow-card " +
               "flex flex-col " +
               "transition-all duration-400 ease-out " +
               (showPanel
@@ -206,7 +261,7 @@ export default function ArchiveGrid() {
 
               <div className="flex items-start justify-between mb-5 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-gold/20 flex items-center justify-center animate-float">
                     <FontAwesomeIcon icon={faBookOpen} className="text-gold text-lg" />
                   </div>
                   <div>
@@ -229,7 +284,7 @@ export default function ArchiveGrid() {
                       }}
                       className="w-8 h-8 rounded-xl bg-gold text-white
                         flex items-center justify-center hover:opacity-80
-                        transition-all duration-200 active:scale-95"
+                        transition-all duration-200 active:scale-90"
                       title={showAdd ? "Fermer" : "Ajouter un support"}
                     >
                       <FontAwesomeIcon
@@ -243,7 +298,7 @@ export default function ArchiveGrid() {
                     onClick={handleClosePanel}
                     className="w-8 h-8 rounded-xl bg-surface text-gray-400
                       flex items-center justify-center hover:bg-contact hover:text-navy
-                      transition-all duration-200 active:scale-95"
+                      transition-all duration-200 active:scale-90"
                     title="Fermer"
                   >
                     <FontAwesomeIcon icon={faTimes} className="text-sm" />
@@ -254,7 +309,7 @@ export default function ArchiveGrid() {
               {isTeacher && showAdd && (
                 <form
                   onSubmit={handleAdd}
-                  className="mb-5 p-4 bg-gradient-to-br from-navy/5 to-transparent rounded-2xl border border-navy/10 flex flex-col gap-3 shrink-0 animate-slide-up"
+                  className="mb-5 p-4 bg-gradient-to-br from-gold/10 via-amber-50 to-transparent rounded-2xl border border-gold/20 flex flex-col gap-3 shrink-0 animate-slide-up"
                 >
                   {addError && (
                     <p className="text-red-500 text-xs font-medium flex items-center gap-1.5">
@@ -333,8 +388,8 @@ export default function ArchiveGrid() {
                   supports.map((s, i) => (
                     <div
                       key={s.id}
-                      className="group flex items-center gap-3 p-3.5 bg-surface
-                        rounded-xl hover:bg-navy/5 hover:border-gold/20
+                      className="group flex items-center gap-3 p-3.5 bg-gradient-to-r from-transparent via-white to-transparent
+                        rounded-xl hover:bg-gold/5 hover:border-gold/30
                         border border-transparent transition-all duration-200
                         animate-slide-up"
                       style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
@@ -342,7 +397,8 @@ export default function ArchiveGrid() {
                       <div
                         className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5
                           flex items-center justify-center shrink-0
-                          group-hover:from-gold/30 group-hover:to-gold/10 transition-all duration-300"
+                          group-hover:from-gold/30 group-hover:to-gold/10 transition-all duration-300
+                          group-hover:scale-110"
                       >
                         <FontAwesomeIcon
                           icon={faLink}
@@ -387,7 +443,7 @@ export default function ArchiveGrid() {
               </div>
 
               {!loading && supports.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-contact/40 shrink-0">
+                <div className="mt-3 pt-3 border-t border-gold/20 shrink-0">
                   <p className="text-[11px] text-gray-400 font-medium text-center">
                     {supports.length} support{supports.length > 1 ? "s" : ""}
                   </p>
