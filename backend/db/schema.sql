@@ -194,7 +194,7 @@ CREATE TRIGGER trg_posts_updated_at
   FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
 INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level) VALUES
-  ('ADMIN001', 'Admin', 'HEI', 'admin@hei.mg', 'ADMIN',
+  ('ADMIN001', 'Admin', 'HEI', 'stdhub.admin@gmail.com', 'ADMIN',
    '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin', NULL),
   ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
    '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student', 'L1'),
