@@ -117,6 +117,24 @@ router.patch("/users/:id/role", auth, adminOnly, async (req, res) => {
       }
 });
 
+router.patch("/users/:id/email", auth, adminOnly, async (req, res) => {
+      const { email } = req.body;
+      if (!email || !email.includes("@"))
+            return res.status(400).json({ error: "Email invalide." });
+      try {
+            const { rows } = await db.query(
+                  "UPDATE users SET email=$1 WHERE id=$2 RETURNING id, ref, email",
+                  [email.trim().toLowerCase(), req.params.id],
+            );
+            if (!rows.length)
+                  return res.status(404).json({ error: "Utilisateur introuvable." });
+            res.json(rows[0]);
+      } catch (err) {
+            console.error("ERREUR PATCH EMAIL:", err.message);
+            res.status(500).json({ error: "Erreur serveur." });
+      }
+});
+
 router.delete("/users/:id", auth, adminOnly, async (req, res) => {
       if (parseInt(req.params.id) === req.user.id)
             return res
