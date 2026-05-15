@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPaperPlane,
@@ -8,6 +8,7 @@ import {
   faFile,
   faChevronDown,
   faTrash,
+  faSmile,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -22,6 +23,8 @@ import {
   isFileMessage,
   parseFileContent,
 } from "./chat-utils";
+
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300" },
@@ -263,8 +266,12 @@ export default function MessagePanel({
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
+  const inputRef = useRef(null);
+  const emojiButtonRef = useRef(null);
+  const emojiPickerRef = useRef(null);
   const scrollRef = useRef(null);
   const prevScrollHeight = useRef(0);
   const prevMsgCount = useRef(messages.length);
@@ -285,6 +292,36 @@ export default function MessagePanel({
     prevMsgCount.current = messages.length;
   }, [messages, isAtBottom]);
 
+  useEffect(() => {
+    setShowEmojiPicker(false);
+  }, [contact.id]);
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const handlePointerDown = (event) => {
+      const target = event.target;
+      if (
+        emojiPickerRef.current?.contains(target) ||
+        emojiButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setShowEmojiPicker(false);
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") setShowEmojiPicker(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showEmojiPicker]);
+
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
@@ -298,12 +335,34 @@ export default function MessagePanel({
     }
   };
 
+  const handleEmojiClick = (emojiData) => {
+    const emoji = emojiData.emoji;
+    const input = inputRef.current;
+
+    if (!input) {
+      setText((prev) => prev + emoji);
+      return;
+    }
+
+    const start = input.selectionStart ?? text.length;
+    const end = input.selectionEnd ?? text.length;
+    const next = `${text.slice(0, start)}${emoji}${text.slice(end)}`;
+    const cursor = start + emoji.length;
+
+    setText(next);
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(cursor, cursor);
+    });
+  };
+
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
     setSending(true);
     await onSend(trimmed);
     setText("");
+    setShowEmojiPicker(false);
     setSending(false);
     onAtBottomChange(true);
     setTimeout(
@@ -482,10 +541,40 @@ export default function MessagePanel({
 
       {/* Input */}
       <div className="px-1 sm:px-6 py-3 sm:py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
+        <div className="relative flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
+          {showEmojiPicker && (
+            <div
+              ref={emojiPickerRef}
+              className="absolute bottom-full left-0 sm:left-4 mb-3 z-30 max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl shadow-2xl shadow-black/40"
+            >
+              <Suspense
+                fallback={
+                  <div className="w-[min(360px,calc(100vw-1rem))] h-[420px] bg-[#222] text-white/60 flex items-center justify-center text-sm">
+                    Chargement...
+                  </div>
+                }
+              >
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  theme="dark"
+                  emojiStyle="native"
+                  suggestedEmojisMode="recent"
+                  skinTonePickerLocation="SEARCH"
+                  searchPlaceholder="Rechercher un emoji"
+                  searchClearButtonLabel="Effacer"
+                  lazyLoadEmojis
+                  autoFocusSearch
+                  width="min(360px, calc(100vw - 1rem))"
+                  height={420}
+                  previewConfig={{ showPreview: false }}
+                />
+              </Suspense>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
+            title="Joindre un fichier"
             className="w-10 h-10 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all shrink-0 active:scale-90"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
@@ -496,7 +585,21 @@ export default function MessagePanel({
             className="hidden"
             onChange={handleFile}
           />
+          <button
+            ref={emojiButtonRef}
+            type="button"
+            onClick={() => setShowEmojiPicker((open) => !open)}
+            title="Ajouter un emoji"
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-90 ${
+              showEmojiPicker
+                ? "bg-gold text-navy"
+                : "text-white/40 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <FontAwesomeIcon icon={faSmile} className="text-sm" />
+          </button>
           <input
+            ref={inputRef}
             className="flex-1 min-w-0 text-sm text-white bg-transparent focus:outline-none placeholder:text-white/30"
             placeholder="Écrire un message..."
             value={text}
