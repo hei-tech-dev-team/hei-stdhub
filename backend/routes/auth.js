@@ -237,7 +237,7 @@ router.post("/forgot-password", async (req, res) => {
 
     await db.query(
       `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, NOW() + INTERVAL '1 hour')`,
+       VALUES ($1, $2, NOW() + INTERVAL '5 minutes')`,
       [user.id, tokenHash],
     );
 
