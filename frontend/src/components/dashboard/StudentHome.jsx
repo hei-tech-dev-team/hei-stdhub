@@ -24,8 +24,13 @@ export default function StudentHome() {
     const params = filter !== "Tous" ? { level: filter } : {};
     api
       .get("/posts", { params })
-      .then(({ data }) => setPosts(data))
-      .catch(console.error)
+      .then(({ data }) =>
+        setPosts(Array.isArray(data) ? data : data?.posts || [])
+      )
+      .catch((err) => {
+        console.error(err);
+        setPosts([]);
+      })
       .finally(() => setLoading(false));
   }, [filter]);
 
