@@ -73,8 +73,8 @@ export default function TeacherInbox() {
             <FontAwesomeIcon icon={faFileAlt} className="text-navy text-lg" />
           </div>
           <div>
-            <h3 className="font-bold text-navy text-sm">Rendus des étudiants</h3>
-            <p className="text-xs text-gray-400">Consultez et téléchargez les devoirs soumis</p>
+            <h3 className="font-bold text-navy text-base">Rendus des étudiants</h3>
+            <p className="text-sm text-gray-400">Consultez et téléchargez les devoirs soumis</p>
           </div>
         </div>
 

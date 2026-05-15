@@ -170,7 +170,7 @@ export default function StudentUpload() {
       }`}
     >
       {/* Dropzone */}
-      <div className="flex-[1.4] flex flex-col gap-4">
+      <div className="flex-1 flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center">
             <FontAwesomeIcon icon={faCloudUploadAlt} className="text-gold text-lg" />
@@ -182,7 +182,7 @@ export default function StudentUpload() {
         </div>
 
         <div
-          className={`relative flex flex-col items-center justify-center rounded-2xl min-h-56 sm:min-h-80 p-8 sm:p-10 cursor-pointer
+          className={`relative flex flex-col items-center justify-center rounded-2xl flex-1 p-8 sm:p-10 cursor-pointer
             border-2 border-dashed transition-all duration-300 ${
             dragOver
               ? "border-gold bg-gradient-to-br from-gold/10 via-amber-50/50 to-transparent scale-[1.02]"
