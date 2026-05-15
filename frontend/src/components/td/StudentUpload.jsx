@@ -170,19 +170,19 @@ export default function StudentUpload() {
       }`}
     >
       {/* Dropzone */}
-      <div className="flex-1 flex flex-col gap-4">
+      <div className="flex-[1.4] flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center">
             <FontAwesomeIcon icon={faCloudUploadAlt} className="text-gold text-lg" />
           </div>
           <div>
-            <h3 className="font-bold text-navy text-sm">Déposer votre devoir</h3>
-            <p className="text-xs text-gray-400">Glissez-déposez ou cliquez pour parcourir</p>
+            <h3 className="font-bold text-navy text-base">Déposer votre devoir</h3>
+            <p className="text-sm text-gray-400">Glissez-déposez ou cliquez pour parcourir</p>
           </div>
         </div>
 
         <div
-          className={`relative flex flex-col items-center justify-center rounded-2xl min-h-48 sm:min-h-64 p-6 sm:p-8 cursor-pointer
+          className={`relative flex flex-col items-center justify-center rounded-2xl min-h-56 sm:min-h-80 p-8 sm:p-10 cursor-pointer
             border-2 border-dashed transition-all duration-300 ${
             dragOver
               ? "border-gold bg-gradient-to-br from-gold/10 via-amber-50/50 to-transparent scale-[1.02]"
@@ -203,10 +203,10 @@ export default function StudentUpload() {
               <div className="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center mb-3">
                 <FontAwesomeIcon icon={faFile} className="text-green-500 text-2xl" />
               </div>
-              <p className="font-bold text-navy text-sm truncate max-w-full px-4">
+              <p className="font-bold text-navy text-sm sm:text-base truncate max-w-full px-4">
                 {form.file.name}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 {(form.file.size / 1024 / 1024).toFixed(2)} Mo
               </p>
               <button
@@ -223,21 +223,21 @@ export default function StudentUpload() {
           ) : (
             <div className="flex flex-col items-center text-center">
               <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
+                className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
                   dragOver ? "bg-gold/20 scale-110" : "bg-navy/5"
                 }`}
               >
                 <FontAwesomeIcon
                   icon={faCloudUploadAlt}
-                  className={`text-3xl transition-colors duration-300 ${
+                  className={`text-4xl transition-colors duration-300 ${
                     dragOver ? "text-gold" : "text-gray-300"
                   }`}
                 />
               </div>
-              <p className="font-semibold text-gray-400 text-sm sm:text-base">
+              <p className="font-semibold text-gray-400 text-base sm:text-lg">
                 {dragOver ? "Déposez votre fichier" : "Déposer votre devoir ici"}
               </p>
-              <p className="text-xs text-gray-300 mt-1.5">
+              <p className="text-sm text-gray-300 mt-1.5">
                 ou cliquez pour parcourir (PDF, ZIP, DOC — max 10 Mo)
               </p>
             </div>
@@ -258,8 +258,8 @@ export default function StudentUpload() {
             <FontAwesomeIcon icon={faGraduationCap} className="text-navy text-lg" />
           </div>
           <div>
-            <h3 className="font-bold text-navy text-sm">Informations</h3>
-            <p className="text-xs text-gray-400">Vos coordonnées et le devoir</p>
+            <h3 className="font-bold text-navy text-base">Informations</h3>
+            <p className="text-sm text-gray-400">Vos coordonnées et le devoir</p>
           </div>
         </div>
 
