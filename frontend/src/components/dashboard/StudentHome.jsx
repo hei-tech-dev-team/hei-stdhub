@@ -24,13 +24,8 @@ export default function StudentHome() {
     const params = filter !== "Tous" ? { level: filter } : {};
     api
       .get("/posts", { params })
-      .then(({ data }) =>
-        setPosts(Array.isArray(data) ? data : data?.posts || [])
-      )
-      .catch((err) => {
-        console.error(err);
-        setPosts([]);
-      })
+      .then(({ data }) => setPosts(data.posts || []))
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, [filter]);
 
@@ -82,30 +77,24 @@ export default function StudentHome() {
         )}
 
         {!loading && posts.length === 0 && (
-  <div className="flex flex-col items-center justify-center py-20 text-center animate-fadeIn">
-    {/* L'icône stylisée avec les cercles concentriques */}
-    <div className="relative mb-6">
-      <div className="absolute inset-0 bg-blue-100 rounded-full scale-150 opacity-20 animate-pulse"></div>
-      <div className="absolute inset-0 bg-blue-50 rounded-full scale-125 opacity-50"></div>
-      <div className="relative bg-white border-4 border-blue-100 p-6 rounded-full shadow-sm">
-        <FontAwesomeIcon icon={faBookOpen} className="text-blue-500 text-4xl" />
+  <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="relative mb-8 animate-slide-up">
+      <div className="absolute inset-0 bg-gold/20 rounded-full scale-[2] opacity-30 animate-ping"></div>
+      <div className="absolute inset-0 bg-navy/10 rounded-full scale-150 blur-xl animate-pulse"></div>
+      <div className="absolute -top-2 -right-2 w-4 h-4 bg-gold/40 rounded-full animate-bounce"></div>
+      <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-navy/30 rounded-full animate-bounce" style={{ animationDelay: '0.3s', animationDuration: '0.8s' }}></div>
+      <div className="relative bg-white/80 backdrop-blur-sm border-2 border-gold/30 p-7 rounded-full shadow-lg hover:shadow-gold/20 hover:shadow-2xl transition-shadow duration-500">
+        <FontAwesomeIcon icon={faBookOpen} className="text-gold text-5xl animate-float" />
       </div>
     </div>
 
-    {/* Textes */}
-    <h2 className="text-2xl font-bold text-navy mb-2">Rien à afficher</h2>
-    <p className="text-gray-400 max-w-xs mb-8 leading-relaxed">
-      Il n'y a pas encore de contenu ici.<br />
-      Commencez par explorer les options du menu.
+    <h2 className="text-2xl font-bold text-navy mb-3 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
+      Rien à afficher
+    </h2>
+    <p className="text-gray-400 max-w-xs leading-relaxed animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}>
+      Aucun contenu disponible pour le moment.<br />
+      Les professeurs publieront bientôt des cours, TD et examens ici.
     </p>
-
-    {/* Bouton bleu stylisé */}
-    <button 
-      onClick={() => {/* Ton action ici, ex: handleFilterChange("Tous") */}}
-      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-10 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95"
-    >
-      Commencer
-    </button>
   </div>
 )}
         {!loading && (
@@ -113,8 +102,9 @@ export default function StudentHome() {
             {posts.map((post) => (
               <div
                 key={post.id}
-                className="bg-white rounded-2xl border border-contact p-5
-                              hover:shadow-md transition-shadow group flex flex-col"
+                className="bg-white rounded-2xl border border-contact/60 p-5
+                              hover:shadow-lg hover:border-gold/20 hover:-translate-y-0.5
+                              transition-all duration-300 group flex flex-col"
               >
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <Badge type={post.type} />
@@ -133,19 +123,19 @@ export default function StudentHome() {
                   {post.title}
                 </h3>
                 {post.description && (
-                  <p className="text-gray-400 text-xs mb-4 line-clamp-2 leading-relaxed">
+                  <p className="text-gray-400 text-xs mb-4 line-clamp-2 leading-relaxed group-hover:text-gray-500 transition-colors">
                     {post.description}
                   </p>
                 )}
 
-                <div className="flex items-center justify-between mt-auto pt-3 border-t border-surface">
+                <div className="flex items-center justify-between mt-auto pt-3 border-t border-surface/80">
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar
                       name={post.author_pseudo || "?"}
                       size="sm"
                       color="bg-navy"
                     />
-                    <span className="text-xs text-gray-500 truncate">
+                    <span className="text-xs text-gray-400 truncate group-hover:text-gray-500 transition-colors">
                       {post.author_pseudo || "Professeur"}
                     </span>
                   </div>
@@ -154,8 +144,8 @@ export default function StudentHome() {
                       href={post.link}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-gold font-bold hover:underline
-                                  flex items-center gap-1 shrink-0 ml-2"
+                      className="text-xs text-gold font-bold hover:text-gold-light hover:underline
+                                  flex items-center gap-1 shrink-0 ml-2 transition-colors"
                     >
                       <FontAwesomeIcon
                         icon={faExternalLinkAlt}
@@ -168,8 +158,8 @@ export default function StudentHome() {
                       href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${post.file_path}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-gold font-bold hover:underline
-                                  flex items-center gap-1 shrink-0 ml-2"
+                      className="text-xs text-gold font-bold hover:text-gold-light hover:underline
+                                  flex items-center gap-1 shrink-0 ml-2 transition-colors"
                     >
                       <FontAwesomeIcon icon={faDownload} className="text-xs" />
                       Télécharger

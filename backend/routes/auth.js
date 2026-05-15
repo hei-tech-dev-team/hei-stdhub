@@ -58,7 +58,7 @@ const router = express.Router();
 
 const makeToken = (user) =>
   jwt.sign(
-    { id: user.id, ref: user.ref, role: user.role },
+    { id: user.id, ref: user.ref, role: user.role, ues: user.ues || [], level: user.level || null },
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
@@ -69,6 +69,17 @@ const hashResetToken = (token) =>
 const genericForgotPasswordResponse = {
   message:
     "Si un compte est associé à cet email, un lien de réinitialisation a été envoyé.",
+};
+
+const tryGetAdminFromToken = (req) => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return null;
+  try {
+    const decoded = jwt.verify(header.split(" ")[1], process.env.JWT_SECRET);
+    return decoded.role === "admin" ? decoded : null;
+  } catch {
+    return null;
+  }
 };
 
 router.post("/register", async (req, res) => {
@@ -92,18 +103,22 @@ router.post("/register", async (req, res) => {
     return res
       .status(400)
       .json({ error: "Un professeur doit avoir au moins une UE." });
-  if (!inviteCode)
+
+  const adminUser = tryGetAdminFromToken(req);
+  if (!inviteCode && !adminUser)
     return res.status(400).json({ error: "Code d'invitation requis." });
 
   try {
-    const invite = await db.query(
-      `SELECT * FROM invitations WHERE code=$1 AND use_count < max_uses AND expires_at > NOW()`,
-      [inviteCode.toUpperCase()],
-    );
-    if (!invite.rows.length)
-      return res
-        .status(400)
-        .json({ error: "Code d'invitation invalide ou expiré." });
+    if (inviteCode) {
+      const invite = await db.query(
+        `SELECT * FROM invitations WHERE code=$1 AND use_count < max_uses AND expires_at > NOW()`,
+        [inviteCode.toUpperCase()],
+      );
+      if (!invite.rows.length)
+        return res
+          .status(400)
+          .json({ error: "Code d'invitation invalide ou expiré." });
+    }
 
     const existingRef = await db.query(
       "SELECT id FROM users WHERE ref=$1", [ref.toUpperCase()],
@@ -142,10 +157,12 @@ router.post("/register", async (req, res) => {
     );
 
     const newUser = rows[0];
-    await db.query(
-      `UPDATE invitations SET use_count = use_count + 1, used_by = $1 WHERE code = $2 AND use_count < max_uses`,
-      [newUser.id, inviteCode.toUpperCase()],
-    );
+    if (inviteCode) {
+      await db.query(
+        `UPDATE invitations SET use_count = use_count + 1, used_by = $1 WHERE code = $2 AND use_count < max_uses`,
+        [newUser.id, inviteCode.toUpperCase()],
+      );
+    }
 
     await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [newUser.id]);
 
@@ -168,7 +185,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, first_login
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, ues, first_login
        FROM users WHERE ref=$1`,
       [ref.toUpperCase()],
     );
