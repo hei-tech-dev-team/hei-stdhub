@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import { getSocket, disconnectSocket } from "../../socket";
-import { subscribeToPush } from "../../push";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
@@ -77,11 +76,6 @@ export default function ChatLayout() {
     } catch (err) {
       console.error(err);
     }
-  }, []);
-
-  useEffect(() => {
-    requestNotifyPermission();
-    subscribeToPush();
   }, []);
 
   useEffect(() => {

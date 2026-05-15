@@ -32,7 +32,7 @@ Full-stack web platform for **HEI Madagascar** (school). Students browse course 
 - express-rate-limit, web-push, compression, cors
 
 ### Testing
-- Mocha + Chai + Supertest (144 tests)
+- Mocha + Chai + Supertest (200 tests)
 
 ### Deployment
 - Frontend: Vercel (SPA rewrites in vercel.json)
@@ -389,16 +389,19 @@ WEB1, WEB2, WEB3, PROG1, PROG2, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1,
 
 ---
 
-## Real-Time Features (Socket.IO)
+## Real-Time Features (Socket.IO) — Optimized for 1000+ users
 
 - **Global Chat**: Broadcast via `message:global` event.
 - **Private Chat**: Sent to `user:{userId}` room + echo to sender.
-- **Online/Offline**: `user:join` / `user:leave`, tracked in `onlineUsers` Map.
+- **Online/Offline**: `user:join` / `user:leave` broadcast via `socket.broadcast.emit` (not `io.emit` — avoids flooding the sender). Tracked in `onlineUsers` Map (max 5000 entries).
 - **Seen Status**: `message:seen` event notifies sender.
-- **Message Deletion**: `message:deleted` event broadcast to all clients with `{ messageId, isGlobal, receiverId, senderId }`.
-- **Unread Counts**: `unread:update` event sent to sender after private message with `{ contactId, unread, pending }`.
-- **BDE Sync**: BDE members join `bde` room. Drag-and-drop events (`bde:drag-start`, `bde:drag-over`, `bde:drag-end`, `bde:update`) broadcast in real-time.
-- **Push Notifications**: Private messages trigger Web Push to all subscribed devices. Invalid subscriptions cleaned up.
+- **Message Deletion**: `message:deleted` event broadcast to clients.
+- **Unread Counts**: `unread:update` event sent to sender after private message.
+- **BDE Sync**: BDE members join `bde` room. Drag-and-drop events scoped via `socket.to("bde")`.
+- **Push Notifications**: Private/global messages trigger Web Push in parallel batches (concurrency: 10). Invalid subscriptions cleaned up.
+- **Connection Auth**: JWT verification on socket `handshake.auth.token`.
+- **Performance**: `perMessageDeflate` compression (threshold: 1KB), `maxHttpBufferSize` (1MB), `connectionStateRecovery` (2 min window), `pingTimeout` (20s), `maxHttpBufferSize` limit.
+- **Reconnection**: Stale rooms cleaned on reconnect. Dedicated `refreshSocket()` for token changes.
 
 ---
 
