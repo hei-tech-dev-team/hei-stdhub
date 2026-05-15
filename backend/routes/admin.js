@@ -132,6 +132,18 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
       }
 });
 
+// Passage de classe : L1->L2, L2->L3, L3->alumni
+router.post("/class-upgrade", auth, adminOnly, async (req, res) => {
+  const { failed_refs } = req.body;
+  try {
+    const result = await db.query("UPDATE users SET level = CASE WHEN level = 'L1' THEN 'L2' WHEN level = 'L2' THEN 'L3' WHEN level = 'L3' THEN 'alumni' ELSE level END, role = CASE WHEN level = 'L3' THEN 'alumni' ELSE role END WHERE level IN ('L1', 'L2', 'L3') AND ref != ALL($1::text[]) RETURNING id, ref, level, role", [failed_refs || []]);
+    res.json({ upgraded: result.rows.length, users: result.rows });
+  } catch (err) {
+    console.error("ERREUR class-upgrade:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 const generateInviteCode = (role) => {
       const prefixes = {
             student: "HEI-STD",
@@ -170,68 +182,53 @@ router.post("/invitations", auth, adminOnly, async (req, res) => {
 });
 
 router.post("/invitations/bulk", auth, adminOnly, async (req, res) => {
-      const { role, count, max_uses } = req.body;
-      if (!["student", "teacher", "alumni"].includes(role))
-            return res.status(400).json({ error: "Rôle invalide." });
-      const qty = Math.min(Math.max(parseInt(count) || 1, 1), 1000);
-      const uses = Math.max(parseInt(max_uses) || 1, 1);
+  const { role, count, max_uses } = req.body;
+  if (!["student", "teacher", "alumni"].includes(role))
+    return res.status(400).json({ error: "Rôle invalide." });
+  const qty = Math.min(Math.max(parseInt(count) || 1, 1), 1000);
+  const uses = Math.max(parseInt(max_uses) || 1, 1);
 
-      const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-      try {
-            const codes = [];
-            const batchSize = 100;
-            for (let i = 0; i < qty; i += batchSize) {
-                  const currentBatchSize = Math.min(batchSize, qty - i);
-                  const valueStrings = [];
-                  const valueParams = [];
-                  let paramIdx = 1;
-                  for (let j = 0; j < currentBatchSize; j++) {
-                        const code = generateInviteCode(role);
-                        codes.push({
-                              code,
-                              role,
-                              max_uses: uses,
-                              created_by: req.user.id,
-                              expires_at,
-                        });
-                        valueStrings.push(
-                              `($${paramIdx}, $${paramIdx + 1}, $${paramIdx + 2}, $${paramIdx + 3}, $${paramIdx + 4})`,
-                        );
-                        valueParams.push(
-                              code,
-                              role,
-                              uses,
-                              req.user.id,
-                              expires_at,
-                        );
-                        paramIdx += 5;
-                        const generateInviteCode = (role) => {
-                              const prefixes = {
-                                    student: "HEI-STD",
-                                    teacher: "HEI-PROF",
-                                    alumni: "HEI-ALUM",
-                              };
-                              const random = Array.from(
-                                    { length: 6 },
-                                    () =>
-                                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[
-                                                Math.floor(Math.random() * 36)
-                                          ],
-                              ).join("");
-                              return `${prefixes[role]}-${random}`;
-                        };
-                  }
-                  await db.query(
-                        `INSERT INTO invitations (code, role, max_uses, created_by, expires_at) VALUES ${valueStrings.join(", ")}`,
-                        valueParams,
-                  );
-            }
-            res.status(201).json({ count: codes.length, codes });
-      } catch (err) {
-            console.error("ERREUR bulk invitations:", err);
-            res.status(500).json({ error: "Erreur serveur." });
+  try {
+    const codes = [];
+    const batchSize = 100;
+    for (let i = 0; i < qty; i += batchSize) {
+      const currentBatchSize = Math.min(batchSize, qty - i);
+      const valueStrings = [];
+      const valueParams = [];
+      let paramIdx = 1;
+      for (let j = 0; j < currentBatchSize; j++) {
+        const code = generateInviteCode(role);
+        codes.push({
+          code,
+          role,
+          max_uses: uses,
+          created_by: req.user.id,
+          expires_at,
+        });
+        valueStrings.push(
+          `($${paramIdx}, $${paramIdx + 1}, $${paramIdx + 2}, $${paramIdx + 3}, $${paramIdx + 4})`,
+        );
+        valueParams.push(
+          code,
+          role,
+          uses,
+          req.user.id,
+          expires_at,
+        );
+        paramIdx += 5;
       }
+      await db.query(
+        `INSERT INTO invitations (code, role, max_uses, created_by, expires_at) VALUES ${valueStrings.join(", ")}`,
+        valueParams,
+      );
+    }
+    res.status(201).json({ count: codes.length, codes });
+  } catch (err) {
+    console.error("ERREUR bulk invitations:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
 });
 
 router.get("/invitations", auth, adminOnly, async (req, res) => {
