@@ -155,26 +155,35 @@ const sendPasswordResetEmail = async ({ user, token }) => {
 const sendEmail = async ({ user, subject, text, html }) => {
   if (!user?.email?.trim()) throw new Error("User email is required");
 
+  // Try Resend first, fall back to SMTP
   if (process.env.RESEND_API_KEY) {
-    const result = await sendWithResend({ user, subject, text, html });
-    console.info(`Email envoyé via Resend à ${user.email}`);
-    return { skipped: false, provider: "resend", result };
+    try {
+      const result = await sendWithResend({ user, subject, text, html });
+      console.info(`Email envoyé via Resend à ${user.email}`);
+      return { skipped: false, provider: "resend", result };
+    } catch (resendErr) {
+      console.error("Resend failed, trying SMTP:", resendErr.message);
+    }
   }
 
   const transporter = createTransport();
   if (transporter) {
-    await transporter.sendMail({
-      from: getFromAddress(),
-      to: user.email,
-      subject,
-      text,
-      html,
-    });
-    console.info(`Email envoyé via SMTP à ${user.email}`);
-    return { skipped: false };
+    try {
+      await transporter.sendMail({
+        from: getFromAddress(),
+        to: user.email,
+        subject,
+        text,
+        html,
+      });
+      console.info(`Email envoyé via SMTP à ${user.email}`);
+      return { skipped: false };
+    } catch (smtpErr) {
+      console.error("SMTP also failed:", smtpErr.message);
+    }
   }
 
-  console.info(`Email non envoyé à ${user.email} (aucun fournisseur configuré)`);
+  console.info(`Email non envoyé à ${user.email} (aucun fournisseur fonctionnel)`);
   return { skipped: true };
 };
 
