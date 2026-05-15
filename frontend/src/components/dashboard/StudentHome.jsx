@@ -77,12 +77,32 @@ export default function StudentHome() {
         )}
 
         {!loading && posts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-300">
-            <FontAwesomeIcon icon={faBookOpen} className="text-5xl" />
-            <p className="text-sm font-medium">Aucun contenu disponible.</p>
-          </div>
-        )}
+  <div className="flex flex-col items-center justify-center py-20 text-center animate-fadeIn">
+    {/* L'icône stylisée avec les cercles concentriques */}
+    <div className="relative mb-6">
+      <div className="absolute inset-0 bg-blue-100 rounded-full scale-150 opacity-20 animate-pulse"></div>
+      <div className="absolute inset-0 bg-blue-50 rounded-full scale-125 opacity-50"></div>
+      <div className="relative bg-white border-4 border-blue-100 p-6 rounded-full shadow-sm">
+        <FontAwesomeIcon icon={faBookOpen} className="text-blue-500 text-4xl" />
+      </div>
+    </div>
 
+    {/* Textes */}
+    <h2 className="text-2xl font-bold text-navy mb-2">Rien à afficher</h2>
+    <p className="text-gray-400 max-w-xs mb-8 leading-relaxed">
+      Il n'y a pas encore de contenu ici.<br />
+      Commencez par explorer les options du menu.
+    </p>
+
+    {/* Bouton bleu stylisé */}
+    <button 
+      onClick={() => {/* Ton action ici, ex: handleFilterChange("Tous") */}}
+      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-10 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95"
+    >
+      Commencer
+    </button>
+  </div>
+)}
         {!loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {posts.map((post) => (
