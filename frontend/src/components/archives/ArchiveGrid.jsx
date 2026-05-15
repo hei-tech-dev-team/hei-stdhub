@@ -11,22 +11,20 @@ import {
   faBookOpen,
   faChevronRight,
   faGraduationCap,
-  faSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 
 const GOLD = "223,164,8";
 const NAVY_RGB = "0,25,72";
+const NAVY_HEX = "#001948";
+const NAVY_DARK = "#0A1A33";
 
 const YEARS = [
   {
     id: "L1",
     label: "PREMIERE ANNEE",
     subtitle: "Semestre 1 & 2",
-    bg: `rgba(${GOLD},0.15)`,
-    border: `rgba(${GOLD},0.3)`,
-    shimmer: `rgba(${GOLD},0.2)`,
     ues: [
       "WEB1", "PROG1", "SYS1", "DONNEES1",
       "THEORIE1-P1", "THEORIE1-P2",
@@ -37,26 +35,14 @@ const YEARS = [
     id: "L2",
     label: "DEUXIEME ANNEE",
     subtitle: "Semestre 3 & 4",
-    bg: `rgba(${GOLD},0.22)`,
-    border: `rgba(${GOLD},0.35)`,
-    shimmer: `rgba(${GOLD},0.28)`,
     ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
   },
   {
     id: "L3",
     label: "TROISIEME ANNEE",
     subtitle: "Semestre 5 & 6",
-    bg: `rgba(${GOLD},0.3)`,
-    border: `rgba(${GOLD},0.4)`,
-    shimmer: `rgba(${GOLD},0.35)`,
     ues: ["MOB1", "PROG5", "SECU1", "SECU2"],
   },
-];
-
-const DECORATIVE_CIRCLES = [
-  { top: "-20%", right: "-10%", w: 120, d: 0 },
-  { bottom: "-30%", left: "-15%", w: 90, d: 1.5 },
-  { top: "10%", left: "20%", w: 50, d: 3 },
 ];
 
 export default function ArchiveGrid() {
@@ -154,48 +140,34 @@ export default function ArchiveGrid() {
             >
               <div className="relative overflow-hidden rounded-2xl mb-5 group">
                 <div
-                  className="relative px-6 py-5 flex items-center gap-4 rounded-2xl overflow-hidden"
-                  style={{
-                    background: `linear-gradient(135deg, ${year.bg}, ${year.shimmer})`,
-                    border: `1px solid ${year.border}`,
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                  }}
+                  className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white shadow-card"
                 >
-                  {DECORATIVE_CIRCLES.map((c, i) => (
-                    <div
-                      key={i}
-                      className="absolute rounded-full animate-pulse"
-                      style={{
-                        width: c.w,
-                        height: c.w,
-                        top: c.top,
-                        right: c.right,
-                        bottom: c.bottom,
-                        left: c.left,
-                        animationDelay: `${c.d}s`,
-                        background: `radial-gradient(circle, rgba(${GOLD},0.12), transparent)`,
-                      }}
-                    />
-                  ))}
                   <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
-                      transform: "skewX(-20deg)",
-                    }}
+                    className="absolute left-0 top-0 bottom-0 w-1.5"
+                    style={{ background: `linear-gradient(to bottom, rgba(${GOLD},0.6), rgba(${GOLD},0.3))` }}
                   />
-                  <div className="w-12 h-12 rounded-xl bg-white/50 backdrop-blur-md flex items-center justify-center shrink-0 shadow-lg">
-                    <FontAwesomeIcon icon={faGraduationCap} className="text-navy text-xl" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-navy text-base tracking-wide">
-                      {year.label}
-                    </h3>
-                    <p className="text-xs text-navy/60 mt-0.5 font-medium">
-                      {year.subtitle}
-                    </p>
+                  <div
+                    className="flex items-center gap-4 px-6 py-5 w-full"
+                    style={{
+                      background: `linear-gradient(135deg, rgba(${NAVY_RGB},0.03), transparent)`,
+                    }}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                      style={{
+                        background: `linear-gradient(135deg, ${NAVY_HEX}, ${NAVY_DARK})`,
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faGraduationCap} className="text-gold text-xl" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-navy text-base tracking-wide">
+                        {year.label}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                        {year.subtitle}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
