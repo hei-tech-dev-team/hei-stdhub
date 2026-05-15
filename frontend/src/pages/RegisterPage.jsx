@@ -31,6 +31,7 @@ const ALL_UES = [
   "PROG2-POO",
   "PROG2-API",
   "SYS2",
+  "MGT1",
   "WEB3",
   "PROG3",
   "MGT2",
