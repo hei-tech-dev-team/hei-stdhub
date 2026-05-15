@@ -101,7 +101,6 @@ const sendPasswordResetEmail = async ({ user, token }) => {
   if (!user?.email?.trim()) throw new Error("User email is required");
 
   const resetUrl = buildResetUrl(token);
-  const transporter = createTransport();
   const displayName = user.prenom || user.pseudo || "";
   const subject = "Réinitialisation de votre mot de passe HEI STDhub";
   const text = [
@@ -121,26 +120,36 @@ const sendPasswordResetEmail = async ({ user, token }) => {
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     `;
 
+  // Try Resend first, fall back to SMTP
   if (process.env.RESEND_API_KEY) {
-    const result = await sendWithResend({ user, subject, text, html });
-    console.info(`Email de réinitialisation envoyé via Resend à ${user.email}`);
-    return { skipped: false, resetUrl, provider: "resend", result };
+    try {
+      const result = await sendWithResend({ user, subject, text, html });
+      console.info(`Email de réinitialisation envoyé via Resend à ${user.email}`);
+      return { skipped: false, resetUrl, provider: "resend", result };
+    } catch (resendErr) {
+      console.error("Resend failed, trying SMTP:", resendErr.message);
+    }
   }
 
+  const transporter = createTransport();
   if (transporter) {
-    await transporter.sendMail({
-      from: getFromAddress(),
-      to: user.email,
-      subject,
-      text,
-      html,
-    });
-    console.info(`Email de réinitialisation envoyé via SMTP à ${user.email}`);
-    return { skipped: false, resetUrl };
+    try {
+      await transporter.sendMail({
+        from: getFromAddress(),
+        to: user.email,
+        subject,
+        text,
+        html,
+      });
+      console.info(`Email de réinitialisation envoyé via SMTP à ${user.email}`);
+      return { skipped: false, resetUrl };
+    } catch (smtpErr) {
+      console.error("SMTP also failed:", smtpErr.message);
+    }
   }
 
-  console.info(`Lien de réinitialisation pour ${user.email} (consulter les logs serveur)`);
-  return { skipped: true, resetUrl };
+  console.info(`Aucun email envoyé à ${user.email} (aucun fournisseur fonctionnel). Lien: ${resetUrl}`);
+  return { skipped: true, resetUrl, logUrl: resetUrl };
 };
 
 const sendEmail = async ({ user, subject, text, html }) => {

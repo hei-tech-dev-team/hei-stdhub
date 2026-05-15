@@ -49,15 +49,37 @@ backend/
 @applied-to /api/auth/login, /api/auth/forgot-password, /api/auth/reset-password
 ```
 
+### Socket.io Configuration — Optimized
+
+```js
+@config pingTimeout: 20000ms (env SOCKET_PING_TIMEOUT)
+@config pingInterval: 25000ms (env SOCKET_PING_INTERVAL)
+@config maxHttpBufferSize: 1MB (env SOCKET_MAX_BUFFER)
+@config perMessageDeflate threshold: 1KB (env SOCKET_DEFLATE_THRESHOLD)
+@config connectionStateRecovery: 2min window
+```
+
+### Socket.io Auth Middleware
+
+```js
+@function io.use
+@description JWT verification on socket handshake.
+  Reads token from handshake.auth.token or handshake.query.token.
+  401 if missing or invalid.
+  Attaches decoded JWT payload to socket.user.
+```
+
 ### Socket.io Event Handlers
 
 ```js
 @event connection
-@description Creates socket connection, tracks online users
+@description Creates socket connection, tracks online users. Max 5000 entries.
 
 @event user:join
 @param {string} userId
-@description Stores userId→socketId mapping, joins user room, broadcasts online status
+@description Stores userId→socketId mapping, leaves previous room (handles reconnect),
+  joins user room, broadcasts online status via socket.broadcast.emit (not io.emit).
+  Rejects if onlineUsers.size >= MAX_ONLINE_USERS.
 
 @event message:global
 @param {Object} msg
@@ -65,30 +87,18 @@ backend/
 
 @event message:private
 @param {Object} payload { receiverId, msg }
-@description Sends message to receiver's room AND sender's room
+@description Validates receiverId and msg. Sends to receiver's room AND sender's room.
 
 @event message:seen
 @param {Object} payload { messageId, senderId }
-@description Forwards seen status to sender's room
-
-@event message:deleted
-@param {Object} payload { messageId, isGlobal, receiverId, senderId }
-@description Broadcasts message deletion to all connected clients
-
-@event unread:update
-@param {Object} payload { contactId, unread, pending }
-@description Sends unread count update to sender after sending private message
-
-@event user:registered
-@param {Object} user - New user object (id, ref, pseudo, role)
-@description Broadcasts new registration to admin panel for live updates
+@description Validates fields. Forwards seen status to sender's room.
 
 @event bde:join
 @description Joins the "bde" room for real-time Kanban sync
 
 @event bde:drag-start
 @param {Object} payload { suggestionId }
-@description Broadcasts drag start to other BDE members
+@description Broadcasts drag start to other BDE members (not to sender)
 
 @event bde:drag-over
 @param {Object} payload { columnId }
@@ -102,7 +112,7 @@ backend/
 @description Broadcasts suggestion status update to BDE room
 
 @event disconnect
-@description Removes user from onlineUsers, broadcasts offline status
+@description Removes user from onlineUsers, broadcasts offline status via socket.broadcast.emit
 ```
 
 ### Health & VAPID Endpoints
@@ -128,14 +138,27 @@ backend/
 ```js
 @type Pool
 @description PostgreSQL connection pool using DATABASE_URL env var
-@config max: 25, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000
+  max: 25 (configurable via DB_POOL_MAX)
+  idleTimeoutMillis: 30000 (configurable via DB_IDLE_TIMEOUT)
+  connectionTimeoutMillis: 5000 (configurable via DB_CONNECT_TIMEOUT)
 @exports { query: (text, params) => pool.query(text, params), pool }
 
 @event pool:connect
-@description Logs "PostgreSQL connecté"
+@description Suppressed (noisy in production)
 
 @event pool:error
-@description Logs error and calls process.exit(-1)
+@description Logs error message only (no longer calls process.exit)
+
+@function ensureIndexes
+@description Runs on startup to create missing indexes:
+  - idx_global_chat_read_user ON global_chat_read(user_id)
+  - idx_invitations_code ON invitations(code)
+  - idx_invitations_expires ON invitations(expires_at) WHERE use_count < max_uses
+  - idx_suggestions_statut ON suggestions(statut)
+  - idx_suggestions_student ON suggestions(student_id)
+  - idx_push_subscriptions_user ON push_subscriptions(user_id)
+  - idx_messages_receiver_seen ON messages(receiver_id, seen) WHERE is_global = FALSE
+  - idx_messages_sender_receiver ON messages(sender_id, receiver_id) WHERE is_global = FALSE
 ```
 
 ---
@@ -370,7 +393,12 @@ backend/
 @route POST /invitations/bulk
 @middleware auth, adminOnly
 @param {body} { role, count?, max_uses? }
+<<<<<<< HEAD
 @description Generates up to 1000 invitation codes in batches of 100 (batch INSERT)
+=======
+@description Generates up to 1000 invitation codes in a single batch INSERT
+  (was previously a sequential loop — now uses one parameterized multi-row INSERT)
+>>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @returns {JSON} { count, codes: Array }
 @status 201 - Created
 @status 400 - Invalid role
@@ -493,6 +521,7 @@ backend/
 ### Helpers
 
 ```js
+<<<<<<< HEAD
 @function sendPushWithConcurrency
 @param {Array} subscriptions
 @param {string} payload
@@ -501,22 +530,39 @@ backend/
 @returns {Promise<Array>} Results
 
 @async
+=======
+@function sendPushNotifications
+@param {Array} rows - Push subscription rows
+@param {string} payload - JSON stringified notification
+@description Sends notifications in parallel batches (default: 10 concurrent).
+  Uses Promise.allSettled so individual failures don't block the batch.
+  On 410/404 error, deletes invalid subscription from DB.
+@returns {Promise<Array>} settled results
+
+>>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @function sendPushNotification
 @param {number} userId
 @param {Object} options { title, body, tag, url }
 @description
   1. Fetches push subscriptions for userId
+<<<<<<< HEAD
   2. Sends Web Push notification with concurrency limit of 10
   3. On 410/404 error, deletes invalid subscription
+=======
+  2. Calls sendPushNotifications() with parallel batch
+>>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @returns {Promise<void>}
 
-@async
 @function sendPushToAll
 @param {Object} options { title, body, tag, url }
 @description
   1. Fetches ALL push subscriptions (DISTINCT on endpoint)
+<<<<<<< HEAD
   2. Sends Web Push notification with concurrency limit of 10
   3. On 410/404 error, deletes invalid subscription
+=======
+  2. Calls sendPushNotifications() with parallel batch
+>>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @returns {Promise<void>}
 ```
 
