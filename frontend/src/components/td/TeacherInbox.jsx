@@ -101,7 +101,7 @@ export default function TeacherInbox() {
               key={opt}
               type="button"
               onClick={() => setActiveType(opt)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200 ${
+              className={`px-3.5 py-1.5 rounded-xl text-sm font-bold border transition-all duration-200 ${
                 activeType === opt
                   ? "bg-navy text-white border-navy shadow-sm shadow-navy/20"
                   : "bg-white border-contact/60 text-navy hover:border-gold/40 hover:shadow-sm"
@@ -118,7 +118,7 @@ export default function TeacherInbox() {
               key={ue}
               type="button"
               onClick={() => setActiveUE(ue)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200 ${
+              className={`px-3.5 py-1.5 rounded-xl text-sm font-bold border transition-all duration-200 ${
                 activeUE === ue
                   ? "bg-gold text-white border-gold shadow-sm shadow-gold/20"
                   : "bg-white border-contact/60 text-navy hover:border-gold/40 hover:shadow-sm"
@@ -128,7 +128,7 @@ export default function TeacherInbox() {
             </button>
           ))}
 
-          <span className="ml-auto text-xs text-gray-400 font-semibold shrink-0 bg-surface px-3 py-1.5 rounded-xl">
+          <span className="ml-auto text-sm text-gray-400 font-semibold shrink-0 bg-surface px-3 py-1.5 rounded-xl">
             <FontAwesomeIcon icon={faUsers} className="mr-1.5 text-[11px]" />
             {submissions.length} / {total} rendu(s)
           </span>
@@ -154,7 +154,7 @@ export default function TeacherInbox() {
             </div>
           </div>
           <p className="text-navy font-bold text-sm mb-1">Aucun rendu trouvé</p>
-          <p className="text-gray-400 text-xs max-w-[220px] leading-relaxed">
+          <p className="text-gray-400 text-sm max-w-[220px] leading-relaxed">
             Ajustez vos filtres ou revenez plus tard.
           </p>
         </div>
@@ -171,7 +171,7 @@ export default function TeacherInbox() {
                   {["Nom", "Référence", "Email", "UE", "Groupe", "Type", "Date", ""].map((h) => (
                     <th
                       key={h}
-                      className="text-left py-3.5 px-4 text-xs font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                      className="text-left py-3.5 px-4 text-sm font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap"
                     >
                       {h}
                     </th>
@@ -190,27 +190,27 @@ export default function TeacherInbox() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-bold text-navy/70 text-xs whitespace-nowrap">
+                      <span className="font-bold text-navy/70 text-sm whitespace-nowrap">
                         {s.ref}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-gray-400 text-sm whitespace-nowrap">
                       {s.email}
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="bg-gold/10 text-gold text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      <span className="bg-gold/10 text-gold text-sm font-bold px-2.5 py-0.5 rounded-full">
                         {s.ue}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="bg-navy/10 text-navy text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      <span className="bg-navy/10 text-navy text-sm font-bold px-2.5 py-0.5 rounded-full">
                         {s.groupe}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
                       <Badge type={s.type} />
                     </td>
-                    <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-gray-400 text-sm whitespace-nowrap">
                       {new Date(s.created_at).toLocaleDateString("fr-FR", {
                         day: "numeric",
                         month: "short",
@@ -222,7 +222,7 @@ export default function TeacherInbox() {
                           href={s.file_path}
                           target="_blank"
                           rel="noreferrer"
-                          className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
+                          className="btn-primary text-sm px-3 py-1.5 flex items-center gap-1.5 whitespace-nowrap"
                         >
                           <FontAwesomeIcon icon={faDownload} className="text-[10px]" />
                           Télécharger
@@ -232,7 +232,7 @@ export default function TeacherInbox() {
                           href={s.link}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-blue-500 text-xs font-semibold hover:underline flex items-center gap-1.5"
+                          className="text-blue-500 text-sm font-semibold hover:underline flex items-center gap-1.5"
                         >
                           <FontAwesomeIcon icon={faExternalLinkAlt} className="text-[10px]" />
                           Lien
@@ -258,32 +258,32 @@ export default function TeacherInbox() {
                       <span className="font-bold text-navy text-sm">
                         {s.prenom} {s.nom}
                       </span>
-                      <p className="text-xs text-gray-400">{s.ref}</p>
+                      <p className="text-sm text-gray-400">{s.ref}</p>
                     </div>
                   </div>
                   <Badge type={s.type} />
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  <span className="bg-gold/10 text-gold text-xs font-bold px-2.5 py-0.5 rounded-full">
+                  <span className="bg-gold/10 text-gold text-sm font-bold px-2.5 py-0.5 rounded-full">
                     {s.ue}
                   </span>
-                  <span className="bg-navy/10 text-navy text-xs font-bold px-2.5 py-0.5 rounded-full">
+                  <span className="bg-navy/10 text-navy text-sm font-bold px-2.5 py-0.5 rounded-full">
                     {s.groupe}
                   </span>
-                  <span className="text-xs text-gray-400 px-1">
+                  <span className="text-sm text-gray-400 px-1">
                     {new Date(s.created_at).toLocaleDateString("fr-FR", {
                       day: "numeric",
                       month: "short",
                     })}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mb-3 truncate">{s.email}</p>
+                <p className="text-sm text-gray-400 mb-3 truncate">{s.email}</p>
                 {s.file_path ? (
                   <a
                     href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${s.file_path}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn-primary text-xs px-4 py-2 flex items-center gap-2 w-full justify-center"
+                    className="btn-primary text-sm px-4 py-2 flex items-center gap-2 w-full justify-center"
                   >
                     <FontAwesomeIcon icon={faDownload} />
                     Télécharger
@@ -293,7 +293,7 @@ export default function TeacherInbox() {
                     href={s.link}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-500 text-xs font-semibold hover:underline flex items-center gap-2 justify-center bg-blue-50 py-2 rounded-xl transition hover:bg-blue-100"
+                    className="text-blue-500 text-sm font-semibold hover:underline flex items-center gap-2 justify-center bg-blue-50 py-2 rounded-xl transition hover:bg-blue-100"
                   >
                     <FontAwesomeIcon icon={faExternalLinkAlt} />
                     Voir le lien
@@ -310,7 +310,7 @@ export default function TeacherInbox() {
                 type="button"
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold
                   bg-white border border-contact/60 text-navy hover:border-gold/40 hover:shadow-sm
                   disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
               >
@@ -323,7 +323,7 @@ export default function TeacherInbox() {
                     key={i}
                     type="button"
                     onClick={() => setPage(i)}
-                    className={`w-8 h-8 rounded-xl text-xs font-bold transition-all duration-200 ${
+                    className={`w-8 h-8 rounded-xl text-sm font-bold transition-all duration-200 ${
                       i === page
                         ? "bg-navy text-white shadow-sm shadow-navy/20"
                         : "bg-white text-navy border border-contact/60 hover:border-gold/40"
@@ -337,7 +337,7 @@ export default function TeacherInbox() {
                 type="button"
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((p) => p + 1)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold
                   bg-white border border-contact/60 text-navy hover:border-gold/40 hover:shadow-sm
                   disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
               >
