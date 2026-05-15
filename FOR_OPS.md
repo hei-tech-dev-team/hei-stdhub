@@ -47,6 +47,16 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 | `SMTP_FROM` / `EMAIL_FROM` / `MAIL_FROM` | No | — | Sender email address |
 | `RESEND_FROM` | No | — | Resend sender email |
 | `EMAIL_TIMEOUT_MS` / `RESEND_TIMEOUT_MS` | No | `10000` | Email timeout in ms |
+| `DB_POOL_MAX` | No | `25` | Max PostgreSQL connections in pool |
+| `DB_IDLE_TIMEOUT` | No | `30000` | Close idle connections after ms |
+| `DB_CONNECT_TIMEOUT` | No | `5000` | Connection timeout in ms |
+| `REQUEST_TIMEOUT` | No | `30000` | HTTP request timeout in ms |
+| `PUSH_CONCURRENCY` | No | `10` | Parallel push notifications per batch |
+| `MAX_ONLINE_USERS` | No | `5000` | Max concurrent online users tracked |
+| `SOCKET_PING_TIMEOUT` | No | `20000` | Socket.IO ping timeout (ms) |
+| `SOCKET_PING_INTERVAL` | No | `25000` | Socket.IO ping interval (ms) |
+| `SOCKET_MAX_BUFFER` | No | `1048576` | Max socket message size (bytes) |
+| `SOCKET_DEFLATE_THRESHOLD` | No | `1024` | Min message size for compression (bytes) |
 
 ### Frontend (`frontend/.env`)
 
@@ -260,6 +270,12 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously v
 → Verify `VITE_API_URL` is correct
 → Check CORS config on server
 → Client falls back to polling if WebSocket fails
+→ JWT token must be valid (socket now authenticates via `handshake.auth.token`)
+→ If token expires, call `refreshSocket()` (handled automatically in AuthContext)
+
+### Socket.IO connection refused (401)
+→ Token is missing or expired in localStorage (`hei_token`)
+→ Re-login to obtain a fresh token
 
 ### Push notifications not working
 → Service worker must be registered
