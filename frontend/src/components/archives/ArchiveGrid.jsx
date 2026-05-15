@@ -16,14 +16,17 @@ import {
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 
+const GOLD = "223,164,8";
+const NAVY_RGB = "0,25,72";
+
 const YEARS = [
   {
     id: "L1",
     label: "PREMIERE ANNEE",
     subtitle: "Semestre 1 & 2",
-    bg: "rgba(253,200,50,0.35)",
-    border: "rgba(253,200,50,0.5)",
-    shimmer: "rgba(255,215,0,0.4)",
+    bg: `rgba(${GOLD},0.08)`,
+    border: `rgba(${GOLD},0.2)`,
+    shimmer: `rgba(${GOLD},0.15)`,
     ues: [
       "WEB1", "PROG1", "SYS1", "DONNEES1",
       "THEORIE1-P1", "THEORIE1-P2",
@@ -34,26 +37,26 @@ const YEARS = [
     id: "L2",
     label: "DEUXIEME ANNEE",
     subtitle: "Semestre 3 & 4",
-    bg: "rgba(250,180,50,0.35)",
-    border: "rgba(250,180,50,0.5)",
-    shimmer: "rgba(218,165,32,0.4)",
+    bg: `rgba(${GOLD},0.12)`,
+    border: `rgba(${GOLD},0.25)`,
+    shimmer: `rgba(${GOLD},0.2)`,
     ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
   },
   {
     id: "L3",
     label: "TROISIEME ANNEE",
     subtitle: "Semestre 5 & 6",
-    bg: "rgba(230,160,30,0.35)",
-    border: "rgba(230,160,30,0.5)",
-    shimmer: "rgba(184,134,11,0.4)",
+    bg: `rgba(${GOLD},0.16)`,
+    border: `rgba(${GOLD},0.3)`,
+    shimmer: `rgba(${GOLD},0.25)`,
     ues: ["MOB1", "PROG5", "SECU1", "SECU2"],
   },
 ];
 
 const DECORATIVE_CIRCLES = [
-  { top: "-20%", right: "-10%", w: 100, d: 0 },
-  { bottom: "-30%", left: "-15%", w: 80, d: 1.5 },
-  { top: "10%", left: "20%", w: 40, d: 3 },
+  { top: "-20%", right: "-10%", w: 120, d: 0 },
+  { bottom: "-30%", left: "-15%", w: 90, d: 1.5 },
+  { top: "10%", left: "20%", w: 50, d: 3 },
 ];
 
 export default function ArchiveGrid() {
@@ -171,8 +174,7 @@ export default function ArchiveGrid() {
                         bottom: c.bottom,
                         left: c.left,
                         animationDelay: `${c.d}s`,
-                        background:
-                          "radial-gradient(circle, rgba(255,215,0,0.3), transparent)",
+                        background: `radial-gradient(circle, rgba(${GOLD},0.12), transparent)`,
                       }}
                     />
                   ))}
@@ -209,7 +211,7 @@ export default function ArchiveGrid() {
                       animate-slide-up ${
                         selectedUE === ue
                           ? "bg-navy text-white shadow-lg shadow-navy/30 scale-105"
-                          : "bg-white/80 backdrop-blur-sm text-navy border-2 border-amber-200/60 hover:border-gold/60 hover:shadow-xl hover:shadow-gold/15 hover:-translate-y-1"
+                          : "bg-white/80 backdrop-blur-sm text-navy border-2 border-gold/20 hover:border-gold/50 hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1"
                       }`}
                     style={{ animationDelay: `${yi * 150 + ui * 60}ms`, animationFillMode: "backwards" }}
                   >
@@ -221,8 +223,7 @@ export default function ArchiveGrid() {
                       <span
                         className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                         style={{
-                          background:
-                            "linear-gradient(135deg, rgba(253,200,50,0.1), transparent)",
+                          background: `linear-gradient(135deg, rgba(${GOLD},0.08), transparent)`,
                         }}
                       />
                     )}
