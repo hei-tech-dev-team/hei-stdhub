@@ -35,9 +35,11 @@ const app = express();
 const server = http.createServer(app);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
+server.timeout = REQUEST_TIMEOUT;
 app.use((req, res, next) => {
-  res.setTimeout(REQUEST_TIMEOUT, () => {
-    res.status(503).json({ error: "Requête expirée." });
+  req.socket.setTimeout(REQUEST_TIMEOUT);
+  req.socket.on("timeout", () => {
+    if (!res.headersSent) res.status(503).json({ error: "Requête expirée." });
   });
   next();
 });
@@ -59,7 +61,7 @@ const io = new Server(server, {
       process.env.CLIENT_URL,
       "http://localhost:5173",
       "https://hei-stdhub.vercel.app",
-    ],
+    ].filter(Boolean),
     methods: ["GET", "POST"],
   },
   pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT || "20000", 10),
@@ -104,7 +106,7 @@ app.use(
 );
 
 // Keep the Render instance awake — ping health endpoint every 14 minutes
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
   const https = require("https");
   setInterval(
     () => {
@@ -144,8 +146,14 @@ app.get("/api/push/vapid-key", (req, res) =>
 
 app.use((req, res) => res.status(404).json({ error: "Route introuvable." }));
 app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+  if (err.type === "entity.parse.failed" || (err instanceof SyntaxError && err.status === 400 && "body" in err)) {
     return res.status(400).json({ error: "JSON malformé." });
+  }
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ error: "Fichier trop volumineux." });
+  }
+  if (err.name === "MulterError") {
+    return res.status(400).json({ error: err.message });
   }
   console.error("Unhandled error:", err);
   res.status(500).json({ error: "Erreur serveur." });
@@ -224,8 +232,21 @@ io.on("connection", (socket) => {
 
 app.set("io", io);
 
-// Ensure push_subscriptions table exists
 const { pool } = require("./db");
+
+// Ensure password_reset_tokens table exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id         SERIAL       PRIMARY KEY,
+    user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64)  NOT NULL UNIQUE,
+    expires_at TIMESTAMP    NOT NULL,
+    used_at    TIMESTAMP    NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+  )
+`).catch((err) => console.error("Failed to create password_reset_tokens table:", err));
+
+// Ensure push_subscriptions table exists
 pool.query(`
   CREATE TABLE IF NOT EXISTS push_subscriptions (
     id         SERIAL       PRIMARY KEY,
