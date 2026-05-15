@@ -9,6 +9,7 @@ import {
   faChevronDown,
   faTrash,
   faSmile,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "../ui/Avatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -103,13 +104,91 @@ function renderContent(content) {
   );
 }
 
+function getMessagePreview(content) {
+  const parsed = parseFileContent(content);
+  if (parsed) {
+    return parsed.type === "img"
+      ? "Image jointe"
+      : `Fichier joint : ${parsed.filename}`;
+  }
+
+  const compact = String(content || "").replace(/\s+/g, " ").trim();
+  if (!compact) return "Message vide";
+  return compact.length > 120 ? `${compact.slice(0, 120)}...` : compact;
+}
+
+function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
+  if (!message) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-navy-dark shadow-2xl shadow-black/50 overflow-hidden animate-fade-in">
+        <div className="flex items-start gap-3 p-5 border-b border-white/10">
+          <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-300 flex items-center justify-center shrink-0">
+            <FontAwesomeIcon icon={faTrash} className="text-sm" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-white font-bold text-base">
+              Supprimer ce message ?
+            </h3>
+            <p className="text-white/50 text-xs mt-1 leading-relaxed">
+              Cette action est definitive et le message disparaitra de la conversation.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="w-8 h-8 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition disabled:opacity-40"
+            title="Fermer"
+          >
+            <FontAwesomeIcon icon={faXmark} className="text-sm" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
+            <p className="text-white/45 text-[11px] font-semibold uppercase tracking-wide mb-1">
+              Apercu
+            </p>
+            <p className="text-white/80 text-sm leading-relaxed break-words">
+              {getMessagePreview(message.content)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 pb-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white/70 hover:text-white hover:bg-white/10 transition disabled:opacity-40"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-400 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {deleting && (
+              <FontAwesomeIcon icon={faSpinner} className="text-xs animate-spin" />
+            )}
+            Supprimer
+          </button>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 function MessageGroup({ messages, isOwn, onDelete }) {
   const [hoveredId, setHoveredId] = useState(null);
 
-  const handleDelete = (msgId) => {
-    if (window.confirm("Supprimer ce message ?")) {
-      onDelete?.(msgId);
-    }
+  const handleDelete = (msg) => {
+    onDelete?.(msg);
   };
 
   return (
@@ -193,7 +272,7 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleDelete(msg.id)}
+                      onClick={() => handleDelete(msg)}
                       className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
                       title="Supprimer"
                     >
@@ -267,6 +346,8 @@ export default function MessagePanel({
   const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingMessage, setDeletingMessage] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const inputRef = useRef(null);
@@ -403,6 +484,27 @@ export default function MessagePanel({
     }
   };
 
+  const requestDeleteMessage = (message) => {
+    setShowEmojiPicker(false);
+    setDeleteTarget(message);
+  };
+
+  const cancelDeleteMessage = () => {
+    if (deletingMessage) return;
+    setDeleteTarget(null);
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!deleteTarget || deletingMessage) return;
+    setDeletingMessage(true);
+    try {
+      await onDelete?.(deleteTarget.id);
+      setDeleteTarget(null);
+    } finally {
+      setDeletingMessage(false);
+    }
+  };
+
   const grouped = useMemo(() => {
     if (!messages.length) return [];
 
@@ -512,7 +614,7 @@ export default function MessagePanel({
                 <MessageGroup
                   messages={item.messages}
                   isOwn={item.isOwn}
-                  onDelete={onDelete}
+                  onDelete={requestDeleteMessage}
                 />
               </div>
             );
@@ -620,6 +722,13 @@ export default function MessagePanel({
           </button>
         </div>
       </div>
+
+      <DeleteMessageDialog
+        message={deleteTarget}
+        deleting={deletingMessage}
+        onCancel={cancelDeleteMessage}
+        onConfirm={confirmDeleteMessage}
+      />
     </div>
   );
 }
