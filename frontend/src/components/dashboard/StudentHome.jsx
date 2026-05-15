@@ -77,30 +77,22 @@ export default function StudentHome() {
         )}
 
         {!loading && posts.length === 0 && (
-  <div className="flex flex-col items-center justify-center py-20 text-center animate-fadeIn">
-    {/* L'icône stylisée avec les cercles concentriques */}
+  <div className="flex flex-col items-center justify-center py-20 text-center animate-slide-up">
     <div className="relative mb-6">
-      <div className="absolute inset-0 bg-blue-100 rounded-full scale-150 opacity-20 animate-pulse"></div>
-      <div className="absolute inset-0 bg-blue-50 rounded-full scale-125 opacity-50"></div>
-      <div className="relative bg-white border-4 border-blue-100 p-6 rounded-full shadow-sm">
-        <FontAwesomeIcon icon={faBookOpen} className="text-blue-500 text-4xl" />
+      <div className="absolute inset-0 bg-navy/5 rounded-full scale-150 opacity-20 animate-ping"></div>
+      <div className="absolute inset-0 bg-gold/10 rounded-full scale-125 opacity-50 animate-pulse"></div>
+      <div className="relative bg-white border-4 border-gold/20 p-6 rounded-full shadow-sm hover:shadow-gold/10 hover:shadow-xl transition-shadow duration-500">
+        <FontAwesomeIcon icon={faBookOpen} className="text-gold text-4xl animate-float" />
       </div>
     </div>
 
-    {/* Textes */}
-    <h2 className="text-2xl font-bold text-navy mb-2">Rien à afficher</h2>
-    <p className="text-gray-400 max-w-xs mb-8 leading-relaxed">
+    <h2 className="text-2xl font-bold text-navy mb-2 animate-slide-up" style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}>
+      Rien à afficher
+    </h2>
+    <p className="text-gray-400 max-w-xs leading-relaxed animate-slide-up" style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}>
       Il n'y a pas encore de contenu ici.<br />
-      Commencez par explorer les options du menu.
+      Revenez plus tard.
     </p>
-
-    {/* Bouton bleu stylisé */}
-    <button 
-      onClick={() => {/* Ton action ici, ex: handleFilterChange("Tous") */}}
-      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-10 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95"
-    >
-      Commencer
-    </button>
   </div>
 )}
         {!loading && (
