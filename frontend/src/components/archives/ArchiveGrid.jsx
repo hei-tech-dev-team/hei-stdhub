@@ -164,7 +164,7 @@ export default function ArchiveGrid() {
                       <h3 className="font-bold text-navy text-base tracking-wide">
                         {year.label}
                       </h3>
-                      <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                      <p className="text-sm text-gray-400 mt-0.5 font-medium">
                         {year.subtitle}
                       </p>
                     </div>
@@ -241,7 +241,7 @@ export default function ArchiveGrid() {
                     <h3 className="font-bold text-navy text-lg leading-tight">
                       {selectedUE}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                    <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-1">
                       <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
                       Supports pédagogiques
                     </p>
