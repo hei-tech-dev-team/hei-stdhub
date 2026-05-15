@@ -10,7 +10,15 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("activate", (e) => {
-  e.waitUntil(clients.claim());
+  e.waitUntil(
+    Promise.all([
+      clients.claim(),
+      // Clean old caches
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
+      ),
+    ]),
+  );
 });
 
 self.addEventListener("push", (e) => {
@@ -30,6 +38,8 @@ self.addEventListener("push", (e) => {
     tag: data.tag || "hei-notification",
     data: { url: data.url || "/" },
     vibrate: [200, 100, 200],
+    renotify: true,
+    requireInteraction: true,
   };
 
   e.waitUntil(
@@ -41,11 +51,18 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   const url = e.notification.data?.url || "/";
   e.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url === url && "focus" in client) return client.focus();
+        if ("focus" in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(url);
     }),
   );
+});
+
+// Keep SW alive on mobile for push delivery
+self.addEventListener("message", (e) => {
+  if (e.data === "ping") {
+    e.source?.postMessage("pong");
+  }
 });
