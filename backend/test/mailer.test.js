@@ -168,6 +168,15 @@ describe("MAILER — sendPasswordResetEmail with Resend", () => {
   beforeEach(() => {
     process.env.RESEND_API_KEY = "re_testkey123";
     process.env.CLIENT_URL = "https://test.example.com";
+    delete process.env.SMTP_HOST;
+    delete process.env.SMTP_PORT;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
+    delete process.env.SMTP_FROM;
+    delete process.env.EMAIL_HOST;
+    delete process.env.EMAIL_PORT;
+    delete process.env.EMAIL_USER;
+    delete process.env.EMAIL_PASS;
   });
 
   afterEach(() => {
