@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolderOpen,
@@ -8,6 +8,9 @@ import {
   faExternalLinkAlt,
   faSpinner,
   faTrash,
+  faBookOpen,
+  faChevronRight,
+  faGraduationCap,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
@@ -15,28 +18,27 @@ import { useAuth } from "../../context/AuthContext";
 const YEARS = [
   {
     id: "L1",
-    label: "PREMIERE ANNEE – SEMESTRE 1 ET 2",
+    label: "PREMIERE ANNEE",
+    subtitle: "Semestre 1 & 2",
+    gradient: "from-blue-500/10 via-blue-400/5 to-transparent",
     ues: [
-      "WEB1",
-      "PROG1",
-      "SYS1",
-      "DONNEES1",
-      "THEORIE1-P1",
-      "THEORIE1-P2",
-      "WEB2",
-      "PROG2-POO",
-      "PROG2-API",
-      "SYS2",
+      "WEB1", "PROG1", "SYS1", "DONNEES1",
+      "THEORIE1-P1", "THEORIE1-P2",
+      "WEB2", "PROG2-POO", "PROG2-API", "SYS2",
     ],
   },
   {
     id: "L2",
-    label: "DEUXIEME ANNEE – SEMESTRE 3 ET 4",
+    label: "DEUXIEME ANNEE",
+    subtitle: "Semestre 3 & 4",
+    gradient: "from-emerald-500/10 via-emerald-400/5 to-transparent",
     ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
   },
   {
     id: "L3",
-    label: "TROISIEME ANNEE – SEMESTRE 5 ET 6",
+    label: "TROISIEME ANNEE",
+    subtitle: "Semestre 5 & 6",
+    gradient: "from-purple-500/10 via-purple-400/5 to-transparent",
     ues: ["MOB1", "PROG5", "SECU1", "SECU2"],
   },
 ];
@@ -53,6 +55,12 @@ export default function ArchiveGrid() {
   const [addForm, setAddForm] = useState({ label: "", url: "" });
   const [saving, setSaving] = useState(false);
   const [addError, setAddError] = useState("");
+  const [visible, setVisible] = useState(false);
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+  }, []);
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
@@ -65,7 +73,7 @@ export default function ArchiveGrid() {
     setLoading(true);
     try {
       const { data } = await api.get(`/supports/${ue}`);
-      setSupports(data);
+      setSupports(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       setSupports([]);
@@ -81,7 +89,6 @@ export default function ArchiveGrid() {
     setSupports([]);
   };
 
-  // Ajouter un support
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!addForm.label.trim() || !addForm.url.trim()) return;
@@ -107,7 +114,6 @@ export default function ArchiveGrid() {
     }
   };
 
-  // Supprimer un support
   const handleDelete = async (id) => {
     if (!confirm("Supprimer ce support ?")) return;
     try {
@@ -119,34 +125,52 @@ export default function ArchiveGrid() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
-      {/* Grille UE */}
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 h-full">
       <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-6 sm:gap-8">
-          {YEARS.map((year) => (
-            <div key={year.id}>
-              <div
-                className="bg-gold-light text-navy font-bold text-xs
-                              py-3 px-4 sm:px-5 rounded-xl mb-3 sm:mb-4
-                              uppercase tracking-wider"
-              >
-                {year.label}
+        <div className="flex flex-col gap-8">
+          {YEARS.map((year, yi) => (
+            <div
+              key={year.id}
+              className={`transition-all duration-700 ease-out ${
+                visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: `${yi * 150}ms` }}
+            >
+              <div className={`relative overflow-hidden rounded-2xl mb-4 bg-gradient-to-r ${year.gradient}`}>
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm" />
+                <div className="relative px-5 py-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-navy/10 flex items-center justify-center shrink-0">
+                    <FontAwesomeIcon icon={faGraduationCap} className="text-navy text-lg" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-navy text-sm tracking-wide">
+                      {year.label}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {year.subtitle}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+
+              <div className="flex flex-wrap gap-2.5">
                 {year.ues.map((ue) => (
                   <button
                     key={ue}
                     type="button"
                     onClick={() => handleSelectUE(ue)}
-                    className={
-                      "px-3 sm:px-5 py-2 sm:py-2.5 rounded-full " +
-                      "text-xs sm:text-sm font-bold border transition-all " +
-                      (selectedUE === ue
-                        ? "bg-navy text-white border-navy shadow-md"
-                        : "bg-white text-navy border-contact hover:border-navy hover:bg-navy/5 shadow-sm")
-                    }
+                    className={`group relative px-4 py-2.5 rounded-xl text-sm font-bold
+                      transition-all duration-300 active:scale-[0.97]
+                      ${
+                        selectedUE === ue
+                          ? "bg-navy text-white shadow-lg shadow-navy/25"
+                          : "bg-white text-navy border-2 border-contact/60 hover:border-gold/40 hover:shadow-lg hover:shadow-gold/10 hover:-translate-y-0.5"
+                      }`}
                   >
-                    {ue}
+                    {selectedUE === ue && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-gold rounded-full border-2 border-white" />
+                    )}
+                    <span className="relative z-10">{ue}</span>
                   </button>
                 ))}
               </div>
@@ -155,45 +179,45 @@ export default function ArchiveGrid() {
         </div>
       </div>
 
-      {/* Panneau supports */}
       {selectedUE && (
         <>
-          {/* Overlay mobile */}
           <div
-            className="lg:hidden fixed inset-0 bg-black/40 z-30"
+            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-30 animate-fade-in"
             onClick={handleClosePanel}
           />
 
           <div
+            ref={panelRef}
             className={
               "fixed lg:static inset-x-0 bottom-0 lg:inset-auto z-40 " +
-              "lg:w-80 lg:shrink-0 " +
-              "max-h-[80vh] lg:max-h-none lg:h-full " +
-              "rounded-t-2xl lg:rounded-2xl " +
+              "lg:w-96 lg:shrink-0 " +
+              "max-h-[85vh] lg:max-h-none lg:h-full " +
+              "rounded-t-3xl lg:rounded-2xl " +
               "bg-white shadow-modal lg:shadow-card " +
               "flex flex-col " +
-              "transition-transform duration-300 " +
+              "transition-all duration-400 ease-out " +
               (showPanel
-                ? "translate-y-0"
-                : "translate-y-full lg:translate-y-0")
+                ? "translate-y-0 opacity-100"
+                : "translate-y-full lg:translate-y-0 lg:opacity-100 opacity-0")
             }
           >
-            <div className="p-4 sm:p-5 flex flex-col h-full">
-              {/* Trait mobile */}
-              <div
-                className="lg:hidden w-10 h-1 bg-contact rounded-full
-                              mx-auto mb-4 shrink-0"
-              />
+            <div className="p-5 sm:p-6 flex flex-col h-full">
+              <div className="lg:hidden w-10 h-1 bg-contact rounded-full mx-auto mb-4 shrink-0" />
 
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4 shrink-0">
-                <div>
-                  <h3 className="font-bold text-navy text-base">
-                    {selectedUE}
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Supports pédagogiques
-                  </p>
+              <div className="flex items-start justify-between mb-5 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
+                    <FontAwesomeIcon icon={faBookOpen} className="text-gold text-lg" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-navy text-lg leading-tight">
+                      {selectedUE}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                      <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
+                      Supports pédagogiques
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   {isTeacher && (
@@ -203,34 +227,40 @@ export default function ArchiveGrid() {
                         setShowAdd((p) => !p);
                         setAddError("");
                       }}
-                      className="w-7 h-7 rounded-full bg-gold text-white
-                                 flex items-center justify-center hover:opacity-80 transition"
+                      className="w-8 h-8 rounded-xl bg-gold text-white
+                        flex items-center justify-center hover:opacity-80
+                        transition-all duration-200 active:scale-95"
+                      title={showAdd ? "Fermer" : "Ajouter un support"}
                     >
                       <FontAwesomeIcon
                         icon={showAdd ? faTimes : faPlus}
-                        className="text-xs"
+                        className="text-sm"
                       />
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={handleClosePanel}
-                    className="w-7 h-7 rounded-full bg-surface text-gray-400
-                               flex items-center justify-center hover:bg-contact transition"
+                    className="w-8 h-8 rounded-xl bg-surface text-gray-400
+                      flex items-center justify-center hover:bg-contact hover:text-navy
+                      transition-all duration-200 active:scale-95"
+                    title="Fermer"
                   >
-                    <FontAwesomeIcon icon={faTimes} className="text-xs" />
+                    <FontAwesomeIcon icon={faTimes} className="text-sm" />
                   </button>
                 </div>
               </div>
 
-              {/* Formulaire ajout */}
               {isTeacher && showAdd && (
                 <form
                   onSubmit={handleAdd}
-                  className="mb-4 p-3 bg-surface rounded-xl flex flex-col gap-2 shrink-0"
+                  className="mb-5 p-4 bg-gradient-to-br from-navy/5 to-transparent rounded-2xl border border-navy/10 flex flex-col gap-3 shrink-0 animate-slide-up"
                 >
                   {addError && (
-                    <p className="text-red-500 text-xs">{addError}</p>
+                    <p className="text-red-500 text-xs font-medium flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      {addError}
+                    </p>
                   )}
                   <input
                     className="input-field"
@@ -255,55 +285,68 @@ export default function ArchiveGrid() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="btn-primary w-full text-center disabled:opacity-60"
+                    className="btn-gold w-full text-center disabled:opacity-60"
                   >
                     {saving ? (
-                      <FontAwesomeIcon
-                        icon={faSpinner}
-                        className="animate-spin"
-                      />
+                      <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
                     ) : (
-                      "Ajouter"
+                      "Ajouter le support"
                     )}
                   </button>
                 </form>
               )}
 
-              {/* Supports */}
-              <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
+              <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar">
                 {loading && (
-                  <div className="flex justify-center py-8">
-                    <FontAwesomeIcon
-                      icon={faSpinner}
-                      className="text-navy text-xl animate-spin"
-                    />
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
+                    <p className="text-sm text-gray-400 font-medium">
+                      Chargement des supports...
+                    </p>
                   </div>
                 )}
 
                 {!loading && supports.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-10 text-gray-300">
-                    <FontAwesomeIcon
-                      icon={faFolderOpen}
-                      className="text-3xl mb-2"
-                    />
-                    <p className="text-sm">Aucun support ajouté</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="relative mb-6">
+                      <div className="absolute inset-0 bg-gold/10 rounded-full scale-[2] animate-ping opacity-30" />
+                      <div className="absolute inset-0 bg-navy/5 rounded-full scale-150 blur-xl animate-pulse" />
+                      <div className="relative bg-white border-2 border-gold/20 p-5 rounded-2xl shadow-lg">
+                        <FontAwesomeIcon
+                          icon={faFolderOpen}
+                          className="text-gold/60 text-4xl animate-float"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-navy font-bold text-sm mb-1">
+                      Aucun support pour l'instant
+                    </p>
+                    <p className="text-gray-400 text-xs max-w-[200px] leading-relaxed">
+                      {isTeacher
+                        ? "Ajoutez des ressources pédagogiques pour vos étudiants."
+                        : "Les supports seront ajoutés par vos enseignants."}
+                    </p>
                   </div>
                 )}
 
                 {!loading &&
-                  supports.map((s) => (
+                  supports.map((s, i) => (
                     <div
                       key={s.id}
-                      className="flex items-center gap-3 p-3 bg-surface
-                                  rounded-xl hover:bg-contact/50 transition group"
+                      className="group flex items-center gap-3 p-3.5 bg-surface
+                        rounded-xl hover:bg-navy/5 hover:border-gold/20
+                        border border-transparent transition-all duration-200
+                        animate-slide-up"
+                      style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
                     >
                       <div
-                        className="w-8 h-8 rounded-full bg-navy/10
-                                    flex items-center justify-center shrink-0"
+                        className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5
+                          flex items-center justify-center shrink-0
+                          group-hover:from-gold/30 group-hover:to-gold/10 transition-all duration-300"
                       >
                         <FontAwesomeIcon
                           icon={faLink}
-                          className="text-navy text-xs"
+                          className="text-gold text-sm"
                         />
                       </div>
                       <a
@@ -314,21 +357,27 @@ export default function ArchiveGrid() {
                       >
                         <span
                           className="text-sm font-semibold text-navy
-                                       group-hover:text-gold transition-colors truncate"
+                            group-hover:text-gold transition-colors duration-200 truncate"
                         >
                           {s.label}
                         </span>
                         <FontAwesomeIcon
                           icon={faExternalLinkAlt}
                           className="text-gray-300 text-xs shrink-0
-                                   group-hover:text-gold transition-colors"
+                            group-hover:text-gold transition-colors duration-200
+                            opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0
+                            transition-all duration-200"
                         />
                       </a>
                       {isTeacher && (
                         <button
                           type="button"
                           onClick={() => handleDelete(s.id)}
-                          className="text-red-300 hover:text-red-500 transition shrink-0"
+                          className="w-7 h-7 rounded-lg text-red-300 hover:text-red-500
+                            hover:bg-red-50 transition-all duration-200
+                            flex items-center justify-center shrink-0
+                            opacity-0 group-hover:opacity-100"
+                          title="Supprimer"
                         >
                           <FontAwesomeIcon icon={faTrash} className="text-xs" />
                         </button>
@@ -336,6 +385,14 @@ export default function ArchiveGrid() {
                     </div>
                   ))}
               </div>
+
+              {!loading && supports.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-contact/40 shrink-0">
+                  <p className="text-[11px] text-gray-400 font-medium text-center">
+                    {supports.length} support{supports.length > 1 ? "s" : ""}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </>
