@@ -268,10 +268,10 @@ export default function RegisterPage() {
                   <p className="text-gray-500 text-xs leading-relaxed">
                     Contactez l'administrateur à{" "}
                     <a
-                      href="mailto:hub203313@gmail.com"
+                      href="mailto:stdhub.admin@gmail.com"
                       className="text-[#001948] hover:underline font-medium"
                     >
-                      hub203313@gmail.com
+                      stdhub.admin@gmail.com
                     </a>{" "}
                     en précisant votre rôle et niveau. Le code est unique et
                     expire après 7 jours.
