@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faGraduationCap } from "@fortawesome/free-solid-svg-icons";
+import { faChevronRight, faGraduationCap } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
+import UserAvatar from "../ui/UserAvatar";
 
 export default function Navbar({ title }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const avatarUrl = user?.avatar || null;
   const isAlumni = user?.role === "alumni";
 
   return (
@@ -36,9 +36,10 @@ export default function Navbar({ title }) {
 
       <div
         onClick={() => navigate("/profile")}
-        className="flex items-center gap-2 bg-surface px-3 sm:px-4 py-2
+        className="group flex items-center gap-2 bg-surface px-3 sm:px-4 py-2
                       rounded-full border border-contact cursor-pointer
-                      hover:border-navy transition"
+                      hover:border-navy hover:bg-white transition"
+        title="Modifier le profil"
       >
         <span
           className="font-semibold text-navy text-xs sm:text-sm
@@ -46,20 +47,16 @@ export default function Navbar({ title }) {
         >
           {user?.pseudo || user?.ref || "Utilisateur"}
         </span>
-        <div
-          className="w-7 h-7 rounded-full bg-navy flex items-center
-                        justify-center shrink-0 overflow-hidden"
-        >
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt="avatar"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <FontAwesomeIcon icon={faUser} className="text-white text-xs" />
-          )}
-        </div>
+        <UserAvatar
+          avatar={user?.avatar}
+          name={user?.pseudo || user?.ref}
+          size="sm"
+          color="bg-navy"
+        />
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className="hidden sm:block text-[10px] text-navy/30 group-hover:text-navy transition"
+        />
       </div>
     </header>
   );

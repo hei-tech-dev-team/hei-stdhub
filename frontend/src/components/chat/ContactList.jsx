@@ -5,12 +5,12 @@ import {
   faPlus,
   faTimes,
   faSpinner,
-  faUser,
   faComments,
+  faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import Avatar from "../ui/Avatar";
+import UserAvatar from "../ui/UserAvatar";
 
 const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
@@ -19,8 +19,11 @@ const ROLE_BADGE = {
   alumni: { label: "Alumni", cls: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
 };
 
-function RoleBadge({ role }) {
-  const cfg = ROLE_BADGE[role];
+function RoleBadge({ role, level }) {
+  let cfg = ROLE_BADGE[role];
+  if (role === "student" && level) {
+    cfg = { label: level, cls: "bg-navy/30 text-gold border-gold/20" };
+  }
   if (!cfg) return null;
   return (
     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ml-1.5 ${cfg.cls}`}>
@@ -37,29 +40,47 @@ function StatusDot({ online }) {
   );
 }
 
-export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread }) {
+export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread, favorites, onToggleFavorite }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("Tous");
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
+  const FILTERS = ["Tous", "L1", "L2", "L3", "Prof", "Admin"];
+
   const sorted = useMemo(() => {
     return [...contacts].sort((a, b) => {
       if (a.isGlobal) return -1;
       if (b.isGlobal) return 1;
+
+      // 1. Priorité aux favoris
+      const aFav = favorites.includes(a.id);
+      const bFav = favorites.includes(b.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+
+      // 2. Priorité aux messages non lus
       const aUnread = unread?.contacts?.[a.id]?.unread || 0;
       const bUnread = unread?.contacts?.[b.id]?.unread || 0;
       if (aUnread && !bUnread) return -1;
       if (!aUnread && bUnread) return 1;
+
+      // 3. Alphabétique
       return (a.name || "").localeCompare(b.name || "");
     });
-  }, [contacts, unread]);
+  }, [contacts, unread, favorites]);
 
   const filtered = sorted.filter((c) =>
-    (c.name || "").toLowerCase().includes(search.toLowerCase()),
-  );
+    (c.name || "").toLowerCase().includes(search.toLowerCase())
+  ).filter((c) => {
+    if (roleFilter === "Tous" || c.isGlobal) return true;
+    if (roleFilter === "Prof") return c.role === "teacher";
+    if (roleFilter === "Admin") return c.role === "admin";
+    return c.level === roleFilter;
+  });
 
   const getUnreadCount = (contact) => {
     if (contact.isGlobal) return unread?.global || 0;
@@ -114,21 +135,13 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     const online = onlineUsers.has(contact.id);
     return (
       <div className="relative shrink-0">
-        {contact.avatar ? (
-          <div className="w-10 h-10 rounded-full overflow-hidden">
-            <img
-              src={contact.avatar}
-              alt={contact.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <Avatar
-            name={contact.name}
-            size="md"
-            color={isActive ? "bg-gold" : "bg-white/10"}
-          />
-        )}
+        <UserAvatar
+          avatar={contact.avatar}
+          name={contact.name}
+          size="lg"
+          color={isActive ? "bg-gold" : "bg-white/10"}
+          className="ring-2 ring-white/10"
+        />
         <span className="absolute -bottom-0.5 -right-0.5">
           <StatusDot online={online} />
         </span>
@@ -142,19 +155,14 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       <div className="px-5 pt-5 pb-4 shrink-0 border-b border-white/10">
         <div className="flex items-center gap-3 mb-4">
           <div className="relative shrink-0">
-            {user?.avatar ? (
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gold">
-                <img
-                  src={user.avatar}
-                  alt="moi"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center border-2 border-gold">
-                <FontAwesomeIcon icon={faUser} className="text-gold text-sm" />
-              </div>
-            )}
+            <UserAvatar
+              avatar={user?.avatar}
+              name={user?.pseudo || user?.ref}
+              size="lg"
+              color="bg-gold/20"
+              className="border-2 border-gold text-gold"
+              alt="Moi"
+            />
             <span className="absolute -bottom-0.5 -right-0.5">
               <StatusDot online={true} />
             </span>
@@ -181,6 +189,23 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
+        {/* Role Filters */}
+        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 no-scrollbar">
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setRoleFilter(f)}
+              className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 ${
+                roleFilter === f
+                  ? "bg-gold border-gold text-navy"
+                  : "bg-white/5 border-white/10 text-white/60 hover:border-white/30"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Contact list */}
@@ -194,8 +219,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
               onClick={() => onSelect(contact)}
               className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 active:scale-[0.98] ${
                 isActive
-                  ? "bg-gold/20"
-                  : "hover:bg-white/10"
+                  ? "bg-gold/20 border border-gold/20"
+                  : "border border-transparent hover:bg-white/10"
               }`}
             >
               <ContactAvatar contact={contact} isActive={isActive} />
@@ -216,15 +241,30 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                         : contact.role === "bde"
                           ? "BDE"
                           : "Étudiant"}
-                    <RoleBadge role={contact.role} />
+                    <RoleBadge role={contact.role} level={contact.level} />
                   </span>
                 )}
               </div>
-              {getUnreadCount(contact) > 0 && (
-                <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
-                  {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
-                </span>
-              )}
+              <div className="flex flex-col items-end gap-2">
+                {!contact.isGlobal && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(contact.id);
+                    }}
+                    className={`transition-all hover:scale-120 ${
+                      favorites.includes(contact.id) ? "text-gold animate-pulse" : "text-white/10 hover:text-gold/50"
+                    }`}
+                  >
+                    <FontAwesomeIcon icon={faStar} className="text-xs" />
+                  </button>
+                )}
+                {getUnreadCount(contact) > 0 && (
+                  <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
+                    {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
+                  </span>
+                )}
+              </div>
             </button>
           );
         })}
@@ -289,17 +329,13 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                   className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left active:scale-[0.98]"
                 >
                   <div className="relative shrink-0">
-                    {u.avatar ? (
-                      <div className="w-10 h-10 rounded-full overflow-hidden">
-                        <img
-                          src={u.avatar}
-                          alt={u.pseudo}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <Avatar name={u.pseudo} size="md" color="bg-white/10" />
-                    )}
+                    <UserAvatar
+                      avatar={u.avatar}
+                      name={u.pseudo}
+                      size="lg"
+                      color="bg-white/10"
+                      className="ring-2 ring-white/10"
+                    />
                     <span className="absolute -bottom-0.5 -right-0.5">
                       <StatusDot online={onlineUsers.has(u.id)} />
                     </span>
