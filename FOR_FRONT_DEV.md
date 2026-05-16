@@ -523,6 +523,9 @@ frontend/src/
 @async @function deleteMessage(messageId) - DELETE /messages/:id, removes from local state
 @function handleSelectContact(contact) - Switch active contact, scroll to bottom
 
+@changelog 1.4.0
+  - Updated support contact email in RegisterPage to stdhub.admin@gmail.com
+
 @changelog 1.3.4
   - Chat contact toggle moved to right of chat name on mobile header
   - Avoids overlap with Sidebar hamburger menu on left side
