@@ -107,7 +107,7 @@ const sendPasswordResetEmail = async ({ user, token }) => {
     `Bonjour ${displayName},`,
     "",
     "Vous avez demandé la réinitialisation de votre mot de passe HEI STDhub.",
-    "Ce lien est valable pendant 1 heure :",
+    "Ce lien est valable pendant 5 minutes :",
     resetUrl,
     "",
     "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.",
@@ -116,20 +116,9 @@ const sendPasswordResetEmail = async ({ user, token }) => {
       <p>Bonjour ${escapeHtml(displayName)},</p>
       <p>Vous avez demandé la réinitialisation de votre mot de passe HEI STDhub.</p>
       <p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>
-      <p>Ce lien est valable pendant 1 heure.</p>
+      <p>Ce lien est valable pendant 5 minutes.</p>
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     `;
-
-  // Try Resend first, fall back to SMTP
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const result = await sendWithResend({ user, subject, text, html });
-      console.info(`Email de réinitialisation envoyé via Resend à ${user.email}`);
-      return { skipped: false, resetUrl, provider: "resend", result };
-    } catch (resendErr) {
-      console.error("Resend failed, trying SMTP:", resendErr.message);
-    }
-  }
 
   const transporter = createTransport();
   if (transporter) {
