@@ -8,12 +8,9 @@ export default function HomePage() {
   const { user } = useAuth();
 
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="flex h-screen bg-surface overflow-hidden">
       <Sidebar />
-      <main
-        className="flex-1 flex flex-col min-h-screen overflow-hidden
-                       pl-0 lg:pl-0"
-      >
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
         {user?.role === "alumni" ? (
           <AlumniHome />
         ) : user?.role === "teacher" || user?.role === "admin" ? (
