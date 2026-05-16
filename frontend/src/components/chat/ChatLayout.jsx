@@ -40,11 +40,15 @@ export default function ChatLayout() {
   const [activeContact, setActiveContact] = useState(GLOBAL_CONTACT);
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
   const [contactTotal, setContactTotal] = useState(0);
+  const [favorites, setFavorites] = useState(() =>
+    JSON.parse(localStorage.getItem("chat_favorites") || "[]")
+  );
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
@@ -60,6 +64,16 @@ export default function ChatLayout() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  const toggleFavorite = useCallback((id) => {
+    setFavorites((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((fid) => fid !== id)
+        : [...prev, id];
+      localStorage.setItem("chat_favorites", JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -355,6 +369,7 @@ export default function ChatLayout() {
         ? { content, is_global: true }
         : { content, receiver_id: activeContact.id, is_global: false };
       await api.post("/messages", payload);
+      setReplyTo(null);
     } catch (err) {
       console.error(err);
     }
@@ -363,6 +378,7 @@ export default function ChatLayout() {
   const handleSelectContact = (contact) => {
     setActiveContact(contact);
     setShowContactList(false);
+    setReplyTo(null);
     setIsAtBottom(true);
   };
 
@@ -387,6 +403,8 @@ export default function ChatLayout() {
           onlineUsers={onlineUsers}
           unread={unread}
           totalContacts={contactTotal}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
         />
       </div>
 
@@ -410,6 +428,8 @@ export default function ChatLayout() {
           onScrollToBottom={handleScrollToBottom}
           onlineUsers={onlineUsers}
           onLoadOlder={() => loadOlderMessages(activeContact)}
+          replyTo={replyTo}
+          onReply={setReplyTo}
         />
       </div>
     </div>
