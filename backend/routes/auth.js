@@ -16,9 +16,9 @@ const capitalize = (str) =>
     .join(" ");
 
 const useCloudinary =
-  process.env.CLOUDINARY_CLOUD_NAME &&
-  process.env.CLOUDINARY_API_KEY &&
-  process.env.CLOUDINARY_API_SECRET;
+  process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+  process.env.CLOUDINARY_API_KEY?.trim() &&
+  process.env.CLOUDINARY_API_SECRET?.trim();
 
 let avatarUpload;
 if (useCloudinary) {
