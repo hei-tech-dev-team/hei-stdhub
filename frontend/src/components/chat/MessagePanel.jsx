@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPaperPlane,
@@ -8,8 +8,10 @@ import {
   faFile,
   faChevronDown,
   faTrash,
+  faSmile,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import Avatar from "../ui/Avatar";
+import UserAvatar from "../ui/UserAvatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
 import api from "../../api/axios";
 import DOMPurify from "dompurify";
@@ -22,6 +24,8 @@ import {
   isFileMessage,
   parseFileContent,
 } from "./chat-utils";
+
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300" },
@@ -36,19 +40,6 @@ function RoleBadge({ role }) {
     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 ${cfg.cls}`}>
       {cfg.label}
     </span>
-  );
-}
-
-function ChatAvatar({ avatar, name }) {
-  const [failed, setFailed] = useState(false);
-  if (!avatar || failed) return <Avatar name={name} size="sm" color="bg-gold" />;
-  return (
-    <img
-      src={avatar}
-      alt={name}
-      className="w-full h-full object-cover"
-      onError={() => setFailed(true)}
-    />
   );
 }
 
@@ -100,13 +91,91 @@ function renderContent(content) {
   );
 }
 
+function getMessagePreview(content) {
+  const parsed = parseFileContent(content);
+  if (parsed) {
+    return parsed.type === "img"
+      ? "Image jointe"
+      : `Fichier joint : ${parsed.filename}`;
+  }
+
+  const compact = String(content || "").replace(/\s+/g, " ").trim();
+  if (!compact) return "Message vide";
+  return compact.length > 120 ? `${compact.slice(0, 120)}...` : compact;
+}
+
+function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
+  if (!message) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-xl border border-white/10 bg-navy-dark shadow-2xl shadow-black/50 overflow-hidden animate-fade-in">
+        <div className="flex items-start gap-3 p-5 border-b border-white/10">
+          <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-300 flex items-center justify-center shrink-0">
+            <FontAwesomeIcon icon={faTrash} className="text-sm" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-white font-bold text-base">
+              Supprimer ce message ?
+            </h3>
+            <p className="text-white/50 text-xs mt-1 leading-relaxed">
+              Cette action est définitive et le message disparaîtra de la conversation.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="w-8 h-8 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition disabled:opacity-40"
+            title="Fermer"
+          >
+            <FontAwesomeIcon icon={faXmark} className="text-sm" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
+            <p className="text-white/45 text-[11px] font-semibold uppercase tracking-wide mb-1">
+              Aperçu
+            </p>
+            <p className="text-white/80 text-sm leading-relaxed break-words">
+              {getMessagePreview(message.content)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 pb-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white/70 hover:text-white hover:bg-white/10 transition disabled:opacity-40"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-400 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {deleting && (
+              <FontAwesomeIcon icon={faSpinner} className="text-xs animate-spin" />
+            )}
+            Supprimer
+          </button>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 function MessageGroup({ messages, isOwn, onDelete }) {
   const [hoveredId, setHoveredId] = useState(null);
 
-  const handleDelete = (msgId) => {
-    if (window.confirm("Supprimer ce message ?")) {
-      onDelete?.(msgId);
-    }
+  const handleDelete = (msg) => {
+    onDelete?.(msg);
   };
 
   return (
@@ -121,17 +190,21 @@ function MessageGroup({ messages, isOwn, onDelete }) {
           return (
             <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0">
               {!isOwn && isFirst && (
-                <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
-                  <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} />
-                </div>
+                <UserAvatar
+                  avatar={msg.senderAvatar}
+                  name={msg.sender}
+                  size="sm"
+                  color="bg-gold"
+                  className="mb-0.5 self-end ring-2 ring-white/20"
+                />
               )}
               {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
               <div className="flex flex-col items-end min-w-0">
                 <div
                   className={`rounded-xl overflow-hidden ${
                     isOwn
-                      ? "bg-gold text-navy-dark"
-                      : "bg-white/10 border border-white/10 text-white"
+                      ? "bg-gold/95 text-navy-dark"
+                      : "bg-white/[0.08] border border-white/10 text-white"
                   }`}
                 >
                   {renderContent(msg.content)}
@@ -156,7 +229,13 @@ function MessageGroup({ messages, isOwn, onDelete }) {
           >
             {!isOwn && isFirst && (
               <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
-                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} />
+                <UserAvatar
+                  avatar={msg.senderAvatar}
+                  name={msg.sender}
+                  size="sm"
+                  color="bg-gold"
+                  className="self-end ring-2 ring-white/20"
+                />
               </div>
             )}
             {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
@@ -175,8 +254,8 @@ function MessageGroup({ messages, isOwn, onDelete }) {
               <div
                 className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
                   isOwn
-                    ? "bg-gold text-navy-dark rounded-2xl rounded-br-sm"
-                    : "bg-white/10 border border-white/10 text-white/90 rounded-2xl rounded-bl-sm"
+                    ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
+                    : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
                 }`}
               >
                 {renderContent(msg.content)}
@@ -190,7 +269,7 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleDelete(msg.id)}
+                      onClick={() => handleDelete(msg)}
                       className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
                       title="Supprimer"
                     >
@@ -203,21 +282,6 @@ function MessageGroup({ messages, isOwn, onDelete }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function HeaderAvatar({ avatar, name }) {
-  const [failed, setFailed] = useState(false);
-  if (!avatar || failed) return <Avatar name={name} size="md" color="bg-gold" />;
-  return (
-    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/10">
-      <img
-        src={avatar}
-        alt={name}
-        className="w-full h-full object-cover"
-        onError={() => setFailed(true)}
-      />
     </div>
   );
 }
@@ -237,7 +301,13 @@ function ContactAvatar({ contact, onlineUsers }) {
   const online = onlineUsers.has(contact.id);
   return (
     <div className="relative shrink-0">
-      <HeaderAvatar avatar={contact.avatar} name={contact.name} />
+      <UserAvatar
+        avatar={contact.avatar}
+        name={contact.name}
+        size="lg"
+        color="bg-gold"
+        className="ring-2 ring-white/10"
+      />
       <span className="absolute -bottom-0.5 -right-0.5">
         <span
           className={`status-dot ${online ? "status-online" : "status-offline"}`}
@@ -263,8 +333,14 @@ export default function MessagePanel({
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingMessage, setDeletingMessage] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
+  const inputRef = useRef(null);
+  const emojiButtonRef = useRef(null);
+  const emojiPickerRef = useRef(null);
   const scrollRef = useRef(null);
   const prevScrollHeight = useRef(0);
   const prevMsgCount = useRef(messages.length);
@@ -285,6 +361,36 @@ export default function MessagePanel({
     prevMsgCount.current = messages.length;
   }, [messages, isAtBottom]);
 
+  useEffect(() => {
+    setShowEmojiPicker(false);
+  }, [contact.id]);
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const handlePointerDown = (event) => {
+      const target = event.target;
+      if (
+        emojiPickerRef.current?.contains(target) ||
+        emojiButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setShowEmojiPicker(false);
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") setShowEmojiPicker(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showEmojiPicker]);
+
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
@@ -298,12 +404,34 @@ export default function MessagePanel({
     }
   };
 
+  const handleEmojiClick = (emojiData) => {
+    const emoji = emojiData.emoji;
+    const input = inputRef.current;
+
+    if (!input) {
+      setText((prev) => prev + emoji);
+      return;
+    }
+
+    const start = input.selectionStart ?? text.length;
+    const end = input.selectionEnd ?? text.length;
+    const next = `${text.slice(0, start)}${emoji}${text.slice(end)}`;
+    const cursor = start + emoji.length;
+
+    setText(next);
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(cursor, cursor);
+    });
+  };
+
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
     setSending(true);
     await onSend(trimmed);
     setText("");
+    setShowEmojiPicker(false);
     setSending(false);
     onAtBottomChange(true);
     setTimeout(
@@ -341,6 +469,27 @@ export default function MessagePanel({
     } finally {
       setSending(false);
       e.target.value = "";
+    }
+  };
+
+  const requestDeleteMessage = (message) => {
+    setShowEmojiPicker(false);
+    setDeleteTarget(message);
+  };
+
+  const cancelDeleteMessage = () => {
+    if (deletingMessage) return;
+    setDeleteTarget(null);
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!deleteTarget || deletingMessage) return;
+    setDeletingMessage(true);
+    try {
+      await onDelete?.(deleteTarget.id);
+      setDeleteTarget(null);
+    } finally {
+      setDeletingMessage(false);
     }
   };
 
@@ -403,7 +552,7 @@ export default function MessagePanel({
               : contact.role === "teacher"
                 ? "Professeur"
                 : contact.role === "bde"
-                  ? "Bureau Des Étudiants"
+                  ? "Bureau des étudiants"
                   : "Étudiant"}
           </p>
         </div>
@@ -453,7 +602,7 @@ export default function MessagePanel({
                 <MessageGroup
                   messages={item.messages}
                   isOwn={item.isOwn}
-                  onDelete={onDelete}
+                  onDelete={requestDeleteMessage}
                 />
               </div>
             );
@@ -482,10 +631,40 @@ export default function MessagePanel({
 
       {/* Input */}
       <div className="px-1 sm:px-6 py-3 sm:py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
+        <div className="relative flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
+          {showEmojiPicker && (
+            <div
+              ref={emojiPickerRef}
+              className="absolute bottom-full left-0 sm:left-4 mb-3 z-30 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl shadow-2xl shadow-black/40"
+            >
+              <Suspense
+                fallback={
+                  <div className="w-[min(360px,calc(100vw-1rem))] h-[420px] bg-[#222] text-white/60 flex items-center justify-center text-sm">
+                    Chargement...
+                  </div>
+                }
+              >
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  theme="dark"
+                  emojiStyle="native"
+                  suggestedEmojisMode="recent"
+                  skinTonePickerLocation="SEARCH"
+                  searchPlaceholder="Rechercher un emoji"
+                  searchClearButtonLabel="Effacer"
+                  lazyLoadEmojis
+                  autoFocusSearch
+                  width="min(360px, calc(100vw - 1rem))"
+                  height={420}
+                  previewConfig={{ showPreview: false }}
+                />
+              </Suspense>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
+            title="Joindre un fichier"
             className="w-10 h-10 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all shrink-0 active:scale-90"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
@@ -496,7 +675,21 @@ export default function MessagePanel({
             className="hidden"
             onChange={handleFile}
           />
+          <button
+            ref={emojiButtonRef}
+            type="button"
+            onClick={() => setShowEmojiPicker((open) => !open)}
+            title="Ajouter un emoji"
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-90 ${
+              showEmojiPicker
+                ? "bg-gold text-navy"
+                : "text-white/40 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <FontAwesomeIcon icon={faSmile} className="text-sm" />
+          </button>
           <input
+            ref={inputRef}
             className="flex-1 min-w-0 text-sm text-white bg-transparent focus:outline-none placeholder:text-white/30"
             placeholder="Écrire un message..."
             value={text}
@@ -517,6 +710,13 @@ export default function MessagePanel({
           </button>
         </div>
       </div>
+
+      <DeleteMessageDialog
+        message={deleteTarget}
+        deleting={deletingMessage}
+        onCancel={cancelDeleteMessage}
+        onConfirm={confirmDeleteMessage}
+      />
     </div>
   );
 }
