@@ -9,6 +9,33 @@ const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
 
+
+// ==================== MAINTENANCE MODE ====================
+// Ajouté dans le cadre de feat/error_ui
+const maintenanceMiddleware = require("./middleware/maintenance.middleware");
+
+// Middleware global de maintenance (doit être avant les routes)
+app.use(maintenanceMiddleware);
+
+// Route registration
+app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/register", loginLimiter);
+app.use("/api/auth/forgot-password", loginLimiter);
+app.use("/api/auth/reset-password", loginLimiter);
+
+app.use("/api/suggestions", require("./routes/suggestions"));
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/posts", require("./routes/posts"));
+app.use("/api/supports", require("./routes/supports"));
+app.use("/api/submissions", require("./routes/submissions"));
+app.use("/api/messages", require("./routes/messages"));
+app.use("/api/push", require("./routes/push"));
+app.use("/api/admin", require("./routes/admin"));
+
+// ==================== MAINTENANCE ROUTES ====================
+app.use("/api/maintenance", require("./routes/maintenance.routes"));
+// =========================================================
+
 // Validate critical env vars at startup
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"];
 const missingEnv = REQUIRED_ENV.filter((v) => !process.env[v]);
