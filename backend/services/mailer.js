@@ -29,6 +29,9 @@ const createTransport = () => {
     port,
     secure,
     auth: user && pass ? { user, pass } : undefined,
+    family: 4,
+    connectionTimeout: 10000,
+    tls: { rejectUnauthorized: false },
   });
 };
 
