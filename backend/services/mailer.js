@@ -123,6 +123,17 @@ const sendPasswordResetEmail = async ({ user, token }) => {
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     `;
 
+  // Try Resend first, fall back to SMTP
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const result = await sendWithResend({ user, subject, text, html });
+      console.info(`Email de réinitialisation envoyé via Resend à ${user.email}`);
+      return { skipped: false, provider: "resend", result, resetUrl };
+    } catch (resendErr) {
+      console.error("Resend failed, trying SMTP:", resendErr.message);
+    }
+  }
+
   const transporter = createTransport();
   if (transporter) {
     try {
