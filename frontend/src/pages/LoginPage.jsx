@@ -11,7 +11,7 @@ export default function LoginPage() {
       const [error, setError] = useState("");
       const [loading, setLoading] = useState(false);
       const [showPwd, setShowPwd] = useState(false);
-      const [isAlumni, setIsAlumni] = useState(false);
+      const [loginRole, setLoginRole] = useState("student");
 
       const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -137,32 +137,25 @@ export default function LoginPage() {
                                           </div>
                                     )}
 
-                                    {/* Alumni toggle */}
-                                    <div className="flex items-center gap-3 mb-4 p-3 bg-surface rounded-xl">
-                                          <div
-                                                onClick={() =>
-                                                      setIsAlumni(false)
-                                                }
-                                                className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
-                                                      !isAlumni
-                                                            ? "bg-navy text-white shadow-sm"
-                                                            : "text-gray-400 hover:text-navy"
-                                                }`}
-                                          >
-                                                Étudiant actuel
-                                          </div>
-                                          <div
-                                                onClick={() =>
-                                                      setIsAlumni(true)
-                                                }
-                                                className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
-                                                      isAlumni
-                                                            ? "bg-navy text-white shadow-sm"
-                                                            : "text-gray-400 hover:text-navy"
-                                                }`}
-                                          >
-                                                Ancien étudiant
-                                          </div>
+                                    {/* Role selector */}
+                                    <div className="flex items-center gap-2 mb-4 p-1 bg-surface rounded-xl">
+                                      {[
+                                        { key: "student", label: "Étudiant" },
+                                        { key: "teacher", label: "Professeur" },
+                                        { key: "alumni", label: "Alumni" },
+                                      ].map((r) => (
+                                        <div
+                                          key={r.key}
+                                          onClick={() => setLoginRole(r.key)}
+                                          className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
+                                            loginRole === r.key
+                                              ? "bg-navy text-white shadow-sm"
+                                              : "text-gray-400 hover:text-navy"
+                                          }`}
+                                        >
+                                          {r.label}
+                                        </div>
+                                      ))}
                                     </div>
 
                                     <form
@@ -181,10 +174,12 @@ export default function LoginPage() {
                                                       <input
                                                             className="input-field pl-10"
                                                             placeholder={
-                                                                  isAlumni
-                                                                        ? "STD21XXX ou STD22XXX"
-                                                                        : "STD25XXX ou PROFXXX"
-                                                            }
+                                                                  loginRole === "teacher"
+                                                                    ? "PROF001"
+                                                                    : loginRole === "alumni"
+                                                                      ? "STD21XXX ou STD22XXX"
+                                                                      : "STD25XXX"
+                                                              }
                                                             value={form.ref}
                                                             onChange={(e) => {
                                                                   set(
