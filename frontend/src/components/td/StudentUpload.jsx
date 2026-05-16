@@ -165,11 +165,11 @@ export default function StudentUpload() {
       <div
         className={
           "flex flex-col items-center justify-center rounded-2xl " +
-          "border-2 border-dashed cursor-pointer transition " +
+          "border-2 border-dashed cursor-pointer transition-all duration-500 " +
           "min-h-48 sm:min-h-64 lg:flex-1 p-6 sm:p-8 " +
           (dragOver
             ? "border-gold bg-gold/5"
-            : "border-contact bg-white hover:border-navy/40")
+            : "border-contact bg-white hover:border-gold/40 hover:shadow-[0_15px_40px_rgba(0,0,0,0.04),0_0_15px_rgba(212,175,55,0.1)]")
         }
         onDragOver={(e) => {
           e.preventDefault();
