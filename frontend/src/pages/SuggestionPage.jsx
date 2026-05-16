@@ -24,10 +24,38 @@ export default function SuggestionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.titre.trim()) return setError("Le titre est requis.");
-    if (!form.contenu.trim()) return setError("Le contenu est requis.");
-    if (form.contenu.trim().length < 20)
+    const titre = form.titre.trim();
+    const contenu = form.contenu.trim();
+
+    if (!titre) return setError("Le titre est requis.");
+    if (!contenu) return setError("Le contenu est requis.");
+    if (contenu.length < 20)
       return setError("La suggestion doit faire au moins 20 caractères.");
+
+    
+    const words = contenu.toLowerCase().split(/\s+/);
+    const hasRepetitions = words.some((w, i) => w.length > 3 && words.slice(i + 1, i + 3).includes(w));
+    if (hasRepetitions) return setError("Le contenu contient trop de répétitions.");
+
+    const hasTooManyConsonants = /[bcdfghjklmnpqrstvwxz]{6,}/i.test(contenu);
+    const hasTooManyVowels = /[aeiouyàâéèêëîïôûùüÿ]{5,}/i.test(contenu);
+    const hasLongWords = words.some(w => w.length > 25 && !w.startsWith("http"));
+
+    if (hasTooManyConsonants || hasTooManyVowels || hasLongWords) {
+      return setError("Le contenu semble être incohérent ou mal formé.");
+    }
+
+    const commonWords = ["le", "la", "un", "une", "de", "et", "que", "est", "pour", "dans", "des"];
+    if (contenu.length > 50 && !words.some(w => commonWords.includes(w))) {
+      return setError("La suggestion doit être écrite en français lisible.");
+    }
+
+    // 4. Rate Limiting local (Cooldown de 60 secondes)
+    const lastSent = localStorage.getItem("last_suggestion_at");
+    if (lastSent && Date.now() - parseInt(lastSent) < 60000) {
+      const wait = Math.ceil((60000 - (Date.now() - parseInt(lastSent))) / 1000);
+      return setError(`Veuillez attendre ${wait}s avant d'envoyer une nouvelle suggestion.`);
+    }
 
     setLoading(true);
     setError("");
@@ -35,6 +63,7 @@ export default function SuggestionPage() {
       await api.post("/suggestions", form);
       setSubmitted(true);
       setForm({ titre: "", contenu: "", anonyme: false });
+      localStorage.setItem("last_suggestion_at", Date.now().toString());
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'envoi.");
