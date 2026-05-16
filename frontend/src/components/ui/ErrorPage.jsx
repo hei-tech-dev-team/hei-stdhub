@@ -1,4 +1,3 @@
-// frontend/src/components/ui/ErrorPage.jsx
 import { RefreshCw, Home, AlertTriangle } from "lucide-react";
 
 const ErrorPage = ({ 
