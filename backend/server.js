@@ -247,6 +247,12 @@ pool.query(`
   )
 `).catch((err) => console.error("Failed to create password_reset_tokens table:", err));
 
+// Update existing invitations constraint to allow alumni
+pool.query(`
+  ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check;
+  ALTER TABLE invitations ADD CONSTRAINT invitations_role_check CHECK (role IN ('student', 'teacher', 'alumni'));
+`).catch(() => {});
+
 // Ensure push_subscriptions table exists
 pool.query(`
   CREATE TABLE IF NOT EXISTS push_subscriptions (
