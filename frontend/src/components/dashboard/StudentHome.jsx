@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
   faExternalLinkAlt,
   faDownload,
   faBookOpen,
+  faSearch,
+  faFilter,
+  faSortAmountDown,
+  faSortAmountUp,
+  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
@@ -13,11 +18,16 @@ import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
 
 const LEVELS = ["Tous", "L1", "L2", "L3"];
+const TYPES = ["Tous", "Cours", "TD", "Examen"];
 
 export default function StudentHome() {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [filter, setFilter] = useState(user?.level || "Tous");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("Tous");
+  const [ueFilter, setUeFilter] = useState("Tous");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,21 +44,73 @@ export default function StudentHome() {
     setFilter(level);
   };
 
+  const uniqueUEs = useMemo(() => {
+    const ues = posts.map((p) => p.ue).filter(Boolean);
+    return ["Tous", ...new Set(ues)].sort();
+  }, [posts]);
+
+  const filteredPosts = useMemo(() => {
+    let result = [...posts];
+
+    // Recherche textuelle
+    const q = search.toLowerCase().trim();
+    if (q) {
+      result = result.filter(
+        (p) =>
+          (p.title || "").toLowerCase().includes(q) ||
+          (p.ue || "").toLowerCase().includes(q) ||
+          (p.description || "").toLowerCase().includes(q)
+      );
+    }
+
+    // Filtre par Type
+    if (typeFilter !== "Tous") {
+      result = result.filter((p) => p.type?.toLowerCase() === typeFilter.toLowerCase());
+    }
+
+    if (ueFilter !== "Tous" && uniqueUEs.includes(ueFilter)) {
+      result = result.filter((p) => p.ue === ueFilter);
+    }
+
+    
+    result.sort((a, b) => {
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+
+    return result;
+  }, [posts, search, typeFilter, ueFilter, sortOrder]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Navbar />
       <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-navy">
               Bonjour, {user?.prenom}
             </h1>
             <p className="text-sm text-gray-400 mt-0.5">
-              {posts.length} contenu(s) disponible(s)
+              {filteredPosts.length} contenu(s) disponible(s)
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative">
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder="Rechercher un cours, une UE..."
+                className="w-full sm:w-64 bg-white border border-contact rounded-full pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-navy transition-all shadow-sm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
             {LEVELS.map((l) => (
               <button
                 key={l}
@@ -64,6 +126,75 @@ export default function StudentHome() {
                 {l}
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+
+        {/* Filtres Avancés & Tri */}
+        <div className="flex flex-wrap items-center gap-4 py-3 mb-6 border-y border-contact/30">
+          <div className="flex items-center gap-2 text-navy/60">
+            <FontAwesomeIcon icon={faFilter} className="text-[10px]" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Affinement :</span>
+          </div>
+
+          {/* Filtre Type */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-400">Type :</span>
+            <select
+              className="bg-white border border-contact rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-navy cursor-pointer"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+            >
+              {TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtre UE */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-400">UE :</span>
+            <div className="relative flex items-center">
+              <input
+                list="ue-list"
+                className="bg-white border border-contact rounded-lg pl-2 pr-7 py-1 text-xs focus:outline-none focus:border-navy w-36 outline-none transition-all"
+                placeholder="Saisir une UE..."
+                value={ueFilter === "Tous" ? "" : ueFilter}
+                onChange={(e) => setUeFilter(e.target.value || "Tous")}
+                onFocus={(e) => e.target.select()}
+              />
+              <datalist id="ue-list">
+                {uniqueUEs.filter(u => u !== "Tous").map((ue) => (
+                  <option key={ue} value={ue} />
+                ))}
+              </datalist>
+              {ueFilter !== "Tous" && (
+                <button
+                  type="button"
+                  onClick={() => setUeFilter("Tous")}
+                  className="absolute right-2 text-gray-300 hover:text-red-500 transition-colors"
+                >
+                  <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tri Date */}
+          <div className="sm:ml-auto flex items-center gap-2">
+            <span className="text-xs text-gray-400">Date :</span>
+            <button
+              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+              className="flex items-center gap-2 bg-navy/5 hover:bg-navy/10 text-navy px-3 py-1 rounded-lg transition-all active:scale-95"
+            >
+              <span className="text-xs font-bold">
+                {sortOrder === "desc" ? "Plus récents" : "Plus anciens"}
+              </span>
+              <FontAwesomeIcon
+                icon={sortOrder === "desc" ? faSortAmountDown : faSortAmountUp}
+                className="text-xs"
+              />
+            </button>
           </div>
         </div>
 
@@ -97,9 +228,17 @@ export default function StudentHome() {
     </p>
   </div>
 )}
-        {!loading && (
+
+        {!loading && posts.length > 0 && filteredPosts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
+            <FontAwesomeIcon icon={faSearch} className="text-5xl mb-4 opacity-20" />
+            <p className="text-lg font-medium">Aucun résultat pour "{search}"</p>
+          </div>
+        )}
+
+        {!loading && filteredPosts.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {posts.map((post) => (
+            {filteredPosts.map((post) => (
               <div
                 key={post.id}
                 className="bg-white rounded-2xl border border-contact/60 p-5
