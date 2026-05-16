@@ -20,35 +20,33 @@ export default function SuggestionPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  const validateContent = (content) => {
+    if (!content) return "Le contenu est requis.";
+    if (content.length < 20)
+      return `La suggestion doit faire au moins 20 caractères. (${content.length}/20)`;
+
+    const words = content.toLowerCase().split(/\s+/).filter(Boolean);
+    const hasUnusual = words.some(w => !/^[a-zàâéèêëîïôûùüÿ0-9.,!?;:'"()]+$/.test(w));
+    if (hasUnusual) return "Le contenu contient des caractères inhabituels ou des mots mal formés.";
+    const hasRepetitions = words.some((w, i) => w.length > 3 && words.slice(i + 1, i + 3).includes(w));
+    if (hasRepetitions) return "Le contenu contient trop de répétitions.";
+    const hasCharabia = /[bcdfghjklmnpqrstvwxz]{6,}/i.test(content) || words.some(w => w.length > 20);
+    if (hasCharabia) return "Le contenu semble être incohérent ou mal formé.";
+    const common = ["le", "la", "un", "une", "de", "et", "que", "est", "pour", "dans", "des", "les", "je", "sur", "avec", "en", "au", "aux"];
+    if (!words.some(w => common.includes(w))) return "La suggestion doit être écrite en français lisible (mots courants manquants).";
+    
+    return null; // Pas d'erreur
+  };
+
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const titre = form.titre.trim();
     const contenu = form.contenu.trim();
-
     if (!titre) return setError("Le titre est requis.");
-    if (!contenu) return setError("Le contenu est requis.");
-    if (contenu.length < 20)
-      return setError("La suggestion doit faire au moins 20 caractères.");
-
-    
-    const words = contenu.toLowerCase().split(/\s+/);
-    const hasRepetitions = words.some((w, i) => w.length > 3 && words.slice(i + 1, i + 3).includes(w));
-    if (hasRepetitions) return setError("Le contenu contient trop de répétitions.");
-
-    const hasTooManyConsonants = /[bcdfghjklmnpqrstvwxz]{6,}/i.test(contenu);
-    const hasTooManyVowels = /[aeiouyàâéèêëîïôûùüÿ]{5,}/i.test(contenu);
-    const hasLongWords = words.some(w => w.length > 25 && !w.startsWith("http"));
-
-    if (hasTooManyConsonants || hasTooManyVowels || hasLongWords) {
-      return setError("Le contenu semble être incohérent ou mal formé.");
-    }
-
-    const commonWords = ["le", "la", "un", "une", "de", "et", "que", "est", "pour", "dans", "des"];
-    if (contenu.length > 50 && !words.some(w => commonWords.includes(w))) {
-      return setError("La suggestion doit être écrite en français lisible.");
-    }
+    const contentError = validateContent(contenu);
+    if (contentError) return setError(contentError);
 
     // 4. Rate Limiting local (Cooldown de 60 secondes)
     const lastSent = localStorage.getItem("last_suggestion_at");
@@ -75,11 +73,11 @@ export default function SuggestionPage() {
   const isTeacher = user?.role === "teacher";
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
+    <div className="flex h-screen bg-surface overflow-y-hidden">
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0">
         <Navbar title="Suggestions BDE" />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8">
           <div className="max-w-2xl mx-auto">
             {/* Header */}
             <div className="bg-navy rounded-2xl p-6 mb-6 text-white">
@@ -143,6 +141,7 @@ export default function SuggestionPage() {
                     maxLength={120}
                     onChange={(e) => {
                       set("titre", e.target.value);
+                      // Clear content error when title changes, as it's a separate field
                       setError("");
                     }}
                   />
@@ -159,14 +158,16 @@ export default function SuggestionPage() {
                     className="input-field resize-none h-40"
                     placeholder="Décrivez votre suggestion en détail. Quel est le problème ? Quelle est votre solution proposée ?"
                     value={form.contenu}
-                    maxLength={1000}
+                    maxLength={500} // Réduit la longueur max pour encourager la concision
                     onChange={(e) => {
-                      set("contenu", e.target.value);
-                      setError("");
+                      const val = e.target.value;
+                      set("contenu", val);
+                      const msg = validateContent(val);
+                      setError(msg || "");
                     }}
                   />
                   <p className="text-xs text-gray-400 mt-1 text-right">
-                    {form.contenu.length}/1000
+                    {form.contenu.length}/500
                   </p>
                 </div>
 
