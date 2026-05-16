@@ -6,6 +6,7 @@ import {
   faTimes,
   faSpinner,
   faComments,
+  faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
@@ -18,8 +19,11 @@ const ROLE_BADGE = {
   alumni: { label: "Alumni", cls: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
 };
 
-function RoleBadge({ role }) {
-  const cfg = ROLE_BADGE[role];
+function RoleBadge({ role, level }) {
+  let cfg = ROLE_BADGE[role];
+  if (role === "student" && level) {
+    cfg = { label: level, cls: "bg-navy/30 text-gold border-gold/20" };
+  }
   if (!cfg) return null;
   return (
     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ml-1.5 ${cfg.cls}`}>
@@ -36,29 +40,47 @@ function StatusDot({ online }) {
   );
 }
 
-export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread }) {
+export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread, favorites, onToggleFavorite }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("Tous");
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
+  const FILTERS = ["Tous", "L1", "L2", "L3", "Prof", "Admin"];
+
   const sorted = useMemo(() => {
     return [...contacts].sort((a, b) => {
       if (a.isGlobal) return -1;
       if (b.isGlobal) return 1;
+
+      // 1. Priorité aux favoris
+      const aFav = favorites.includes(a.id);
+      const bFav = favorites.includes(b.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+
+      // 2. Priorité aux messages non lus
       const aUnread = unread?.contacts?.[a.id]?.unread || 0;
       const bUnread = unread?.contacts?.[b.id]?.unread || 0;
       if (aUnread && !bUnread) return -1;
       if (!aUnread && bUnread) return 1;
+
+      // 3. Alphabétique
       return (a.name || "").localeCompare(b.name || "");
     });
-  }, [contacts, unread]);
+  }, [contacts, unread, favorites]);
 
   const filtered = sorted.filter((c) =>
-    (c.name || "").toLowerCase().includes(search.toLowerCase()),
-  );
+    (c.name || "").toLowerCase().includes(search.toLowerCase())
+  ).filter((c) => {
+    if (roleFilter === "Tous" || c.isGlobal) return true;
+    if (roleFilter === "Prof") return c.role === "teacher";
+    if (roleFilter === "Admin") return c.role === "admin";
+    return c.level === roleFilter;
+  });
 
   const getUnreadCount = (contact) => {
     if (contact.isGlobal) return unread?.global || 0;
@@ -167,6 +189,23 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
+        {/* Role Filters */}
+        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 no-scrollbar">
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setRoleFilter(f)}
+              className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 ${
+                roleFilter === f
+                  ? "bg-gold border-gold text-navy"
+                  : "bg-white/5 border-white/10 text-white/60 hover:border-white/30"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Contact list */}
@@ -202,15 +241,30 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                         : contact.role === "bde"
                           ? "BDE"
                           : "Étudiant"}
-                    <RoleBadge role={contact.role} />
+                    <RoleBadge role={contact.role} level={contact.level} />
                   </span>
                 )}
               </div>
-              {getUnreadCount(contact) > 0 && (
-                <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
-                  {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
-                </span>
-              )}
+              <div className="flex flex-col items-end gap-2">
+                {!contact.isGlobal && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(contact.id);
+                    }}
+                    className={`transition-all hover:scale-120 ${
+                      favorites.includes(contact.id) ? "text-gold animate-pulse" : "text-white/10 hover:text-gold/50"
+                    }`}
+                  >
+                    <FontAwesomeIcon icon={faStar} className="text-xs" />
+                  </button>
+                )}
+                {getUnreadCount(contact) > 0 && (
+                  <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
+                    {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
+                  </span>
+                )}
+              </div>
             </button>
           );
         })}
