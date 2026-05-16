@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faSpinner,
   faExternalLinkAlt,
   faDownload,
   faBookOpen,
@@ -16,6 +15,38 @@ import Navbar from "../layout/Navbar";
 import Badge from "../ui/Badge";
 import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
+
+const SkeletonPostCard = () => (
+  <div className="bg-white rounded-2xl border border-contact/60 p-5 animate-pulse">
+    <div className="flex items-center gap-2 mb-3 flex-wrap">
+      <div className="h-5 w-16 bg-gray-200 rounded-full"></div>
+      <div className="h-5 w-12 bg-gray-200 rounded-full"></div>
+      <div className="ml-auto h-4 w-20 bg-gray-200 rounded"></div>
+    </div>
+
+    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+    <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
+    <div className="h-3 bg-gray-200 rounded w-5/6 mb-4"></div>
+
+    <div className="flex items-center justify-between mt-auto pt-3 border-t border-surface/80">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-7 h-7 rounded-full bg-gray-200"></div>
+        <div className="h-3 bg-gray-200 rounded w-24"></div>
+      </div>
+      <div className="h-6 w-20 bg-gray-200 rounded-full"></div>
+    </div>
+  </div>
+);
+
+const SkeletonEmptyState = () => (
+  <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="relative mb-8">
+      <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse"></div>
+    </div>
+    <div className="h-6 bg-gray-200 rounded w-64 mb-3 animate-pulse"></div>
+    <div className="h-4 bg-gray-200 rounded w-80 animate-pulse"></div>
+  </div>
+);
 
 const LEVELS = ["Tous", "L1", "L2", "L3"];
 const TYPES = ["Tous", "Cours", "TD", "Examen"];
@@ -83,7 +114,7 @@ export default function StudentHome() {
   }, [posts, search, typeFilter, ueFilter, sortOrder]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-screen overflow-y-hidden">
       <Navbar />
       <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar">
         {/* Header */}
@@ -199,35 +230,13 @@ export default function StudentHome() {
         </div>
 
         {loading && (
-          <div className="flex justify-center py-20">
-            <FontAwesomeIcon
-              icon={faSpinner}
-              className="text-navy text-3xl animate-spin"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <SkeletonPostCard key={i} />
+            ))}
           </div>
         )}
-
-        {!loading && posts.length === 0 && (
-  <div className="flex flex-col items-center justify-center py-20 text-center">
-    <div className="relative mb-8 animate-slide-up">
-      <div className="absolute inset-0 bg-gold/20 rounded-full scale-[2] opacity-30 animate-ping"></div>
-      <div className="absolute inset-0 bg-navy/10 rounded-full scale-150 blur-xl animate-pulse"></div>
-      <div className="absolute -top-2 -right-2 w-4 h-4 bg-gold/40 rounded-full animate-bounce"></div>
-      <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-navy/30 rounded-full animate-bounce" style={{ animationDelay: '0.3s', animationDuration: '0.8s' }}></div>
-      <div className="relative bg-white/80 backdrop-blur-sm border-2 border-gold/30 p-7 rounded-full shadow-lg hover:shadow-gold/20 hover:shadow-2xl transition-shadow duration-500">
-        <FontAwesomeIcon icon={faBookOpen} className="text-gold text-5xl animate-float" />
-      </div>
-    </div>
-
-    <h2 className="text-2xl font-bold text-navy mb-3 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
-      Rien à afficher
-    </h2>
-    <p className="text-gray-400 max-w-xs leading-relaxed animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}>
-      Aucun contenu disponible pour le moment.<br />
-      Les professeurs publieront bientôt des cours, TD et examens ici.
-    </p>
-  </div>
-)}
+        {!loading && posts.length === 0 && <SkeletonEmptyState />}
 
         {!loading && posts.length > 0 && filteredPosts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
@@ -242,8 +251,8 @@ export default function StudentHome() {
               <div
                 key={post.id}
                 className="bg-white rounded-2xl border border-contact/60 p-5
-                              hover:shadow-lg hover:border-gold/20 hover:-translate-y-0.5
-                              transition-all duration-300 group flex flex-col"
+                              hover:shadow-[0_20px_50px_rgba(0,0,0,0.05),0_0_20px_rgba(212,175,55,0.15)] hover:border-gold/40 hover:-translate-y-1.5
+                              transition-all duration-500 group flex flex-col cursor-pointer"
               >
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <Badge type={post.type} />

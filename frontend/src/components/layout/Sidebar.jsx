@@ -15,6 +15,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
+import GlassDomeLogo from "../ui/GlassDomeLogo";
 import UserAvatar from "../ui/UserAvatar";
 
 const NAV_LINKS = [
@@ -67,11 +68,7 @@ export default function Sidebar() {
       >
         <div className="flex items-center justify-between px-2 mb-10">
           <div className="flex items-center gap-3">
-            <img
-              src={HEI_BLUE_LOGO}
-              alt="HEI"
-              className="h-8 w-8 object-contain rounded-full"
-            />
+            <GlassDomeLogo size="h-9 w-9" />
             <span className="text-white font-bold text-base">HEI STDhub</span>
           </div>
           <button
