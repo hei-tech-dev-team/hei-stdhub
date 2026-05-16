@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
                 Sécurité renforcée
               </p>
               <p className="text-white/50 text-xs mt-0.5">
-                Lien valable 1 heure seulement
+                Lien valable 5 minutes seulement
               </p>
             </div>
           </div>
