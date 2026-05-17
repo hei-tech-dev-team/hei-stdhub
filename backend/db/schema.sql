@@ -177,6 +177,16 @@ CREATE INDEX IF NOT EXISTS idx_invitations_expires ON invitations(expires_at);
 CREATE INDEX IF NOT EXISTS idx_invitations_use_count ON invitations(use_count);
 CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
 
+CREATE TABLE IF NOT EXISTS pings (
+  id           SERIAL       PRIMARY KEY,
+  sender_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id  INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status       VARCHAR(20)  NOT NULL DEFAULT 'pending',
+  created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+  responded_at TIMESTAMP    NULL,
+  UNIQUE (sender_id, receiver_id)
+);
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id         SERIAL       PRIMARY KEY,
   user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,

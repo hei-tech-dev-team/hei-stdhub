@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPaperPlane,
@@ -39,17 +40,13 @@ function RoleBadge({ role }) {
   );
 }
 
-function ChatAvatar({ avatar, name }) {
+function ChatAvatar({ avatar, name, userRef }) {
   const [failed, setFailed] = useState(false);
-  if (!avatar || failed) return <Avatar name={name} size="sm" color="bg-gold" />;
-  return (
-    <img
-      src={avatar}
-      alt={name}
-      className="w-full h-full object-cover"
-      onError={() => setFailed(true)}
-    />
-  );
+  const inner = !avatar || failed
+    ? <Avatar name={name} size="sm" color="bg-gold" />
+    : <img src={avatar} alt={name} className="w-full h-full object-cover" onError={() => setFailed(true)} />;
+  if (userRef) return <Link to={`/user/${userRef}`} className="block w-full h-full">{inner}</Link>;
+  return inner;
 }
 
 function DateSeparator({ date }) {
@@ -122,7 +119,7 @@ function MessageGroup({ messages, isOwn, onDelete }) {
             <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0">
               {!isOwn && isFirst && (
                 <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
-                  <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} />
+                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
                 </div>
               )}
               {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
@@ -156,7 +153,7 @@ function MessageGroup({ messages, isOwn, onDelete }) {
           >
             {!isOwn && isFirst && (
               <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
-                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} />
+                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
               </div>
             )}
             {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
@@ -168,7 +165,11 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                     isOwn ? "text-navy-dark" : "text-gold"
                   }`}
                 >
-                  {isOwn ? "Vous" : msg.sender}
+                  {isOwn ? "Vous" : (
+                    <Link to={`/user/${msg.senderRef}`} className="hover:underline">
+                      {msg.sender}
+                    </Link>
+                  )}
                   {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
               )}
