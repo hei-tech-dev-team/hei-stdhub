@@ -135,7 +135,7 @@ export default function AdminPage() {
       api
         .get("/admin/stats")
         .then(({ data }) => setStats(data))
-        .catch(console.error);
+        .catch(() => {});
     };
     fetchStats();
     const interval = setInterval(fetchStats, 3000);
