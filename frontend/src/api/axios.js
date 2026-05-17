@@ -7,37 +7,53 @@ const getApiBaseUrl = () => {
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
+  timeout: 15000, // 15 seconds timeout
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("hei_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("hei_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
+// Response interceptor
 api.interceptors.response.use(
-  (res) => res,
+  (response) => response,
   (err) => {
+    const status = err.response?.status;
     const url = err.config?.url || "";
-    const isAuthRoute =
-      url.includes("/auth/login") ||
-      url.includes("/auth/password") ||
-      url.includes("/auth/forgot-password") ||
-      url.includes("/auth/reset-password") ||
-      url.includes("/auth/register") ||
-      url.includes("/auth/verify-invite");
 
-    // Ne rediriger que si c'est un vrai 401 et pas un problème réseau
-    const is401 = err.response?.status === 401;
-    const isNetworkError = !err.response;
+    // Skip redirect for auth routes
+    const isAuthRoute = /\/auth\//.test(url);
 
-    if (is401 && !isAuthRoute && !isNetworkError) {
-      localStorage.removeItem("hei_token");
-      window.location.href = "/login";
+    // Handle Maintenance Mode (503)
+    if (status === 503 && !isAuthRoute) {
+      window.location.href = "/maintenance";
+      return Promise.reject(err);
     }
 
+    // Handle Server Error (500)
+    if (status === 500 && !isAuthRoute) {
+      window.location.href = "/500";
+      return Promise.reject(err);
+    }
+
+    // Handle Unauthorized (401)
+    if (status === 401 && !isAuthRoute) {
+      localStorage.removeItem("hei_token");
+      window.location.href = "/login";
+      return Promise.reject(err);
+    }
+
+    // Network errors or other cases
     return Promise.reject(err);
-  },
+  }
 );
 
 export default api;
