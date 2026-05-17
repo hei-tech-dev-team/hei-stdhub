@@ -519,7 +519,7 @@ router.post("/forgot-password/by-ref", async (req, res) => {
 
     res.json({ user_id: rows[0].id, prenom: rows[0].prenom, questions });
   } catch (err) {
-    console.error(err);
+    console.error("forgot-password/by-ref error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
