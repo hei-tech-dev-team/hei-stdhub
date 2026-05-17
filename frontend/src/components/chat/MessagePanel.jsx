@@ -247,10 +247,12 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                     isOwn ? "text-navy-dark" : "text-gold"
                   }`}
                 >
-                  {isOwn ? "Vous" : (
+                  {isOwn ? "Vous" : msg.senderRef ? (
                     <Link to={`/user/${msg.senderRef}`} className="hover:underline">
                       {msg.sender}
                     </Link>
+                  ) : (
+                    msg.sender
                   )}
                   {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
