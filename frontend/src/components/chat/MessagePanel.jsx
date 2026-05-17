@@ -1,4 +1,8 @@
 import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
+<<<<<<< HEAD
+=======
+import { Link } from "react-router-dom";
+>>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPaperPlane,
@@ -43,6 +47,18 @@ function RoleBadge({ role }) {
   );
 }
 
+<<<<<<< HEAD
+=======
+function ChatAvatar({ avatar, name, userRef }) {
+  const [failed, setFailed] = useState(false);
+  const inner = !avatar || failed
+    ? <UserAvatar name={name} size="sm" color="bg-gold" />
+    : <img src={avatar} alt={name} className="w-full h-full object-cover" onError={() => setFailed(true)} />;
+  if (userRef) return <Link to={`/user/${userRef}`} className="block w-full h-full">{inner}</Link>;
+  return inner;
+}
+
+>>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
 function DateSeparator({ date }) {
   return (
     <div className="flex items-center gap-3 my-4">
@@ -190,6 +206,7 @@ function MessageGroup({ messages, isOwn, onDelete }) {
           return (
             <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0">
               {!isOwn && isFirst && (
+<<<<<<< HEAD
                 <UserAvatar
                   avatar={msg.senderAvatar}
                   name={msg.sender}
@@ -197,6 +214,11 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                   color="bg-gold"
                   className="mb-0.5 self-end ring-2 ring-white/20"
                 />
+=======
+                <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
+                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
+                </div>
+>>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
               )}
               {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
               <div className="flex flex-col items-end min-w-0">
@@ -229,6 +251,7 @@ function MessageGroup({ messages, isOwn, onDelete }) {
           >
             {!isOwn && isFirst && (
               <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
+<<<<<<< HEAD
                 <UserAvatar
                   avatar={msg.senderAvatar}
                   name={msg.sender}
@@ -236,6 +259,9 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                   color="bg-gold"
                   className="self-end ring-2 ring-white/20"
                 />
+=======
+                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
+>>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
               </div>
             )}
             {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
@@ -247,7 +273,13 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                     isOwn ? "text-navy-dark" : "text-gold"
                   }`}
                 >
-                  {isOwn ? "Vous" : msg.sender}
+                  {isOwn ? "Vous" : msg.senderRef ? (
+                    <Link to={`/user/${msg.senderRef}`} className="hover:underline">
+                      {msg.sender}
+                    </Link>
+                  ) : (
+                    msg.sender
+                  )}
                   {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
               )}
@@ -540,6 +572,7 @@ export default function MessagePanel({
     <div className="flex flex-col h-full min-w-0">
       {/* Header */}
       <div className="relative flex flex-col items-center justify-center gap-1.5 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
+<<<<<<< HEAD
         <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
         <div className="min-w-0 text-center">
           <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center justify-center gap-1.5">
@@ -556,6 +589,29 @@ export default function MessagePanel({
                   : "Étudiant"}
           </p>
         </div>
+=======
+        <Link 
+          to={!contact.isGlobal && contact.ref ? `/user/${contact.ref}` : "#"} 
+          className={`flex flex-col items-center gap-1.5 group ${!contact.isGlobal && contact.ref ? "hover:opacity-80 transition-opacity" : "cursor-default pointer-events-none"}`}
+        >
+          <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
+          <div className="min-w-0 text-center">
+            <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center justify-center gap-1.5 group-hover:text-gold transition-colors">
+              {contact.name}
+              {!contact.isGlobal && <RoleBadge role={contact.role} />}
+            </h3>
+            <p className="text-white/40 text-xs mt-0.5 truncate">
+              {contact.isGlobal
+                ? "Chat global – tous les membres"
+                : contact.role === "teacher"
+                  ? "Professeur"
+                  : contact.role === "bde"
+                    ? "Bureau des étudiants"
+                    : "Étudiant"}
+            </p>
+          </div>
+        </Link>
+>>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
         <button
           type="button"
           onClick={onOpenContacts}
