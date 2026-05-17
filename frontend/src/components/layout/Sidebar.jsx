@@ -14,12 +14,14 @@ import {
   faLightbulb,
   faUsersRectangle,
   faBell,
+  faNewspaper,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
 
 const NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
+  { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
   { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
   { to: "/td", label: "TD / Examen", icon: faFileAlt, end: false },
   { to: "/chat", label: "Chat", icon: faComments, end: false },
@@ -28,6 +30,7 @@ const NAV_LINKS = [
 
 const ALUMNI_NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
+  { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
   { to: "/chat", label: "Chat", icon: faComments, end: false },
 ];
 
