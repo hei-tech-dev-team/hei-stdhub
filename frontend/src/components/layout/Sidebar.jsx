@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import api from "../api/axios";
+import api from "../../api/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse,
@@ -106,7 +106,7 @@ export default function Sidebar() {
 
         <nav className="flex flex-col gap-1 flex-1">
           {/* Alumni: accès limité */}
-          {(user?.role === "alumni" ? ALUMNI_NAV_LINKS : NAV_LINKS).map(({ to, label, icon, end }) => (
+          {(user?.role === "alumni" ? ALUMNI_NAV_LINKS : user?.role === "admin" ? NAV_LINKS.filter((l) => l.to !== "/td") : NAV_LINKS).map(({ to, label, icon, end }) => (
             <NavLink
               key={to}
               to={to}
