@@ -345,7 +345,7 @@ export default function BDEPage() {
   }, []);
 
   const getByStatut = (statut) =>
-    suggestions.filter((s) => s.statut === statut);
+    Array.isArray(suggestions) ? suggestions.filter((s) => s.statut === statut) : [];
 
   const emitDragStart = useCallback((id) => {
     getSocket().then((s) => s.emit("bde:drag-start", { suggestionId: id }));
