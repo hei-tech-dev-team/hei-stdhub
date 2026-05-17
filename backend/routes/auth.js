@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
@@ -65,6 +66,15 @@ const makeToken = (user) =>
 
 const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
+
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 0 : 10,
+  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});
 
 const genericForgotPasswordResponse = {
   message:
@@ -273,7 +283,7 @@ router.get("/reset-password/:token", async (req, res) => {
   }
 });
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
   const { token } = req.body;
   const newPassword = req.body.newPassword || req.body.password;
 
@@ -389,6 +399,8 @@ router.patch("/password", auth, async (req, res) => {
     const { rows } = await db.query("SELECT password FROM users WHERE id=$1", [
       req.user.id,
     ]);
+    if (!rows.length)
+      return res.status(404).json({ error: "Utilisateur introuvable." });
     if (!(await bcrypt.compare(current, rows[0].password)))
       return res.status(401).json({ error: "Mot de passe actuel incorrect." });
     const hash = await bcrypt.hash(newPassword, 10);
