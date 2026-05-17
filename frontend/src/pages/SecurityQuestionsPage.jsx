@@ -1,42 +1,56 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, AlertCircle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
 import api from "../api/axios";
 
 export default function SecurityQuestionsPage() {
   const navigate = useNavigate();
-  const [questions, setQuestions] = useState([]);
-  const [selections, setSelections] = useState({});
+  const [predefined, setPredefined] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [customs, setCustoms] = useState([]);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-  const [existingKeys, setExistingKeys] = useState([]);
 
   useEffect(() => {
     api.get("/auth/security-questions")
       .then((res) => {
-        setQuestions(res.data.questions);
-        setExistingKeys(res.data.saved_keys || []);
+        setPredefined(res.data.questions);
       })
       .catch((err) => setError(err.response?.data?.error || "Erreur de chargement."))
       .finally(() => setLoading(false));
   }, []);
 
-  const toggleQuestion = (key) => {
-    setSelections((prev) => {
-      const next = { ...prev };
-      if (next[key]) {
-        delete next[key];
-        setAnswers((a) => { const r = { ...a }; delete r[key]; return r; });
-      } else {
-        if (Object.keys(next).length >= 3) return prev;
-        next[key] = true;
-      }
-      return next;
-    });
+  const totalCount = selected.length + customs.length;
+
+  const togglePredefined = (key) => {
+    if (selected.includes(key)) {
+      setSelected((p) => p.filter((k) => k !== key));
+      setAnswers((a) => { const r = { ...a }; delete r[key]; return r; });
+    } else {
+      if (totalCount >= 4) return;
+      setSelected((p) => [...p, key]);
+    }
+    setError("");
+  };
+
+  const addCustom = () => {
+    if (totalCount >= 4) return;
+    const id = Date.now();
+    setCustoms((p) => [...p, { id, question: "", key: `custom_${id}` }]);
+    setError("");
+  };
+
+  const removeCustom = (id) => {
+    setCustoms((p) => p.filter((c) => c.id !== id));
+    setAnswers((a) => { const r = { ...a }; delete r[`custom_${id}`]; return r; });
+  };
+
+  const setCustomQuestion = (id, value) => {
+    setCustoms((p) => p.map((c) => c.id === id ? { ...c, question: value } : c));
     setError("");
   };
 
@@ -46,22 +60,36 @@ export default function SecurityQuestionsPage() {
   };
 
   const handleSave = async () => {
-    const selectedKeys = Object.keys(selections);
-    if (selectedKeys.length < 2) {
-      setError("Veuillez sélectionner au moins 2 questions.");
+    if (totalCount < 2) {
+      setError("Sélectionnez au moins 2 questions ou ajoutez des questions personnalisées.");
       return;
     }
-    const missing = selectedKeys.filter((k) => !answers[k]?.trim());
+    const missing = [];
+    for (const key of selected) {
+      if (!answers[key]?.trim()) missing.push(key);
+    }
+    for (const c of customs) {
+      if (!c.question.trim()) { setError("Veuillez rédiger vos questions personnalisées."); return; }
+      if (c.question.trim().length < 10) { setError("Question personnalisée trop courte (min 10 caractères)."); return; }
+      if (!answers[`custom_${c.id}`]?.trim()) missing.push(c.question);
+    }
     if (missing.length) {
-      setError("Veuillez répondre à toutes les questions sélectionnées.");
+      setError("Veuillez répondre à toutes les questions.");
       return;
     }
     setSaving(true);
     setError("");
     try {
-      await api.post("/auth/security-questions", {
-        questions: selectedKeys.map((key) => ({ key, answer: answers[key] })),
-      });
+      const payload = [
+        ...selected.map((key) => ({ key, answer: answers[key] })),
+        ...customs.map((c) => ({
+          custom: true,
+          key: `custom_${c.id}`,
+          question: c.question.trim(),
+          answer: answers[`custom_${c.id}`],
+        })),
+      ];
+      await api.post("/auth/security-questions", { questions: payload });
       setSaved(true);
       setTimeout(() => navigate("/profile", { replace: true }), 2000);
     } catch (err) {
@@ -112,12 +140,6 @@ export default function SecurityQuestionsPage() {
               </div>
             ) : (
               <>
-                {existingKeys.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-2xl mb-5">
-                    Vous avez déjà {existingKeys.length} question(s) enregistrée(s). Les remplacer.
-                  </div>
-                )}
-
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
                     <AlertCircle size={16} /> {error}
@@ -125,23 +147,25 @@ export default function SecurityQuestionsPage() {
                 )}
 
                 <p className="text-gray-500 text-sm mb-4">
-                  Choisissez 2 à 3 questions et répondez-y. Ces réponses vous permettront de réinitialiser votre mot de passe si vous l'oubliez.
+                  Choisissez 2 à 4 questions et répondez-y ({totalCount}/4 sélectionnée{totalCount > 1 ? "s" : ""}).
                 </p>
 
+                {/* Predefined questions */}
                 <div className="space-y-3 mb-6">
-                  {questions.map((q) => (
-                    <div key={q.key} className={`rounded-2xl border transition-all duration-200 ${selections[q.key] ? "border-navy bg-navy/5" : "border-gray-200"}`}>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Questions prédéfinies</h3>
+                  {predefined.map((q) => (
+                    <div key={q.key} className={`rounded-2xl border transition-all duration-200 ${selected.includes(q.key) ? "border-navy bg-navy/5" : "border-gray-200"}`}>
                       <button
                         type="button"
-                        onClick={() => toggleQuestion(q.key)}
+                        onClick={() => togglePredefined(q.key)}
                         className="w-full text-left px-4 py-3 flex items-center gap-3"
                       >
-                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selections[q.key] ? "bg-navy border-navy" : "border-gray-300"}`}>
-                          {selections[q.key] && <CheckCircle size={14} className="text-white" />}
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selected.includes(q.key) ? "bg-navy border-navy" : "border-gray-300"}`}>
+                          {selected.includes(q.key) && <CheckCircle size={14} className="text-white" />}
                         </div>
                         <span className="text-sm font-medium text-gray-700">{q.question}</span>
                       </button>
-                      {selections[q.key] && (
+                      {selected.includes(q.key) && (
                         <div className="px-4 pb-3">
                           <input
                             type="text"
@@ -157,6 +181,54 @@ export default function SecurityQuestionsPage() {
                   ))}
                 </div>
 
+                {/* Custom questions */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Questions personnalisées</h3>
+                    <button
+                      type="button"
+                      onClick={addCustom}
+                      disabled={totalCount >= 4}
+                      className="text-xs text-gold font-semibold hover:text-navy transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Plus size={14} /> Ajouter
+                    </button>
+                  </div>
+                  {customs.length === 0 && (
+                    <p className="text-xs text-gray-400 italic">Aucune question personnalisée.</p>
+                  )}
+                  {customs.map((c) => (
+                    <div key={c.id} className="rounded-2xl border border-navy bg-navy/5 transition-all duration-200">
+                      <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b border-gray-300 pb-1 focus:border-navy outline-none placeholder:text-gray-400"
+                          placeholder="Rédigez votre question..."
+                          value={c.question}
+                          onChange={(e) => setCustomQuestion(c.id, e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeCustom(c.id)}
+                          className="text-gray-400 hover:text-red-500 transition shrink-0"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <div className="px-4 pb-3">
+                        <input
+                          type="text"
+                          className="input-field text-sm"
+                          placeholder="Votre réponse"
+                          value={answers[`custom_${c.id}`] || ""}
+                          onChange={(e) => handleAnswer(`custom_${c.id}`, e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="flex gap-3">
                   <Link
                     to="/profile"
@@ -166,7 +238,7 @@ export default function SecurityQuestionsPage() {
                   </Link>
                   <button
                     onClick={handleSave}
-                    disabled={saving || Object.keys(selections).length < 2}
+                    disabled={saving || totalCount < 2}
                     className="flex-1 py-3 rounded-2xl font-bold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
                   >
