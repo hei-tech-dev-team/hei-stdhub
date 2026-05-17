@@ -318,15 +318,21 @@ const { pool } = require("./db");
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS announcements (
-        id         SERIAL       PRIMARY KEY,
-        title      VARCHAR(255) NOT NULL,
-        content    TEXT         NOT NULL,
-        image_url  TEXT         NULL,
-        author_id  INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+        id            SERIAL       PRIMARY KEY,
+        title         VARCHAR(255) NOT NULL,
+        content       TEXT         NOT NULL,
+        image_url     TEXT         NULL,
+        author_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_level  VARCHAR(5)   NULL,
+        created_at    TIMESTAMP    NOT NULL DEFAULT NOW()
       )
     `);
   } catch (err) { console.error("Failed to create announcements table:", err); }
+
+  // Migration: add target_level if missing (existing tables on Render)
+  try {
+    await pool.query(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS target_level VARCHAR(5) NULL`);
+  } catch (_) {}
 
   try {
     await pool.query(`
