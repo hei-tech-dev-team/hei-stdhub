@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const { sendEmail } = require("../services/mailer");
 
 const router = express.Router();
 
@@ -282,6 +283,52 @@ router.delete("/invitations/:id", auth, adminOnly, async (req, res) => {
       } catch (err) {
             res.status(500).json({ error: "Erreur serveur." });
       }
+});
+
+router.post("/test-email", auth, adminOnly, async (req, res) => {
+  const { email } = req.body;
+  if (!email?.trim())
+    return res.status(400).json({ error: "Adresse email requise." });
+
+  const displayName = req.user.prenom || req.user.pseudo || "Admin";
+  try {
+    const result = await sendEmail({
+      user: { email: email.trim(), prenom: displayName },
+      subject: "HEI STDhub — Test de configuration email",
+      text: [
+        `Bonjour ${displayName},`,
+        "",
+        "Ceci est un email de test envoyé depuis HEI STDhub.",
+        `Si vous recevez ce message, la configuration email fonctionne correctement.`,
+        "",
+        "Bonne journée !",
+        "— L'équipe HEI STDhub",
+      ].join("\n"),
+      html: `
+        <p>Bonjour ${displayName},</p>
+        <p>Ceci est un email de test envoyé depuis <strong>HEI STDhub</strong>.</p>
+        <p>Si vous recevez ce message, la configuration email fonctionne correctement.</p>
+        <br>
+        <p>Bonne journée !</p>
+        <p>— L'équipe HEI STDhub</p>
+      `,
+    });
+
+    if (result.skipped) {
+      console.error("EMAIL TEST FAILED — no provider worked");
+      return res.status(502).json({
+        error: "Aucun fournisseur d'email n'a fonctionné. Vérifiez les logs serveur.",
+        details:
+          "Ni SMTP ni Resend n'ont réussi à envoyer l'email. Vérifiez SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS sur Render.",
+      });
+    }
+
+    console.info(`Email test réussi vers ${email}`);
+    res.json({ success: true, message: "Email de test envoyé avec succès." });
+  } catch (err) {
+    console.error("EMAIL TEST CRASHED:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
