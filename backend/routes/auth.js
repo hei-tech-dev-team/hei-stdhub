@@ -9,14 +9,14 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
 const SECURITY_QUESTIONS = [
-  { key: "pet", question: "Quel est le nom de votre premier animal de compagnie ?" },
-  { key: "mother_maiden", question: "Quel est le nom de jeune fille de votre mère ?" },
-  { key: "birth_city", question: "Dans quelle ville êtes-vous né(e) ?" },
-  { key: "best_friend", question: "Quel est le nom de votre meilleur ami(e) d'enfance ?" },
-  { key: "fav_subject", question: "Quelle est votre matière préférée à l'école ?" },
-  { key: "first_car", question: "Quel est le modèle de votre première voiture ?" },
-  { key: "fav_teacher", question: "Quel est le nom de votre premier professeur préféré ?" },
-  { key: "fav_destination", question: "Quelle est votre destination de vacances préférée ?" },
+  { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
+  { key: "school_city", question: "Dans quelle ville se trouve votre école actuelle ?" },
+  { key: "fav_prof", question: "Quel est le nom de votre professeur préféré ?" },
+  { key: "fav_ue", question: "Quelle est votre matière/UE préférée ?" },
+  { key: "career_goal", question: "Quel est votre objectif de carrière ?" },
+  { key: "intern_company", question: "Dans quelle entreprise aimeriez-vous faire un stage ?" },
+  { key: "mentor_name", question: "Qui est votre modèle ou mentor professionnel ?" },
+  { key: "passion_hobby", question: "Quelle est votre passion en dehors des études ?" },
 ];
 
 const capitalize = (str) =>
@@ -429,15 +429,21 @@ router.post("/security-questions", auth, async (req, res) => {
 
   const validKeys = SECURITY_QUESTIONS.map((q) => q.key);
   for (const q of questions) {
-    if (!q.key || !q.answer?.trim())
-      return res.status(400).json({ error: "Question et réponse requis." });
-    if (!validKeys.includes(q.key))
-      return res.status(400).json({ error: `Clé de question invalide: ${q.key}` });
+    if (!q.answer?.trim())
+      return res.status(400).json({ error: "Réponse requise pour chaque question." });
     if (q.answer.trim().length < 2)
       return res.status(400).json({ error: "Réponse trop courte (min 2 caractères)." });
+
+    if (q.custom) {
+      if (!q.question?.trim() || q.question.trim().length < 10)
+        return res.status(400).json({ error: "Question personnalisée trop courte (min 10 caractères)." });
+    } else {
+      if (!q.key || !validKeys.includes(q.key))
+        return res.status(400).json({ error: "Question invalide." });
+    }
   }
 
-  const uniqueKeys = new Set(questions.map((q) => q.key));
+  const uniqueKeys = new Set(questions.map((q) => q.custom ? q.question.trim() : q.key));
   if (uniqueKeys.size !== questions.length)
     return res.status(400).json({ error: "Questions dupliquées." });
 
@@ -445,10 +451,18 @@ router.post("/security-questions", auth, async (req, res) => {
     await db.query("DELETE FROM user_security_questions WHERE user_id=$1", [req.user.id]);
     for (const q of questions) {
       const hash = await bcrypt.hash(q.answer.trim().toLowerCase(), 10);
-      await db.query(
-        "INSERT INTO user_security_questions (user_id, question_key, answer_hash) VALUES ($1, $2, $3)",
-        [req.user.id, q.key, hash],
-      );
+      if (q.custom) {
+        const key = `custom_${crypto.randomBytes(4).toString("hex")}`;
+        await db.query(
+          "INSERT INTO user_security_questions (user_id, question_key, question_text, answer_hash) VALUES ($1, $2, $3, $4)",
+          [req.user.id, key, q.question.trim(), hash],
+        );
+      } else {
+        await db.query(
+          "INSERT INTO user_security_questions (user_id, question_key, answer_hash) VALUES ($1, $2, $3)",
+          [req.user.id, q.key, hash],
+        );
+      }
     }
     res.json({ success: true, count: questions.length });
   } catch (err) {
@@ -472,7 +486,7 @@ router.post("/forgot-password/by-ref", async (req, res) => {
       return res.status(404).json({ error: "Aucun compte trouvé avec cette référence." });
 
     const { rows: sq } = await db.query(
-      "SELECT question_key FROM user_security_questions WHERE user_id=$1",
+      "SELECT question_key, question_text FROM user_security_questions WHERE user_id=$1",
       [rows[0].id],
     );
     if (sq.length < 2)
@@ -481,6 +495,7 @@ router.post("/forgot-password/by-ref", async (req, res) => {
       });
 
     const questions = sq.map((r) => {
+      if (r.question_text) return { key: r.question_key, question: r.question_text };
       const full = SECURITY_QUESTIONS.find((q) => q.key === r.question_key);
       return { key: r.question_key, question: full?.question || r.question_key };
     });
