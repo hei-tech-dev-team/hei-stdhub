@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { MaintenanceProvider } from "./context/MaintenanceContext";
 import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
@@ -31,8 +32,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <App />
-          <Analytics />
+          <MaintenanceProvider>
+            <App />
+            <Analytics />
+          </MaintenanceProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
