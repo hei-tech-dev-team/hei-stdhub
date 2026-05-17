@@ -11,14 +11,14 @@ const getFromAddress = () =>
   process.env.SMTP_USER ||
   "HEI STDhub <no-reply@hei-stdhub.local>";
 
-const createTransport = () => {
+const createTransport = (portOverride) => {
   const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;
   const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
 
   if (!host) return null;
 
-  const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587);
+  const port = portOverride || Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 465);
   const secure =
     process.env.SMTP_SECURE === "true" ||
     process.env.EMAIL_SECURE === "true" ||
@@ -30,7 +30,7 @@ const createTransport = () => {
     secure,
     auth: user && pass ? { user, pass } : undefined,
     family: 4,
-    connectionTimeout: 10000,
+    connectionTimeout: 8000,
     tls: { rejectUnauthorized: false },
   });
 };
@@ -123,8 +123,12 @@ const sendPasswordResetEmail = async ({ user, token }) => {
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     `;
 
-  const transporter = createTransport();
-  if (transporter) {
+  // SMTP only — try configured port, 465, and 587
+  const defaultPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 465);
+  const ports = [...new Set([defaultPort, 465, 587])];
+  for (const port of ports) {
+    const transporter = createTransport(port);
+    if (!transporter) break;
     try {
       await transporter.sendMail({
         from: getFromAddress(),
@@ -136,11 +140,12 @@ const sendPasswordResetEmail = async ({ user, token }) => {
       console.info(`Email de réinitialisation envoyé via SMTP à ${user.email}`);
       return { skipped: false, resetUrl };
     } catch (smtpErr) {
-      console.error("SMTP also failed:", smtpErr.message);
+      console.error(`SMTP failed on port ${port}:`, smtpErr.message);
+      transporter.close();
     }
   }
 
-  console.info(`Aucun email envoyé à ${user.email} (aucun fournisseur fonctionnel). Lien: ${resetUrl}`);
+  console.info(`Aucun email envoyé à ${user.email}. Lien: ${resetUrl}`);
   return { skipped: true, resetUrl, logUrl: resetUrl };
 };
 
@@ -158,8 +163,11 @@ const sendEmail = async ({ user, subject, text, html }) => {
     }
   }
 
-  const transporter = createTransport();
-  if (transporter) {
+  const defaultPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 465);
+  const ports = [...new Set([defaultPort, 465, 587])];
+  for (const port of ports) {
+    const transporter = createTransport(port);
+    if (!transporter) break;
     try {
       await transporter.sendMail({
         from: getFromAddress(),
@@ -171,11 +179,12 @@ const sendEmail = async ({ user, subject, text, html }) => {
       console.info(`Email envoyé via SMTP à ${user.email}`);
       return { skipped: false };
     } catch (smtpErr) {
-      console.error("SMTP also failed:", smtpErr.message);
+      console.error(`SMTP failed on port ${port}:`, smtpErr.message);
+      transporter.close();
     }
   }
 
-  console.info(`Email non envoyé à ${user.email} (aucun fournisseur fonctionnel)`);
+  console.info(`Email non envoyé à ${user.email}.`);
   return { skipped: true };
 };
 
