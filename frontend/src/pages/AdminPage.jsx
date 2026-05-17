@@ -225,6 +225,24 @@ export default function AdminPage() {
     }
   };
 
+  // Modifier email
+  const [editingEmailId, setEditingEmailId] = useState(null);
+  const [editEmailValue, setEditEmailValue] = useState("");
+
+  const handleEmailSave = async (userId) => {
+    try {
+      const { data } = await api.patch(`/admin/users/${userId}/email`, {
+        email: editEmailValue,
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, email: data.email } : u)),
+      );
+      setEditingEmailId(null);
+    } catch (err) {
+      alert(err.response?.data?.error || "Erreur lors de la modification.");
+    }
+  };
+
   // Supprimer utilisateur
   const handleDelete = async (userId, ref) => {
     if (!confirm(`Supprimer ${ref} ? Cette action est irréversible.`)) return;
@@ -506,7 +524,43 @@ export default function AdminPage() {
                               {u.prenom} {u.nom}
                             </td>
                             <td className="py-3 px-4 text-gray-500 text-xs">
-                              {u.email}
+                              {editingEmailId === u.id ? (
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="email"
+                                    value={editEmailValue}
+                                    onChange={(e) => setEditEmailValue(e.target.value)}
+                                    className="input-field text-xs py-1 px-2 w-44"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") handleEmailSave(u.id);
+                                      if (e.key === "Escape") setEditingEmailId(null);
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => handleEmailSave(u.id)}
+                                    className="text-green-500 hover:text-green-600 px-1"
+                                  >
+                                    <FontAwesomeIcon icon={faCheck} size="xs" />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingEmailId(null)}
+                                    className="text-red-400 hover:text-red-500 px-1"
+                                  >
+                                    <FontAwesomeIcon icon={faTimes} size="xs" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingEmailId(u.id);
+                                    setEditEmailValue(u.email);
+                                  }}
+                                  className="hover:text-navy transition text-left"
+                                >
+                                  {u.email}
+                                </button>
+                              )}
                             </td>
                             <td className="py-3 px-4 text-gray-500 text-xs">
                               {u.pseudo}
@@ -581,7 +635,39 @@ export default function AdminPage() {
                             {ROLE_CONFIG[u.role]?.label}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-400 mb-1">{u.email}</p>
+                        <p className="text-xs text-gray-400 mb-1">
+                          {editingEmailId === u.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="email"
+                                value={editEmailValue}
+                                onChange={(e) => setEditEmailValue(e.target.value)}
+                                className="input-field text-xs py-1 px-2 w-40"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleEmailSave(u.id);
+                                  if (e.key === "Escape") setEditingEmailId(null);
+                                }}
+                              />
+                              <button onClick={() => handleEmailSave(u.id)} className="text-green-500 text-xs">
+                                <FontAwesomeIcon icon={faCheck} />
+                              </button>
+                              <button onClick={() => setEditingEmailId(null)} className="text-red-400 text-xs">
+                                <FontAwesomeIcon icon={faTimes} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingEmailId(u.id);
+                                setEditEmailValue(u.email);
+                              }}
+                              className="hover:text-navy transition text-left"
+                            >
+                              {u.email}
+                            </button>
+                          )}
+                        </p>
                         <p className="text-xs text-gray-400 mb-3">
                           Pseudo: {u.pseudo} {u.level ? `· ${u.level}` : ""}
                         </p>

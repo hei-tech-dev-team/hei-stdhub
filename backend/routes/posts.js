@@ -31,6 +31,7 @@ const UES_BY_LEVEL = {
     "PROG2-POO",
     "PROG2-API",
     "SYS2",
+    "MGT1",
     "DONNEES2",
     "IA1",
   ],
