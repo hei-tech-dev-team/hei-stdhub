@@ -17,6 +17,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
+import UserAvatar from "../ui/UserAvatar";
 
 const NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
@@ -168,9 +169,12 @@ export default function Sidebar() {
                     ? `Alumni${user?.promo ? ` · Promo ${user.promo}` : ""}`
                     : "Étudiant"}
           </p>
-          <p className="text-white font-semibold text-sm px-2 mb-3 truncate">
-            {user?.pseudo || user?.ref || "—"}
-          </p>
+          <div className="flex items-center gap-2 px-2 mb-3">
+            <UserAvatar avatar={user?.avatar} name={user?.pseudo} size="sm" />
+            <p className="text-white font-semibold text-sm truncate">
+              {user?.pseudo || user?.ref || "—"}
+            </p>
+          </div>
           <button
             onClick={handleLogout}
             className="sidebar-link w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"
