@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+
+// Pages
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -14,6 +16,11 @@ import SuggestionPage from "./pages/SuggestionPage";
 import BDEPage from "./pages/BDEPage";
 import OnboardingModal from "./components/ui/OnboardingModal";
 
+// Error Pages
+import NotFoundPage from "./pages/Error/NotFoundPage";
+import ServerErrorPage from "./pages/Error/ServerErrorPage";
+import MaintenancePage from "./pages/Error/MaintenancePage";
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -21,11 +28,8 @@ function ProtectedRoute({ children }) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-10 h-10 border-4 border-navy border-t-gold
-                          rounded-full animate-spin"
-          />
-          <p className="text-navy font-semibold text-sm">Chargement...</p>
+          <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
+          <p className="text-navy font-semibold text-sm">Loading...</p>
         </div>
       </div>
     );
@@ -55,77 +59,87 @@ export default function App() {
   return (
     <>
       <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/archives"
-        element={
-          <ProtectedRoute>
-            <ArchivesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/td"
-        element={
-          <ProtectedRoute>
-            <TDPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <ProtectedRoute>
-            <ChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        // Open to both students and teachers
-        path="/suggestions"
-        element={
-          <ProtectedRoute>
-            <SuggestionPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/bde"
-        element={
-          <BDERoute>
-            <BDEPage />
-          </BDERoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <AdminPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
+        {/* Protected Routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/archives"
+          element={
+            <ProtectedRoute>
+              <ArchivesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/td"
+          element={
+            <ProtectedRoute>
+              <TDPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/suggestions"
+          element={
+            <ProtectedRoute>
+              <SuggestionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bde"
+          element={
+            <BDERoute>
+              <BDEPage />
+            </BDERoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Error Routes */}
+        <Route path="/maintenance" element={<MaintenancePage />} />
+        <Route path="/500" element={<ServerErrorPage />} />
+        <Route path="/404" element={<NotFoundPage />} />
+
+        {/* Catch-all route - must be the last one */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
+
       {user && firstLogin && <OnboardingModal />}
     </>
   );
