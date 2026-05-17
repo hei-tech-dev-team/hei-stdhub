@@ -224,6 +224,22 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Public profile by ref
+router.get("/user/:ref", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      "SELECT id, ref, nom, prenom, pseudo, role, level, avatar FROM users WHERE ref=$1",
+      [req.params.ref.toUpperCase()],
+    );
+    if (!rows.length)
+      return res.status(404).json({ error: "Utilisateur introuvable." });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 router.get("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   if (!token) return res.status(400).json({ error: "Token requis." });
