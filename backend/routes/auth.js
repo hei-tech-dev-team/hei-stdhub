@@ -409,10 +409,11 @@ router.patch("/avatar", auth, (req, res) => {
         [avatarUrl, req.user.id],
       );
       res.json(rows[0]);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Erreur serveur." });
-    }
+  } catch (err) {
+    console.error("Security questions save error:", err?.message || err);
+    const detail = process.env.NODE_ENV === "development" ? err.message : "Erreur serveur.";
+    res.status(500).json({ error: detail });
+  }
   });
 });
 
