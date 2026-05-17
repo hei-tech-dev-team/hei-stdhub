@@ -146,7 +146,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
             />
           </div>
         ) : (
-          <Avatar
+          <UserAvatar
             name={contact.name}
             size="md"
             color={isActive ? "bg-gold" : "bg-white/10"}
@@ -158,7 +158,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       </>
     );
     if (contact.ref) {
-      return <Link to={`/user/${contact.ref}`} className="relative shrink-0 block">{avatarInner}</Link>;
+      return <Link to={`/user/${contact.ref}`} onClick={(e) => e.stopPropagation()} className="relative shrink-0 block hover:opacity-80 transition-opacity">{avatarInner}</Link>;
     }
     return <div className="relative shrink-0 block">{avatarInner}</div>;
   };
@@ -226,12 +226,20 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2 sm:py-3 space-y-0.5">
         {filtered.filter(Boolean).map((contact) => {
           const isActive = contact.id === activeId;
+          const handleKey = (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect(contact);
+            }
+          };
           return (
-            <button
+            <div
               key={contact.id}
-              type="button"
               onClick={() => onSelect(contact)}
-              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 active:scale-[0.98] ${
+              onKeyDown={handleKey}
+              role="button"
+              tabIndex={0}
+              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-gold/30 ${
                 isActive
                   ? "bg-gold/20 border border-gold/20"
                   : "border border-transparent hover:bg-white/10"
@@ -261,17 +269,26 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
               </div>
               <div className="flex flex-col items-end gap-2">
                 {!contact.isGlobal && (
-                  <button
+                  <span
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
                       onToggleFavorite(contact.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggleFavorite(contact.id);
+                      }
                     }}
                     className={`transition-all hover:scale-120 ${
                       favorites.includes(contact.id) ? "text-gold animate-pulse" : "text-white/10 hover:text-gold/50"
                     }`}
                   >
                     <FontAwesomeIcon icon={faStar} className="text-xs" />
-                  </button>
+                  </span>
                 )}
                 {getUnreadCount(contact) > 0 && (
                   <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
@@ -279,7 +296,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                   </span>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -336,20 +353,29 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
             )}
             {!searching &&
               searchResults.map((u) => (
-                <button
+                <div
                   key={u.id}
-                  type="button"
                   onClick={() => handleStartConversation(u)}
-                  className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left active:scale-[0.98]"
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleStartConversation(u)}
+                  role="button"
+                  tabIndex={0}
+                  className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left active:scale-[0.98] cursor-pointer focus:outline-none focus:bg-white/5"
                 >
                   <div className="relative shrink-0">
-                    <UserAvatar
-                      avatar={u.avatar}
-                      name={u.pseudo}
-                      size="lg"
-                      color="bg-white/10"
-                      className="ring-2 ring-white/10"
-                    />
+                    <Link 
+                      to={`/user/${u.ref}`} 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="hover:opacity-80 transition-opacity block"
+                      title={`Voir le profil de ${u.pseudo}`}
+                    >
+                      <UserAvatar
+                        avatar={u.avatar}
+                        name={u.pseudo}
+                        size="lg"
+                        color="bg-white/10"
+                        className="ring-2 ring-white/10"
+                      />
+                    </Link>
                     <span className="absolute -bottom-0.5 -right-0.5">
                       <StatusDot online={onlineUsers.has(u.id)} />
                     </span>
@@ -364,7 +390,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                       {u.role === "teacher" ? "Professeur" : u.role === "bde" ? "BDE" : u.role === "alumni" ? "Alumni" : "Étudiant"}
                     </span>
                   </div>
-                </button>
+                </div>
               ))}
             {!searching && !searchQuery && (
               <p className="text-white/30 text-xs text-center py-8">
