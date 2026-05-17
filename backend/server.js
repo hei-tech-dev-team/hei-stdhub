@@ -4,7 +4,7 @@ const compression = require("compression");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
@@ -125,7 +125,6 @@ if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
 app.use("/api/auth/forgot-password", loginLimiter);
-app.use("/api/auth/reset-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
