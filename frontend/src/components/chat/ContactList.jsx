@@ -60,16 +60,22 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       // 1. Priorité aux favoris
       const aFav = favorites.includes(a.id);
       const bFav = favorites.includes(b.id);
-      if (aFav && !bFav) return -1;
-      if (!aFav && bFav) return 1;
+      if (aFav !== bFav) return aFav ? -1 : 1;
 
-      // 2. Priorité aux messages non lus
-      const aUnread = unread?.contacts?.[a.id]?.unread || 0;
-      const bUnread = unread?.contacts?.[b.id]?.unread || 0;
-      if (aUnread && !bUnread) return -1;
-      if (!aUnread && bUnread) return 1;
+      // 2. Priorité au nombre de messages non lus (proxy pour le plus récent/actif)
+      const aInfo = unread?.contacts?.[a.id] || { unread: 0, pending: 0 };
+      const bInfo = unread?.contacts?.[b.id] || { unread: 0, pending: 0 };
 
-      // 3. Alphabétique
+      if (aInfo.unread !== bInfo.unread) {
+        return bInfo.unread - aInfo.unread;
+      }
+
+      // 3. Priorité aux messages en attente (votre dernier message envoyé non vu)
+      if (aInfo.pending !== bInfo.pending) {
+        return bInfo.pending - aInfo.pending;
+      }
+
+      // 4. Alphabétique (dernier recours)
       return (a.name || "").localeCompare(b.name || "");
     });
   }, [contacts, unread, favorites]);
