@@ -12,6 +12,7 @@ import {
   faUserShield,
   faLightbulb,
   faUsersRectangle,
+  faBell,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
@@ -21,6 +22,7 @@ const NAV_LINKS = [
   { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
   { to: "/td", label: "TD / Examen", icon: faFileAlt, end: false },
   { to: "/chat", label: "Chat", icon: faComments, end: false },
+  { to: "/pings", label: "Ping Box", icon: faBell, end: false },
 ];
 
 const ALUMNI_NAV_LINKS = [
