@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -14,14 +14,14 @@ import {
   faLightbulb,
   faUsersRectangle,
   faBell,
-  faNewspaper,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
+import GlassDomeLogo from "../ui/GlassDomeLogo";
+import UserAvatar from "../ui/UserAvatar";
 
 const NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
-  { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
   { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
   { to: "/td", label: "TD / Examen", icon: faFileAlt, end: false },
   { to: "/chat", label: "Chat", icon: faComments, end: false },
@@ -30,7 +30,6 @@ const NAV_LINKS = [
 
 const ALUMNI_NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
-  { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
   { to: "/chat", label: "Chat", icon: faComments, end: false },
 ];
 
@@ -40,20 +39,55 @@ export default function Sidebar() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const prevUnreadRef = useRef(0);
+
+  const playNotificationSound = () => {
+    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
+    audio.volume = 0.4;
+    audio.play().catch(() => {}); // Évite l'erreur si le navigateur bloque l'autoplay
+  };
 
   useEffect(() => {
     if (!user) return;
+
+    // Demander la permission pour les notifications système dès que possible
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     if (location.pathname === "/pings") {
       setPendingCount(0);
-      return;
     }
-    api.get("/pings").then(({ data }) => {
-      const pings = Array.isArray(data) ? data : [];
-      const count = pings.filter(
-        (p) => p.receiver_id === user.id && p.status === "pending",
-      ).length;
-      setPendingCount(count);
-    }).catch(() => {});
+
+    const updateCounts = async () => {
+      try {
+        const [pingsRes, unreadRes] = await Promise.all([
+          api.get("/pings"),
+          api.get("/messages/unread")
+        ]);
+
+        const pings = Array.isArray(pingsRes.data) ? pingsRes.data : [];
+        setPendingCount(pings.filter(p => p.receiver_id === user.id && p.status === "pending").length);
+
+        const totalUnread = (unreadRes.data.global || 0) + 
+          Object.values(unreadRes.data.contacts || {}).reduce((acc, c) => acc + (c.unread || 0), 0);
+        
+        // Jouer un son si un nouveau message arrive et qu'on n'est pas déjà dans le chat
+        if (totalUnread > prevUnreadRef.current && location.pathname !== "/chat") {
+          playNotificationSound();
+        }
+        
+        setUnreadCount(location.pathname === "/chat" ? 0 : totalUnread);
+        prevUnreadRef.current = totalUnread;
+      } catch (err) {
+        console.error("Erreur lors de la mise à jour des badges :", err);
+      }
+    };
+
+    updateCounts();
+    const interval = setInterval(updateCounts, 10000); // Vérification toutes les 10 secondes
+    return () => clearInterval(interval);
   }, [user, location.pathname]);
 
   const handleLogout = () => {
@@ -89,11 +123,7 @@ export default function Sidebar() {
       >
         <div className="flex items-center justify-between px-2 mb-10">
           <div className="flex items-center gap-3">
-            <img
-              src={HEI_BLUE_LOGO}
-              alt="HEI"
-              className="h-8 w-8 object-contain rounded-full"
-            />
+            <GlassDomeLogo size="h-9 w-9" />
             <span className="text-white font-bold text-base">HEI STDhub</span>
           </div>
           <button
@@ -106,7 +136,7 @@ export default function Sidebar() {
 
         <nav className="flex flex-col gap-1 flex-1">
           {/* Alumni: accès limité */}
-          {(user?.role === "alumni" ? ALUMNI_NAV_LINKS : user?.role === "admin" ? NAV_LINKS.filter((l) => l.to !== "/td") : NAV_LINKS).map(({ to, label, icon, end }) => (
+          {(user?.role === "alumni" ? ALUMNI_NAV_LINKS : NAV_LINKS).map(({ to, label, icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -118,6 +148,11 @@ export default function Sidebar() {
             >
               <FontAwesomeIcon icon={icon} className="w-4 h-4 shrink-0" />
               <span className="truncate">{label}</span>
+              {to === "/chat" && unreadCount > 0 && (
+                <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5 shadow-lg animate-pulse">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
               {to === "/pings" && pendingCount > 0 && (
                 <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5">
                   {pendingCount > 99 ? "99+" : pendingCount}
@@ -182,20 +217,39 @@ export default function Sidebar() {
         </nav>
 
         <div className="border-t border-white/10 pt-4 mt-4">
-          <p className="text-white/40 text-xs px-2 mb-1 uppercase tracking-widest truncate">
-            {user?.role === "teacher"
-              ? "Professeur"
-              : user?.role === "admin"
-                ? "Admin"
-                : user?.role === "bde"
-                  ? "BDE"
-                  : user?.role === "alumni"
-                    ? `Alumni${user?.promo ? ` · Promo ${user.promo}` : ""}`
-                    : "Étudiant"}
-          </p>
-          <p className="text-white font-semibold text-sm px-2 mb-3 truncate">
-            {user?.pseudo || user?.ref || "—"}
-          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate("/profile");
+            }}
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/10 transition text-left mb-2"
+            title="Modifier le profil"
+          >
+            <UserAvatar
+              avatar={user?.avatar}
+              name={user?.pseudo || user?.ref}
+              size="lg"
+              color="bg-gold"
+              className="ring-2 ring-white/10"
+            />
+            <div className="min-w-0">
+              <p className="text-white/40 text-xs uppercase tracking-widest truncate">
+                {user?.role === "teacher"
+                  ? "Professeur"
+                  : user?.role === "admin"
+                    ? "Admin"
+                    : user?.role === "bde"
+                      ? "BDE"
+                      : user?.role === "alumni"
+                        ? `Alumni${user?.promo ? ` · Promo ${user.promo}` : ""}`
+                        : "Étudiant"}
+              </p>
+              <p className="text-white font-semibold text-sm truncate">
+                {user?.pseudo || user?.ref || "—"}
+              </p>
+            </div>
+          </button>
           <button
             onClick={handleLogout}
             className="sidebar-link w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"
