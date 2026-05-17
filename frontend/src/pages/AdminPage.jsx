@@ -107,6 +107,7 @@ export default function AdminPage() {
   const [annContent, setAnnContent] = useState("");
   const [annImage, setAnnImage] = useState(null);
   const [annImagePreview, setAnnImagePreview] = useState(null);
+  const [annTargetLevel, setAnnTargetLevel] = useState("");
   const [annSubmitting, setAnnSubmitting] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [annLoading, setAnnLoading] = useState(false);
@@ -1197,6 +1198,32 @@ export default function AdminPage() {
                   {annImagePreview && (
                     <img src={annImagePreview} alt="Aperçu" className="w-full max-h-48 object-cover rounded-xl" />
                   )}
+
+                  {/* Level selector */}
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
+                      <FontAwesomeIcon icon={faUsers} className="mr-1" />
+                      Visible par
+                    </p>
+                    <div className="flex gap-2">
+                      {["Tous", "L1", "L2", "L3"].map((l) => (
+                        <button
+                          key={l}
+                          type="button"
+                          onClick={() => setAnnTargetLevel(l === "Tous" ? "" : l)}
+                          className={
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition " +
+                            ((l === "Tous" && !annTargetLevel) || annTargetLevel === l
+                              ? "bg-navy text-white shadow-sm"
+                              : "bg-white border border-contact text-navy hover:border-navy")
+                          }
+                        >
+                          {l === "Tous" ? "Tout le monde" : l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={async () => {
@@ -1206,6 +1233,7 @@ export default function AdminPage() {
                         const form = new FormData();
                         form.append("title", annTitle.trim());
                         form.append("content", annContent.trim());
+                        form.append("target_level", annTargetLevel || "");
                         if (annImage) form.append("image", annImage);
                         await api.post("/announcements", form, {
                           headers: { "Content-Type": "multipart/form-data" },
@@ -1214,6 +1242,7 @@ export default function AdminPage() {
                         setAnnContent("");
                         setAnnImage(null);
                         setAnnImagePreview(null);
+                        setAnnTargetLevel("");
                         loadAnnouncements();
                       } catch (err) {
                         console.error(err);
@@ -1256,8 +1285,19 @@ export default function AdminPage() {
                         <img src={ann.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-navy text-sm truncate">{ann.title}</h4>
-                        <p className="text-xs text-gray-400 line-clamp-2 mt-1">{ann.content}</p>
+                      <h4 className="font-bold text-navy text-sm truncate">
+                        {ann.title}
+                        {ann.target_level && (
+                          <span className={"ml-2 text-xs font-bold px-2 py-0.5 rounded-full " + ({
+                            L1: "bg-cyan-100 text-cyan-700",
+                            L2: "bg-emerald-100 text-emerald-700",
+                            L3: "bg-amber-100 text-amber-700",
+                          }[ann.target_level] || "bg-gray-100 text-gray-600")}>
+                            {ann.target_level}
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-xs text-gray-400 line-clamp-2 mt-1">{ann.content}</p>
                         <p className="text-xs text-gray-300 mt-1">
                           {new Date(ann.created_at).toLocaleDateString("fr-FR")}
                         </p>

@@ -50,15 +50,27 @@ if (useCloudinary) {
   upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }).single("image");
 }
 
-// GET / — list all announcements (newest first)
+// GET / — list all announcements (newest first), optional ?level filter
 router.get("/", auth, async (req, res) => {
   try {
-    const result = await db.query(`
-      SELECT a.*, u.pseudo AS author_pseudo, u.avatar AS author_avatar
-      FROM announcements a
-      JOIN users u ON u.id = a.author_id
-      ORDER BY a.created_at DESC
-    `);
+    const level = req.query.level;
+    let result;
+    if (level && ["L1", "L2", "L3"].includes(level)) {
+      result = await db.query(`
+        SELECT a.*, u.pseudo AS author_pseudo, u.avatar AS author_avatar
+        FROM announcements a
+        JOIN users u ON u.id = a.author_id
+        WHERE a.target_level IS NULL OR a.target_level = $1
+        ORDER BY a.created_at DESC
+      `, [level]);
+    } else {
+      result = await db.query(`
+        SELECT a.*, u.pseudo AS author_pseudo, u.avatar AS author_avatar
+        FROM announcements a
+        JOIN users u ON u.id = a.author_id
+        ORDER BY a.created_at DESC
+      `);
+    }
     const announcements = result.rows;
 
     // Fetch reactions for each announcement
@@ -109,9 +121,12 @@ router.post("/", auth, adminOnly, (req, res) => {
       return res.status(400).json({ error: err.message });
     }
     try {
-      const { title, content } = req.body;
+      const { title, content, target_level } = req.body;
       if (!title?.trim() || !content?.trim()) {
         return res.status(400).json({ error: "Le titre et le contenu sont requis." });
+      }
+      if (target_level && !["L1", "L2", "L3"].includes(target_level)) {
+        return res.status(400).json({ error: "Niveau cible invalide." });
       }
 
       const imageUrl = req.file
@@ -119,10 +134,10 @@ router.post("/", auth, adminOnly, (req, res) => {
         : null;
 
       const result = await db.query(`
-        INSERT INTO announcements (title, content, image_url, author_id)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO announcements (title, content, image_url, author_id, target_level)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING *
-      `, [title.trim(), content.trim(), imageUrl, req.user.id]);
+      `, [title.trim(), content.trim(), imageUrl, req.user.id, target_level || null]);
 
       res.status(201).json(result.rows[0]);
     } catch (err) {
