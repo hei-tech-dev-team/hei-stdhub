@@ -9,6 +9,7 @@ import {
   faThumbsDown,
   faFaceSadTear,
   faPaperPlane,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
@@ -28,10 +29,13 @@ const REACTION_LABELS = {
   sad: "Triste",
 };
 
+const LEVELS = ["Tous", "L1", "L2", "L3"];
+
 export default function AdminHome() {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [targetLevel, setTargetLevel] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,9 +60,14 @@ export default function AdminHome() {
     if (!title.trim() || !content.trim()) return;
     setSubmitting(true);
     try {
-      await api.post("/announcements", { title: title.trim(), content: content.trim() });
+      await api.post("/announcements", {
+        title: title.trim(),
+        content: content.trim(),
+        target_level: targetLevel || null,
+      });
       setTitle("");
       setContent("");
+      setTargetLevel("");
       setShowForm(false);
       fetchAnnouncements();
     } catch (err) {
@@ -90,6 +99,16 @@ export default function AdminHome() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const levelBadge = (level) => {
+    if (!level) return null;
+    const colors = { L1: "bg-cyan-100 text-cyan-700", L2: "bg-emerald-100 text-emerald-700", L3: "bg-amber-100 text-amber-700" };
+    return (
+      <span className={"text-xs font-bold px-2 py-0.5 rounded-full " + (colors[level] || "bg-gray-100 text-gray-600")}>
+        {level}
+      </span>
+    );
   };
 
   return (
@@ -141,6 +160,32 @@ export default function AdminHome() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                 />
+
+                {/* Level selector */}
+                <div>
+                  <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
+                    <FontAwesomeIcon icon={faUsers} className="mr-1" />
+                    Visible par
+                  </p>
+                  <div className="flex gap-2">
+                    {LEVELS.map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setTargetLevel(l === "Tous" ? "" : l)}
+                        className={
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition " +
+                          ((l === "Tous" && !targetLevel) || targetLevel === l
+                            ? "bg-navy text-white shadow-sm"
+                            : "bg-white border border-contact text-navy hover:border-navy")
+                        }
+                      >
+                        {l === "Tous" ? "Tout le monde" : l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   onClick={handlePublish}
                   disabled={submitting || !title.trim() || !content.trim()}
@@ -177,7 +222,10 @@ export default function AdminHome() {
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-lg font-bold text-navy mb-2">{ann.title}</h2>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h2 className="text-lg font-bold text-navy">{ann.title}</h2>
+                        {levelBadge(ann.target_level)}
+                      </div>
                       <p className="text-gray-600 text-sm whitespace-pre-wrap mb-4">{ann.content}</p>
                       <p className="text-xs text-gray-400">
                         Publié le {new Date(ann.created_at).toLocaleDateString("fr-FR", {
