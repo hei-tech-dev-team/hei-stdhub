@@ -3,9 +3,10 @@ export function expandRoleFilter(role) {
   return role;
 }
 
-export function determineRegisterRole(inviteRole, isAlumni) {
+export function determineRegisterRole(inviteRole, selectedRole) {
   if (inviteRole === "teacher") return "teacher";
-  return isAlumni ? "alumni" : "student";
+  if (selectedRole === "alumni") return "alumni";
+  return inviteRole === "alumni" ? "alumni" : "student";
 }
 
 export function validateRegisterEmail(email, role) {

@@ -31,6 +31,7 @@ const ALL_UES = [
   "PROG2-POO",
   "PROG2-API",
   "SYS2",
+  "MGT1",
   "WEB3",
   "PROG3",
   "MGT2",
@@ -84,7 +85,7 @@ export default function RegisterPage() {
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeError, setCodeError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-  const [isAlumni, setIsAlumni] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("student");
   const [showConfirm, setShowConfirm] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -106,7 +107,7 @@ export default function RegisterPage() {
       const { data } = await api.post("/auth/verify-invite", {
         code: form.inviteCode.trim().toUpperCase(),
       });
-      set("role", determineRegisterRole(data.role, isAlumni));
+      set("role", determineRegisterRole(data.role, selectedRole));
       setCodeVerified(true);
     } catch (err) {
       setCodeError(err.response?.data?.error || "Code invalide ou expiré.");
@@ -268,10 +269,10 @@ export default function RegisterPage() {
                   <p className="text-gray-500 text-xs leading-relaxed">
                     Contactez l'administrateur à{" "}
                     <a
-                      href="mailto:hub203313@gmail.com"
+                      href="mailto:stdhub.admin@gmail.com"
                       className="text-[#001948] hover:underline font-medium"
                     >
-                      hub203313@gmail.com
+                      stdhub.admin@gmail.com
                     </a>{" "}
                     en précisant votre rôle et niveau. Le code est unique et
                     expire après 7 jours.
@@ -284,29 +285,25 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                {/* Alumni toggle */}
-                <div className="flex items-center gap-3 p-3 bg-surface rounded-xl">
-                  <div
-                    onClick={() => { setIsAlumni(false); set("role", "student"); }}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
-                      !isAlumni
-                        ? "bg-navy text-white shadow-sm"
-                        : "text-gray-400 hover:text-navy"
-                    }`}
-                  >
-                    Étudiant actuel
-                  </div>
-                  <div
-                    onClick={() => { setIsAlumni(true); set("role", "alumni"); }}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
-                      isAlumni
-                        ? "bg-navy text-white shadow-sm"
-                        : "text-gray-400 hover:text-navy"
-                    }`}
-                  >
-                    <GraduationCap size={12} className="inline mr-1" />
-                    Ancien étudiant
-                  </div>
+                {/* Role selector */}
+                <div className="flex items-center gap-2 p-1 bg-surface rounded-xl">
+                  {[
+                    { key: "student", label: "Étudiant" },
+                    { key: "teacher", label: "Professeur" },
+                    { key: "alumni", label: "Alumni" },
+                  ].map((r) => (
+                    <div
+                      key={r.key}
+                      onClick={() => { setSelectedRole(r.key); set("role", r.key); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
+                        selectedRole === r.key
+                          ? "bg-navy text-white shadow-sm"
+                          : "text-gray-400 hover:text-navy"
+                      }`}
+                    >
+                      {r.label}
+                    </div>
+                  ))}
                 </div>
 
                 <InputWrapper label="Code d'invitation" icon={Hash}>

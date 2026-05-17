@@ -44,6 +44,16 @@ CREATE TABLE users (
   )
 );
 
+CREATE TABLE user_security_questions (
+  id            SERIAL       PRIMARY KEY,
+  user_id       INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  question_key  VARCHAR(255) NOT NULL,
+  question_text TEXT         NULL,
+  answer_hash   VARCHAR(60)  NOT NULL,
+  created_at    TIMESTAMP    NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, question_key)
+);
+
 CREATE TABLE password_reset_tokens (
   id         SERIAL       PRIMARY KEY,
   user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -194,7 +204,7 @@ CREATE TRIGGER trg_posts_updated_at
   FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
 INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level) VALUES
-  ('ADMIN001', 'Admin', 'HEI', 'admin@hei.mg', 'ADMIN',
+  ('ADMIN001', 'Admin', 'HEI', 'stdhub.admin@gmail.com', 'ADMIN',
    '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin', NULL),
   ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
    '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student', 'L1'),

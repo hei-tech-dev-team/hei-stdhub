@@ -543,6 +543,31 @@ export default function ProfilePage() {
                 </div>
               </div>
             ))}
+
+            {/* Security questions link */}
+            <div className="animate-slide-up" style={{ animationDelay: "0.45s" }}>
+              <a href="/security-questions"
+                className="block rounded-2xl overflow-hidden p-5 sm:p-6 transition-all duration-200 hover:shadow-md"
+                style={{
+                  background: "white",
+                  border: "1px solid rgba(0,0,0,0.08)",
+                }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: "rgba(212,175,55,0.15)" }}>
+                    <FontAwesomeIcon icon={faLock} className="text-gold text-sm" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-800 text-sm">Questions de sécurité</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Configurer la récupération de compte</p>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </a>
+            </div>
           </div>
         </main>
       </div>
