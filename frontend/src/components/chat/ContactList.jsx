@@ -47,7 +47,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   const [searching, setSearching] = useState(false);
 
   const sorted = useMemo(() => {
-    return [...contacts].sort((a, b) => {
+    return [...contacts].filter(Boolean).sort((a, b) => {
       if (a.isGlobal) return -1;
       if (b.isGlobal) return 1;
       const aUnread = unread?.contacts?.[a.id]?.unread || 0;
@@ -191,7 +191,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
 
       {/* Contact list */}
       <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2 sm:py-3 space-y-0.5">
-        {filtered.map((contact) => {
+        {filtered.filter(Boolean).map((contact) => {
           const isActive = contact.id === activeId;
           return (
             <button

@@ -22,7 +22,10 @@ const STATUS_CFG = {
 };
 
 function PingCard({ ping, isSent, onAccept, onRefuse, processingId }) {
-  const person = isSent ? ping.receiver : ping.sender;
+  const person = isSent
+    ? { pseudo: ping.receiver_pseudo, avatar: ping.receiver_avatar, ref: ping.receiver_ref, role: ping.receiver_role }
+    : { pseudo: ping.sender_pseudo, avatar: ping.sender_avatar, ref: ping.sender_ref, role: ping.sender_role };
+  if (!person || !person.ref) return null;
   const statusCfg = STATUS_CFG[ping.status] || STATUS_CFG.pending;
 
   return (
