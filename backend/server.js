@@ -264,6 +264,18 @@ pool.query(`
   )
 `).catch((err) => console.error("Failed to create password_reset_tokens table:", err));
 
+// Ensure user_security_questions table exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS user_security_questions (
+    id           SERIAL       PRIMARY KEY,
+    user_id      INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    question_key VARCHAR(50)  NOT NULL,
+    answer_hash  VARCHAR(60)  NOT NULL,
+    created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, question_key)
+  )
+`).catch((err) => console.error("Failed to create user_security_questions table:", err));
+
 // Update existing invitations constraint to allow alumni
 pool.query(`
   ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check;
