@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import api from "../api/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse,
@@ -33,7 +34,24 @@ const ALUMNI_NAV_LINKS = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    if (location.pathname === "/pings") {
+      setPendingCount(0);
+      return;
+    }
+    api.get("/pings").then(({ data }) => {
+      const pings = Array.isArray(data) ? data : [];
+      const count = pings.filter(
+        (p) => p.receiver_id === user.id && p.status === "pending",
+      ).length;
+      setPendingCount(count);
+    }).catch(() => {});
+  }, [user, location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -97,6 +115,11 @@ export default function Sidebar() {
             >
               <FontAwesomeIcon icon={icon} className="w-4 h-4 shrink-0" />
               <span className="truncate">{label}</span>
+              {to === "/pings" && pendingCount > 0 && (
+                <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5">
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              )}
             </NavLink>
           ))}
 
