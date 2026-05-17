@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
-import Avatar from "../components/ui/Avatar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -16,6 +16,8 @@ import {
   faCommentDots,
   faSpinner,
   faArrowLeft,
+  faBell,
+  faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
 const ROLE_CFG = {
@@ -28,9 +30,12 @@ const ROLE_CFG = {
 
 export default function UserProfilePage() {
   const { ref } = useParams();
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pingState, setPingState] = useState("idle"); // idle | sending | sent | error | self | exists
+  const [pingMsg, setPingMsg] = useState("");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -86,6 +91,27 @@ export default function UserProfilePage() {
       </div>
     );
   }
+
+  const isOwnProfile = user.id === profile.id;
+
+  const handlePing = async () => {
+    if (isOwnProfile) {
+      setPingState("self");
+      setPingMsg("Vous ne pouvez pas vous envoyer un ping à vous-même.");
+      return;
+    }
+    setPingState("sending");
+    setPingMsg("");
+    try {
+      await api.post("/pings", { receiver_id: profile.id });
+      setPingState("sent");
+      setPingMsg("Ping envoyé !");
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Erreur lors de l'envoi du ping.";
+      setPingState("exists");
+      setPingMsg(errorMsg);
+    }
+  };
 
   const roleCfg = ROLE_CFG[profile.role] || ROLE_CFG.student;
   const avatarUrl = profile.avatar || null;
@@ -222,38 +248,120 @@ export default function UserProfilePage() {
             </div>
 
             {/* Action buttons */}
-            <div
-              className={`transition-all duration-700 ease-out ${
-                visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-              }`}
-              style={{ transitionDelay: "250ms" }}
-            >
-              <Link
-                to={`/chat`}
-                className="block rounded-2xl overflow-hidden p-5 sm:p-6 transition-all duration-200 hover:shadow-md"
-                style={{
-                  background: "white",
-                  border: "1px solid rgba(0,0,0,0.08)",
-                }}
+            <div className="flex flex-col gap-3">
+              <div
+                className={`transition-all duration-700 ease-out ${
+                  visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: "250ms" }}
               >
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(212,175,55,0.15)" }}
-                  >
-                    <FontAwesomeIcon icon={faCommentDots} className="text-gold text-sm" />
+                <Link
+                  to={`/chat`}
+                  className="block rounded-2xl overflow-hidden p-5 sm:p-6 transition-all duration-200 hover:shadow-md"
+                  style={{
+                    background: "white",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: "rgba(212,175,55,0.15)" }}
+                    >
+                      <FontAwesomeIcon icon={faCommentDots} className="text-gold text-sm" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-800 text-sm">Envoyer un message</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Discuter avec {profile.pseudo}
+                      </p>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-800 text-sm">Envoyer un message</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Discuter avec {profile.pseudo}
-                    </p>
+                </Link>
+              </div>
+
+              <div
+                className={`transition-all duration-700 ease-out ${
+                  visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: "350ms" }}
+              >
+                <div
+                  className="rounded-2xl overflow-hidden p-5 sm:p-6 transition-all duration-200 hover:shadow-md"
+                  style={{
+                    background: "white",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: "rgba(212,175,55,0.15)" }}
+                    >
+                      <FontAwesomeIcon icon={faBell} className="text-gold text-sm" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-800 text-sm">Envoyer un ping</h3>
+                      {pingState === "idle" && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Attirer l'attention de {profile.pseudo}
+                        </p>
+                      )}
+                      {pingState === "sending" && (
+                        <p className="text-xs text-gold mt-0.5">
+                          <FontAwesomeIcon icon={faSpinner} className="animate-spin mr-1" />
+                          Envoi en cours...
+                        </p>
+                      )}
+                      {pingState === "sent" && (
+                        <p className="text-xs text-green-500 mt-0.5">
+                          <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
+                          {pingMsg}
+                        </p>
+                      )}
+                      {(pingState === "exists" || pingState === "self") && (
+                        <p className="text-xs text-red-400 mt-0.5">
+                          {pingMsg}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handlePing}
+                      disabled={pingState === "sending"}
+                      className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 disabled:opacity-50 active:scale-95"
+                      style={{
+                        background: pingState === "sent"
+                          ? "rgba(34,197,94,0.15)"
+                          : "linear-gradient(135deg, #D4AF37, #B8860B)",
+                        color: pingState === "sent" ? "#22c55e" : "white",
+                        boxShadow: pingState === "sent" ? "none" : "0 2px 12px rgba(212,175,55,0.25)",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (pingState !== "sent") {
+                          e.currentTarget.style.opacity = "0.9";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (pingState !== "sent") {
+                          e.currentTarget.style.opacity = "1";
+                        }
+                      }}
+                    >
+                      {pingState === "sending" ? (
+                        <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                      ) : pingState === "sent" ? (
+                        <FontAwesomeIcon icon={faCheckCircle} />
+                      ) : (
+                        "Ping !"
+                      )}
+                    </button>
                   </div>
-                  <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
                 </div>
-              </Link>
+              </div>
             </div>
           </div>
         </main>
