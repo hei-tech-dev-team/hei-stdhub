@@ -13,6 +13,7 @@ import ProfilePage from "./pages/ProfilePage";
 import SecurityQuestionsPage from "./pages/SecurityQuestionsPage";
 import SuggestionPage from "./pages/SuggestionPage";
 import BDEPage from "./pages/BDEPage";
+import UserProfilePage from "./pages/UserProfilePage";
 import OnboardingModal from "./components/ui/OnboardingModal";
 
 function ProtectedRoute({ children }) {
@@ -130,6 +131,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SecurityQuestionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/:ref"
+        element={
+          <ProtectedRoute>
+            <UserProfilePage />
           </ProtectedRoute>
         }
       />
