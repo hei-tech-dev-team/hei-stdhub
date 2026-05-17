@@ -100,6 +100,23 @@ const sendWithResend = async ({ user, subject, text, html }) => {
   return response.json();
 };
 
+const trySendSmtp = async ({ to, subject, text, html }) => {
+  const defaultPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 465);
+  const ports = [...new Set([defaultPort, 465, 587])];
+  for (const port of ports) {
+    const transporter = createTransport(port);
+    if (!transporter) return null;
+    try {
+      await transporter.sendMail({ from: getFromAddress(), to, subject, text, html });
+      return { provider: "smtp", port };
+    } catch (err) {
+      console.error(`SMTP failed on port ${port}:`, err.message);
+      transporter.close();
+    }
+  }
+  return null;
+};
+
 const sendPasswordResetEmail = async ({ user, token }) => {
   if (!user?.email?.trim()) throw new Error("User email is required");
 
@@ -123,25 +140,20 @@ const sendPasswordResetEmail = async ({ user, token }) => {
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     `;
 
-  // SMTP only — try configured port, 465, and 587
-  const defaultPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 465);
-  const ports = [...new Set([defaultPort, 465, 587])];
-  for (const port of ports) {
-    const transporter = createTransport(port);
-    if (!transporter) break;
+  // Try SMTP first, then Resend as fallback
+  const smtpResult = await trySendSmtp({ to: user.email, subject, text, html });
+  if (smtpResult) {
+    console.info(`Email de réinitialisation envoyé via SMTP (port ${smtpResult.port}) à ${user.email}`);
+    return { skipped: false, resetUrl };
+  }
+
+  if (process.env.RESEND_API_KEY) {
     try {
-      await transporter.sendMail({
-        from: getFromAddress(),
-        to: user.email,
-        subject,
-        text,
-        html,
-      });
-      console.info(`Email de réinitialisation envoyé via SMTP à ${user.email}`);
-      return { skipped: false, resetUrl };
-    } catch (smtpErr) {
-      console.error(`SMTP failed on port ${port}:`, smtpErr.message);
-      transporter.close();
+      const result = await sendWithResend({ user, subject, text, html });
+      console.info(`Email de réinitialisation envoyé via Resend à ${user.email}`);
+      return { skipped: false, provider: "resend", result, resetUrl };
+    } catch (resendErr) {
+      console.error("Resend also failed:", resendErr.message);
     }
   }
 
@@ -152,35 +164,20 @@ const sendPasswordResetEmail = async ({ user, token }) => {
 const sendEmail = async ({ user, subject, text, html }) => {
   if (!user?.email?.trim()) throw new Error("User email is required");
 
-  // Try Resend first, fall back to SMTP
+  // Try SMTP first, then Resend as fallback
+  const smtpResult = await trySendSmtp({ to: user.email, subject, text, html });
+  if (smtpResult) {
+    console.info(`Email envoyé via SMTP (port ${smtpResult.port}) à ${user.email}`);
+    return { skipped: false };
+  }
+
   if (process.env.RESEND_API_KEY) {
     try {
       const result = await sendWithResend({ user, subject, text, html });
       console.info(`Email envoyé via Resend à ${user.email}`);
       return { skipped: false, provider: "resend", result };
     } catch (resendErr) {
-      console.error("Resend failed, trying SMTP:", resendErr.message);
-    }
-  }
-
-  const defaultPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 465);
-  const ports = [...new Set([defaultPort, 465, 587])];
-  for (const port of ports) {
-    const transporter = createTransport(port);
-    if (!transporter) break;
-    try {
-      await transporter.sendMail({
-        from: getFromAddress(),
-        to: user.email,
-        subject,
-        text,
-        html,
-      });
-      console.info(`Email envoyé via SMTP à ${user.email}`);
-      return { skipped: false };
-    } catch (smtpErr) {
-      console.error(`SMTP failed on port ${port}:`, smtpErr.message);
-      transporter.close();
+      console.error("Resend also failed:", resendErr.message);
     }
   }
 
