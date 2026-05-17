@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -134,18 +135,26 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     }
     const online = onlineUsers.has(contact.id);
     return (
-      <div className="relative shrink-0">
-        <UserAvatar
-          avatar={contact.avatar}
-          name={contact.name}
-          size="lg"
-          color={isActive ? "bg-gold" : "bg-white/10"}
-          className="ring-2 ring-white/10"
-        />
+      <Link to={`/user/${contact.ref}`} className="relative shrink-0 block">
+        {contact.avatar ? (
+          <div className="w-10 h-10 rounded-full overflow-hidden">
+            <img
+              src={contact.avatar}
+              alt={contact.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <Avatar
+            name={contact.name}
+            size="md"
+            color={isActive ? "bg-gold" : "bg-white/10"}
+          />
+        )}
         <span className="absolute -bottom-0.5 -right-0.5">
           <StatusDot online={online} />
         </span>
-      </div>
+      </Link>
     );
   };
 
