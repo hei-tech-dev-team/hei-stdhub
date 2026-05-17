@@ -134,6 +134,7 @@ app.use("/api/supports", require("./routes/supports"));
 app.use("/api/submissions", require("./routes/submissions"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/push", require("./routes/push"));
+app.use("/api/pings", require("./routes/pings"));
 app.use("/api/admin", require("./routes/admin"));
 
 // Health check endpoint
@@ -270,6 +271,19 @@ pool.query(`
     PRIMARY KEY (user_id)
   )
 `).catch((err) => console.error("Failed to create global_chat_read table:", err));
+
+// Ensure pings table exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS pings (
+    id           SERIAL       PRIMARY KEY,
+    sender_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id  INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status       VARCHAR(20)  NOT NULL DEFAULT 'pending',
+    created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+    responded_at TIMESTAMP    NULL,
+    UNIQUE (sender_id, receiver_id)
+  )
+`).catch((err) => console.error("Failed to create pings table:", err));
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
