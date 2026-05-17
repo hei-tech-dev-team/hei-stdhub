@@ -160,7 +160,6 @@ export default function StudentHome() {
             </div>
           </div>
         </div>
-      </div>
 
         {/* Filtres Avancés & Tri */}
         <div className="flex flex-wrap items-center gap-3 py-3 mb-6 border-y border-contact/30">
@@ -226,7 +225,7 @@ export default function StudentHome() {
         {!loading && posts.length > 0 && filteredPosts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
             <FontAwesomeIcon icon={faSearch} className="text-5xl mb-4 opacity-20" />
-            <p className="text-lg font-medium">Aucun résultat pour "{search}"</p>
+            <p className="text-lg font-medium">Aucun résultat pour &quot;{search}&quot;</p>
           </div>
         )}
 
