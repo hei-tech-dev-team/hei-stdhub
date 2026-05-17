@@ -78,8 +78,8 @@ export default function Sidebar() {
         
         setUnreadCount(location.pathname === "/chat" ? 0 : totalUnread);
         prevUnreadRef.current = totalUnread;
-      } catch (err) {
-        console.error("Erreur lors de la mise à jour des badges :", err);
+      } catch (_) {
+        // Backend indisponible — les badges seront mis à jour au prochain cycle
       }
     };
 
