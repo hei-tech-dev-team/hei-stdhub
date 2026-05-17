@@ -129,6 +129,7 @@ export default function ChatLayout() {
       senderAvatar: m.sender_avatar || null,
       senderId: m.sender_id,
       senderRole: m.sender_role || null,
+      senderRef: m.sender_ref || null,
       content: m.content || "",
       own: m.sender_id === user.id,
       seen: m.seen || false,
