@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -47,7 +47,7 @@ function RoleBadge({ role }) {
 function ChatAvatar({ avatar, name, userRef }) {
   const [failed, setFailed] = useState(false);
   const inner = !avatar || failed
-    ? <Avatar name={name} size="sm" color="bg-gold" />
+    ? <UserAvatar name={name} size="sm" color="bg-gold" />
     : <img src={avatar} alt={name} className="w-full h-full object-cover" onError={() => setFailed(true)} />;
   if (userRef) return <Link to={`/user/${userRef}`} className="block w-full h-full">{inner}</Link>;
   return inner;
@@ -546,22 +546,27 @@ export default function MessagePanel({
     <div className="flex flex-col h-full min-w-0">
       {/* Header */}
       <div className="relative flex flex-col items-center justify-center gap-1.5 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
-        <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
-        <div className="min-w-0 text-center">
-          <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center justify-center gap-1.5">
-            {contact.name}
-            {!contact.isGlobal && <RoleBadge role={contact.role} />}
-          </h3>
-          <p className="text-white/40 text-xs mt-0.5 truncate">
-            {contact.isGlobal
-              ? "Chat global – tous les membres"
-              : contact.role === "teacher"
-                ? "Professeur"
-                : contact.role === "bde"
-                  ? "Bureau des étudiants"
-                  : "Étudiant"}
-          </p>
-        </div>
+        <Link 
+          to={!contact.isGlobal && contact.ref ? `/user/${contact.ref}` : "#"} 
+          className={`flex flex-col items-center gap-1.5 group ${!contact.isGlobal && contact.ref ? "hover:opacity-80 transition-opacity" : "cursor-default pointer-events-none"}`}
+        >
+          <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
+          <div className="min-w-0 text-center">
+            <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center justify-center gap-1.5 group-hover:text-gold transition-colors">
+              {contact.name}
+              {!contact.isGlobal && <RoleBadge role={contact.role} />}
+            </h3>
+            <p className="text-white/40 text-xs mt-0.5 truncate">
+              {contact.isGlobal
+                ? "Chat global – tous les membres"
+                : contact.role === "teacher"
+                  ? "Professeur"
+                  : contact.role === "bde"
+                    ? "Bureau des étudiants"
+                    : "Étudiant"}
+            </p>
+          </div>
+        </Link>
         <button
           type="button"
           onClick={onOpenContacts}
