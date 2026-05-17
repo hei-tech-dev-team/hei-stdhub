@@ -38,15 +38,6 @@ const SkeletonPostCard = () => (
   </div>
 );
 
-<<<<<<< HEAD
-const SkeletonEmptyState = () => (
-  <div className="flex flex-col items-center justify-center py-20 text-center">
-    <div className="relative mb-8">
-      <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse"></div>
-    </div>
-    <div className="h-6 bg-gray-200 rounded w-64 mb-3 animate-pulse"></div>
-    <div className="h-4 bg-gray-200 rounded w-80 animate-pulse"></div>
-=======
 const EmptyStateAnimation = () => (
   <div className="flex flex-col items-center justify-center py-20 text-center">
     <div className="relative mb-8 animate-slide-up">
@@ -65,7 +56,6 @@ const EmptyStateAnimation = () => (
       Aucun contenu disponible pour le moment.<br />
       Les professeurs publieront bientôt des cours, TD et examens ici.
     </p>
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
   </div>
 );
 
@@ -162,23 +152,6 @@ export default function StudentHome() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-<<<<<<< HEAD
-            <div className="flex items-center gap-2 flex-wrap">
-            {LEVELS.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => handleFilterChange(l)}
-                className={
-                  "px-4 py-1.5 rounded-full text-xs font-bold transition " +
-                  (filter === l
-                    ? "bg-navy text-white shadow-sm"
-                    : "bg-white border border-contact text-navy hover:border-navy")
-                }
-              >
-                {l}
-              </button>
-=======
             <div className="flex items-center gap-2">
               {LEVELS.map((l) => (
                 <button
@@ -213,7 +186,6 @@ export default function StudentHome() {
           >
             {TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
             ))}
           </select>
 
@@ -251,75 +223,6 @@ export default function StudentHome() {
             </button>
           </div>
         </div>
-      </div>
-
-        {/* Filtres Avancés & Tri */}
-        <div className="flex flex-wrap items-center gap-4 py-3 mb-6 border-y border-contact/30">
-          <div className="flex items-center gap-2 text-navy/60">
-            <FontAwesomeIcon icon={faFilter} className="text-[10px]" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Affinement :</span>
-          </div>
-
-          {/* Filtre Type */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-400">Type :</span>
-            <select
-              className="bg-white border border-contact rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-navy cursor-pointer"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Filtre UE */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-400">UE :</span>
-            <div className="relative flex items-center">
-              <input
-                list="ue-list"
-                className="bg-white border border-contact rounded-lg pl-2 pr-7 py-1 text-xs focus:outline-none focus:border-navy w-36 outline-none transition-all"
-                placeholder="Saisir une UE..."
-                value={ueFilter === "Tous" ? "" : ueFilter}
-                onChange={(e) => setUeFilter(e.target.value || "Tous")}
-                onFocus={(e) => e.target.select()}
-              />
-              <datalist id="ue-list">
-                {uniqueUEs.filter(u => u !== "Tous").map((ue) => (
-                  <option key={ue} value={ue} />
-                ))}
-              </datalist>
-              {ueFilter !== "Tous" && (
-                <button
-                  type="button"
-                  onClick={() => setUeFilter("Tous")}
-                  className="absolute right-2 text-gray-300 hover:text-red-500 transition-colors"
-                >
-                  <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Tri Date */}
-          <div className="sm:ml-auto flex items-center gap-2">
-            <span className="text-xs text-gray-400">Date :</span>
-            <button
-              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-              className="flex items-center gap-2 bg-navy/5 hover:bg-navy/10 text-navy px-3 py-1 rounded-lg transition-all active:scale-95"
-            >
-              <span className="text-xs font-bold">
-                {sortOrder === "desc" ? "Plus récents" : "Plus anciens"}
-              </span>
-              <FontAwesomeIcon
-                icon={sortOrder === "desc" ? faSortAmountDown : faSortAmountUp}
-                className="text-xs"
-              />
-            </button>
-          </div>
-        </div>
 
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -328,20 +231,12 @@ export default function StudentHome() {
             ))}
           </div>
         )}
-<<<<<<< HEAD
-        {!loading && posts.length === 0 && <SkeletonEmptyState />}
-=======
         {!loading && posts.length === 0 && <EmptyStateAnimation />}
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
 
         {!loading && posts.length > 0 && filteredPosts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
             <FontAwesomeIcon icon={faSearch} className="text-5xl mb-4 opacity-20" />
-<<<<<<< HEAD
-            <p className="text-lg font-medium">Aucun résultat pour "{search}"</p>
-=======
             <p className="text-lg font-medium">Aucun résultat pour &quot;{search}&quot;</p>
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
           </div>
         )}
 

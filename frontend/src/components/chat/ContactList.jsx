@@ -135,16 +135,6 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       );
     }
     const online = onlineUsers.has(contact.id);
-<<<<<<< HEAD
-    return (
-      <div className="relative shrink-0">
-        <UserAvatar
-          avatar={contact.avatar}
-          name={contact.name}
-          size="lg"
-          color={isActive ? "bg-gold" : "bg-white/10"}
-          className="ring-2 ring-white/10"
-=======
     const avatarInner = (
       <>
         <UserAvatar
@@ -152,7 +142,6 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
           name={contact.name}
           size="md"
           color={isActive ? "bg-gold" : "bg-white/10"}
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
         />
         <span className="absolute -bottom-0.5 -right-0.5">
           <StatusDot online={online} />
@@ -168,33 +157,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   return (
     <div className="w-full h-full bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col relative">
       {/* Header */}
-<<<<<<< HEAD
-      <div className="px-5 pt-5 pb-4 shrink-0 border-b border-white/10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative shrink-0">
-            <UserAvatar
-              avatar={user?.avatar}
-              name={user?.pseudo || user?.ref}
-              size="lg"
-              color="bg-gold/20"
-              className="border-2 border-gold text-gold"
-              alt="Moi"
-            />
-            <span className="absolute -bottom-0.5 -right-0.5">
-              <StatusDot online={true} />
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-white font-bold text-base truncate">
-              {user?.pseudo || user?.ref || "Chat"}
-            </h2>
-            <span className="text-white/40 text-xs">Messages</span>
-          </div>
-        </div>
-
-=======
       <div className="px-4 pt-4 pb-3 shrink-0 border-b border-white/10">
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
         <div className="relative">
           <FontAwesomeIcon
             icon={faSearch}
@@ -211,26 +174,15 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
         </div>
 
         {/* Role Filters */}
-<<<<<<< HEAD
-        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 no-scrollbar">
-=======
         <div className="flex gap-1 mt-2 overflow-x-auto no-scrollbar">
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
           {FILTERS.map((f) => (
             <button
               key={f}
               onClick={() => setRoleFilter(f)}
-<<<<<<< HEAD
-              className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 ${
-                roleFilter === f
-                  ? "bg-gold border-gold text-navy"
-                  : "bg-white/5 border-white/10 text-white/60 hover:border-white/30"
-=======
               className={`px-2.5 py-1 rounded-lg text-[9px] font-semibold border transition-all shrink-0 ${
                 roleFilter === f
                   ? "bg-gold border-gold text-navy"
                   : "bg-white/5 border-white/10 text-white/50 hover:border-white/30"
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
               }`}
             >
               {f}
@@ -296,32 +248,6 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                           ? "BDE"
                           : "Étudiant"}
                     <RoleBadge role={contact.role} level={contact.level} />
-<<<<<<< HEAD
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                {!contact.isGlobal && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFavorite(contact.id);
-                    }}
-                    className={`transition-all hover:scale-120 ${
-                      favorites.includes(contact.id) ? "text-gold animate-pulse" : "text-white/10 hover:text-gold/50"
-                    }`}
-                  >
-                    <FontAwesomeIcon icon={faStar} className="text-xs" />
-                  </button>
-                )}
-                {getUnreadCount(contact) > 0 && (
-                  <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
-                    {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
-                  </span>
-                )}
-              </div>
-            </button>
-=======
                   </span>
                 )}
               </div>
@@ -331,7 +257,6 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                 </span>
               )}
             </div>
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
           );
         })}
       </div>
@@ -399,14 +324,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                     <UserAvatar
                       avatar={u.avatar}
                       name={u.pseudo}
-<<<<<<< HEAD
-                      size="lg"
-                      color="bg-white/10"
-                      className="ring-2 ring-white/10"
-=======
                       size="md"
                       color="bg-white/10"
->>>>>>> 6765f458fc6091f752aec91397e99a9868ef4b98
                     />
                     <span className="absolute -bottom-0.5 -right-0.5">
                       <StatusDot online={onlineUsers.has(u.id)} />
