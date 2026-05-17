@@ -200,7 +200,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, ues, first_login
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, ues, avatar, first_login
        FROM users WHERE ref=$1`,
       [ref.toUpperCase()],
     );
