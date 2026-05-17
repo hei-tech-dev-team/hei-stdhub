@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -27,11 +28,13 @@ if ("serviceWorker" in navigator) {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-        <Analytics />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <App />
+          <Analytics />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
