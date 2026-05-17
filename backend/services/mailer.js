@@ -30,7 +30,7 @@ const createTransport = (portOverride) => {
     secure,
     auth: user && pass ? { user, pass } : undefined,
     family: 4,
-    connectionTimeout: 8000,
+    connectionTimeout: process.env.SMTP_TIMEOUT ? Number(process.env.SMTP_TIMEOUT) : 4000,
     tls: { rejectUnauthorized: false },
   });
 };
@@ -140,21 +140,21 @@ const sendPasswordResetEmail = async ({ user, token }) => {
       <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     `;
 
-  // Try SMTP first, then Resend as fallback
-  const smtpResult = await trySendSmtp({ to: user.email, subject, text, html });
-  if (smtpResult) {
-    console.info(`Email de réinitialisation envoyé via SMTP (port ${smtpResult.port}) à ${user.email}`);
-    return { skipped: false, resetUrl };
-  }
-
+  // Try Resend first (HTTPS — works on all cloud hosts), fall back to SMTP
   if (process.env.RESEND_API_KEY) {
     try {
       const result = await sendWithResend({ user, subject, text, html });
       console.info(`Email de réinitialisation envoyé via Resend à ${user.email}`);
       return { skipped: false, provider: "resend", result, resetUrl };
     } catch (resendErr) {
-      console.error("Resend also failed:", resendErr.message);
+      console.error("Resend failed:", resendErr.message);
     }
+  }
+
+  const smtpResult = await trySendSmtp({ to: user.email, subject, text, html });
+  if (smtpResult) {
+    console.info(`Email de réinitialisation envoyé via SMTP (port ${smtpResult.port}) à ${user.email}`);
+    return { skipped: false, resetUrl };
   }
 
   console.info(`Aucun email envoyé à ${user.email}. Lien: ${resetUrl}`);
@@ -164,21 +164,21 @@ const sendPasswordResetEmail = async ({ user, token }) => {
 const sendEmail = async ({ user, subject, text, html }) => {
   if (!user?.email?.trim()) throw new Error("User email is required");
 
-  // Try SMTP first, then Resend as fallback
-  const smtpResult = await trySendSmtp({ to: user.email, subject, text, html });
-  if (smtpResult) {
-    console.info(`Email envoyé via SMTP (port ${smtpResult.port}) à ${user.email}`);
-    return { skipped: false };
-  }
-
+  // Try Resend first (HTTPS — works on all cloud hosts), fall back to SMTP
   if (process.env.RESEND_API_KEY) {
     try {
       const result = await sendWithResend({ user, subject, text, html });
       console.info(`Email envoyé via Resend à ${user.email}`);
       return { skipped: false, provider: "resend", result };
     } catch (resendErr) {
-      console.error("Resend also failed:", resendErr.message);
+      console.error("Resend failed:", resendErr.message);
     }
+  }
+
+  const smtpResult = await trySendSmtp({ to: user.email, subject, text, html });
+  if (smtpResult) {
+    console.info(`Email envoyé via SMTP (port ${smtpResult.port}) à ${user.email}`);
+    return { skipped: false };
   }
 
   console.info(`Email non envoyé à ${user.email}.`);

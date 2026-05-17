@@ -31,6 +31,24 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY,
 );
 
+// Email provider diagnostics
+console.info("--- EMAIL CONFIGURATION ---");
+if (process.env.RESEND_API_KEY) {
+  const keyPreview = process.env.RESEND_API_KEY.substring(0, 8) + "...";
+  console.info(`Resend: CONFIGURED (key: ${keyPreview})`);
+} else {
+  console.info("Resend: NOT CONFIGURED — set RESEND_API_KEY for cloud email delivery");
+}
+if (process.env.SMTP_HOST) {
+  console.info(`SMTP: CONFIGURED (host=${process.env.SMTP_HOST}, port=${process.env.SMTP_PORT || 465})`);
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("SMTP: WARNING — SMTP_USER or SMTP_PASS missing");
+  }
+} else {
+  console.info("SMTP: NOT CONFIGURED — set SMTP_HOST for local email delivery");
+}
+console.info("----------------------------");
+
 const app = express();
 const server = http.createServer(app);
 app.set("trust proxy", 1);
