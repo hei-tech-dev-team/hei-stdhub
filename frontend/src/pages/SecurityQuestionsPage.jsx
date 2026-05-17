@@ -195,30 +195,43 @@ export default function SecurityQuestionsPage() {
                     </button>
                   </div>
                   {customs.length === 0 && (
-                    <p className="text-xs text-gray-400 italic">Aucune question personnalisée.</p>
+                    <button
+                      type="button"
+                      onClick={addCustom}
+                      className="w-full rounded-2xl border-2 border-dashed border-gray-200 py-6 flex flex-col items-center gap-2 hover:border-navy/40 hover:bg-navy/5 transition-all duration-200 group cursor-pointer"
+                    >
+                      <Plus size={20} className="text-gray-300 group-hover:text-navy transition" />
+                      <span className="text-xs text-gray-400 group-hover:text-navy font-semibold transition">
+                        Ajouter une question personnalisée
+                      </span>
+                    </button>
                   )}
                   {customs.map((c) => (
-                    <div key={c.id} className="rounded-2xl border border-navy bg-navy/5 transition-all duration-200">
+                    <div
+                      key={c.id}
+                      className="rounded-2xl border border-navy/30 bg-navy/[0.04] transition-all duration-200 has-[input:focus]:border-navy has-[input:focus]:shadow-sm"
+                    >
                       <div className="px-4 pt-3 pb-2 flex items-center gap-2">
                         <input
                           type="text"
-                          className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b border-gray-300 pb-1 focus:border-navy outline-none placeholder:text-gray-400"
-                          placeholder="Rédigez votre question..."
+                          className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b-2 border-gray-200 pb-1.5 focus:border-navy outline-none placeholder:text-gray-400 transition-colors duration-200"
+                          placeholder="Rédigez votre question personnalisée..."
                           value={c.question}
                           onChange={(e) => setCustomQuestion(c.id, e.target.value)}
                         />
                         <button
                           type="button"
                           onClick={() => removeCustom(c.id)}
-                          className="text-gray-400 hover:text-red-500 transition shrink-0"
+                          className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition shrink-0"
+                          title="Supprimer"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                       <div className="px-4 pb-3">
                         <input
                           type="text"
-                          className="input-field text-sm"
+                          className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:border-navy outline-none transition-all duration-200 placeholder:text-gray-400"
                           placeholder="Votre réponse"
                           value={answers[`custom_${c.id}`] || ""}
                           onChange={(e) => handleAnswer(`custom_${c.id}`, e.target.value)}
@@ -238,9 +251,14 @@ export default function SecurityQuestionsPage() {
                   </Link>
                   <button
                     onClick={handleSave}
-                    disabled={saving || totalCount < 2}
-                    className="flex-1 py-3 rounded-2xl font-bold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+                    disabled={saving}
+                    className="flex-1 py-3 rounded-2xl font-bold text-sm text-white transition-all duration-200 disabled:opacity-40 active:scale-[0.98]"
+                    style={{
+                      background: saving ? "#94a3b8" : "linear-gradient(135deg, #0A1A33, #001948)",
+                      boxShadow: saving ? "none" : "0 4px 16px rgba(0,25,72,0.25)",
+                    }}
+                    onMouseEnter={(e) => { if (!saving) e.currentTarget.style.opacity = "0.9"; }}
+                    onMouseLeave={(e) => { if (!saving) e.currentTarget.style.opacity = "1"; }}
                   >
                     {saving ? "Enregistrement..." : "Enregistrer"}
                   </button>
