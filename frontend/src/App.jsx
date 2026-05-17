@@ -10,8 +10,12 @@ import TDPage from "./pages/TDPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage";
+import SecurityQuestionsPage from "./pages/SecurityQuestionsPage";
 import SuggestionPage from "./pages/SuggestionPage";
 import BDEPage from "./pages/BDEPage";
+import UserProfilePage from "./pages/UserProfilePage";
+import PingBoxPage from "./pages/PingBoxPage";
+import STDnewsPage from "./pages/STDnewsPage";
 import OnboardingModal from "./components/ui/OnboardingModal";
 
 function ProtectedRoute({ children }) {
@@ -121,6 +125,38 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/security-questions"
+        element={
+          <ProtectedRoute>
+            <SecurityQuestionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/:ref"
+        element={
+          <ProtectedRoute>
+            <UserProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pings"
+        element={
+          <ProtectedRoute>
+            <PingBoxPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/stdnews"
+        element={
+          <ProtectedRoute>
+            <STDnewsPage />
           </ProtectedRoute>
         }
       />
