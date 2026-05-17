@@ -99,7 +99,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   };
 
   const ContactAvatar = ({ contact, isActive }) => {
-    if (contact.isGlobal) {
+    if (!contact || contact.isGlobal) {
+      if (!contact) return null;
       return (
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
@@ -113,8 +114,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       );
     }
     const online = onlineUsers.has(contact.id);
-    return (
-      <Link to={`/user/${contact.ref}`} className="relative shrink-0 block">
+    const avatarInner = (
+      <>
         {contact.avatar ? (
           <div className="w-10 h-10 rounded-full overflow-hidden">
             <img
@@ -133,8 +134,12 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
         <span className="absolute -bottom-0.5 -right-0.5">
           <StatusDot online={online} />
         </span>
-      </Link>
+      </>
     );
+    if (contact.ref) {
+      return <Link to={`/user/${contact.ref}`} className="relative shrink-0 block">{avatarInner}</Link>;
+    }
+    return <div className="relative shrink-0 block">{avatarInner}</div>;
   };
 
   return (
