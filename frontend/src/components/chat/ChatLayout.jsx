@@ -163,9 +163,11 @@ export default function ChatLayout() {
         }
         const msgList = Array.isArray(data) ? data : data?.messages;
         if (!Array.isArray(msgList)) return;
+        const formatted = msgList.map(formatMsg);
+        messagesRef.current = { ...messagesRef.current, [contact.id]: formatted };
         setMessages((prev) => ({
           ...prev,
-          [contact.id]: msgList.map(formatMsg),
+          [contact.id]: formatted,
         }));
       } catch (err) {
         console.error(err);
@@ -201,8 +203,10 @@ export default function ChatLayout() {
 
   useEffect(() => {
     if (activeContact) {
-      loadMessages(activeContact);
-      markSeen(activeContact);
+      (async () => {
+        await loadMessages(activeContact);
+        markSeen(activeContact);
+      })();
     }
   }, [activeContact, loadMessages, markSeen]);
 
