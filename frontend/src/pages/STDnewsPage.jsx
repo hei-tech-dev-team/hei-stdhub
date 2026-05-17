@@ -47,7 +47,7 @@ export default function STDnewsPage() {
       const { data } = await api.get("/announcements", { params });
       setAnnouncements(data);
     } catch (err) {
-      console.error("Erreur lors du chargement des annonces:", err);
+      // Erreur silencieuse — le backend peut être temporairement indisponible
     } finally {
       setLoading(false);
     }
