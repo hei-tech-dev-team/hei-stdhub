@@ -53,7 +53,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   const FILTERS = ["Tous", "L1", "L2", "L3", "Prof", "Admin"];
 
   const sorted = useMemo(() => {
-    return [...contacts].sort((a, b) => {
+    return [...contacts].filter(Boolean).sort((a, b) => {
       if (a.isGlobal) return -1;
       if (b.isGlobal) return 1;
 
@@ -120,7 +120,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   };
 
   const ContactAvatar = ({ contact, isActive }) => {
-    if (contact.isGlobal) {
+    if (!contact || contact.isGlobal) {
+      if (!contact) return null;
       return (
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
@@ -134,8 +135,8 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       );
     }
     const online = onlineUsers.has(contact.id);
-    return (
-      <Link to={`/user/${contact.ref}`} className="relative shrink-0 block">
+    const avatarInner = (
+      <>
         {contact.avatar ? (
           <div className="w-10 h-10 rounded-full overflow-hidden">
             <img
@@ -154,8 +155,12 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
         <span className="absolute -bottom-0.5 -right-0.5">
           <StatusDot online={online} />
         </span>
-      </Link>
+      </>
     );
+    if (contact.ref) {
+      return <Link to={`/user/${contact.ref}`} className="relative shrink-0 block">{avatarInner}</Link>;
+    }
+    return <div className="relative shrink-0 block">{avatarInner}</div>;
   };
 
   return (
@@ -219,7 +224,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
 
       {/* Contact list */}
       <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2 sm:py-3 space-y-0.5">
-        {filtered.map((contact) => {
+        {filtered.filter(Boolean).map((contact) => {
           const isActive = contact.id === activeId;
           return (
             <button
