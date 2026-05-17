@@ -14,6 +14,7 @@ import SecurityQuestionsPage from "./pages/SecurityQuestionsPage";
 import SuggestionPage from "./pages/SuggestionPage";
 import BDEPage from "./pages/BDEPage";
 import UserProfilePage from "./pages/UserProfilePage";
+import PingBoxPage from "./pages/PingBoxPage";
 import OnboardingModal from "./components/ui/OnboardingModal";
 
 function ProtectedRoute({ children }) {
@@ -139,6 +140,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <UserProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pings"
+        element={
+          <ProtectedRoute>
+            <PingBoxPage />
           </ProtectedRoute>
         }
       />
