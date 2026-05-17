@@ -44,6 +44,15 @@ CREATE TABLE users (
   )
 );
 
+CREATE TABLE user_security_questions (
+  id           SERIAL       PRIMARY KEY,
+  user_id      INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  question_key VARCHAR(50)  NOT NULL,
+  answer_hash  VARCHAR(60)  NOT NULL,
+  created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, question_key)
+);
+
 CREATE TABLE password_reset_tokens (
   id         SERIAL       PRIMARY KEY,
   user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,

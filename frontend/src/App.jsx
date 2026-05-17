@@ -10,6 +10,7 @@ import TDPage from "./pages/TDPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage";
+import SecurityQuestionsPage from "./pages/SecurityQuestionsPage";
 import SuggestionPage from "./pages/SuggestionPage";
 import BDEPage from "./pages/BDEPage";
 import OnboardingModal from "./components/ui/OnboardingModal";
@@ -121,6 +122,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/security-questions"
+        element={
+          <ProtectedRoute>
+            <SecurityQuestionsPage />
           </ProtectedRoute>
         }
       />
