@@ -46,6 +46,7 @@ export default function ChatLayout() {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
+  const [favorites, setFavorites] = useState(new Set());
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
@@ -97,6 +98,12 @@ export default function ChatLayout() {
           avatar: c.avatar || null,
         }));
         setContacts([GLOBAL_CONTACT, ...formatted]);
+      })
+      .catch(console.error);
+    api
+      .get("/favorites")
+      .then(({ data }) => {
+        setFavorites(new Set(data.map((f) => f.id)));
       })
       .catch(console.error);
     fetchUnread();
@@ -331,6 +338,24 @@ export default function ChatLayout() {
     setIsAtBottom(true);
   };
 
+  const toggleFavorite = async (contactId) => {
+    try {
+      if (favorites.has(contactId)) {
+        await api.delete(`/favorites/${contactId}`);
+        setFavorites((prev) => {
+          const next = new Set(prev);
+          next.delete(contactId);
+          return next;
+        });
+      } else {
+        await api.post("/favorites", { contact_id: contactId });
+        setFavorites((prev) => new Set(prev).add(contactId));
+      }
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+    }
+  };
+
   const handleScrollToBottom = () => {
     setIsAtBottom(true);
   };
@@ -351,6 +376,8 @@ export default function ChatLayout() {
           onSelect={handleSelectContact}
           onlineUsers={onlineUsers}
           unread={unread}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
         />
       </div>
 

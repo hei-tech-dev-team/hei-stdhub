@@ -7,6 +7,7 @@ import {
   faSpinner,
   faUser,
   faComments,
+  faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
@@ -37,7 +38,7 @@ function StatusDot({ online }) {
   );
 }
 
-export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread }) {
+export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread, favorites = new Set(), onToggleFavorite }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -49,13 +50,17 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     return [...contacts].sort((a, b) => {
       if (a.isGlobal) return -1;
       if (b.isGlobal) return 1;
+      const aFav = favorites.has(a.id);
+      const bFav = favorites.has(b.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
       const aUnread = (unread?.contacts?.[a.id]?.unread || 0) + (unread?.contacts?.[a.id]?.pending || 0);
       const bUnread = (unread?.contacts?.[b.id]?.unread || 0) + (unread?.contacts?.[b.id]?.pending || 0);
       if (aUnread && !bUnread) return -1;
       if (!aUnread && bUnread) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [contacts, unread]);
+  }, [contacts, favorites, unread]);
 
   const filtered = sorted.filter((c) =>
     (c.name || "").toLowerCase().includes(search.toLowerCase()),
@@ -186,46 +191,82 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       {/* Contact list */}
       <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2 sm:py-3 space-y-0.5">
         {filtered.map((contact) => {
-          const isActive = contact.id === activeId;
-          return (
-            <button
-              key={contact.id}
-              type="button"
-              onClick={() => onSelect(contact)}
-              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 active:scale-[0.98] ${
-                isActive
-                  ? "bg-gold/20"
-                  : "hover:bg-white/10"
-              }`}
-            >
-              <ContactAvatar contact={contact} isActive={isActive} />
-              <div className="flex-1 min-w-0">
-                <span
-                  className={`font-semibold text-sm truncate block ${
-                    isActive ? "text-gold" : "text-white"
-                  }`}
-                >
-                  {contact.name}
-                </span>
-                {contact.role && (
-                  <span className="text-xs text-white/40 flex items-center mt-0.5 gap-1">
-                    {contact.role === "teacher"
-                      ? "Professeur"
-                      : contact.role === "admin"
-                        ? "Admin"
-                        : contact.role === "bde"
-                          ? "BDE"
-                          : "Étudiant"}
-                    <RoleBadge role={contact.role} />
+          if (contact.isGlobal) {
+            return (
+              <button
+                key={contact.id}
+                type="button"
+                onClick={() => onSelect(contact)}
+                className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 active:scale-[0.98] ${
+                  contact.id === activeId ? "bg-gold/20" : "hover:bg-white/10"
+                }`}
+              >
+                <ContactAvatar contact={contact} isActive={contact.id === activeId} />
+                <div className="flex-1 min-w-0">
+                  <span className={`font-semibold text-sm truncate block ${contact.id === activeId ? "text-gold" : "text-white"}`}>
+                    {contact.name}
+                  </span>
+                </div>
+                {getUnreadCount(contact) > 0 && (
+                  <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
+                    {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
                   </span>
                 )}
-              </div>
+              </button>
+            );
+          }
+          const isActive = contact.id === activeId;
+          const isFav = favorites.has(contact.id);
+          return (
+            <div
+              key={contact.id}
+              className={`w-full flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 group ${
+                isActive ? "bg-gold/20" : "hover:bg-white/10"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite?.(contact.id);
+                }}
+                className={`shrink-0 transition-all duration-200 ${
+                  isFav ? "text-gold" : "text-white/20 hover:text-gold/60 opacity-0 group-hover:opacity-100"
+                }`}
+                title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+              >
+                <FontAwesomeIcon icon={faStar} className="text-xs" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelect(contact)}
+                className="flex-1 flex items-center gap-3 min-w-0"
+              >
+                <ContactAvatar contact={contact} isActive={isActive} />
+                <div className="flex-1 min-w-0">
+                  <span className={`font-semibold text-sm truncate block ${isActive ? "text-gold" : "text-white"}`}>
+                    {contact.name}
+                  </span>
+                  {contact.role && (
+                    <span className="text-xs text-white/40 flex items-center mt-0.5 gap-1">
+                      {contact.role === "teacher"
+                        ? "Professeur"
+                        : contact.role === "admin"
+                          ? "Admin"
+                          : contact.role === "bde"
+                            ? "BDE"
+                            : "Étudiant"}
+                      <RoleBadge role={contact.role} />
+                    </span>
+                  )}
+                </div>
+              </button>
               {getUnreadCount(contact) > 0 && (
                 <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
                   {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
                 </span>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
