@@ -45,7 +45,6 @@ export default function ChatLayout() {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
-  const [contactTotal, setContactTotal] = useState(0);
   const [favorites, setFavorites] = useState(() =>
     JSON.parse(localStorage.getItem(`chat_favorites_${user.id}`) || "[]")
   );
@@ -107,7 +106,6 @@ export default function ChatLayout() {
           avatar: c.avatar || null,
         }));
         setContacts([GLOBAL_CONTACT, ...formatted]);
-        if (data.total) setContactTotal(data.total);
       })
       .catch(console.error);
     fetchUnread();
@@ -149,7 +147,7 @@ export default function ChatLayout() {
       seen: m.seen || false,
       createdAt: m.created_at,
     }),
-    [user],
+    [user.id],
   );
 
   const loadMessages = useCallback(
@@ -215,13 +213,15 @@ export default function ChatLayout() {
     let cancelled = false;
     let socket;
 
+    const handlers = {};
+
     getSocket()
       .then((s) => {
         if (cancelled) return;
         socket = s;
         socket.emit("user:join", user.id);
 
-        socket.on("message:global", (data) => {
+        handlers["message:global"] = (data) => {
           const msg = formatMsg(data);
           setMessages((prev) => {
             const existing = prev["global"] || [];
@@ -241,9 +241,9 @@ export default function ChatLayout() {
               setUnread((prev) => ({ ...prev, global: prev.global + 1 }));
             }
           }
-        });
+        };
 
-        socket.on("message:private", (data) => {
+        handlers["message:private"] = (data) => {
           const msg = formatMsg(data);
           const otherId = msg.senderId === user.id ? data.receiver_id : msg.senderId;
 
@@ -274,21 +274,21 @@ export default function ChatLayout() {
               }));
             }
           }
-        });
+        };
 
-        socket.on("user:online", (userId) => {
+        handlers["user:online"] = (userId) => {
           setOnlineUsers((prev) => new Set(prev).add(userId));
-        });
+        };
 
-        socket.on("user:offline", (userId) => {
+        handlers["user:offline"] = (userId) => {
           setOnlineUsers((prev) => {
             const next = new Set(prev);
             next.delete(userId);
             return next;
           });
-        });
+        };
 
-        socket.on("message:seen", ({ messageId }) => {
+        handlers["message:seen"] = ({ messageId }) => {
           let seenContactId = null;
           setMessages((prev) => {
             const updated = { ...prev };
@@ -319,9 +319,9 @@ export default function ChatLayout() {
               };
             });
           }
-        });
+        };
 
-        socket.on("message:deleted", ({ messageId }) => {
+        handlers["message:deleted"] = ({ messageId }) => {
           setMessages((prev) => {
             const updated = { ...prev };
             for (const key of Object.keys(updated)) {
@@ -329,9 +329,9 @@ export default function ChatLayout() {
             }
             return updated;
           });
-        });
+        };
 
-        socket.on("unread:update", ({ contactId, unread: u, pending }) => {
+        handlers["unread:update"] = ({ contactId, unread: u, pending }) => {
           setUnread((prev) => ({
             ...prev,
             contacts: {
@@ -342,7 +342,11 @@ export default function ChatLayout() {
               },
             },
           }));
-        });
+        };
+
+        for (const [event, handler] of Object.entries(handlers)) {
+          socket.on(event, handler);
+        }
 
         if (cancelled) return;
       })
@@ -350,8 +354,13 @@ export default function ChatLayout() {
 
     return () => {
       cancelled = true;
+      if (socket) {
+        for (const [event, handler] of Object.entries(handlers)) {
+          socket.off(event, handler);
+        }
+      }
     };
-  }, [user, formatMsg]);
+  }, [user.id, formatMsg]);
 
   const deleteMessage = async (messageId) => {
     try {
@@ -407,7 +416,6 @@ export default function ChatLayout() {
           onSelect={handleSelectContact}
           onlineUsers={onlineUsers}
           unread={unread}
-          totalContacts={contactTotal}
           favorites={favorites}
           onToggleFavorite={toggleFavorite}
         />
