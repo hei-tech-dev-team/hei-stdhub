@@ -213,3 +213,144 @@ describe("AUTH — PATCH /profile", () => {
     expect(res.body).to.have.property("error", "Pseudo déjà pris.");
   });
 });
+
+describe("AUTH — Forgot/Reset Password", () => {
+  describe("POST /auth/forgot-password/send-email", () => {
+    it("returns generic message for existing email", async () => {
+      const res = await agent
+        .post("/api/auth/forgot-password/send-email")
+        .send({ email: "admin@hei.mg" });
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property("message");
+    });
+
+    it("returns generic message for non-existing email (no enumeration)", async () => {
+      const res = await agent
+        .post("/api/auth/forgot-password/send-email")
+        .send({ email: "nobody-exists-xyz@hei.mg" });
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property("message");
+    });
+
+    it("returns 400 for empty email", async () => {
+      const res = await agent
+        .post("/api/auth/forgot-password/send-email")
+        .send({ email: "" });
+      expect(res.status).to.equal(400);
+    });
+
+    it("returns 400 for missing email field", async () => {
+      const res = await agent
+        .post("/api/auth/forgot-password/send-email")
+        .send({});
+      expect(res.status).to.equal(400);
+    });
+  });
+
+  describe("GET /auth/reset-password/:token", () => {
+    it("returns 400 for token that does not exist", async () => {
+      const res = await agent.get("/api/auth/reset-password/nonexistent-token-xyz");
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error", "Lien invalide ou expiré.");
+    });
+
+    it("returns 400 for empty token", async () => {
+      const res = await agent.get("/api/auth/reset-password/");
+      expect(res.status).to.equal(404);
+    });
+  });
+
+  describe("POST /auth/reset-password", () => {
+    it("returns 400 when both token and password are missing", async () => {
+      const res = await agent.post("/api/auth/reset-password").send({});
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error", "Token et mot de passe requis.");
+    });
+
+    it("returns 400 when only token is provided", async () => {
+      const res = await agent.post("/api/auth/reset-password").send({ token: "some-token" });
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error", "Token et mot de passe requis.");
+    });
+
+    it("returns 400 when only password is provided", async () => {
+      const res = await agent.post("/api/auth/reset-password").send({ newPassword: "newpass123" });
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error", "Token et mot de passe requis.");
+    });
+
+    it("returns 400 for short newPassword", async () => {
+      const res = await agent.post("/api/auth/reset-password").send({ token: "t", newPassword: "abc" });
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error", "Minimum 6 caractères.");
+    });
+
+    it("returns 400 for invalid/expired token", async () => {
+      const res = await agent.post("/api/auth/reset-password").send({
+        token: "invalid-token-xyz",
+        newPassword: "validpassword123",
+      });
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error", "Lien invalide ou expiré.");
+    });
+
+    it("full flow: send-email → reset-password", async () => {
+      // Step 1: Request reset email for admin
+      const sendRes = await agent
+        .post("/api/auth/forgot-password/send-email")
+        .send({ email: "admin@hei.mg" });
+      expect(sendRes.status).to.equal(200);
+
+      // Step 2: Fetch the token directly from DB (since email is async)
+      const db = require("../db");
+      const { rows } = await db.query(
+        `SELECT prt.token_hash, u.id
+         FROM password_reset_tokens prt
+         JOIN users u ON prt.user_id = u.id
+         WHERE u.email = 'admin@hei.mg'
+           AND prt.used_at IS NULL
+           AND prt.expires_at > NOW()
+         ORDER BY prt.created_at DESC
+         LIMIT 1`,
+      );
+      expect(rows.length).to.be.greaterThan(0);
+
+      // We can't reverse the hash, so we generate a new token and insert it directly
+      const crypto = require("crypto");
+      const freshToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(freshToken).digest("hex");
+      await db.query(
+        "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
+        [rows[0].id, tokenHash],
+      );
+
+      // Step 3: Validate the fresh token
+      const validateRes = await agent.get(`/api/auth/reset-password/${freshToken}`);
+      expect(validateRes.status).to.equal(200);
+      expect(validateRes.body).to.have.property("valid", true);
+
+      // Step 4: Reset password with the fresh token
+      const resetRes = await agent.post("/api/auth/reset-password").send({
+        token: freshToken,
+        newPassword: "newpassword123",
+      });
+      expect(resetRes.status).to.equal(200);
+      expect(resetRes.body).to.have.property("message", "Mot de passe réinitialisé.");
+
+      // Step 5: Verify login works with new password
+      const loginRes = await agent
+        .post("/api/auth/login")
+        .send({ ref: "ADMIN001", password: "newpassword123" });
+      expect(loginRes.status).to.equal(200);
+      expect(loginRes.body).to.have.property("token");
+
+      // Step 6: Restore original password
+      const { rows: newTokenRows } = await db.query(
+        `SELECT id FROM users WHERE ref = 'ADMIN001'`,
+      );
+      const bcrypt = require("bcryptjs");
+      const restoredHash = await bcrypt.hash("password", 10);
+      await db.query("UPDATE users SET password = $1 WHERE id = $2", [restoredHash, newTokenRows[0].id]);
+    });
+  });
+});

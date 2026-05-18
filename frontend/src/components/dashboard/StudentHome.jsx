@@ -38,13 +38,24 @@ const SkeletonPostCard = () => (
   </div>
 );
 
-const SkeletonEmptyState = () => (
+const EmptyStateAnimation = () => (
   <div className="flex flex-col items-center justify-center py-20 text-center">
-    <div className="relative mb-8">
-      <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse"></div>
+    <div className="relative mb-8 animate-slide-up">
+      <div className="absolute inset-0 bg-gold/20 rounded-full scale-[2] opacity-30 animate-ping"></div>
+      <div className="absolute inset-0 bg-navy/10 rounded-full scale-150 blur-xl animate-pulse"></div>
+      <div className="absolute -top-2 -right-2 w-4 h-4 bg-gold/40 rounded-full animate-bounce"></div>
+      <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-navy/30 rounded-full animate-bounce" style={{ animationDelay: '0.3s', animationDuration: '0.8s' }}></div>
+      <div className="relative bg-white/80 backdrop-blur-sm border-2 border-gold/30 p-7 rounded-full shadow-lg hover:shadow-gold/20 hover:shadow-2xl transition-shadow duration-500">
+        <FontAwesomeIcon icon={faBookOpen} className="text-gold text-5xl animate-float" />
+      </div>
     </div>
-    <div className="h-6 bg-gray-200 rounded w-64 mb-3 animate-pulse"></div>
-    <div className="h-4 bg-gray-200 rounded w-80 animate-pulse"></div>
+    <h2 className="text-2xl font-bold text-navy mb-3 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
+      Rien à afficher
+    </h2>
+    <p className="text-gray-400 max-w-xs leading-relaxed animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}>
+      Aucun contenu disponible pour le moment.<br />
+      Les professeurs publieront bientôt des cours, TD et examens ici.
+    </p>
   </div>
 );
 
@@ -141,22 +152,75 @@ export default function StudentHome() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-            {LEVELS.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => handleFilterChange(l)}
-                className={
-                  "px-4 py-1.5 rounded-full text-xs font-bold transition " +
-                  (filter === l
-                    ? "bg-navy text-white shadow-sm"
-                    : "bg-white border border-contact text-navy hover:border-navy")
-                }
-              >
-                {l}
-              </button>
+            <div className="flex items-center gap-2">
+              {LEVELS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => handleFilterChange(l)}
+                  className={
+                    "px-4 py-1.5 rounded-full text-xs font-bold transition " +
+                    (filter === l
+                      ? "bg-navy text-white shadow-sm"
+                      : "bg-white border border-contact text-navy hover:border-navy")
+                  }
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Filtres Avancés & Tri */}
+        <div className="flex flex-wrap items-center gap-3 py-3 mb-6 border-y border-contact/30">
+          <div className="flex items-center gap-2 text-navy/60">
+            <FontAwesomeIcon icon={faFilter} className="text-[10px]" />
+            <span className="text-[10px] font-bold uppercase">Filtres</span>
+          </div>
+
+          <select
+            className="bg-white border border-contact rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-navy cursor-pointer"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            {TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
             ))}
+          </select>
+
+          <div className="relative flex items-center">
+            <input
+              list="ue-list"
+              className="bg-white border border-contact rounded-lg pl-2 pr-7 py-1 text-xs focus:outline-none focus:border-navy w-32 outline-none"
+              placeholder="UE..."
+              value={ueFilter === "Tous" ? "" : ueFilter}
+              onChange={(e) => setUeFilter(e.target.value || "Tous")}
+            />
+            <datalist id="ue-list">
+              {uniqueUEs.filter(u => u !== "Tous").map((ue) => (
+                <option key={ue} value={ue} />
+              ))}
+            </datalist>
+            {ueFilter !== "Tous" && (
+              <button
+                type="button"
+                onClick={() => setUeFilter("Tous")}
+                className="absolute right-1.5 text-gray-300 hover:text-red-500 transition-colors"
+              >
+                <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
+              </button>
+            )}
+          </div>
+
+          <div className="sm:ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+              className="flex items-center gap-1.5 bg-navy/5 hover:bg-navy/10 text-navy px-2.5 py-1 rounded-lg transition-all text-xs font-medium"
+            >
+              <FontAwesomeIcon icon={sortOrder === "desc" ? faSortAmountDown : faSortAmountUp} className="text-[10px]" />
+              <span>{sortOrder === "desc" ? "Plus récents" : "Plus anciens"}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -236,12 +300,12 @@ export default function StudentHome() {
             ))}
           </div>
         )}
-        {!loading && posts.length === 0 && <SkeletonEmptyState />}
+        {!loading && posts.length === 0 && <EmptyStateAnimation />}
 
         {!loading && posts.length > 0 && filteredPosts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
             <FontAwesomeIcon icon={faSearch} className="text-5xl mb-4 opacity-20" />
-            <p className="text-lg font-medium">Aucun résultat pour "{search}"</p>
+            <p className="text-lg font-medium">Aucun résultat pour &quot;{search}&quot;</p>
           </div>
         )}
 

@@ -60,22 +60,16 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       // 1. Priorité aux favoris
       const aFav = favorites.includes(a.id);
       const bFav = favorites.includes(b.id);
-      if (aFav !== bFav) return aFav ? -1 : 1;
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
 
-      // 2. Priorité au nombre de messages non lus (proxy pour le plus récent/actif)
-      const aInfo = unread?.contacts?.[a.id] || { unread: 0, pending: 0 };
-      const bInfo = unread?.contacts?.[b.id] || { unread: 0, pending: 0 };
+      // 2. Priorité aux messages non lus
+      const aUnread = unread?.contacts?.[a.id]?.unread || 0;
+      const bUnread = unread?.contacts?.[b.id]?.unread || 0;
+      if (aUnread && !bUnread) return -1;
+      if (!aUnread && bUnread) return 1;
 
-      if (aInfo.unread !== bInfo.unread) {
-        return bInfo.unread - aInfo.unread;
-      }
-
-      // 3. Priorité aux messages en attente (votre dernier message envoyé non vu)
-      if (aInfo.pending !== bInfo.pending) {
-        return bInfo.pending - aInfo.pending;
-      }
-
-      // 4. Alphabétique (dernier recours)
+      // 3. Alphabétique
       return (a.name || "").localeCompare(b.name || "");
     });
   }, [contacts, unread, favorites]);
@@ -143,21 +137,12 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     const online = onlineUsers.has(contact.id);
     const avatarInner = (
       <>
-        {contact.avatar ? (
-          <div className="w-10 h-10 rounded-full overflow-hidden">
-            <img
-              src={contact.avatar}
-              alt={contact.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <UserAvatar
-            name={contact.name}
-            size="md"
-            color={isActive ? "bg-gold" : "bg-white/10"}
-          />
-        )}
+        <UserAvatar
+          avatar={contact.avatar}
+          name={contact.name}
+          size="md"
+          color={isActive ? "bg-gold" : "bg-white/10"}
+        />
         <span className="absolute -bottom-0.5 -right-0.5">
           <StatusDot online={online} />
         </span>
@@ -172,38 +157,16 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
   return (
     <div className="w-full h-full bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col relative">
       {/* Header */}
-      <div className="px-5 pt-5 pb-4 shrink-0 border-b border-white/10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative shrink-0">
-            <UserAvatar
-              avatar={user?.avatar}
-              name={user?.pseudo || user?.ref}
-              size="lg"
-              color="bg-gold/20"
-              className="border-2 border-gold text-gold"
-              alt="Moi"
-            />
-            <span className="absolute -bottom-0.5 -right-0.5">
-              <StatusDot online={true} />
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-white font-bold text-base truncate">
-              {user?.pseudo || user?.ref || "Chat"}
-            </h2>
-            <span className="text-white/40 text-xs">Messages</span>
-          </div>
-        </div>
-
+      <div className="px-4 pt-4 pb-3 shrink-0 border-b border-white/10">
         <div className="relative">
           <FontAwesomeIcon
             icon={faSearch}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs pointer-events-none"
           />
           <input
             className="w-full bg-white/10 border border-white/20 rounded-xl
-                       pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/30
-                       focus:outline-none focus:border-gold transition-all duration-200 ease-out"
+                       pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30
+                       focus:outline-none focus:border-gold transition-all"
             placeholder="Filtrer les conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -211,15 +174,15 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
         </div>
 
         {/* Role Filters */}
-        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 no-scrollbar">
+        <div className="flex gap-1 mt-2 overflow-x-auto no-scrollbar">
           {FILTERS.map((f) => (
             <button
               key={f}
               onClick={() => setRoleFilter(f)}
-              className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all shrink-0 ${
+              className={`px-2.5 py-1 rounded-lg text-[9px] font-semibold border transition-all shrink-0 ${
                 roleFilter === f
                   ? "bg-gold border-gold text-navy"
-                  : "bg-white/5 border-white/10 text-white/60 hover:border-white/30"
+                  : "bg-white/5 border-white/10 text-white/50 hover:border-white/30"
               }`}
             >
               {f}
@@ -229,7 +192,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       </div>
 
       {/* Contact list */}
-      <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2 sm:py-3 space-y-0.5">
+      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
         {filtered.filter(Boolean).map((contact) => {
           const isActive = contact.id === activeId;
           const handleKey = (e) => {
@@ -245,7 +208,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
               onKeyDown={handleKey}
               role="button"
               tabIndex={0}
-              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-gold/30 ${
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-gold/30 ${
                 isActive
                   ? "bg-gold/20 border border-gold/20"
                   : "border border-transparent hover:bg-white/10"
@@ -253,15 +216,30 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
             >
               <ContactAvatar contact={contact} isActive={isActive} />
               <div className="flex-1 min-w-0">
-                <span
-                  className={`font-semibold text-sm truncate block ${
-                    isActive ? "text-gold" : "text-white"
-                  }`}
-                >
-                  {contact.name}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`font-semibold text-sm truncate ${
+                      isActive ? "text-gold" : "text-white"
+                    }`}
+                  >
+                    {contact.name}
+                  </span>
+                  {!contact.isGlobal && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(contact.id);
+                      }}
+                      className={`shrink-0 transition-colors ${
+                        favorites.includes(contact.id) ? "text-gold" : "text-white/10 hover:text-gold/50"
+                      }`}
+                    >
+                      <FontAwesomeIcon icon={faStar} className="text-[10px]" />
+                    </button>
+                  )}
+                </div>
                 {contact.role && (
-                  <span className="text-xs text-white/40 flex items-center mt-0.5 gap-1">
+                  <span className="text-[11px] text-white/40 flex items-center mt-0.5 gap-1">
                     {contact.role === "teacher"
                       ? "Professeur"
                       : contact.role === "admin"
@@ -273,35 +251,11 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                   </span>
                 )}
               </div>
-              <div className="flex flex-col items-end gap-2">
-                {!contact.isGlobal && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFavorite(contact.id);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onToggleFavorite(contact.id);
-                      }
-                    }}
-                    className={`transition-all hover:scale-120 ${
-                      favorites.includes(contact.id) ? "text-gold animate-pulse" : "text-white/10 hover:text-gold/50"
-                    }`}
-                  >
-                    <FontAwesomeIcon icon={faStar} className="text-xs" />
-                  </span>
-                )}
-                {getUnreadCount(contact) > 0 && (
-                  <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[11px] font-bold flex items-center justify-center px-1.5 shrink-0">
-                    {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
-                  </span>
-                )}
-              </div>
+              {getUnreadCount(contact) > 0 && (
+                <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5 shrink-0 self-center">
+                  {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
+                </span>
+              )}
             </div>
           );
         })}
@@ -309,9 +263,9 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
 
       {/* Search modal */}
       {showSearch && (
-        <div className="absolute inset-0 bg-[#001948]/95 backdrop-blur-2xl z-30 flex flex-col p-4 sm:p-5 animate-slide-up">
-          <div className="flex items-center justify-between mb-4 sm:mb-5">
-            <h3 className="text-white font-bold text-sm sm:text-base">
+        <div className="absolute inset-0 bg-navy-dark/95 backdrop-blur-2xl z-30 flex flex-col p-4 animate-slide-up">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-bold text-sm">
               Nouvelle conversation
             </h3>
             <button
@@ -321,21 +275,21 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                 setSearchQuery("");
                 setSearchResults([]);
               }}
-              className="w-8 h-8 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all"
+              className="w-7 h-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all"
             >
-              <FontAwesomeIcon icon={faTimes} />
+              <FontAwesomeIcon icon={faTimes} className="text-xs" />
             </button>
           </div>
 
-          <div className="relative mb-4 sm:mb-5">
+          <div className="relative mb-4">
             <FontAwesomeIcon
               icon={faSearch}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs pointer-events-none"
             />
             <input
               autoFocus
               className="w-full bg-white/10 border border-white/20 rounded-xl
-                         pl-9 pr-4 py-2.5 sm:py-3 text-sm text-white placeholder:text-white/30
+                         pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30
                          focus:outline-none focus:border-gold transition-all"
               placeholder="Rechercher un pseudo ou une référence..."
               value={searchQuery}
@@ -343,17 +297,17 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto -mx-1 px-1">
+          <div className="flex-1 overflow-y-auto">
             {searching && (
               <div className="flex justify-center py-8">
                 <FontAwesomeIcon
                   icon={faSpinner}
-                  className="text-gold text-xl animate-spin"
+                  className="text-gold text-lg animate-spin"
                 />
               </div>
             )}
             {!searching && searchQuery && searchResults.length === 0 && (
-              <p className="text-white/40 text-sm text-center py-8">
+              <p className="text-white/40 text-xs text-center py-8">
                 Aucun utilisateur trouvé
               </p>
             )}
@@ -362,45 +316,35 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                 <div
                   key={u.id}
                   onClick={() => handleStartConversation(u)}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleStartConversation(u)}
                   role="button"
                   tabIndex={0}
-                  className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left active:scale-[0.98] cursor-pointer focus:outline-none focus:bg-white/5"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left cursor-pointer focus:outline-none focus:bg-white/5"
                 >
                   <div className="relative shrink-0">
-                    <Link 
-                      to={`/user/${u.ref}`} 
-                      onClick={(e) => e.stopPropagation()} 
-                      className="hover:opacity-80 transition-opacity block"
-                      title={`Voir le profil de ${u.pseudo}`}
-                    >
-                      <UserAvatar
-                        avatar={u.avatar}
-                        name={u.pseudo}
-                        size="lg"
-                        color="bg-white/10"
-                        className="ring-2 ring-white/10"
-                      />
-                    </Link>
+                    <UserAvatar
+                      avatar={u.avatar}
+                      name={u.pseudo}
+                      size="md"
+                      color="bg-white/10"
+                    />
                     <span className="absolute -bottom-0.5 -right-0.5">
                       <StatusDot online={onlineUsers.has(u.id)} />
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm text-white truncate block flex items-center">
+                    <span className="font-semibold text-sm text-white truncate block flex items-center gap-1">
                       {u.pseudo}
                       <RoleBadge role={u.role} />
                     </span>
-                    <span className="text-xs text-white/40 truncate block">
-                      {u.ref} ·{" "}
-                      {u.role === "teacher" ? "Professeur" : u.role === "bde" ? "BDE" : u.role === "alumni" ? "Alumni" : "Étudiant"}
+                    <span className="text-[11px] text-white/40 truncate block">
+                      {u.ref}
                     </span>
                   </div>
                 </div>
               ))}
             {!searching && !searchQuery && (
               <p className="text-white/30 text-xs text-center py-8">
-                Tapez un pseudo ou une référence STD/PROF
+                Tapez un pseudo ou une référence
               </p>
             )}
           </div>

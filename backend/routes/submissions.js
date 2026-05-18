@@ -8,20 +8,45 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "submissions");
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const useCloudinary =
+  process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+  process.env.CLOUDINARY_API_KEY?.trim() &&
+  process.env.CLOUDINARY_API_SECRET?.trim();
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname) || "";
-      const name = crypto.randomBytes(16).toString("hex") + ext;
-      cb(null, name);
-    },
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 },
-});
+let upload;
+if (useCloudinary) {
+  const cloudinary = require("cloudinary");
+  const CloudinaryStorage = require("multer-storage-cloudinary");
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  const storage = new CloudinaryStorage({
+    cloudinary,
+    params: async (req, file) => ({
+      folder: "hei-stdhub/submissions",
+      resource_type: "auto",
+      allowed_formats: ["pdf", "doc", "docx", "zip", "jpg", "jpeg", "png"],
+      public_id: `${Date.now()}-${file.originalname.replace(/\s/g, "_")}`,
+    }),
+  });
+  upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+} else {
+  const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "submissions");
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  upload = multer({
+    storage: multer.diskStorage({
+      destination: UPLOAD_DIR,
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || "";
+        const name = crypto.randomBytes(16).toString("hex") + ext;
+        cb(null, name);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+  });
+}
 
 router.post("/", auth, upload.single("file"), async (req, res) => {
   const { nom, prenom, email, ref, level, groupe, ue, type, link } = req.body;

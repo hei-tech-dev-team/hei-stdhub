@@ -170,85 +170,66 @@ export default function StudentUpload() {
       }`}
     >
       {/* Dropzone */}
-      <div className="flex-1 flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center">
-            <FontAwesomeIcon icon={faCloudUploadAlt} className="text-gold text-lg" />
-          </div>
-          <div>
-            <h3 className="font-bold text-navy text-base">Déposer votre devoir</h3>
-            <p className="text-sm text-gray-400">Glissez-déposez ou cliquez pour parcourir</p>
-          </div>
-        </div>
 
-        <div
-          className={`relative flex flex-col items-center justify-center rounded-2xl flex-1 p-8 sm:p-10 cursor-pointer
-            border-2 border-dashed transition-all duration-300 ${
-            dragOver
-              ? "border-gold bg-gradient-to-br from-gold/10 via-amber-50/50 to-transparent scale-[1.02]"
-              : form.file
-                ? "border-green-300 bg-green-50/30"
-                : "border-contact/70 bg-white hover:border-gold/40 hover:shadow-lg hover:shadow-gold/5 hover:bg-gradient-to-br hover:from-gold/[0.02] hover:to-transparent"
-          }`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => document.getElementById("student-file").click()}
-        >
-          {form.file ? (
-            <div className="flex flex-col items-center text-center animate-slide-up">
-              <div className="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center mb-3">
-                <FontAwesomeIcon icon={faFile} className="text-green-500 text-2xl" />
-              </div>
-              <p className="font-bold text-navy text-sm sm:text-base truncate max-w-full px-4">
-                {form.file.name}
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {(form.file.size / 1024 / 1024).toFixed(2)} Mo
-              </p>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  set("file", null);
-                }}
-                className="mt-3 text-red-400 text-xs hover:text-red-500 transition flex items-center gap-1.5 bg-red-50 px-3 py-1.5 rounded-full"
-              >
-                <FontAwesomeIcon icon={faTrash} className="text-[10px]" /> Supprimer
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center text-center">
-              <div
-                className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
-                  dragOver ? "bg-gold/20 scale-110" : "bg-navy/5"
-                }`}
-              >
-                <FontAwesomeIcon
-                  icon={faCloudUploadAlt}
-                  className={`text-4xl transition-colors duration-300 ${
-                    dragOver ? "text-gold" : "text-gray-300"
-                  }`}
-                />
-              </div>
-              <p className="font-semibold text-gray-400 text-base sm:text-lg">
-                {dragOver ? "Déposez votre fichier" : "Déposer votre devoir ici"}
-              </p>
-              <p className="text-sm text-gray-300 mt-1.5">
-                ou cliquez pour parcourir (PDF, ZIP, DOC — max 10 Mo)
-              </p>
-            </div>
-          )}
-          <input
-            id="student-file"
-            type="file"
-            className="hidden"
-            onChange={handleFileInput}
-          />
-        </div>
+      <div
+        className={
+          "flex flex-col items-center justify-center rounded-2xl " +
+          "border-2 border-dashed cursor-pointer transition-all duration-500 " +
+          "min-h-48 sm:min-h-64 lg:flex-1 p-6 sm:p-8 " +
+          (dragOver
+            ? "border-gold bg-gold/5"
+            : "border-contact bg-white hover:border-gold/40 hover:shadow-[0_15px_40px_rgba(0,0,0,0.04),0_0_15px_rgba(212,175,55,0.1)]")
+        }
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => document.getElementById("student-file").click()}
+      >
+        <FontAwesomeIcon
+          icon={faCloudUploadAlt}
+          className={
+            "text-4xl sm:text-5xl mb-3 transition " +
+            (dragOver ? "text-gold" : "text-gray-300")
+          }
+        />
+        {form.file ? (
+          <>
+            <p className="font-bold text-navy text-sm text-center truncate max-w-full px-4">
+              {form.file.name}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              {(form.file.size / 1024 / 1024).toFixed(2)} Mo
+            </p>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                set("file", null);
+              }}
+              className="mt-3 text-red-400 text-xs hover:underline flex items-center gap-1"
+            >
+              <FontAwesomeIcon icon={faTrash} /> Supprimer
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold text-gray-400 text-sm sm:text-base text-center">
+              Déposer votre devoir ici
+            </p>
+            <p className="text-xs text-gray-300 mt-1 text-center">
+              ou cliquer pour parcourir (max 10 Mo)
+            </p>
+          </>
+        )}
+        <input
+          id="student-file"
+          type="file"
+          className="hidden"
+          onChange={handleFileInput}
+        />
       </div>
 
       {/* Formulaire */}
