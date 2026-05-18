@@ -189,7 +189,7 @@ export default function ProfilePage() {
                 }}
               >
                 {/* Cover area */}
-                <div className="h-20 sm:h-28 relative overflow-hidden">
+                <div className="h-28 sm:h-36 relative overflow-hidden">
                   <div
                     className="absolute inset-0"
                     style={{
