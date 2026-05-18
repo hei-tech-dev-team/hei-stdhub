@@ -265,7 +265,7 @@ export default function ProfilePage() {
                       </p>
                       <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
                         <span
-                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-[9999] ${roleCfg.cls}`}
                         >
                           <FontAwesomeIcon
                             icon={roleCfg.icon}
