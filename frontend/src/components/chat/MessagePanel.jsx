@@ -84,10 +84,18 @@ function renderContent(content) {
         href={parsed.url}
         target="_blank"
         rel="noreferrer"
-        className="flex items-center gap-2 text-blue-300 hover:text-blue-200 hover:underline text-xs font-medium max-w-full"
+        className="flex bg-blue-900/90 hover:bg-blue-900 items-center gap-2 py-3 px-2 text-blue-300 hover:text-blue-200 hover:underline text-xs font-medium max-w-full transition-all"
       >
-        <FontAwesomeIcon icon={faFile} />
-        <span className="truncate">{parsed.filename}</span>
+        <div className="flex flex-col items-center bg-gold-700/10 border-2 border-gold rounded-lg shrink-0 py-2 px-3">
+          <FontAwesomeIcon className="text-sm text-gold" icon={faFile} />
+          <span className="text-[9px] font-bold text-gold uppercase">
+            {parsed.extension && `.${parsed.extension}`}
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="truncate">{(parsed.filename).substring(0, 20)}...</span>
+          <span>{parsed.size && ` (${(parsed.size / 1024).toFixed(1)} KB)`}</span>
+        </div>
       </a>
     );
   }
@@ -466,7 +474,7 @@ export default function MessagePanel({
       fd.append("file", file);
       const { data } = await api.post("/messages/upload", fd);
       await onSend(
-        `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}]`,
+        `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}:${file.size}]`,
       );
     } catch {
       alert("Échec de l'upload du fichier.");
