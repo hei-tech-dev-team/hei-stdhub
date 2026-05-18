@@ -149,7 +149,7 @@ export default function UserProfilePage() {
                 </div>
 
                 {/* Avatar + info */}
-                <div className="px-6 pb-6 -mt-12 relative z-20">
+                <div className="px-6 pb-6 -mt-12 relative z-[100]">
                   <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
                     <div className="relative shrink-0">
                       <div
