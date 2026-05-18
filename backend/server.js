@@ -249,6 +249,40 @@ pool.query(`
   )
 `).catch((err) => console.error("Failed to create password_reset_tokens table:", err));
 
+// Ensure user_security_questions table exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS user_security_questions (
+    id            SERIAL       PRIMARY KEY,
+    user_id       INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    question_key  VARCHAR(255) NOT NULL,
+    question_text TEXT         NULL,
+    answer_hash   VARCHAR(60)  NOT NULL,
+    created_at    TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, question_key)
+  )
+`).catch((err) => console.error("Failed to create user_security_questions table:", err));
+
+// Migration: add missing columns for old user_security_questions tables (Render)
+pool.query(`
+  ALTER TABLE user_security_questions
+  ADD COLUMN IF NOT EXISTS question_text TEXT NULL
+`).catch(() => {});
+pool.query(`
+  ALTER TABLE user_security_questions
+  ALTER COLUMN question_key TYPE VARCHAR(255)
+`).catch(() => {});
+
+// Update existing invitations constraint to allow alumni
+pool.query(`
+  ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check;
+  ALTER TABLE invitations ADD CONSTRAINT invitations_role_check CHECK (role IN ('student', 'teacher', 'alumni'));
+`).catch(() => {});
+
+// Ensure profile_background column exists
+pool.query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_background TEXT NULL;
+`).catch(() => {});
+
 // Ensure push_subscriptions table exists
 pool.query(`
   CREATE TABLE IF NOT EXISTS push_subscriptions (
