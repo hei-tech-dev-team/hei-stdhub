@@ -56,6 +56,7 @@ export default function ProfilePage() {
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState("");
 
   const [loadingPseudo, setLoadingPseudo] = useState(false);
   const [loadingPwd, setLoadingPwd] = useState(false);
@@ -63,9 +64,11 @@ export default function ProfilePage() {
 
   const [successPseudo, setSuccessPseudo] = useState(false);
   const [successPwd, setSuccessPwd] = useState(false);
+  const [successAvatar, setSuccessAvatar] = useState(false);
 
   const [errorPseudo, setErrorPseudo] = useState("");
   const [errorPwd, setErrorPwd] = useState("");
+  const [errorAvatar, setErrorAvatar] = useState("");
 
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -79,10 +82,25 @@ export default function ProfilePage() {
 
   const roleCfg = ROLE_LABEL[user?.role] || ROLE_LABEL.student;
   const avatarUrl = user?.avatar || null;
+  const displayedAvatar = avatarPreview || avatarUrl;
+
+  useEffect(() => {
+    if (!avatarPreview) return;
+    return () => URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
 
   const handleAvatar = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErrorAvatar("Choisissez une image valide.");
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    setAvatarPreview(preview);
+    setErrorAvatar("");
+    setSuccessAvatar(false);
     setLoadingAvatar(true);
     try {
       const fd = new FormData();
@@ -91,10 +109,16 @@ export default function ProfilePage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setUser(data);
+      setSuccessAvatar(true);
+      setAvatarPreview("");
+      setTimeout(() => setSuccessAvatar(false), 3000);
     } catch (err) {
       console.error(err);
+      setErrorAvatar(err.response?.data?.error || "Erreur lors de l'upload.");
+      setAvatarPreview("");
     } finally {
       setLoadingAvatar(false);
+      e.target.value = "";
     }
   };
 
@@ -155,7 +179,7 @@ export default function ProfilePage() {
               }`}
             >
               <div
-                className="rounded-2xl overflow-hidden mb-6"
+                className="rounded-xl overflow-hidden mb-6"
                 style={{
                   background:
                     "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
@@ -164,30 +188,14 @@ export default function ProfilePage() {
                 }}
               >
                 {/* Cover accent */}
-                <div className="h-24 sm:h-28 relative overflow-hidden">
+                <div className="h-24 sm:h-28 relative overflow-hidden border-b border-white/10">
                   <div
                     className="absolute inset-0"
                     style={{
                       background:
-                        "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
+                        "linear-gradient(135deg, rgba(212,175,55,0.16), rgba(255,255,255,0.04))",
                     }}
                   />
-                  <div className="absolute inset-0 opacity-30">
-                    <div
-                      className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
-                      style={{
-                        background:
-                          "radial-gradient(circle, rgba(212,175,55,0.3), transparent)",
-                      }}
-                    />
-                    <div
-                      className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full"
-                      style={{
-                        background:
-                          "radial-gradient(circle, rgba(255,255,255,0.1), transparent)",
-                      }}
-                    />
-                  </div>
                 </div>
 
                 {/* Avatar + info */}
@@ -201,7 +209,7 @@ export default function ProfilePage() {
                           boxShadow: "0 0 20px rgba(212,175,55,0.15)",
                           background: loadingAvatar
                             ? "rgba(10,26,51,0.8)"
-                            : avatarUrl
+                            : displayedAvatar
                               ? "transparent"
                               : "linear-gradient(135deg, rgba(10,26,51,0.9), rgba(0,25,72,0.9))",
                         }}
@@ -211,9 +219,9 @@ export default function ProfilePage() {
                             icon={faSpinner}
                             className="text-gold text-2xl animate-spin"
                           />
-                        ) : avatarUrl ? (
+                        ) : displayedAvatar ? (
                           <img
-                            src={avatarUrl}
+                            src={displayedAvatar}
                             alt="avatar"
                             className="w-full h-full object-cover"
                           />
@@ -227,6 +235,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
+                        title="Changer la photo"
                         className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
                         style={{
                           background:
@@ -276,6 +285,17 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </div>
+                  {(errorAvatar || successAvatar) && (
+                    <div
+                      className={`mt-4 text-sm px-4 py-2.5 rounded-xl border ${
+                        errorAvatar
+                          ? "bg-red-500/10 border-red-500/20 text-red-200"
+                          : "bg-green-500/10 border-green-500/20 text-green-200"
+                      }`}
+                    >
+                      {errorAvatar || "Photo de profil mise à jour !"}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -499,7 +519,7 @@ export default function ProfilePage() {
                 style={{ transitionDelay: `${150 + i * 100}ms` }}
               >
                 <div
-                  className="rounded-2xl overflow-hidden p-5 sm:p-6"
+                  className="rounded-xl overflow-hidden p-5 sm:p-6"
                   style={{
                     background: "white",
                     border: "1px solid rgba(0,0,0,0.08)",
