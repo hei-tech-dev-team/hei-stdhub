@@ -231,7 +231,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password/send-email", async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email)
     return res.status(400).json({ error: "Adresse email requise." });
