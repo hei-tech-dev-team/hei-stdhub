@@ -8,6 +8,7 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
+const rateLimit = require("express-rate-limit");
 
 const SECURITY_QUESTIONS = [
   { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
