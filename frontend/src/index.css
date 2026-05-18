@@ -187,6 +187,13 @@
   100% { transform: translateX(0); }
 }
 
+@keyframes wave-premium-alt {
+  0% { transform: translateX(-10%); }
+  33% { transform: translateX(-30%); }
+  66% { transform: translateX(-20%); }
+  100% { transform: translateX(-10%); }
+}
+
 @keyframes twinkle {
   0%, 100% { opacity: 0.2; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.3); }
