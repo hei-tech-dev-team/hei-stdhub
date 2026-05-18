@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import STDHUB_LOGO_PWA from "../assets/stdhub-logo-pwa.png";
+import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
 import { Eye, EyeOff, User, Lock, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
@@ -66,8 +66,8 @@ export default function LoginPage() {
                                     <div className="relative z-10 flex items-center gap-3">
                                           <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                                                 <img
-                                                      src={STDHUB_LOGO_PWA}
-                                                      alt="STDhub"
+                                                      src={HEI_WHITE_LOGO}
+                                                      alt="HEI"
                                                       className="w-8 h-8 object-contain"
                                                 />
                                           </div>
@@ -112,8 +112,8 @@ export default function LoginPage() {
                                     {/* Mobile logo */}
                                     <div className="flex lg:hidden items-center gap-2 mb-8">
                                           <img
-                                                src={STDHUB_LOGO_PWA}
-                                                alt="STDhub"
+                                                src={HEI_BLUE_LOGO}
+                                                alt="HEI"
                                                 className="h-9 object-contain"
                                           />
                                           <span className="text-navy font-bold text-lg">
