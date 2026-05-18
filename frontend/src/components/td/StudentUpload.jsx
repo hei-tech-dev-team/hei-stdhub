@@ -125,9 +125,7 @@ export default function StudentUpload() {
       if (form.file) fd.append("file", form.file);
       if (form.link) fd.append("link", form.link);
 
-      await api.post("/submissions", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/submissions", fd);
 
       setSubmitted(true);
       setTimeout(() => {
