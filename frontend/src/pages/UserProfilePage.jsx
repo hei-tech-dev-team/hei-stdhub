@@ -142,19 +142,40 @@ export default function UserProfilePage() {
                   <div
                     className="absolute inset-0"
                     style={{
-                      background: "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
+                      background: "linear-gradient(135deg, #0A1A33 0%, #001948 100%)",
                     }}
                   />
-                  <div className="absolute inset-0 opacity-30">
-                    <div
-                      className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent)" }}
+                  {/* Waving wave animation */}
+                  <svg
+                    className="absolute bottom-0 left-0 w-[200%] h-16 sm:h-20 animate-wave"
+                    viewBox="0 0 1440 120"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,40 1440,60 L1440,120 L0,120 Z"
+                      fill="rgba(212,175,55,0.2)"
                     />
-                    <div
-                      className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1), transparent)" }}
+                  </svg>
+                  <svg
+                    className="absolute bottom-0 left-0 w-[200%] h-16 sm:h-20 animate-wave-slow"
+                    viewBox="0 0 1440 120"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M0,80 C240,20 480,100 720,60 C960,20 1200,100 1440,80 L1440,120 L0,120 Z"
+                      fill="rgba(0,25,72,0.4)"
                     />
-                  </div>
+                  </svg>
+                  <svg
+                    className="absolute bottom-0 left-0 w-[200%] h-12 sm:h-16 animate-wave-fast"
+                    viewBox="0 0 1440 120"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M0,40 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,40 L1440,120 L0,120 Z"
+                      fill="rgba(212,175,55,0.15)"
+                    />
+                  </svg>
                 </div>
 
                 {/* Avatar + info */}
