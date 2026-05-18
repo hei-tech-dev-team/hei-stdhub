@@ -173,34 +173,22 @@
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
+}
 
-  @keyframes wave {
-    0% { transform: translateX(0); }
-    50% { transform: translateX(-25%); }
-    100% { transform: translateX(-50%); }
-  }
+@keyframes wave {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-25%); }
+  100% { transform: translateX(-50%); }
+}
 
-  @keyframes wave-slow {
-    0% { transform: translateX(-50%); }
-    50% { transform: translateX(-25%); }
-    100% { transform: translateX(0); }
-  }
+@keyframes wave-slow {
+  0% { transform: translateX(-50%); }
+  50% { transform: translateX(-25%); }
+  100% { transform: translateX(0); }
+}
 
-  @keyframes wave-fast {
-    0% { transform: translateX(-25%); }
-    50% { transform: translateX(0); }
-    100% { transform: translateX(-25%); }
-  }
-
-  .animate-wave {
-    animation: wave 8s ease-in-out infinite;
-  }
-
-  .animate-wave-slow {
-    animation: wave-slow 12s ease-in-out infinite;
-  }
-
-  .animate-wave-fast {
-    animation: wave-fast 6s ease-in-out infinite;
-  }
+@keyframes wave-fast {
+  0% { transform: translateX(-25%); }
+  50% { transform: translateX(0); }
+  100% { transform: translateX(-25%); }
 }
