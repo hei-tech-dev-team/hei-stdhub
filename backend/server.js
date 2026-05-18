@@ -37,13 +37,6 @@ app.set("trust proxy", 1);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
-app.use((req, res, next) => {
-  req.socket.setTimeout(REQUEST_TIMEOUT);
-  req.socket.on("timeout", () => {
-    if (!res.headersSent) res.status(503).json({ error: "Requête expirée." });
-  });
-  next();
-});
 
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({

@@ -47,7 +47,7 @@ export default function ChatLayout() {
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
   const [contactTotal, setContactTotal] = useState(0);
   const [favorites, setFavorites] = useState(() =>
-    JSON.parse(localStorage.getItem("chat_favorites") || "[]")
+    JSON.parse(localStorage.getItem(`chat_favorites_${user.id}`) || "[]")
   );
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
@@ -70,10 +70,10 @@ export default function ChatLayout() {
       const next = prev.includes(id)
         ? prev.filter((fid) => fid !== id)
         : [...prev, id];
-      localStorage.setItem("chat_favorites", JSON.stringify(next));
+      localStorage.setItem(`chat_favorites_${user.id}`, JSON.stringify(next));
       return next;
     });
-  }, []);
+  }, [user.id]);
 
   const fetchUnread = useCallback(async () => {
     try {

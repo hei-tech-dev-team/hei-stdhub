@@ -1,4 +1,13 @@
 const nodemailer = require("nodemailer");
+const dns = require("dns");
+
+const resolveIPv4 = (hostname) =>
+  new Promise((resolve, reject) => {
+    dns.lookup(hostname, { family: 4 }, (err, address) => {
+      if (err) return reject(err);
+      resolve(address);
+    });
+  });
 
 const getFrontendUrl = () =>
   (process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173")
@@ -11,7 +20,7 @@ const getFromAddress = () =>
   process.env.SMTP_USER ||
   "HEI STDhub <no-reply@hei-stdhub.local>";
 
-const createTransport = () => {
+const createTransport = async () => {
   const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;
   const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
@@ -24,8 +33,14 @@ const createTransport = () => {
     process.env.EMAIL_SECURE === "true" ||
     port === 465;
 
+  let resolvedHost = host;
+  try {
+    resolvedHost = await resolveIPv4(host);
+  } catch {
+  }
+
   return nodemailer.createTransport({
-    host,
+    host: resolvedHost,
     port,
     secure,
     auth: user && pass ? { user, pass } : undefined,
@@ -133,7 +148,7 @@ const sendPasswordResetEmail = async ({ user, token }) => {
     }
   }
 
-  const transporter = createTransport();
+  const transporter = await createTransport();
   if (transporter) {
     try {
       await transporter.sendMail({
@@ -167,7 +182,7 @@ const sendEmail = async ({ user, subject, text, html }) => {
     }
   }
 
-  const transporter = createTransport();
+  const transporter = await createTransport();
   if (transporter) {
     try {
       await transporter.sendMail({
