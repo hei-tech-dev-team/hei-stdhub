@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
+import STDHUB_LOGO_PWA from "../assets/stdhub-logo-pwa.png";
 import api from "../api/axios";
 import {
   determineRegisterRole,
@@ -198,8 +198,8 @@ export default function RegisterPage() {
             <div className="relative z-10 flex items-center gap-3">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                 <img
-                  src={HEI_WHITE_LOGO}
-                  alt="HEI"
+                  src={STDHUB_LOGO_PWA}
+                  alt="STDhub"
                   className="w-8 h-8 object-contain"
                 />
               </div>
@@ -239,8 +239,8 @@ export default function RegisterPage() {
           <div className="flex-1 flex flex-col px-8 sm:px-10 py-8 overflow-y-auto max-h-screen">
             <div className="flex lg:hidden items-center gap-2 mb-6">
               <img
-                src={HEI_BLUE_LOGO}
-                alt="HEI"
+                src={STDHUB_LOGO_PWA}
+                alt="STDhub"
                 className="h-8 object-contain"
               />
               <span className="text-navy font-bold">HEI STDhub</span>
