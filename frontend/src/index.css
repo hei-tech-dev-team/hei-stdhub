@@ -192,6 +192,18 @@
   50% { opacity: 1; transform: scale(1.3); }
 }
 
+@keyframes shooting-star {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  5% { opacity: 1; }
+  15% { transform: translate(120px, 80px) scale(0.3); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes nebula-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
+}
+
 @keyframes particle-float {
   0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
   50% { transform: translateY(-20px) scale(1.5); opacity: 1; }
