@@ -1,0 +1,23 @@
+# Dépendances
+node_modules/
+
+# Variables d'environnement — NE JAMAIS commit
+.env
+.env.local
+.env.production
+
+# Fichiers uploadés par les utilisateurs
+uploads/
+
+# Logs
+npm-debug.log*
+logs/
+*.log
+
+# Éditeurs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

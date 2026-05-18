@@ -1,0 +1,7 @@
+cloudinary
+vercel.json
+.env
+.env.vercel
+scripts/venv/
+scripts/__pycache__/
+.vercel
