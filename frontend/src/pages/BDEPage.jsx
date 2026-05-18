@@ -506,11 +506,11 @@ export default function BDEPage() {
   };
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
+    <div className="flex h-screen bg-surface overflow-y-hidden">
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0">
         <Navbar title="Interface BDE" />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
@@ -620,7 +620,7 @@ export default function BDEPage() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, s.id)}
                           onTouchStart={(e) => handleTouchStart(e, s.id)}
-                          className={`bg-white rounded-xl shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition border-l-4 ${col.cardBorder} select-none touch-manipulation ${
+                          className={`bg-white rounded-xl shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-[0_15px_40px_rgba(0,0,0,0.04),0_0_15px_rgba(212,175,55,0.1)] hover:-translate-y-1 transition-all duration-300 border-l-4 ${col.cardBorder} select-none touch-manipulation ${
                             isBeingDragged
                               ? "opacity-40 scale-95"
                               : ""

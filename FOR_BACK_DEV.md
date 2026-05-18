@@ -889,7 +889,7 @@ backend/
 WEB1, WEB2, WEB3, PROG1, PROG2, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1, DONNEES2, THEORIE1-P1, THEORIE1-P2, MGT2, IA1, MOB1, SECU1, SECU2
 
 ### Seed Data
-- ADMIN001 / admin@hei.mg / admin
+- ADMIN001 / stdhub.admin@gmail.com / admin
 - STD25001 / hei.fatratra@gmail.com / student L1
 - PROF001 / tester@gmail.com / teacher
 

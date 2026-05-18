@@ -483,9 +483,9 @@ See `ALL_ABOUT_API.md` for:
 
 ### Version Bumping
 ```bash
-npm run release:patch   # 1.3.2 -> 1.3.3
-npm run release:minor   # 1.3.2 -> 1.4.0
-npm run release:major   # 1.3.2 -> 2.0.0
+npm run release:patch   # 1.4.0 -> 1.4.1
+npm run release:minor   # 1.4.0 -> 1.5.0
+npm run release:major   # 1.4.0 -> 2.0.0
 ```
 
 ---
