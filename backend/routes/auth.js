@@ -245,8 +245,6 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-});
-
 // ---- Security questions endpoints ----
 
 router.get("/security-questions", auth, async (req, res) => {
