@@ -269,52 +269,11 @@ router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, re
       [user.id, tokenHash],
     );
 
+    await sendPasswordResetEmail({ user, token });
+
     res.json(genericForgotPasswordResponse);
-    sendPasswordResetEmail({ user, token }).catch((emailErr) => {
-      console.error("ERREUR email /auth/forgot-password:", emailErr);
-    });
   } catch (err) {
     console.error("ERREUR /auth/forgot-password:", err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
-// Alias for frontend compatibility: POST /forgot-password/send-email
-router.post("/forgot-password/send-email", async (req, res) => {
-  const email = req.body.email?.trim().toLowerCase();
-  if (!email)
-    return res.status(400).json({ error: "Adresse email requise." });
-  if (email.length > 254)
-    return res.status(400).json({ error: "Adresse email trop longue." });
-
-  try {
-    const { rows } = await db.query(
-      "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
-      [email],
-    );
-
-    if (!rows.length) return res.json(genericForgotPasswordResponse);
-
-    const user = rows[0];
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(token);
-
-    await db.query(
-      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
-      [user.id],
-    );
-
-    await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
-      [user.id, tokenHash],
-    );
-
-    res.json(genericForgotPasswordResponse);
-    sendPasswordResetEmail({ user, token }).catch((emailErr) => {
-      console.error("ERREUR email /auth/forgot-password/send-email:", emailErr);
-    });
-  } catch (err) {
-    console.error("ERREUR /auth/forgot-password/send-email:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
