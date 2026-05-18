@@ -138,23 +138,14 @@ export default function UserProfilePage() {
                   boxShadow: "0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.05)",
                 }}
               >
-                {/* Cover area with waves at bottom */}
-                <div className="h-28 sm:h-36 relative overflow-hidden">
+                {/* Cover area */}
+                <div className="h-20 sm:h-28 relative overflow-hidden">
                   <div
                     className="absolute inset-0"
                     style={{
                       background: "linear-gradient(180deg, #0A1A33 0%, #001948 60%, #0A1A33 100%)",
                     }}
                   />
-                  {/* Subtle grid pattern */}
-                  <div
-                    className="absolute inset-0 opacity-[0.03]"
-                    style={{
-                      backgroundImage: `linear-gradient(rgba(212,175,55,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,0.5) 1px, transparent 1px)`,
-                      backgroundSize: "40px 40px",
-                    }}
-                  />
-                  <WaveAnimation />
                 </div>
 
                 {/* Avatar + info */}
@@ -198,6 +189,9 @@ export default function UserProfilePage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Premium wave animation at bottom */}
+                <WaveAnimation />
               </div>
             </div>
 
