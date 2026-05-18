@@ -193,9 +193,9 @@
 }
 
 @keyframes shooting-star {
-  0% { transform: translate(0, 0) scale(1); opacity: 0; }
-  5% { opacity: 1; }
-  15% { transform: translate(120px, 80px) scale(0.3); opacity: 0; }
+  0% { transform: translate(0, 0); opacity: 0; }
+  3% { opacity: 1; }
+  12% { transform: translate(150px, 100px); opacity: 0; }
   100% { opacity: 0; }
 }
 

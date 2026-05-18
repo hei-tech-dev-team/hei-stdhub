@@ -55,23 +55,43 @@ export default function WaveAnimation() {
           />
         ))}
 
-        {/* Shooting stars - always active, staggered */}
-        {[...Array(6)].map((_, i) => (
+        {/* Shooting stars - realistic with tail */}
+        {[...Array(5)].map((_, i) => (
           <div
             key={`shoot-${i}`}
-            className="absolute"
             style={{
-              left: `${5 + i * 16}%`,
-              top: `${3 + i * 6}%`,
-              width: "2px",
-              height: "2px",
-              background: "#fff",
-              borderRadius: "50%",
-              boxShadow: "0 0 6px #fff, 0 0 12px rgba(212,175,55,0.6)",
-              animation: `shooting-star ${2.5 + i * 0.3}s ease-out infinite`,
-              animationDelay: `${i * 0.8}s`,
+              position: "absolute",
+              left: `${8 + i * 18}%`,
+              top: `${5 + i * 7}%`,
+              animation: `shooting-star ${2.8 + i * 0.4}s ease-out infinite`,
+              animationDelay: `${i * 1}s`,
             }}
-          />
+          >
+            {/* Shooting star tail */}
+            <div
+              style={{
+                width: "60px",
+                height: "1px",
+                background: "linear-gradient(90deg, rgba(212,175,55,0.8), rgba(255,255,255,0.6) 30%, transparent 100%)",
+                transform: "rotate(-35deg)",
+                transformOrigin: "left center",
+                boxShadow: "0 0 4px rgba(212,175,55,0.4)",
+              }}
+            />
+            {/* Shooting star head */}
+            <div
+              style={{
+                position: "absolute",
+                top: "-1px",
+                left: "0",
+                width: "3px",
+                height: "3px",
+                background: "#fff",
+                borderRadius: "50%",
+                boxShadow: "0 0 8px #fff, 0 0 16px rgba(212,175,55,0.8), 0 0 24px rgba(212,175,55,0.4)",
+              }}
+            />
+          </div>
         ))}
 
         {/* Ambient nebula glow */}
