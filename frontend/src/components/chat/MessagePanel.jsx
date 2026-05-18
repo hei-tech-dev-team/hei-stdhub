@@ -464,9 +464,7 @@ export default function MessagePanel({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const { data } = await api.post("/messages/upload", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data } = await api.post("/messages/upload", fd);
       await onSend(
         `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}]`,
       );

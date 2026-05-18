@@ -27,11 +27,13 @@ if (useCloudinary) {
   });
   chatUpload = multer({
     storage: new CloudinaryStorage({
-      cloudinary,
-      params: { folder: "hei-stdhub/chat", resource_type: "auto" },
-    }),
-    limits: { fileSize: 10 * 1024 * 1024 },
-  }).single("file");
+    cloudinary,
+    folder: "hei-stdhub/chat",
+    allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"],
+    resource_type: "auto",
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).single("file");
 } else {
   chatUpload = multer({
     storage: multer.diskStorage({
