@@ -176,7 +176,7 @@ export default function UserProfilePage() {
                       </h1>
                       <p className="text-gray-500 text-sm mt-0.5">{profile.ref}</p>
                       <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start flex-wrap">
-                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}>
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-[9999] ${roleCfg.cls}`}>
                           <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
                           {roleCfg.label}
                         </span>
