@@ -84,6 +84,15 @@ const genericForgotPasswordResponse = {
     "Si un compte est associ\u00e9 \u00e0 cet email, un lien de r\u00e9initialisation a \u00e9t\u00e9 envoy\u00e9.",
 };
 
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 0 : 10,
+  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});
+
 const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "test" ? 0 : 10,
@@ -231,7 +240,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/forgot-password/send-email", async (req, res) => {
+router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email)
     return res.status(400).json({ error: "Adresse email requise." });

@@ -90,16 +90,21 @@ io.use((socket, next) => {
 
 // Middleware stack
 app.use(compression());
-const corsOrigin = process.env.CLIENT_URL 
-  ? [process.env.CLIENT_URL, "http://localhost:5173", "http://localhost:3000"].filter(Boolean)
-  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"];
+
+const corsOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://hei-stdhub.vercel.app",
+].filter(Boolean);
 
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: corsOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
+    maxAge: 600,
   }),
 );
 app.use(express.json({ limit: "10mb" }));
@@ -129,7 +134,6 @@ if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
 // Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
-app.use("/api/auth/forgot-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
