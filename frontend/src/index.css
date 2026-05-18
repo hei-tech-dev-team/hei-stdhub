@@ -175,20 +175,23 @@
   }
 }
 
-@keyframes wave {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(-25%); }
-  100% { transform: translateX(-50%); }
+@keyframes wave-3d {
+  0% { transform: translateX(0) perspective(500px) rotateX(2deg); }
+  25% { transform: translateX(-12.5%) perspective(500px) rotateX(-1deg); }
+  50% { transform: translateX(-25%) perspective(500px) rotateX(2deg); }
+  75% { transform: translateX(-37.5%) perspective(500px) rotateX(-1deg); }
+  100% { transform: translateX(-50%) perspective(500px) rotateX(2deg); }
 }
 
-@keyframes wave-slow {
-  0% { transform: translateX(-50%); }
-  50% { transform: translateX(-25%); }
-  100% { transform: translateX(0); }
+@keyframes wave-3d-reverse {
+  0% { transform: translateX(-50%) perspective(500px) rotateX(-2deg); }
+  25% { transform: translateX(-37.5%) perspective(500px) rotateX(1deg); }
+  50% { transform: translateX(-25%) perspective(500px) rotateX(-2deg); }
+  75% { transform: translateX(-12.5%) perspective(500px) rotateX(1deg); }
+  100% { transform: translateX(0) perspective(500px) rotateX(-2deg); }
 }
 
-@keyframes wave-fast {
-  0% { transform: translateX(-25%); }
-  50% { transform: translateX(0); }
-  100% { transform: translateX(-25%); }
+@keyframes particle-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+  50% { transform: translateY(-20px) scale(1.5); opacity: 1; }
 }
