@@ -90,11 +90,16 @@ io.use((socket, next) => {
 
 // Middleware stack
 app.use(compression());
+const corsOrigin = process.env.CLIENT_URL 
+  ? [process.env.CLIENT_URL, "http://localhost:5173", "http://localhost:3000"].filter(Boolean)
+  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"];
+
 app.use(
   cors({
-    origin: "*",
+    origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   }),
 );
 app.use(express.json({ limit: "10mb" }));
