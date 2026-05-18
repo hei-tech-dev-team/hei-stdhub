@@ -355,6 +355,17 @@ const { pool } = require("./db");
       )
     `);
   } catch (err) { console.error("Failed to create announcement_reactions table:", err); }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_favorites (
+        user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        contact_id INTEGER   NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, contact_id)
+      )
+    `);
+  } catch (err) { console.error("Failed to create chat_favorites table:", err); }
 })();
 
 const PORT = process.env.PORT || 3001;
