@@ -14,15 +14,16 @@ import {
   faLightbulb,
   faUsersRectangle,
   faBell,
+  faNewspaper,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
-import GlassDomeLogo from "../ui/GlassDomeLogo";
 import UserAvatar from "../ui/UserAvatar";
 
 const NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
   { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
+  { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
   { to: "/td", label: "TD / Examen", icon: faFileAlt, end: false },
   { to: "/chat", label: "Chat", icon: faComments, end: false },
   { to: "/pings", label: "Ping Box", icon: faBell, end: false },
@@ -78,10 +79,10 @@ export default function Sidebar() {
           playNotificationSound();
         }
         
-        setUnreadCount(totalUnread); // On garde le compte même si on est sur /chat
+        setUnreadCount(location.pathname === "/chat" ? 0 : totalUnread);
         prevUnreadRef.current = totalUnread;
-      } catch (err) {
-        console.error("Erreur lors de la mise à jour des badges :", err);
+      } catch (_) {
+        // Backend indisponible — les badges seront mis à jour au prochain cycle
       }
     };
 
@@ -226,39 +227,23 @@ export default function Sidebar() {
         </nav>
 
         <div className="border-t border-white/10 pt-4 mt-4">
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              navigate("/profile");
-            }}
-            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/10 transition text-left mb-2"
-            title="Modifier le profil"
-          >
-            <UserAvatar
-              avatar={user?.avatar}
-              name={user?.pseudo || user?.ref}
-              size="lg"
-              color="bg-gold"
-              className="ring-2 ring-white/10"
-            />
-            <div className="min-w-0">
-              <p className="text-white/40 text-xs uppercase tracking-widest truncate">
-                {user?.role === "teacher"
-                  ? "Professeur"
-                  : user?.role === "admin"
-                    ? "Admin"
-                    : user?.role === "bde"
-                      ? "BDE"
-                      : user?.role === "alumni"
-                        ? `Alumni${user?.promo ? ` · Promo ${user.promo}` : ""}`
-                        : "Étudiant"}
-              </p>
-              <p className="text-white font-semibold text-sm truncate">
-                {user?.pseudo || user?.ref || "—"}
-              </p>
-            </div>
-          </button>
+          <p className="text-white/40 text-xs px-2 mb-1 uppercase tracking-widest truncate">
+            {user?.role === "teacher"
+              ? "Professeur"
+              : user?.role === "admin"
+                ? "Admin"
+                : user?.role === "bde"
+                  ? "BDE"
+                  : user?.role === "alumni"
+                    ? `Alumni${user?.promo ? ` · Promo ${user.promo}` : ""}`
+                    : "Étudiant"}
+          </p>
+          <div className="flex items-center gap-2 px-2 mb-3">
+            <UserAvatar avatar={user?.avatar} name={user?.pseudo} size="sm" />
+            <p className="text-white font-semibold text-sm truncate">
+              {user?.pseudo || user?.ref || "—"}
+            </p>
+          </div>
           <button
             onClick={handleLogout}
             className="sidebar-link w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"

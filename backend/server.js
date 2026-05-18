@@ -4,9 +4,7 @@ const compression = require("compression");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config({
-  path: path.resolve(__dirname, ".env"),
-});
+require("dotenv").config();
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
@@ -38,13 +36,6 @@ const server = http.createServer(app);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
-app.use((req, res, next) => {
-  req.socket.setTimeout(REQUEST_TIMEOUT);
-  req.socket.on("timeout", () => {
-    if (!res.headersSent) res.status(503).json({ error: "Requête expirée." });
-  });
-  next();
-});
 
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
@@ -91,11 +82,21 @@ io.use((socket, next) => {
 
 // Middleware stack
 app.use(compression());
+
+const corsOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://hei-stdhub.vercel.app",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: "*",
+    origin: corsOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    maxAge: 600,
   }),
 );
 app.use(express.json({ limit: "10mb" }));
@@ -125,8 +126,6 @@ if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
 // Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
-app.use("/api/auth/forgot-password", loginLimiter);
-app.use("/api/auth/reset-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
@@ -136,6 +135,7 @@ app.use("/api/messages", require("./routes/messages"));
 app.use("/api/push", require("./routes/push"));
 app.use("/api/pings", require("./routes/pings"));
 app.use("/api/admin", require("./routes/admin"));
+app.use("/api/announcements", require("./routes/announcements"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) =>
@@ -237,87 +237,117 @@ app.set("io", io);
 
 const { pool } = require("./db");
 
-// Ensure password_reset_tokens table exists
-pool.query(`
-  CREATE TABLE IF NOT EXISTS password_reset_tokens (
-    id         SERIAL       PRIMARY KEY,
-    user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash VARCHAR(64)  NOT NULL UNIQUE,
-    expires_at TIMESTAMP    NOT NULL,
-    used_at    TIMESTAMP    NULL,
-    created_at TIMESTAMP    NOT NULL DEFAULT NOW()
-  )
-`).catch((err) => console.error("Failed to create password_reset_tokens table:", err));
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id         SERIAL       PRIMARY KEY,
+        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash VARCHAR(64)  NOT NULL UNIQUE,
+        expires_at TIMESTAMP    NOT NULL,
+        used_at    TIMESTAMP    NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (err) { console.error("Failed to create password_reset_tokens table:", err); }
 
-// Ensure user_security_questions table exists
-pool.query(`
-  CREATE TABLE IF NOT EXISTS user_security_questions (
-    id            SERIAL       PRIMARY KEY,
-    user_id       INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    question_key  VARCHAR(255) NOT NULL,
-    question_text TEXT         NULL,
-    answer_hash   VARCHAR(60)  NOT NULL,
-    created_at    TIMESTAMP    NOT NULL DEFAULT NOW(),
-    UNIQUE (user_id, question_key)
-  )
-`).catch((err) => console.error("Failed to create user_security_questions table:", err));
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_security_questions (
+        id            SERIAL       PRIMARY KEY,
+        user_id       INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        question_key  VARCHAR(255) NOT NULL,
+        question_text TEXT         NULL,
+        answer_hash   VARCHAR(60)  NOT NULL,
+        created_at    TIMESTAMP    NOT NULL DEFAULT NOW(),
+        UNIQUE (user_id, question_key)
+      )
+    `);
+  } catch (err) { console.error("Failed to create user_security_questions table:", err); }
 
-// Migration: add missing columns for old user_security_questions tables (Render)
-pool.query(`
-  ALTER TABLE user_security_questions
-  ADD COLUMN IF NOT EXISTS question_text TEXT NULL
-`).catch(() => {});
-pool.query(`
-  ALTER TABLE user_security_questions
-  ALTER COLUMN question_key TYPE VARCHAR(255)
-`).catch(() => {});
+  try {
+    await pool.query(`ALTER TABLE user_security_questions ADD COLUMN IF NOT EXISTS question_text TEXT NULL`);
+  } catch (_) {}
+  try {
+    await pool.query(`ALTER TABLE user_security_questions ALTER COLUMN question_key TYPE VARCHAR(255)`);
+  } catch (_) {}
 
-// Update existing invitations constraint to allow alumni
-pool.query(`
-  ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check;
-  ALTER TABLE invitations ADD CONSTRAINT invitations_role_check CHECK (role IN ('student', 'teacher', 'alumni'));
-`).catch(() => {});
+  try {
+    await pool.query(`ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check`);
+    await pool.query(`ALTER TABLE invitations ADD CONSTRAINT invitations_role_check CHECK (role IN ('student', 'teacher', 'alumni'))`);
+  } catch (_) {}
 
-// Ensure profile_background column exists
-pool.query(`
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_background TEXT NULL;
-`).catch(() => {});
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id         SERIAL       PRIMARY KEY,
+        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        endpoint   TEXT         NOT NULL,
+        auth_key   TEXT         NOT NULL,
+        p256dh_key TEXT         NOT NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+        UNIQUE (user_id, endpoint)
+      )
+    `);
+  } catch (err) { console.error("Failed to create push_subscriptions table:", err); }
 
-// Ensure push_subscriptions table exists
-pool.query(`
-  CREATE TABLE IF NOT EXISTS push_subscriptions (
-    id         SERIAL       PRIMARY KEY,
-    user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    endpoint   TEXT         NOT NULL,
-    auth_key   TEXT         NOT NULL,
-    p256dh_key TEXT         NOT NULL,
-    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-    UNIQUE (user_id, endpoint)
-  )
-`).catch((err) => console.error("Failed to create push_subscriptions table:", err));
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS global_chat_read (
+        user_id            INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        last_read_msg_id   INTEGER   NOT NULL DEFAULT 0,
+        updated_at         TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id)
+      )
+    `);
+  } catch (err) { console.error("Failed to create global_chat_read table:", err); }
 
-// Ensure global_chat_read table exists (for unread message tracking)
-pool.query(`
-  CREATE TABLE IF NOT EXISTS global_chat_read (
-    user_id            INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    last_read_msg_id   INTEGER   NOT NULL DEFAULT 0,
-    updated_at         TIMESTAMP NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id)
-  )
-`).catch((err) => console.error("Failed to create global_chat_read table:", err));
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pings (
+        id           SERIAL       PRIMARY KEY,
+        sender_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id  INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        status       VARCHAR(20)  NOT NULL DEFAULT 'pending',
+        created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+        responded_at TIMESTAMP    NULL,
+        UNIQUE (sender_id, receiver_id)
+      )
+    `);
+  } catch (err) { console.error("Failed to create pings table:", err); }
 
-// Ensure pings table exists
-pool.query(`
-  CREATE TABLE IF NOT EXISTS pings (
-    id           SERIAL       PRIMARY KEY,
-    sender_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    receiver_id  INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status       VARCHAR(20)  NOT NULL DEFAULT 'pending',
-    created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
-    responded_at TIMESTAMP    NULL,
-    UNIQUE (sender_id, receiver_id)
-  )
-`).catch((err) => console.error("Failed to create pings table:", err));
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id            SERIAL       PRIMARY KEY,
+        title         VARCHAR(255) NOT NULL,
+        content       TEXT         NOT NULL,
+        image_url     TEXT         NULL,
+        author_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_level  VARCHAR(5)   NULL,
+        created_at    TIMESTAMP    NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (err) { console.error("Failed to create announcements table:", err); }
+
+  // Migration: add target_level if missing (existing tables on Render)
+  try {
+    await pool.query(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS target_level VARCHAR(5) NULL`);
+  } catch (_) {}
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS announcement_reactions (
+        id               SERIAL      PRIMARY KEY,
+        announcement_id  INTEGER     NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+        user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reaction_type    VARCHAR(20) NOT NULL,
+        created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+        UNIQUE (announcement_id, user_id)
+      )
+    `);
+  } catch (err) { console.error("Failed to create announcement_reactions table:", err); }
+})();
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
