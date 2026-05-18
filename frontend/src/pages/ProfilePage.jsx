@@ -134,80 +134,14 @@ export default function ProfilePage() {
     requestAnimationFrame(() => setVisible(true));
   }, []);
 
-  // Fetch profile user data
-  useEffect(() => {
-    const fetchProfileUser = async () => {
-      try {
-        let data;
-        if (ref && ref.toUpperCase() !== viewer?.ref.toUpperCase()) {
-          // Viewing another user's profile
-          const res = await api.get(`/auth/user/${ref}`);
-          data = res.data;
-          console.debug('fetchProfileUser: fetched other user', { ref, data });
-        } else {
-          // Viewing own profile or no ref provided, default to own profile
-          const res = await api.get("/auth/me");
-          data = res.data;
-          console.debug('fetchProfileUser: fetched my profile', { data });
-        }
-        setProfileUser(data);
-        setCustomCoverBorder(data.cover_border_color || "");
-        setCustomAvatarBorder(data.avatar_border_color || "");
-        setCustomParallax(data.cover_parallax == null ? parallaxEnabled : !!data.cover_parallax);
-        setCustomSelectedBg(data.profile_background || null);
-        setCustomWelcomeMessageTheme(data.welcome_message_theme || "simple");
-        setCustomWelcomeMessageEnabled(data.welcome_message_enabled || false);
-        setCustomSelectedBubble(data.welcome_bubble_url || null);
-      } catch (err) {
-        console.error("Error fetching profile user:", err);
-        // Handle error, e.g., redirect to 404 or show error message
-      }
-    };
-    fetchProfileUser();
-  }, [ref, viewer, parallaxEnabled]);
-
-  const roleCfg = ROLE_LABEL[profileUser?.role] || ROLE_LABEL.student;
-  const avatarUrl = profileUser?.avatar || null;
+  const roleCfg = ROLE_LABEL[user?.role] || ROLE_LABEL.student;
+  const avatarUrl = user?.avatar || null;
   const displayedAvatar = avatarPreview || avatarUrl;
-  const profileBg = profileUser?.profile_background || null;
-
-  // prefer persisted profileUser values; fall back to local custom state or defaults
-  const coverBorderColor = profileUser?.cover_border_color ?? customCoverBorder ?? 'rgba(255,255,255,0.08)';
-  const avatarBorderColor = profileUser?.avatar_border_color ?? customAvatarBorder ?? 'rgba(212,175,55,0.6)';
 
   useEffect(() => {
     if (!avatarPreview) return;
     return () => URL.revokeObjectURL(avatarPreview);
   }, [avatarPreview]);
-
-  // Welcome message logic for visitors — show every time a (non-owner) visitor views the profile
-  useEffect(() => {
-    // DEBUG: log reason why welcome bubble may or may not show
-    console.debug("welcome-effect", {
-      profileUserExists: !!profileUser,
-      welcome_enabled: profileUser?.welcome_message_enabled,
-      isOwner,
-      viewerId: viewer?.id,
-      profileUserId: profileUser?.id,
-    });
-
-    if (profileUser && profileUser.welcome_message_enabled && (isOwner || profileUser.id !== viewer?.id)) {
-      const messages = mockupWelcomeMessages[profileUser.welcome_message_theme] || mockupWelcomeMessages.simple;
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-
-      console.debug("welcome-effect: will show bubble", { randomMessage });
-
-      setWelcomeBubbleMessage(randomMessage);
-      setShowWelcomeBubble(true);
-
-      const timer = setTimeout(() => {
-        setShowWelcomeBubble(false);
-        setWelcomeBubbleMessage("");
-      }, 2500); // Augmenté à 2.5s pour laisser le temps de lire
-
-      return () => clearTimeout(timer);
-    }
-  }, [profileUser?.ref, viewer?.id, profileUser?.welcome_message_enabled, profileUser?.welcome_bubble_url, isOwner]);
 
   const handleAvatar = async (e) => {
     const file = e.target.files[0];
@@ -228,7 +162,7 @@ export default function ProfilePage() {
       const { data } = await api.patch("/auth/avatar", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setProfileUser(data); // Update profileUser, not viewer
+      setUser(data);
       setSuccessAvatar(true);
       setAvatarPreview("");
       setTimeout(() => setSuccessAvatar(false), 3000);
@@ -376,39 +310,63 @@ export default function ProfilePage() {
                 visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
-              {parallaxEnabled ? (
-                <Tilt tiltMaxAngleX={6} tiltMaxAngleY={6} glareEnable={false} scale={1.02} className="rounded-xl overflow-hidden mb-6 relative">
+              <div
+                className="rounded-xl overflow-hidden mb-6"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                }}
+              >
+                {/* Cover accent */}
+                <div className="h-24 sm:h-28 relative overflow-hidden border-b border-white/10">
                   <div
                     className="rounded-xl overflow-hidden mb-6 relative"
                     style={{
-                      background: profileBg
-                        ? `linear-gradient(rgba(10,26,51,0.35), rgba(0,25,72,0.35)), url(${profileBg})`
-                        : "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
-                      backgroundSize: profileBg ? "cover" : undefined,
-                      backgroundPosition: profileBg ? "right top" : undefined,
-                      backgroundRepeat: profileBg ? "no-repeat" : undefined,
-                      border: `1px solid ${customCoverBorder || profileUser?.cover_border_color || 'rgba(255,255,255,0.08)'}`,
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                      background:
+                        "linear-gradient(135deg, rgba(212,175,55,0.16), rgba(255,255,255,0.04))",
                     }}
-                  >
-                    {isOwner && (
-                      /* owner personalize button for cover */
-                      <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={openCustomizer}
-                          title="Personnaliser"
-                          className="px-3 py-1 rounded-lg bg-white/10 text-white hover:opacity-90"
-                        >
-                          Personnaliser
-                        </button>
-                      </div>
-                    )}
+                  />
+                </div>
 
                     {/* Cover accent */}
                     <div className="h-24 sm:h-28 relative overflow-hidden border-b border-white/10">
                       <div
-                        className="absolute inset-0"
+                        className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
+                        style={{
+                          border: "3px solid rgba(212,175,55,0.6)",
+                          boxShadow: "0 0 20px rgba(212,175,55,0.15)",
+                          background: loadingAvatar
+                            ? "rgba(10,26,51,0.8)"
+                            : displayedAvatar
+                              ? "transparent"
+                              : "linear-gradient(135deg, rgba(10,26,51,0.9), rgba(0,25,72,0.9))",
+                        }}
+                      >
+                        {loadingAvatar ? (
+                          <FontAwesomeIcon
+                            icon={faSpinner}
+                            className="text-gold text-2xl animate-spin"
+                          />
+                        ) : displayedAvatar ? (
+                          <img
+                            src={displayedAvatar}
+                            alt="avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <FontAwesomeIcon
+                            icon={faUser}
+                            className="text-gold text-3xl"
+                          />
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        title="Changer la photo"
+                        className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
                         style={{
                           background:
                             "linear-gradient(135deg, rgba(212,175,55,0.16), rgba(255,255,255,0.04))",
@@ -653,6 +611,17 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
+                  {(errorAvatar || successAvatar) && (
+                    <div
+                      className={`mt-4 text-sm px-4 py-2.5 rounded-xl border ${
+                        errorAvatar
+                          ? "bg-red-500/10 border-red-500/20 text-red-200"
+                          : "bg-green-500/10 border-green-500/20 text-green-200"
+                      }`}
+                    >
+                      {errorAvatar || "Photo de profil mise à jour !"}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
