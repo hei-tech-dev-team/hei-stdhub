@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { HEI_BLUE_LOGO } from "../../assets/logos";
 import UserAvatar from "../ui/UserAvatar";
+import GlassDomeLogo from "../ui/GlassDomeLogo";
 
 const NAV_LINKS = [
   { to: "/", label: "Accueil", icon: faHouse, end: true },
