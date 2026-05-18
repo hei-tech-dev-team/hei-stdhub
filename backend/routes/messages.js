@@ -5,8 +5,6 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-const cloudinary = require("cloudinary");
-const CloudinaryStorage = require("multer-storage-cloudinary");
 const webpush = require("web-push");
 const router = express.Router();
 

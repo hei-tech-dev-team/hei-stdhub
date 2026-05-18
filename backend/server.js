@@ -351,9 +351,23 @@ const { pool } = require("./db");
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
-  server.listen(PORT, () =>
+  const httpServer = server.listen(PORT, () =>
     console.log(`HEI STDhub API → http://localhost:${PORT}`),
   );
+
+  // Graceful shutdown
+  const shutdown = (signal) => {
+    console.log(`${signal} received, shutting down gracefully...`);
+    httpServer.close(() => {
+      pool.end().then(() => {
+        console.log("DB pool closed.");
+        process.exit(0);
+      }).catch(() => process.exit(1));
+    });
+    setTimeout(() => process.exit(1), 10000);
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 module.exports = app;

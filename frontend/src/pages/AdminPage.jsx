@@ -158,14 +158,6 @@ export default function AdminPage() {
   const [bulkCodes, setBulkCodes] = useState([]);
   const [allCopied, setAllCopied] = useState(false);
 
-  // Charger stats
-  useEffect(() => {
-    api
-      .get("/admin/stats")
-      .then(({ data }) => setStats(data))
-      .catch(console.error);
-  }, []);
-
   // Pagination
   const [userPage, setUserPage] = useState(0);
   const [userTotal, setUserTotal] = useState(0);

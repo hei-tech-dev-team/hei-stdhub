@@ -246,7 +246,6 @@ router.post("/register", async (req, res) => {
     } catch (_) {}
 
     const formattedUser = { ...newUser };
-    formattedUser.avatar = getFullUrl(req, formattedUser.avatar);
     formattedUser.profile_background = getFullUrl(req, formattedUser.profile_background);
     formattedUser.welcome_bubble_url = getFullUrl(req, formattedUser.welcome_bubble_url);
     // Include new fields for welcome message
@@ -306,39 +305,6 @@ router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, re
   if (email.length > 254)
     return res.status(400).json({ error: "Adresse email trop longue." });
 
-  try {
-    const { rows } = await db.query(
-      "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
-      [email],
-    );
-
-    if (!rows.length) return res.json(genericForgotPasswordResponse);
-
-    const user = rows[0];
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(token);
-
-    await db.query(
-      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
-      [user.id],
-    );
-
-    await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
-      [user.id, tokenHash],
-    );
-
-    await sendPasswordResetEmail({ user, token });
-
-    res.json(genericForgotPasswordResponse);
-  } catch (err) {
-    console.error("ERREUR /auth/forgot-password:", err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
-// Public profile by ref
-router.get("/user/:ref", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
@@ -750,7 +716,7 @@ router.get("/backgrounds", auth, async (req, res) => {
     }));
     res.json({ images });
   } catch (err) {
-      console.error("Avatar upload error:", err?.message || err);
+      console.error("Fetch backgrounds error:", err?.message || err);
     const detail = process.env.NODE_ENV === "development" ? err.message : "Erreur serveur.";
     res.status(500).json({ error: detail });
   }

@@ -73,7 +73,7 @@ router.get("/", auth, async (req, res) => {
     }
     const announcements = result.rows;
 
-    // Fetch reactions for each announcement
+    // Fetch reactions in a single query with user's reaction
     if (announcements.length > 0) {
       const ids = announcements.map((a) => a.id);
       const reactionsResult = await db.query(`
