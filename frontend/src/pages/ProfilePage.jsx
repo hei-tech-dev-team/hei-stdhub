@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
+import WaveAnimation from "../components/ui/WaveAnimation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCamera,
@@ -187,15 +188,16 @@ export default function ProfilePage() {
                   boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
                 }}
               >
-                {/* Cover accent */}
-                <div className="h-24 sm:h-28 relative overflow-hidden border-b border-white/10">
+                {/* Cover accent with waving waves */}
+                <div className="h-32 sm:h-40 relative overflow-hidden border-b border-white/10">
                   <div
                     className="absolute inset-0"
                     style={{
                       background:
-                        "linear-gradient(135deg, rgba(212,175,55,0.16), rgba(255,255,255,0.04))",
+                        "linear-gradient(135deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
                     }}
                   />
+                  <WaveAnimation />
                 </div>
 
                 {/* Avatar + info */}
