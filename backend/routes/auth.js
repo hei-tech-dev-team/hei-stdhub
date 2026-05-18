@@ -8,6 +8,7 @@ const rateLimit = require("express-rate-limit");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
+const { sendPasswordResetEmail } = require("../services/mailer");
 const SECURITY_QUESTIONS = [
   { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
   { key: "school_city", question: "Dans quelle ville se trouve votre école actuelle ?" },
@@ -99,6 +100,20 @@ const makeToken = (user) =>
 
 const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
+
+const genericForgotPasswordResponse = {
+  message:
+    "Si un compte est associ\u00e9 \u00e0 cet email, un lien de r\u00e9initialisation a \u00e9t\u00e9 envoy\u00e9.",
+};
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 0 : 10,
+  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === "test",
+});
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -259,6 +274,44 @@ router.post("/login", async (req, res) => {
     res.json({ token: makeToken(safeUser), user: formattedUser, first_login: isFirstLogin });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  if (!email)
+    return res.status(400).json({ error: "Adresse email requise." });
+  if (email.length > 254)
+    return res.status(400).json({ error: "Adresse email trop longue." });
+
+  try {
+    const { rows } = await db.query(
+      "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
+      [email],
+    );
+
+    if (!rows.length) return res.json(genericForgotPasswordResponse);
+
+    const user = rows[0];
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashResetToken(token);
+
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
+      [user.id],
+    );
+
+    await db.query(
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
+      [user.id, tokenHash],
+    );
+
+    await sendPasswordResetEmail({ user, token });
+
+    res.json(genericForgotPasswordResponse);
+  } catch (err) {
+    console.error("ERREUR /auth/forgot-password:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });

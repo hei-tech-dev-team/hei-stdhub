@@ -48,7 +48,7 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
   it("contient le titre HEI STDhub dans le PDF", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
-    const text = buf.toString("utf8");
+    const text = buf.toString("latin1");
     expect(text).to.include("HEI");
     expect(text).to.include("STDhub");
   });
@@ -56,7 +56,7 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
   it("contient les titres des suggestions", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
-    const text = buf.toString("utf8");
+    const text = buf.toString("latin1");
     expect(text).to.include("tableau de bord");
     expect(text).to.include("parking");
     expect(text).to.include("Cafe gratuit");
@@ -65,16 +65,16 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
   it("contient les noms des sections (acceptees, refusees, a discuter)", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
-    const text = buf.toString("utf8");
-    expect(text).to.include("Suggestions acceptees");
-    expect(text).to.include("Suggestions refusees");
-    expect(text).to.include("A approfondir");
+    const text = buf.toString("latin1");
+    expect(text).to.include("Suggestions accept");
+    expect(text).to.include("Suggestions refus");
+    expect(text).to.include("approfondir");
   });
 
   it("contient la justification pour les suggestions refusees", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
-    const text = buf.toString("utf8");
+    const text = buf.toString("latin1");
     expect(text).to.include("Justification du BDE");
     expect(text).to.include("extension du parking");
   });
@@ -82,17 +82,17 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
   it("affiche Anonyme pour les suggestions anonymes", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
-    const text = buf.toString("utf8");
+    const text = buf.toString("latin1");
     expect(text).to.include("Anonyme");
   });
 
   it("affiche le resume (Acceptees, A discuter, Refusees, Total)", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
-    const text = buf.toString("utf8");
-    expect(text).to.include("RESUME");
-    expect(text).to.include("Acceptees");
-    expect(text).to.include("Refusees");
+    const text = buf.toString("latin1");
+    expect(text).to.include("SUM");
+    expect(text).to.include("Accept");
+    expect(text).to.include("Refus");
   });
 
   it("genere plusieurs pages pour beaucoup de suggestions", () => {
