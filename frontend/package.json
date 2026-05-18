@@ -27,6 +27,7 @@
     "lucide-react": "^1.14.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-parallax-tilt": "^1.7.327",
     "react-router-dom": "^7.13.0",
     "socket.io-client": "^4.8.3"
   },
