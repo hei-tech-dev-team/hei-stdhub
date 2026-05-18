@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
+import WaveAnimation from "../components/ui/WaveAnimation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -138,40 +139,14 @@ export default function UserProfilePage() {
                 }}
               >
                 {/* Cover accent with waving waves */}
-                <div className="h-40 sm:h-48 relative overflow-hidden">
+                <div className="h-32 sm:h-40 relative overflow-hidden">
                   <div
                     className="absolute inset-0"
                     style={{
-                      background: "linear-gradient(135deg, #0A1A33 0%, #001948 100%)",
+                      background: "linear-gradient(135deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
                     }}
                   />
-                  {/* Wave 1 - Gold */}
-                  <svg
-                    className="absolute bottom-0 left-0"
-                    style={{ width: "200%", height: "120px", animation: "wave 8s ease-in-out infinite" }}
-                    viewBox="0 0 1440 120"
-                    preserveAspectRatio="none"
-                  >
-                    <path d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,40 1440,60 L1440,120 L0,120 Z" fill="rgba(212,175,55,0.5)" />
-                  </svg>
-                  {/* Wave 2 - Navy */}
-                  <svg
-                    className="absolute bottom-0 left-0"
-                    style={{ width: "200%", height: "120px", animation: "wave-slow 12s ease-in-out infinite" }}
-                    viewBox="0 0 1440 120"
-                    preserveAspectRatio="none"
-                  >
-                    <path d="M0,80 C240,20 480,100 720,60 C960,20 1200,100 1440,80 L1440,120 L0,120 Z" fill="rgba(0,25,72,0.8)" />
-                  </svg>
-                  {/* Wave 3 - Gold */}
-                  <svg
-                    className="absolute bottom-0 left-0"
-                    style={{ width: "200%", height: "100px", animation: "wave-fast 6s ease-in-out infinite" }}
-                    viewBox="0 0 1440 120"
-                    preserveAspectRatio="none"
-                  >
-                    <path d="M0,40 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,40 L1440,120 L0,120 Z" fill="rgba(212,175,55,0.4)" />
-                  </svg>
+                  <WaveAnimation />
                 </div>
 
                 {/* Avatar + info */}
