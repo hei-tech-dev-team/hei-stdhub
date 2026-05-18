@@ -15,7 +15,7 @@ const useCloudinary =
 
 let upload;
 if (useCloudinary) {
-  const cloudinary = require("cloudinary").v2;
+  const cloudinary = require("cloudinary");
   const CloudinaryStorage = require("multer-storage-cloudinary");
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
