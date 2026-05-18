@@ -4,7 +4,7 @@ const compression = require("compression");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+require("dotenv").config();
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
