@@ -17,7 +17,7 @@ import {
   faNewspaper,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
-import STDHUB_LOGO from "../../assets/STDHUB logos(1).png";
+import STDHUB_LOGO from "../../assets/stdhub-logo-sidebar.png";
 import UserAvatar from "../ui/UserAvatar";
 
 const NAV_LINKS = [
