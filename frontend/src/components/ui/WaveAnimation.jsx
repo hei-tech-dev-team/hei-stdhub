@@ -3,92 +3,95 @@ export default function WaveAnimation() {
     <>
       {/* Full card star field background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        {/* Stars layer 1 - tiny distant stars */}
-        {[...Array(30)].map((_, i) => (
+        {/* Stars layer 1 - tiny distant stars (dense) */}
+        {[...Array(50)].map((_, i) => (
           <div
             key={`s1-${i}`}
             className="absolute rounded-full"
             style={{
               width: "1px",
               height: "1px",
-              left: `${(i * 3.4) % 100}%`,
-              top: `${(i * 4.7) % 100}%`,
+              left: `${(i * 2.1) % 100}%`,
+              top: `${(i * 3.3) % 100}%`,
               background: "#fff",
-              opacity: 0.2 + (i % 4) * 0.15,
-              animation: `twinkle ${2 + (i % 5) * 0.4}s ease-in-out infinite`,
-              animationDelay: `${i * 0.2}s`,
+              opacity: 0.15 + (i % 5) * 0.12,
+              animation: `twinkle ${2 + (i % 6) * 0.3}s ease-in-out infinite`,
+              animationDelay: `${i * 0.15}s`,
             }}
           />
         ))}
         {/* Stars layer 2 - medium gold stars */}
-        {[...Array(15)].map((_, i) => (
+        {[...Array(25)].map((_, i) => (
           <div
             key={`s2-${i}`}
             className="absolute rounded-full"
             style={{
               width: "2px",
               height: "2px",
-              left: `${(i * 7.1 + 2) % 100}%`,
-              top: `${(i * 6.3 + 5) % 100}%`,
+              left: `${(i * 4.2 + 1) % 100}%`,
+              top: `${(i * 5.1 + 3) % 100}%`,
               background: "rgba(212,175,55,0.9)",
               boxShadow: "0 0 6px rgba(212,175,55,0.5)",
-              animation: `twinkle ${3 + (i % 4) * 0.6}s ease-in-out infinite`,
-              animationDelay: `${i * 0.4 + 0.5}s`,
+              animation: `twinkle ${3 + (i % 5) * 0.5}s ease-in-out infinite`,
+              animationDelay: `${i * 0.3 + 0.5}s`,
             }}
           />
         ))}
         {/* Stars layer 3 - bright accent stars */}
-        {[...Array(8)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <div
             key={`s3-${i}`}
             className="absolute rounded-full"
             style={{
               width: "3px",
               height: "3px",
-              left: `${(i * 13 + 5) % 100}%`,
-              top: `${(i * 11 + 8) % 100}%`,
+              left: `${(i * 8.5 + 3) % 100}%`,
+              top: `${(i * 9.2 + 5) % 100}%`,
               background: "#fff",
               boxShadow: "0 0 10px rgba(255,255,255,0.7), 0 0 20px rgba(212,175,55,0.3)",
-              animation: `twinkle ${4 + i * 0.5}s ease-in-out infinite`,
-              animationDelay: `${i * 0.6 + 1}s`,
+              animation: `twinkle ${4 + i * 0.4}s ease-in-out infinite`,
+              animationDelay: `${i * 0.5 + 1}s`,
             }}
           />
         ))}
 
-        {/* Shooting stars - realistic with tail */}
-        {[...Array(5)].map((_, i) => (
+        {/* Shooting stars - tail trails behind direction of travel */}
+        {[...Array(6)].map((_, i) => (
           <div
             key={`shoot-${i}`}
             style={{
               position: "absolute",
-              left: `${8 + i * 18}%`,
-              top: `${5 + i * 7}%`,
-              animation: `shooting-star ${2.8 + i * 0.4}s ease-out infinite`,
-              animationDelay: `${i * 1}s`,
+              left: `${10 + i * 15}%`,
+              top: `${3 + i * 8}%`,
+              animation: `shooting-star ${3 + i * 0.3}s ease-out infinite`,
+              animationDelay: `${i * 0.9}s`,
             }}
           >
-            {/* Shooting star tail */}
-            <div
-              style={{
-                width: "60px",
-                height: "1px",
-                background: "linear-gradient(90deg, rgba(212,175,55,0.8), rgba(255,255,255,0.6) 30%, transparent 100%)",
-                transform: "rotate(-35deg)",
-                transformOrigin: "left center",
-                boxShadow: "0 0 4px rgba(212,175,55,0.4)",
-              }}
-            />
             {/* Shooting star head */}
             <div
               style={{
-                position: "absolute",
-                top: "-1px",
-                left: "0",
-                width: "3px",
-                height: "3px",
+                position: "relative",
+                width: "4px",
+                height: "4px",
                 background: "#fff",
                 borderRadius: "50%",
-                boxShadow: "0 0 8px #fff, 0 0 16px rgba(212,175,55,0.8), 0 0 24px rgba(212,175,55,0.4)",
+                boxShadow: "0 0 8px #fff, 0 0 16px rgba(212,175,55,0.9), 0 0 24px rgba(212,175,55,0.5)",
+                zIndex: 2,
+              }}
+            />
+            {/* Shooting star tail - points UP-LEFT (opposite of travel direction) */}
+            <div
+              style={{
+                position: "absolute",
+                top: "2px",
+                left: "2px",
+                width: "80px",
+                height: "2px",
+                background: "linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(212,175,55,0.6) 30%, rgba(212,175,55,0.2) 60%, transparent 100%)",
+                transform: "rotate(145deg)",
+                transformOrigin: "left center",
+                boxShadow: "0 0 6px rgba(212,175,55,0.4)",
+                zIndex: 1,
               }}
             />
           </div>
