@@ -1,60 +1,122 @@
 export default function WaveAnimation() {
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Ambient glow */}
+      <div
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-24 rounded-full blur-3xl"
+        style={{
+          background: "radial-gradient(ellipse, rgba(212,175,55,0.15) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Particles */}
+      <div className="absolute inset-0">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: `${2 + (i % 3)}px`,
+              height: `${2 + (i % 3)}px`,
+              left: `${15 + i * 15}%`,
+              bottom: `${20 + (i % 4) * 10}%`,
+              background: i % 2 === 0
+                ? "rgba(212,175,55,0.6)"
+                : "rgba(100,180,255,0.4)",
+              boxShadow: i % 2 === 0
+                ? "0 0 6px rgba(212,175,55,0.8)"
+                : "0 0 6px rgba(100,180,255,0.6)",
+              animation: `particle-float ${4 + i * 0.8}s ease-in-out infinite`,
+              animationDelay: `${i * 0.6}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* 3D Wave layers */}
       <svg
-        className="absolute bottom-0 left-0 w-[200%] h-full"
-        style={{ animation: "wave 8s ease-in-out infinite" }}
-        viewBox="0 0 1440 320"
+        className="absolute bottom-0 left-0"
+        style={{
+          width: "200%",
+          height: "100px",
+          animation: "wave-3d 10s ease-in-out infinite",
+          filter: "drop-shadow(0 0 8px rgba(212,175,55,0.3))",
+        }}
+        viewBox="0 0 1440 100"
         preserveAspectRatio="none"
       >
         <defs>
-          <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(212,175,55,0.5)" />
-            <stop offset="50%" stopColor="rgba(212,175,55,0.3)" />
-            <stop offset="100%" stopColor="rgba(212,175,55,0.5)" />
+          <linearGradient id="waveGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(212,175,55,0.7)" />
+            <stop offset="30%" stopColor="rgba(212,175,55,0.5)" />
+            <stop offset="70%" stopColor="rgba(184,134,11,0.4)" />
+            <stop offset="100%" stopColor="rgba(212,175,55,0.6)" />
           </linearGradient>
         </defs>
         <path
-          d="M0,192L48,186.7C96,181,192,171,288,165.3C384,160,480,160,576,170.7C672,181,768,203,864,208C960,213,1056,203,1152,186.7C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-          fill="url(#wave1)"
+          d="M0,50 C120,80 240,20 360,50 C480,80 600,20 720,50 C840,80 960,20 1080,50 C1200,80 1320,20 1440,50 L1440,100 L0,100 Z"
+          fill="url(#waveGold)"
         />
       </svg>
+
       <svg
-        className="absolute bottom-0 left-0 w-[200%] h-full"
-        style={{ animation: "wave-slow 12s ease-in-out infinite" }}
-        viewBox="0 0 1440 320"
+        className="absolute bottom-0 left-0"
+        style={{
+          width: "200%",
+          height: "80px",
+          animation: "wave-3d-reverse 14s ease-in-out infinite",
+          filter: "drop-shadow(0 0 6px rgba(0,25,72,0.5))",
+        }}
+        viewBox="0 0 1440 100"
         preserveAspectRatio="none"
       >
         <defs>
-          <linearGradient id="wave2" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(0,25,72,0.6)" />
-            <stop offset="50%" stopColor="rgba(0,25,72,0.4)" />
-            <stop offset="100%" stopColor="rgba(0,25,72,0.6)" />
+          <linearGradient id="waveNavy" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(0,25,72,0.8)" />
+            <stop offset="50%" stopColor="rgba(10,26,51,0.6)" />
+            <stop offset="100%" stopColor="rgba(0,25,72,0.8)" />
           </linearGradient>
         </defs>
         <path
-          d="M0,256L48,245.3C96,235,192,213,288,208C384,203,480,213,576,229.3C672,245,768,267,864,261.3C960,256,1056,224,1152,208C1248,192,1344,192,1392,192L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-          fill="url(#wave2)"
+          d="M0,60 C180,30 360,90 540,60 C720,30 900,90 1080,60 C1260,30 1440,90 1440,60 L1440,100 L0,100 Z"
+          fill="url(#waveNavy)"
         />
       </svg>
+
       <svg
-        className="absolute bottom-0 left-0 w-[200%] h-full"
-        style={{ animation: "wave-fast 6s ease-in-out infinite" }}
-        viewBox="0 0 1440 320"
+        className="absolute bottom-0 left-0"
+        style={{
+          width: "200%",
+          height: "60px",
+          animation: "wave-3d 8s ease-in-out infinite reverse",
+          filter: "drop-shadow(0 0 10px rgba(212,175,55,0.4))",
+        }}
+        viewBox="0 0 1440 100"
         preserveAspectRatio="none"
       >
         <defs>
-          <linearGradient id="wave3" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(212,175,55,0.35)" />
-            <stop offset="50%" stopColor="rgba(212,175,55,0.2)" />
-            <stop offset="100%" stopColor="rgba(212,175,55,0.35)" />
+          <linearGradient id="waveGoldLight" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(212,175,55,0.4)" />
+            <stop offset="25%" stopColor="rgba(255,215,0,0.3)" />
+            <stop offset="50%" stopColor="rgba(212,175,55,0.5)" />
+            <stop offset="75%" stopColor="rgba(255,215,0,0.3)" />
+            <stop offset="100%" stopColor="rgba(212,175,55,0.4)" />
           </linearGradient>
         </defs>
         <path
-          d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,197.3C1248,213,1344,203,1392,197.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-          fill="url(#wave3)"
+          d="M0,40 C160,70 320,10 480,40 C640,70 800,10 960,40 C1120,70 1280,10 1440,40 L1440,100 L0,100 Z"
+          fill="url(#waveGoldLight)"
         />
       </svg>
+
+      {/* Neon edge highlight */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{
+          background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.6), rgba(100,180,255,0.4), rgba(212,175,55,0.6), transparent)",
+          boxShadow: "0 0 8px rgba(212,175,55,0.5), 0 0 16px rgba(212,175,55,0.3)",
+        }}
+      />
     </div>
   );
 }
