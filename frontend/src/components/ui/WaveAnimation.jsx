@@ -79,7 +79,7 @@ export default function WaveAnimation() {
                 zIndex: 2,
               }}
             />
-            {/* Tail - points UP-LEFT (145deg = opposite of 35deg travel) */}
+            {/* Shooting star tail - points UP-LEFT (opposite of travel) */}
             <div
               style={{
                 position: "absolute",
@@ -88,7 +88,7 @@ export default function WaveAnimation() {
                 width: "100px",
                 height: "2px",
                 background: "linear-gradient(90deg, rgba(255,255,255,0.9) 0%, rgba(212,175,55,0.6) 25%, rgba(212,175,55,0.15) 55%, transparent 100%)",
-                transform: "rotate(145deg)",
+                transform: "rotate(-145deg)",
                 transformOrigin: "left center",
                 boxShadow: "0 0 8px rgba(212,175,55,0.4)",
                 zIndex: 1,
