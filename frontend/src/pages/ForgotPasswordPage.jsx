@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError("");
     try {
-      await api.post("/auth/forgot-password", { email: email.trim() });
+      await api.post("/auth/forgot-password/send-email", { email: email.trim() });
       setDone(true);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur serveur.");
