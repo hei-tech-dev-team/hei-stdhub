@@ -69,6 +69,49 @@ if (useCloudinary) {
 
 const router = express.Router();
 
+// Helper: try query that includes profile_background, fall back if column missing
+async function tryUserQuery(withProfileSql, withoutProfileSql, params = []) {
+  try {
+    return await db.query(withProfileSql, params);
+  } catch (err) {
+    // Postgres error code 42703 = undefined_column
+    if (err && err.code === "42703") {
+      try {
+        return await db.query(withoutProfileSql, params);
+      } catch (err2) {
+        throw err2;
+      }
+    }
+    throw err;
+  }
+}
+
+// Helper pour transformer un chemin relatif en URL absolue
+// Also accept data URIs or raw binary stored in DB (Buffer) for images.
+const getFullUrl = (req, urlPath) => {
+  if (!urlPath) return urlPath;
+
+  // If DB returned raw binary (Buffer), convert to data: URI (assume PNG by default)
+  if (Buffer.isBuffer(urlPath)) {
+    try {
+      return `data:image/png;base64,${urlPath.toString("base64")}`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Ensure we operate on strings from here
+  if (typeof urlPath !== "string") urlPath = String(urlPath);
+
+  // Leave absolute http(s) URLs and data/blob URIs as-is
+  if (urlPath.startsWith("http") || urlPath.startsWith("data:") || urlPath.startsWith("blob:")) return urlPath;
+
+  // Otherwise normalize a relative path to an absolute URL served by this backend
+  const normalizedPath = urlPath.startsWith("/") ? urlPath : `/${urlPath}`;
+  // Encode the path portion to handle spaces and special characters in filenames
+  return `${req.protocol}://${req.get("host")}${encodeURI(normalizedPath)}`;
+};
+
 const makeToken = (user) =>
   jwt.sign(
     { id: user.id, ref: user.ref, role: user.role, ues: user.ues || [], level: user.level || null },
@@ -171,9 +214,9 @@ router.post("/register", async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await db.query(
-      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues)
- VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
- RETURNING id, ref, nom, prenom, email, pseudo, role, level, ues, first_login`,
+     `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues)
+   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+   RETURNING id, ref, nom, prenom, email, pseudo, role, level, ues, first_login, profile_background`,
       [
         ref.toUpperCase(),
         capitalize(nom),
@@ -202,7 +245,15 @@ router.post("/register", async (req, res) => {
       if (io) io.emit("user:registered", newUser);
     } catch (_) {}
 
-    res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
+    const formattedUser = { ...newUser };
+    formattedUser.avatar = getFullUrl(req, formattedUser.avatar);
+    formattedUser.profile_background = getFullUrl(req, formattedUser.profile_background);
+    formattedUser.welcome_bubble_url = getFullUrl(req, formattedUser.welcome_bubble_url);
+    // Include new fields for welcome message
+    formattedUser.welcome_message_theme = newUser.welcome_message_theme;
+    formattedUser.welcome_message_enabled = newUser.welcome_message_enabled;
+
+    res.status(201).json({ token: makeToken(newUser), user: formattedUser, first_login: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -233,7 +284,15 @@ router.post("/login", async (req, res) => {
     }
 
     const { password: _, first_login: __, ...safeUser } = user;
-    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin });
+    const formattedUser = { ...safeUser };
+    formattedUser.avatar = getFullUrl(req, formattedUser.avatar);
+    formattedUser.profile_background = getFullUrl(req, formattedUser.profile_background);
+    formattedUser.welcome_bubble_url = getFullUrl(req, formattedUser.welcome_bubble_url);
+    // Include new fields for welcome message
+    formattedUser.welcome_message_theme = user.welcome_message_theme;
+    formattedUser.welcome_message_enabled = user.welcome_message_enabled;
+
+    res.json({ token: makeToken(safeUser), user: formattedUser, first_login: isFirstLogin });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -282,12 +341,51 @@ router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, re
 router.get("/user/:ref", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT id, ref, nom, prenom, pseudo, role, level, avatar FROM users WHERE ref=$1",
-      [req.params.ref.toUpperCase()],
+      "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
+      [email],
     );
-    if (!rows.length)
-      return res.status(404).json({ error: "Utilisateur introuvable." });
-    res.json(rows[0]);
+
+    if (!rows.length) return res.json(genericForgotPasswordResponse);
+
+    const user = rows[0];
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashResetToken(token);
+
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
+      [user.id],
+    );
+
+    await db.query(
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
+      [user.id, tokenHash],
+    );
+
+    await sendPasswordResetEmail({ user, token });
+
+    res.json(genericForgotPasswordResponse);
+  } catch (err) {
+    console.error("ERREUR /auth/forgot-password:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Public profile by ref
+router.get("/user/:ref", auth, async (req, res) => {
+  try {
+    const withSql = "SELECT id, ref, nom, prenom, pseudo, role, level, avatar, profile_background, cover_border_color, avatar_border_color, cover_parallax, welcome_message_theme, welcome_message_enabled, welcome_bubble_url FROM users WHERE ref=$1";
+    const withoutSql = "SELECT id, ref, nom, prenom, pseudo, role, level, avatar FROM users WHERE ref=$1";
+    const result = await tryUserQuery(withSql, withoutSql, [req.params.ref.toUpperCase()]);
+    const rows = result.rows;
+    if (!rows.length) return res.status(404).json({ error: "Utilisateur introuvable." });
+    
+    const user = rows[0];
+    user.avatar = getFullUrl(req, user.avatar);
+    user.profile_background = getFullUrl(req, user.profile_background);
+    user.welcome_bubble_url = getFullUrl(req, user.welcome_bubble_url);
+    // No need to getFullUrl for welcome_message_theme, it's a string
+    // welcome_message_enabled is already a boolean
+    res.json(user);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -531,13 +629,18 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
 
 router.get("/me", auth, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar
-       FROM users WHERE id=$1`,
-      [req.user.id],
-    );
+    const withSql = `SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar, profile_background, welcome_message_theme, welcome_message_enabled, welcome_bubble_url FROM users WHERE id=$1`;
+    const withoutSql = `SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar FROM users WHERE id=$1`;
+    const result = await tryUserQuery(withSql, withoutSql, [req.user.id]);
+    const rows = result.rows;
     if (!rows.length) return res.status(404).json({ error: "Introuvable." });
-    res.json(rows[0]);
+    const user = rows[0];
+    user.avatar = getFullUrl(req, user.avatar);
+    user.profile_background = getFullUrl(req, user.profile_background);
+    user.welcome_bubble_url = getFullUrl(req, user.welcome_bubble_url);
+    user.welcome_message_theme = user.welcome_message_theme;
+    user.welcome_message_enabled = user.welcome_message_enabled;
+    res.json(user);
   } catch (err) {
     console.error("ERREUR /auth/me:", err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -571,12 +674,14 @@ router.patch("/profile", auth, async (req, res) => {
     if (existing.rows.length)
       return res.status(409).json({ error: "Pseudo déjà pris." });
 
-    const { rows } = await db.query(
-      `UPDATE users SET pseudo=$1 WHERE id=$2
-       RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
-      [pseudo.trim(), req.user.id],
-    );
-    res.json(rows[0]);
+    // try returning with profile_background, fallback if column doesn't exist
+    const withSql = `UPDATE users SET pseudo=$1 WHERE id=$2 RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar, profile_background`;
+    const withoutSql = `UPDATE users SET pseudo=$1 WHERE id=$2 RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`;
+    const result = await tryUserQuery(withSql, withoutSql, [pseudo.trim(), req.user.id]);
+    const user = result.rows[0];
+    user.avatar = getFullUrl(req, user.avatar);
+    user.profile_background = getFullUrl(req, user.profile_background);
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
@@ -607,28 +712,151 @@ router.patch("/password", auth, async (req, res) => {
   }
 });
 
-// Avatar upload via Cloudinary (or local disk)
+// Avatar : Stockage direct en base de données (Base64)
 router.patch("/avatar", auth, (req, res) => {
   avatarUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
     try {
-      const avatarUrl = req.file.secure_url
-        || (req.file.path ? `${req.protocol}://${req.get("host")}/uploads/avatars/${req.file.filename || req.file.originalname}` : null);
-      if (!avatarUrl) return res.status(500).json({ error: "Upload échoué." });
+      // On stocke le chemin relatif (accessible via une route statique)
+      const imagePath = `/uploads/avatars/${req.file.filename}`;
 
       const { rows } = await db.query(
         `UPDATE users SET avatar=$1 WHERE id=$2
          RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
-        [avatarUrl, req.user.id],
+        [imagePath, req.user.id],
       );
-      res.json(rows[0]);
+      const user = rows[0];
+      user.avatar = getFullUrl(req, user.avatar);
+      user.profile_background = getFullUrl(req, user.profile_background);
+      res.json(user);
+    } catch (err) {
+      console.error("Avatar update error:", err?.message || err);
+      const detail = process.env.NODE_ENV === "development" ? err.message : "Erreur serveur.";
+      res.status(500).json({ error: detail });
+    }
+  });
+});
+
+// Récupération des fonds d'écran depuis la DB (remplace Cloudinary)
+router.get("/backgrounds", auth, async (req, res) => {
+  try {
+    // On récupère directement le file_path stocké
+    const { rows } = await db.query("SELECT id, file_path, label FROM profile_backgrounds");
+    const images = rows.map(row => ({
+      id: row.id,
+      url: getFullUrl(req, row.file_path),
+      label: row.label
+    }));
+    res.json({ images });
   } catch (err) {
       console.error("Avatar upload error:", err?.message || err);
     const detail = process.env.NODE_ENV === "development" ? err.message : "Erreur serveur.";
     res.status(500).json({ error: detail });
   }
-  });
+});
+
+// Save selected profile background image URL
+router.patch("/profile-background", auth, async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: "URL requise." });
+  try {
+    const { rows } = await db.query(
+      `UPDATE users SET profile_background=$1 WHERE id=$2
+       RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar, profile_background`,
+      [url, req.user.id],
+    );
+    const user = rows[0];
+    user.avatar = getFullUrl(req, user.avatar);
+    user.profile_background = getFullUrl(req, user.profile_background);
+    res.json(user);
+  } catch (err) {
+    console.error("Update profile_background error:", err?.message || err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Route pour récupérer toutes les bulles disponibles
+router.get("/bubbles", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT id, file_path AS url, label FROM welcome_bubbles ORDER BY id ASC");
+    const bubbles = rows.map(row => ({ ...row, url: getFullUrl(req, row.url) }));
+    res.json({ bubbles });
+  } catch (err) {
+    console.error("Fetch bubbles error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Public debug route: list bubbles without authentication (temporary)
+router.get("/bubbles-public", async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT id, file_path AS url, label FROM welcome_bubbles ORDER BY id ASC");
+    const bubbles = rows.map(row => ({ ...row, url: getFullUrl(req, row.url) }));
+    // Log count for debug
+    console.info(`bubbles-public: returning ${bubbles.length} items`);
+    res.json({ bubbles });
+  } catch (err) {
+    console.error("Fetch bubbles-public error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Save multiple profile customization fields (background, border colors, parallax)
+router.patch("/profile-customization", auth, async (req, res) => {
+  const { profile_background, cover_border_color, avatar_border_color, cover_parallax, welcome_message_theme, welcome_message_enabled, welcome_bubble_url } = req.body;
+  // at least one field required
+  if (profile_background == null && cover_border_color == null && avatar_border_color == null && cover_parallax == null)
+    return res.status(400).json({ error: "Aucun champ envoyé." });
+
+  // Build dynamic SET clause safely
+  const sets = [];
+  const params = [];
+  let idx = 1;
+  if (profile_background !== undefined) {
+    sets.push(`profile_background=$${idx++}`);
+    params.push(profile_background);
+  }
+  if (cover_border_color !== undefined) {
+    sets.push(`cover_border_color=$${idx++}`);
+    params.push(cover_border_color);
+  }
+  if (avatar_border_color !== undefined) {
+    sets.push(`avatar_border_color=$${idx++}`);
+    params.push(avatar_border_color);
+  }
+  if (cover_parallax !== undefined) {
+    sets.push(`cover_parallax=$${idx++}`);
+    params.push(cover_parallax);
+  }
+  if (welcome_message_theme !== undefined) {
+    sets.push(`welcome_message_theme=$${idx++}`);
+    params.push(welcome_message_theme);
+  }
+  if (welcome_message_enabled !== undefined) {
+    sets.push(`welcome_message_enabled=$${idx++}`);
+    params.push(welcome_message_enabled);
+  }
+  if (welcome_bubble_url !== undefined) {
+    sets.push(`welcome_bubble_url=$${idx++}`);
+    params.push(welcome_bubble_url);
+  }
+  params.push(req.user.id);
+
+  const withSql = `UPDATE users SET ${sets.join(", ")} WHERE id=$${idx} RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar, profile_background, cover_border_color, avatar_border_color, cover_parallax, welcome_message_theme, welcome_message_enabled, welcome_bubble_url`;
+  const withoutSql = `UPDATE users SET ${sets.join(", ")} WHERE id=$${idx} RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar, profile_background`;
+  
+  try {
+    const result = await tryUserQuery(withSql, withoutSql, params);
+    const user = result.rows[0];
+    user.avatar = getFullUrl(req, user.avatar);
+    user.profile_background = getFullUrl(req, user.profile_background);
+    user.welcome_bubble_url = getFullUrl(req, user.welcome_bubble_url);
+    res.json(user);
+  } catch (err) {
+    console.error("Update profile customization error:", err?.message || err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
 });
 
 module.exports = router;

@@ -33,7 +33,6 @@ webpush.setVapidDetails(
 
 const app = express();
 const server = http.createServer(app);
-app.set("trust proxy", 1);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
