@@ -138,7 +138,7 @@ export default function UserProfilePage() {
                 }}
               >
                 {/* Cover accent */}
-                <div className="h-24 sm:h-28 relative overflow-hidden">
+                <div className="h-32 sm:h-40 relative overflow-hidden">
                   <div
                     className="absolute inset-0"
                     style={{
@@ -147,33 +147,33 @@ export default function UserProfilePage() {
                   />
                   {/* Waving wave animation */}
                   <svg
-                    className="absolute bottom-0 left-0 w-[200%] h-16 sm:h-20 animate-wave"
+                    className="absolute bottom-0 left-0 w-[200%] h-20 sm:h-28 animate-wave"
                     viewBox="0 0 1440 120"
                     preserveAspectRatio="none"
                   >
                     <path
                       d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,40 1440,60 L1440,120 L0,120 Z"
-                      fill="rgba(212,175,55,0.2)"
+                      fill="rgba(212,175,55,0.35)"
                     />
                   </svg>
                   <svg
-                    className="absolute bottom-0 left-0 w-[200%] h-16 sm:h-20 animate-wave-slow"
+                    className="absolute bottom-0 left-0 w-[200%] h-20 sm:h-28 animate-wave-slow"
                     viewBox="0 0 1440 120"
                     preserveAspectRatio="none"
                   >
                     <path
                       d="M0,80 C240,20 480,100 720,60 C960,20 1200,100 1440,80 L1440,120 L0,120 Z"
-                      fill="rgba(0,25,72,0.4)"
+                      fill="rgba(0,25,72,0.6)"
                     />
                   </svg>
                   <svg
-                    className="absolute bottom-0 left-0 w-[200%] h-12 sm:h-16 animate-wave-fast"
+                    className="absolute bottom-0 left-0 w-[200%] h-16 sm:h-24 animate-wave-fast"
                     viewBox="0 0 1440 120"
                     preserveAspectRatio="none"
                   >
                     <path
                       d="M0,40 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,40 L1440,120 L0,120 Z"
-                      fill="rgba(212,175,55,0.15)"
+                      fill="rgba(212,175,55,0.25)"
                     />
                   </svg>
                 </div>
