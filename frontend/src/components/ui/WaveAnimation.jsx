@@ -2,7 +2,7 @@ export default function WaveAnimation() {
   return (
     <>
       {/* Full card star field background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {/* Stars layer 1 - tiny distant stars */}
         {[...Array(30)].map((_, i) => (
           <div
@@ -55,21 +55,21 @@ export default function WaveAnimation() {
           />
         ))}
 
-        {/* Shooting stars */}
-        {[...Array(4)].map((_, i) => (
+        {/* Shooting stars - always active, staggered */}
+        {[...Array(6)].map((_, i) => (
           <div
             key={`shoot-${i}`}
             className="absolute"
             style={{
-              left: `${10 + i * 22}%`,
-              top: `${5 + i * 8}%`,
+              left: `${5 + i * 16}%`,
+              top: `${3 + i * 6}%`,
               width: "2px",
               height: "2px",
               background: "#fff",
               borderRadius: "50%",
               boxShadow: "0 0 6px #fff, 0 0 12px rgba(212,175,55,0.6)",
-              animation: `shooting-star ${3 + i * 0.5}s ease-out infinite`,
-              animationDelay: `${i * 1.2}s`,
+              animation: `shooting-star ${2.5 + i * 0.3}s ease-out infinite`,
+              animationDelay: `${i * 0.8}s`,
             }}
           />
         ))}
@@ -92,7 +92,7 @@ export default function WaveAnimation() {
       </div>
 
       {/* Bottom waves */}
-      <div className="absolute bottom-0 left-0 right-0 overflow-hidden pointer-events-none" style={{ height: "100px" }}>
+      <div className="absolute bottom-0 left-0 right-0 overflow-hidden pointer-events-none z-10" style={{ height: "100px" }}>
         {/* Wave 1 - Front gold */}
         <svg
           className="absolute bottom-0 left-0"
