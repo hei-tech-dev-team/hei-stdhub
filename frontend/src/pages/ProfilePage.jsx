@@ -180,21 +180,29 @@ export default function ProfilePage() {
               }`}
             >
               <div
-                className="rounded-xl overflow-hidden mb-6"
+                className="rounded-xl overflow-hidden mb-6 relative"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                    "linear-gradient(135deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
+                  border: "1px solid rgba(212,175,55,0.15)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.05)",
                 }}
               >
-                {/* Cover accent with waving waves */}
-                <div className="h-32 sm:h-40 relative overflow-hidden border-b border-white/10">
+                {/* Cover area with waves at bottom */}
+                <div className="h-28 sm:h-36 relative overflow-hidden">
                   <div
                     className="absolute inset-0"
                     style={{
                       background:
-                        "linear-gradient(135deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
+                        "linear-gradient(180deg, #0A1A33 0%, #001948 60%, #0A1A33 100%)",
+                    }}
+                  />
+                  {/* Subtle grid pattern */}
+                  <div
+                    className="absolute inset-0 opacity-[0.03]"
+                    style={{
+                      backgroundImage: `linear-gradient(rgba(212,175,55,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,0.5) 1px, transparent 1px)`,
+                      backgroundSize: "40px 40px",
                     }}
                   />
                   <WaveAnimation />
