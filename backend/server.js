@@ -101,6 +101,7 @@ app.use("/api/posts", require("./routes/posts"));
 app.use("/api/supports", require("./routes/supports"));
 app.use("/api/submissions", require("./routes/submissions"));
 app.use("/api/messages", require("./routes/messages"));
+app.use("/api/favorites", require("./routes/favorites"));
 app.use("/api/push", require("./routes/push"));
 app.use("/api/admin", require("./routes/admin"));
 
@@ -200,6 +201,17 @@ pool.query(`
     PRIMARY KEY (user_id)
   )
 `).catch((err) => console.error("Failed to create global_chat_read table:", err));
+
+// Ensure favorites table exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS favorites (
+    id          SERIAL    PRIMARY KEY,
+    user_id     INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    contact_id  INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, contact_id)
+  )
+`).catch((err) => console.error("Failed to create favorites table:", err));
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
