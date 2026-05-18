@@ -16,6 +16,16 @@
     padding: 0;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
+
+  html {
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    touch-action: manipulation;
   }
 
   input, textarea, select {
