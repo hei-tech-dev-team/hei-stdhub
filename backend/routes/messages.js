@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
+const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
 const webpush = require("web-push");
 const router = express.Router();
@@ -220,8 +220,9 @@ router.get("/private/:userId", auth, async (req, res) => {
 
 // Send a message (global or private)
 router.post("/", auth, async (req, res) => {
-  const { content, receiver_id, is_global } = req.body;
-  if (!content?.trim()) return res.status(400).json({ error: "Message vide." });
+  const { receiver_id, is_global } = req.body;
+  const content = typeof req.body.content === "string" ? req.body.content : "";
+  if (!content.trim()) return res.status(400).json({ error: "Message vide." });
   if (!is_global && !receiver_id)
     return res.status(400).json({ error: "Destinataire requis." });
 

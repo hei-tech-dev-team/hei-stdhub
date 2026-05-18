@@ -37,13 +37,6 @@ app.set("trust proxy", 1);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
-app.use((req, res, next) => {
-  req.socket.setTimeout(REQUEST_TIMEOUT);
-  req.socket.on("timeout", () => {
-    if (!res.headersSent) res.status(503).json({ error: "Requête expirée." });
-  });
-  next();
-});
 
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
@@ -90,11 +83,21 @@ io.use((socket, next) => {
 
 // Middleware stack
 app.use(compression());
+
+const corsOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://hei-stdhub.vercel.app",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: "*",
+    origin: corsOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    maxAge: 600,
   }),
 );
 app.use(express.json({ limit: "10mb" }));
@@ -124,7 +127,6 @@ if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
 // Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
-app.use("/api/auth/forgot-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
