@@ -217,9 +217,12 @@ describe("AUTH — PATCH /profile", () => {
 describe("AUTH — Forgot/Reset Password", () => {
   describe("POST /auth/forgot-password/send-email", () => {
     it("returns generic message for existing email", async () => {
+      const db = require("../db");
+      const { rows } = await db.query(`SELECT email FROM users LIMIT 1`);
+      if (!rows.length) return this.skip();
       const res = await agent
         .post("/api/auth/forgot-password/send-email")
-        .send({ email: "admin@hei.mg" });
+        .send({ email: rows[0].email });
       expect(res.status).to.equal(200);
       expect(res.body).to.have.property("message");
     });
@@ -227,7 +230,7 @@ describe("AUTH — Forgot/Reset Password", () => {
     it("returns generic message for non-existing email (no enumeration)", async () => {
       const res = await agent
         .post("/api/auth/forgot-password/send-email")
-        .send({ email: "nobody-exists-xyz@hei.mg" });
+        .send({ email: "nobody-exists-xyz@test.com" });
       expect(res.status).to.equal(200);
       expect(res.body).to.have.property("message");
     });
@@ -295,23 +298,31 @@ describe("AUTH — Forgot/Reset Password", () => {
     });
 
     it("full flow: send-email → reset-password", async () => {
-      // Step 1: Request reset email for admin
+      // Step 1: Get admin email from DB
+      const db = require("../db");
+      const { rows: userRows } = await db.query(
+        `SELECT email, id FROM users WHERE ref = 'ADMIN001' LIMIT 1`,
+      );
+      if (!userRows.length) return this.skip();
+      const adminEmail = userRows[0].email;
+
+      // Step 2: Request reset email
       const sendRes = await agent
         .post("/api/auth/forgot-password/send-email")
-        .send({ email: "admin@hei.mg" });
+        .send({ email: adminEmail });
       expect(sendRes.status).to.equal(200);
 
-      // Step 2: Fetch the token directly from DB (since email is async)
-      const db = require("../db");
+      // Step 3: Fetch the token directly from DB (since email is async)
       const { rows } = await db.query(
         `SELECT prt.token_hash, u.id
          FROM password_reset_tokens prt
          JOIN users u ON prt.user_id = u.id
-         WHERE u.email = 'admin@hei.mg'
+         WHERE u.id = $1
            AND prt.used_at IS NULL
            AND prt.expires_at > NOW()
          ORDER BY prt.created_at DESC
          LIMIT 1`,
+        [userRows[0].id],
       );
       expect(rows.length).to.be.greaterThan(0);
 
@@ -324,12 +335,12 @@ describe("AUTH — Forgot/Reset Password", () => {
         [rows[0].id, tokenHash],
       );
 
-      // Step 3: Validate the fresh token
+      // Step 4: Validate the fresh token
       const validateRes = await agent.get(`/api/auth/reset-password/${freshToken}`);
       expect(validateRes.status).to.equal(200);
       expect(validateRes.body).to.have.property("valid", true);
 
-      // Step 4: Reset password with the fresh token
+      // Step 5: Reset password with the fresh token
       const resetRes = await agent.post("/api/auth/reset-password").send({
         token: freshToken,
         newPassword: "newpassword123",
@@ -337,20 +348,17 @@ describe("AUTH — Forgot/Reset Password", () => {
       expect(resetRes.status).to.equal(200);
       expect(resetRes.body).to.have.property("message", "Mot de passe réinitialisé.");
 
-      // Step 5: Verify login works with new password
+      // Step 6: Verify login works with new password
       const loginRes = await agent
         .post("/api/auth/login")
         .send({ ref: "ADMIN001", password: "newpassword123" });
       expect(loginRes.status).to.equal(200);
       expect(loginRes.body).to.have.property("token");
 
-      // Step 6: Restore original password
-      const { rows: newTokenRows } = await db.query(
-        `SELECT id FROM users WHERE ref = 'ADMIN001'`,
-      );
+      // Step 7: Restore original password
       const bcrypt = require("bcryptjs");
       const restoredHash = await bcrypt.hash("password", 10);
-      await db.query("UPDATE users SET password = $1 WHERE id = $2", [restoredHash, newTokenRows[0].id]);
+      await db.query("UPDATE users SET password = $1 WHERE id = $2", [restoredHash, userRows[0].id]);
     });
   });
 });
