@@ -29,8 +29,8 @@ if (useCloudinary) {
     storage: new CloudinaryStorage({
     cloudinary,
     folder: "hei-stdhub/chat",
-    allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"],
-    resource_type: "auto",
+    allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "html", "css", "js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "cs", "php", "rb", "go", "rs", "json", "xml", "yaml", "yml", "csv", "txt", "md", "sh", "bat", "zip", "rar", "7z"],
+    resource_type: "raw",
   }),
   limits: { fileSize: 10 * 1024 * 1024 },
 }).single("file");
