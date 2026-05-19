@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
+const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
 const webpush = require("web-push");
 const router = express.Router();
@@ -222,8 +222,9 @@ router.get("/private/:userId", auth, async (req, res) => {
 
 // Send a message (global or private)
 router.post("/", auth, async (req, res) => {
-  const { content, receiver_id, is_global } = req.body;
-  if (!content?.trim()) return res.status(400).json({ error: "Message vide." });
+  const { receiver_id, is_global } = req.body;
+  const content = typeof req.body.content === "string" ? req.body.content : "";
+  if (!content.trim()) return res.status(400).json({ error: "Message vide." });
   if (!is_global && !receiver_id)
     return res.status(400).json({ error: "Destinataire requis." });
 
@@ -466,5 +467,45 @@ async function sendPushNotification(userId, { title, body, tag, url }) {
   const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
   await sendPushWithConcurrency(rows, payload);
 }
+
+router.get("/favorites", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT contact_id FROM chat_favorites WHERE user_id=$1 ORDER BY created_at ASC`,
+      [req.user.id],
+    );
+    res.json(rows.map((r) => r.contact_id));
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.post("/favorites", auth, async (req, res) => {
+  const { contact_id } = req.body;
+  if (!contact_id) return res.status(400).json({ error: "contact_id requis." });
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO chat_favorites (user_id, contact_id) VALUES ($1, $2)
+       ON CONFLICT DO NOTHING
+       RETURNING contact_id`,
+      [req.user.id, contact_id],
+    );
+    res.json(rows.map((r) => r.contact_id));
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.delete("/favorites/:contactId", auth, async (req, res) => {
+  try {
+    await db.query(
+      `DELETE FROM chat_favorites WHERE user_id=$1 AND contact_id=$2`,
+      [req.user.id, req.params.contactId],
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
 
 module.exports = router;

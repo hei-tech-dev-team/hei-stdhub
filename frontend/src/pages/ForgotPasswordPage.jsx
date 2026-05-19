@@ -1,24 +1,48 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { User, Lock, ArrowLeft, CheckCircle, AlertCircle, ShieldCheck } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, User, Lock, Eye, EyeOff } from "lucide-react";
 import api from "../api/axios";
 
 export default function ForgotPasswordPage() {
-  const [step, setStep] = useState(1);
-  const [ref, setRef] = useState("");
+  const [method, setMethod] = useState("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+
+  // Email method
+  const [email, setEmail] = useState("");
+
+  // Security questions method
+  const [step, setStep] = useState(1);
+  const [ref, setRef] = useState("");
   const [userInfo, setUserInfo] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [resetToken, setResetToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [done, setDone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLookup = async (e) => {
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setError("Veuillez entrer votre adresse email.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await api.post("/auth/forgot-password/send-email", { email: email.trim() });
+      setDone(true);
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur serveur.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefLookup = async (e) => {
     e.preventDefault();
     if (!ref.trim()) {
       setError("Veuillez entrer votre référence (ex: STD25001).");
@@ -96,6 +120,23 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const leftPanelContent = () => {
+    if (method === "email") {
+      return {
+        subtitle: "Entrez votre email pour recevoir un lien de réinitialisation.",
+        badge: "Vérification par email",
+        hint: "Le lien est valable 5 minutes.",
+      };
+    }
+    return {
+      subtitle: "Répondez à vos questions de sécurité pour vérifier votre identité.",
+      badge: "Questions de sécurité",
+      hint: step === 1 ? "Identifiez-vous" : step === 2 ? "Vérification" : "Réinitialisation",
+    };
+  };
+
+  const left = leftPanelContent();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -106,12 +147,10 @@ export default function ForgotPasswordPage() {
 
       <div className="relative w-full max-w-4xl">
         <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex min-h-[540px]">
-          {/* Left panel */}
           <div
             className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
             style={{
-              background:
-                "linear-gradient(160deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
+              background: "linear-gradient(160deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
             }}
           >
             <div className="absolute top-[-60px] left-[-60px] w-56 h-56 bg-white/10 rounded-full" />
@@ -122,19 +161,11 @@ export default function ForgotPasswordPage() {
 
             <div className="relative z-10 flex items-center gap-3">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <img
-                  src={HEI_WHITE_LOGO}
-                  alt="HEI"
-                  className="w-8 h-8 object-contain"
-                />
+                <img src={HEI_WHITE_LOGO} alt="HEI" className="w-8 h-8 object-contain" />
               </div>
               <div>
-                <span className="text-white font-bold text-lg leading-none block">
-                  HEI STDhub
-                </span>
-                <span className="text-white/60 text-xs">
-                  Plateforme étudiante
-                </span>
+                <span className="text-white font-bold text-lg leading-none block">HEI STDhub</span>
+                <span className="text-white/60 text-xs">Plateforme étudiante</span>
               </div>
             </div>
 
@@ -144,28 +175,16 @@ export default function ForgotPasswordPage() {
                 <br />
                 oublié ?
               </h2>
-              <p className="text-white/60 text-sm leading-relaxed">
-                {step === 1 && "Entrez votre référence pour commencer."}
-                {step === 2 && "Répondez à vos questions de sécurité."}
-                {step === 3 && "Choisissez un nouveau mot de passe."}
-              </p>
+              <p className="text-white/60 text-sm leading-relaxed">{left.subtitle}</p>
             </div>
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
-              <p className="text-white/80 text-xs font-medium">
-                Étape {step}/3
-              </p>
-              <p className="text-white/50 text-xs mt-0.5">
-                {step === 1 && "Identification"}
-                {step === 2 && "Vérification"}
-                {step === 3 && "Réinitialisation"}
-              </p>
+              <p className="text-white/80 text-xs font-medium">{left.badge}</p>
+              <p className="text-white/50 text-xs mt-0.5">{left.hint}</p>
             </div>
           </div>
 
-          {/* Right panel */}
           <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 py-10">
-            {/* Mobile logo */}
             <div className="flex lg:hidden items-center gap-2 mb-8">
               <img src={HEI_BLUE_LOGO} alt="HEI" className="h-9 object-contain" />
               <span className="text-navy font-bold text-lg">HEI STDhub</span>
@@ -173,18 +192,17 @@ export default function ForgotPasswordPage() {
 
             {done ? (
               <div className="flex flex-col items-center text-center gap-5 py-6">
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-                >
+                <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
                   <CheckCircle size={36} className="text-white" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-navy mb-2">
-                    Mot de passe réinitialisé
+                    {method === "email" ? "Email envoyé" : "Mot de passe réinitialisé"}
                   </h2>
                   <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
+                    {method === "email"
+                      ? "Si un compte est associé à cet email, un lien de réinitialisation a été envoyé."
+                      : "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."}
                   </p>
                 </div>
                 <Link
@@ -192,20 +210,56 @@ export default function ForgotPasswordPage() {
                   className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200"
                   style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
                 >
-                  Se connecter
+                  Retour à la connexion
                 </Link>
               </div>
             ) : (
               <>
-                {step === 1 && (
+                {/* Method selector */}
+                {step === 1 && method === "email" ? null : step > 1 ? null : (
+                  <div className="mb-8">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-navy">Réinitialisation</h1>
+                    <p className="text-gray-400 text-sm mt-1">Choisissez votre méthode de vérification</p>
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => { setMethod("email"); setError(""); }}
+                        className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
+                          method === "email"
+                            ? "border-navy bg-navy/5"
+                            : "border-gray-200 hover:border-navy/40"
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
+                          <Mail size={18} className="text-white" />
+                        </div>
+                        <span className="text-sm font-bold text-navy">Email</span>
+                        <span className="text-xs text-gray-400">Lien par email</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setMethod("security"); setError(""); }}
+                        className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
+                          method === "security"
+                            ? "border-navy bg-navy/5"
+                            : "border-gray-200 hover:border-navy/40"
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
+                          <ShieldCheck size={18} className="text-white" />
+                        </div>
+                        <span className="text-sm font-bold text-navy">Questions</span>
+                        <span className="text-xs text-gray-400">Questions de sécurité</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {method === "email" && step === 1 && (
                   <>
                     <div className="mb-8">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">
-                        Réinitialisation
-                      </h1>
-                      <p className="text-gray-400 text-sm mt-1">
-                        Entrez votre référence étudiant pour commencer
-                      </p>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Réinitialisation</h1>
+                      <p className="text-gray-400 text-sm mt-1">Entrez votre adresse email pour recevoir un lien</p>
                     </div>
 
                     {error && (
@@ -214,16 +268,51 @@ export default function ForgotPasswordPage() {
                       </div>
                     )}
 
-                    <form onSubmit={handleLookup} className="flex flex-col gap-5">
+                    <form onSubmit={handleEmailSubmit} className="flex flex-col gap-5">
                       <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
-                          Réference
-                        </label>
+                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Adresse email</label>
                         <div className="relative">
-                          <User
-                            size={15}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                          <Mail size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="email"
+                            className="input-field pl-10"
+                            placeholder="exemple@email.com"
+                            value={email}
+                            onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                            autoComplete="email"
                           />
+                        </div>
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+                      >
+                        {loading ? "Envoi..." : "Envoyer le lien"}
+                      </button>
+                    </form>
+                  </>
+                )}
+
+                {method === "security" && step === 1 && (
+                  <>
+                    <div className="mb-8">
+                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Vérification</h1>
+                      <p className="text-gray-400 text-sm mt-1">Entrez votre référence étudiant</p>
+                    </div>
+
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
+                        <AlertCircle size={16} /> {error}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleRefLookup} className="flex flex-col gap-5">
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Référence</label>
+                        <div className="relative">
+                          <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
                             type="text"
                             className="input-field pl-10 uppercase"
@@ -245,15 +334,11 @@ export default function ForgotPasswordPage() {
                   </>
                 )}
 
-                {step === 2 && (
+                {method === "security" && step === 2 && (
                   <>
                     <div className="mb-6">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">
-                        Vérification
-                      </h1>
-                      <p className="text-gray-400 text-sm mt-1">
-                        {userInfo?.prenom}, répondez à vos questions de sécurité
-                      </p>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Vérification</h1>
+                      <p className="text-gray-400 text-sm mt-1">{userInfo?.prenom}, répondez à vos questions de sécurité</p>
                     </div>
 
                     {error && (
@@ -265,9 +350,7 @@ export default function ForgotPasswordPage() {
                     <form onSubmit={handleVerify} className="flex flex-col gap-4">
                       {questions.map((q, i) => (
                         <div key={q.key}>
-                          <label className="text-xs font-bold text-gray-500 mb-2 block">
-                            Question {i + 1} : {q.question}
-                          </label>
+                          <label className="text-xs font-bold text-gray-500 mb-2 block">Question {i + 1} : {q.question}</label>
                           <input
                             type="text"
                             className="input-field"
@@ -290,15 +373,11 @@ export default function ForgotPasswordPage() {
                   </>
                 )}
 
-                {step === 3 && (
+                {method === "security" && step === 3 && (
                   <>
                     <div className="mb-6">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">
-                        Nouveau mot de passe
-                      </h1>
-                      <p className="text-gray-400 text-sm mt-1">
-                        Choisissez un mot de passe sécurisé
-                      </p>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Nouveau mot de passe</h1>
+                      <p className="text-gray-400 text-sm mt-1">Choisissez un mot de passe sécurisé</p>
                     </div>
 
                     {error && (
@@ -309,9 +388,7 @@ export default function ForgotPasswordPage() {
 
                     <form onSubmit={handleReset} className="flex flex-col gap-4">
                       <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
-                          Nouveau mot de passe
-                        </label>
+                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Nouveau mot de passe</label>
                         <div className="relative">
                           <Lock size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
@@ -327,14 +404,12 @@ export default function ForgotPasswordPage() {
                             onClick={() => setShowPassword((v) => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy"
                           >
-                            {showPassword ? "🙈" : "👁"}
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
-                          Confirmer
-                        </label>
+                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Confirmer</label>
                         <div className="relative">
                           <ShieldCheck size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
