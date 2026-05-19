@@ -687,7 +687,6 @@ export default function MessagePanel({
       );
     }
   };
-  };
 
   const handleKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
