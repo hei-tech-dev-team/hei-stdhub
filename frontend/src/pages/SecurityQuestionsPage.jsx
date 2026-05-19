@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
 import api from "../api/axios";
+import JarvisScanAnimation from "../components/ui/JarvisScanAnimation";
 
 export default function SecurityQuestionsPage() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function SecurityQuestionsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [showJarvis, setShowJarvis] = useState(false);
 
   useEffect(() => {
     api.get("/auth/security-questions")
@@ -90,14 +92,23 @@ export default function SecurityQuestionsPage() {
         })),
       ];
       await api.post("/auth/security-questions", { questions: payload });
-      setSaved(true);
-      setTimeout(() => navigate("/profile", { replace: true }), 2000);
+      setShowJarvis(true);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'enregistrement.");
     } finally {
       setSaving(false);
     }
   };
+
+  const handleJarvisComplete = () => {
+    setShowJarvis(false);
+    setSaved(true);
+    setTimeout(() => navigate("/profile", { replace: true }), 2000);
+  };
+
+  if (showJarvis) {
+    return <JarvisScanAnimation onComplete={handleJarvisComplete} duration={3000} />;
+  }
 
   if (loading) {
     return (

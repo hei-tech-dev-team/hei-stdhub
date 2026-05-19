@@ -8,7 +8,6 @@ const rateLimit = require("express-rate-limit");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-const { sendPasswordResetEmail } = require("../services/mailer");
 
 const SECURITY_QUESTIONS = [
   { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
@@ -78,20 +77,6 @@ const makeToken = (user) =>
 
 const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
-
-const genericForgotPasswordResponse = {
-  message:
-    "Si un compte est associ\u00e9 \u00e0 cet email, un lien de r\u00e9initialisation a \u00e9t\u00e9 envoy\u00e9.",
-};
-
-const forgotPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 0 : 10,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
-});
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -242,85 +227,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, res) => {
-  const email = req.body.email?.trim().toLowerCase();
-  if (!email)
-    return res.status(400).json({ error: "Adresse email requise." });
-  if (email.length > 254)
-    return res.status(400).json({ error: "Adresse email trop longue." });
-
-  try {
-    const { rows } = await db.query(
-      "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
-      [email],
-    );
-
-    if (!rows.length) return res.json(genericForgotPasswordResponse);
-
-    const user = rows[0];
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(token);
-
-    await db.query(
-      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
-      [user.id],
-    );
-
-    await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
-      [user.id, tokenHash],
-    );
-
-    res.json(genericForgotPasswordResponse);
-    sendPasswordResetEmail({ user, token }).catch((emailErr) => {
-      console.error("ERREUR email /auth/forgot-password:", emailErr);
-    });
-  } catch (err) {
-    console.error("ERREUR /auth/forgot-password:", err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
-// Alias for frontend compatibility: POST /forgot-password/send-email
-router.post("/forgot-password/send-email", async (req, res) => {
-  const email = req.body.email?.trim().toLowerCase();
-  if (!email)
-    return res.status(400).json({ error: "Adresse email requise." });
-  if (email.length > 254)
-    return res.status(400).json({ error: "Adresse email trop longue." });
-
-  try {
-    const { rows } = await db.query(
-      "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
-      [email],
-    );
-
-    if (!rows.length) return res.json(genericForgotPasswordResponse);
-
-    const user = rows[0];
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(token);
-
-    await db.query(
-      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
-      [user.id],
-    );
-
-    await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
-      [user.id, tokenHash],
-    );
-
-    res.json(genericForgotPasswordResponse);
-    sendPasswordResetEmail({ user, token }).catch((emailErr) => {
-      console.error("ERREUR email /auth/forgot-password/send-email:", emailErr);
-    });
-  } catch (err) {
-    console.error("ERREUR /auth/forgot-password/send-email:", err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
 // Public profile by ref
 router.get("/user/:ref", auth, async (req, res) => {
   try {
@@ -422,7 +328,7 @@ router.post("/forgot-password/by-ref", async (req, res) => {
     );
     if (sq.length < 2)
       return res.status(400).json({
-        error: "Aucune question de sécurité configurée. Utilisez l'option email ou contactez un administrateur.",
+        error: "Aucune question de securite configuree. Contactez un administrateur.",
       });
 
     const questions = sq.map((r) => {
