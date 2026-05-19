@@ -212,10 +212,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("message:private", ({ receiverId, msg }) => {
-    if (!receiverId || !msg || containsProfanity(msg.content || "")) {
-      socket.emit("error", { message: "Message contenant des propos inappropriés." });
-      return;
-    }
+    if (!receiverId || !msg) return;
     io.to(`user:${receiverId}`).emit("message:private", msg);
     io.to(`user:${socket.userId}`).emit("message:private", msg);
   });
