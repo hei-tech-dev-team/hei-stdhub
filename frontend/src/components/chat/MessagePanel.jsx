@@ -12,6 +12,7 @@ import {
   faSmile,
   faXmark,
   faDownload,
+  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import UserAvatar from "../ui/UserAvatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -67,11 +68,12 @@ function DateSeparator({ date }) {
   );
 }
 
-function ImageMessage({ parsed, onImageClick, onDelete, isOwn }) {
-  const [showDelete, setShowDelete] = useState(false);
+function ImageMessage({ parsed, onImageClick, onDelete, onDownload, isOwn }) {
+  const [showActions, setShowActions] = useState(false);
+  const isMobile = window.matchMedia("(max-width: 1023px)").matches;
 
-  const handlers = useLongPress(
-    () => setShowDelete(true),
+   const handlers = useLongPress(
+    () => setShowActions(true),
     () => onImageClick?.({ url: parsed.url, filename: parsed.filename }),
   );
 
@@ -83,33 +85,57 @@ function ImageMessage({ parsed, onImageClick, onDelete, isOwn }) {
         className="max-w-[200px] sm:max-w-[320px] max-h-[300px] w-auto h-auto object-contain rounded-lg block bg-black/20 select-none"
         loading="lazy"
         draggable={false}
+        onContextMenu={(e) => e.preventDefault()}
+        style={{ WebkitTouchCallout: "none" }}
       />
 
-      {showDelete && isOwn && (
+       {showActions && (
         <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setShowDelete(false)}
-          />
-          <div className="absolute bottom-full left-0 mb-2 z-50 bg-navy-dark border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fade-in">
-            <button
-              type="button"
-              onClick={() => { setShowDelete(false); onDelete?.(); }}
-              className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition w-full whitespace-nowrap"
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()} />
+
+          {isMobile ? (
+            <div className="fixed bottom-0 inset-x-0 z-50 bg-navy-dark border-t border-white/10 rounded-t-2xl shadow-2xl animate-fade-in pb-safe"
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()}
             >
-              <FontAwesomeIcon icon={faTrash} className="text-xs" />
-              Supprimer le message
-            </button>
-          </div>
+              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-4" />
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); setShowActions(false); onImageClick?.({ url: parsed.url, filename: parsed.filename }); }}
+                className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+                <FontAwesomeIcon icon={faEye} /> Visionner
+              </button>
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); setShowActions(false); onDownload?.(parsed.url, parsed.filename); }}
+                className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+                <FontAwesomeIcon icon={faDownload} /> Télécharger
+              </button>
+              {isOwn && (
+                <button type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowActions(false); onDelete?.(); }}
+                  className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
+                  <FontAwesomeIcon icon={faTrash} /> Supprimer
+                </button>
+              )}
+              <div className="h-4" />
+            </div>
+          ) : (
+            <div className="absolute bottom-full left-0 mb-2 z-50 bg-navy-dark border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fade-in">
+              <button type="button"
+                onClick={() => { setShowActions(false); onDelete?.(); }}
+                className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition w-full whitespace-nowrap">
+                <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                Supprimer le message
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
   );
 }
 
-function FileMessage({ parsed, onDelete, isOwn }) {
-  const [showDelete, setShowDelete] = useState(false);
-
+function FileMessage({ parsed, onDelete, isOwn, showDelete, onShowDeleteChange }) {
   const handleDownload = useCallback(async () => {
     try {
       const response = await fetch(parsed.url);
@@ -128,7 +154,7 @@ function FileMessage({ parsed, onDelete, isOwn }) {
   }, [parsed.url, parsed.filename]);
 
   const handlers = useLongPress(
-    () => setShowDelete(true),
+    () => onShowDeleteChange?.(true),
     handleDownload,
   );
 
@@ -136,6 +162,8 @@ function FileMessage({ parsed, onDelete, isOwn }) {
     <div
       className="relative flex items-center gap-2 py-3 px-2 bg-blue-900/90 hover:bg-blue-900 cursor-pointer transition-all max-w-full"
       {...handlers}
+      onContextMenu={(e) => e.preventDefault()}
+      style={{ WebkitTouchCallout: "none" }}
     >
       <div className="flex flex-col items-center bg-gold-700/10 border-2 border-gold rounded-lg shrink-0 py-2 px-3">
         <FontAwesomeIcon className="text-sm text-gold" icon={faFile} />
@@ -147,27 +175,11 @@ function FileMessage({ parsed, onDelete, isOwn }) {
         <span className="truncate">{parsed.filename?.substring(0, 20)}...</span>
         <span>{parsed.size && `(${(parsed.size / 1024).toFixed(1)} KB)`}</span>
       </div>
-
-      {showDelete && isOwn && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowDelete(false)} />
-          <div className="absolute bottom-full left-0 mb-2 z-50 bg-navy-dark border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fade-in">
-            <button
-              type="button"
-              onClick={() => { setShowDelete(false); onDelete?.(); }}
-              className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition w-full whitespace-nowrap"
-            >
-              <FontAwesomeIcon icon={faTrash} className="text-xs" />
-              Supprimer le message
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }
 
-function renderContent(content, onImageClick, onDelete, isOwn) {
+function renderContent(content, onImageClick, onDelete, isOwn, onDownload, msgId, showDelete, onShowDeleteChange) {
   const parsed = parseFileContent(content);
   if (parsed) {
     if (parsed.type === "img") {
@@ -176,6 +188,7 @@ function renderContent(content, onImageClick, onDelete, isOwn) {
           parsed={parsed}
           onImageClick={onImageClick}
           onDelete={onDelete}
+          onDownload={onDownload} 
           isOwn={isOwn}
         />
       );
@@ -185,6 +198,8 @@ function renderContent(content, onImageClick, onDelete, isOwn) {
         parsed={parsed}
         onDelete={onDelete}
         isOwn={isOwn}
+        showDelete={showDelete}
+        onShowDeleteChange={onShowDeleteChange}
       />
     );
   }
@@ -278,7 +293,8 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
   );
 }
 
-function MessageGroup({ messages, isOwn, onDelete, onImageClick }) {
+function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
+  const [showDeleteFileId, setShowDeleteFileId] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
 
   const handleDelete = (msg) => {
@@ -297,34 +313,47 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick }) {
           return (
             <div
               key={msg.id}
-              className="group flex items-end gap-2 mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0"
+              className="group flex flex-col items-end mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0"
               onMouseEnter={() => setHoveredId(msg.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
-              {!isOwn && isFirst && (
-                <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
-                  <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
-                </div>
-              )}
-              {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
-              <div className="flex flex-col items-end min-w-0">
-                <div className={`rounded-xl overflow-hidden ${isOwn ? "bg-gold/95 text-navy-dark" : "bg-white/[0.08] border border-white/10 text-white"}`}>
-                  {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn)}
-                </div>
-                <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-                  <span className="text-[10px] text-white/30">{timeStr}</span>
-                  {isOwn && (
+              <div className="flex  items-center gap-2">
+                {isOwn && showDeleteFileId === msg.id && (
+                  <>
+                    <div className="fixed inset-0 z-40"
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => { e.stopPropagation(); setShowDeleteFileId(null); }}
+                      onClick={() => setShowDeleteFileId(null)}
+                    />
                     <button
                       type="button"
-                      onClick={() => handleDelete(msg)}
-                      className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
-                      title="Supprimer"
+                      onClick={(e) => { e.stopPropagation(); setShowDeleteFileId(null); handleDelete(msg); }}
+                      className="z-50 w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow-lg shrink-0"
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
-                  )}
+                  </>
+                )}
+
+                <div className={`rounded-xl overflow-hidden ${isOwn ? "bg-gold/95 text-navy-dark" : "bg-white/[0.08] border border-white/10 text-white"}`}>
+                  {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload, msg.id, showDeleteFileId === msg.id, (v) => setShowDeleteFileId(v ? msg.id : null))}
                 </div>
               </div>
+
+              <div className="flex items-center gap-1.5 mt-0.5 px-1 flex-row-reverse">
+                <span className="text-[10px] text-white/30">{timeStr}</span>
+                {isOwn && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(msg)}
+                    className="hidden sm:block opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
+                    title="Supprimer"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                )}
+              </div>
+                
             </div>
           );
         }
@@ -370,7 +399,7 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick }) {
                     : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
                 }`}
               >
-                {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn)}
+                {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload)}
               </div>
               <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
                 <span className="text-[10px] text-white/30">{timeStr}</span>
@@ -764,6 +793,7 @@ export default function MessagePanel({
                   isOwn={item.isOwn}
                   onDelete={requestDeleteMessage}
                   onImageClick={setLightboxImg}
+                  onDownload={(url, filename) => handleDownloadImg(url, filename)}
                 />
               </div>
             );
