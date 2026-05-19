@@ -21,7 +21,7 @@ frontend/src/
 └── components/                 # Reusable components
     ├── layout/                 # Sidebar, Navbar
     ├── dashboard/              # StudentHome, TeacherHome, AlumniHome
-    ├── chat/                   # ChatLayout, ContactList, MessagePanel
+    ├── chat/                   # ChatLayout, ContactList, MessagePanel, useLongPress
     ├── archives/               # ArchiveGrid
     ├── td/                     # StudentUpload, TeacherInbox
     └── ui/                     # Avatar, Badge, OnboardingModal
@@ -575,30 +575,54 @@ _unread badge:_ Gold pill badge showing unread count (capped at 99+) next to con
 @description Full message panel with grouped messages, date separators, file sharing,
   image preview, read receipts, message deletion (trash icon on hover for own messages),
   scroll-to-bottom button, auto-scroll, infinite scroll (load older on scroll to top).
+  Now includes an image lightbox for viewing full-size images and a file upload preview.
 
 @state text, sending, loadingOlder
+@state selectedFile - File chosen for upload (File object)
+@state lightboxImg - { url: string, filename: string } object for the currently displayed image in lightbox
+@state previewUrl - URL for the selected file preview (revoked on unmount/change)
+@state showEmojiPicker, deleteTarget
+
 @ref bottomRef, fileRef, scrollRef, prevScrollHeight
 
+@effect Revokes previewUrl when component unmounts or previewUrl changes to prevent memory leaks.
 @useMemo grouped - Groups by sender within 5min gap, inserts date separators
 @effect Auto-scroll on new messages (if already at bottom)
 @effect Preserve scroll position when older messages loaded (prevScrollHeight)
 @function handleScroll() - Detects scroll position + triggers loadOlder at top
-@function handleSend() - Trims and sends message
+@async @function handleSend() - Trims and sends message. Now handles file upload first if a file is selected.
+  Sends "[FILE:...]" message for files. Clears selected file and preview after send.
 @function handleKey(e) - Send on Enter (not Shift+Enter)
-@async @function handleFile(e) - POST /messages/upload, sends [FILE:...] message
+@function handleFile(e) - Captures selected file, sets `selectedFile` and `previewUrl` for preview.
+@async @function handleDownloadImg(url, filename) - Downloads an image, handling potential errors and falling back to opening in a new tab.
 
-_Scroll-to-bottom button:_ Fixed position chevron-down button appears when not at bottom,
-  scrolls to latest messages on click.
+@function ImageMessage({ parsed, onImageClick, onDelete, isOwn })
+@param {Object} parsed - Parsed file content { url, filename, type, ... }
+@param {Function} onImageClick - Callback when image is clicked (for lightbox)
+@param {Function} onDelete - Callback to delete the message
+@param {boolean} isOwn - True if the message belongs to the current user
+@description Renders an image message with a long-press gesture for deletion (if `isOwn`) or click for lightbox.
+
+@function FileMessage({ parsed, onDelete, isOwn })
+@param {Object} parsed - Parsed file content { url, filename, type, ... }
+@param {Function} onDelete - Callback to delete the message
+@param {boolean} isOwn - True if the message belongs to the current user
+@description Renders a generic file message with a long-press gesture for deletion (if `isOwn`) or click for download.
 
 @function RoleBadge({ role }) - Role badge in chat header
 @function ChatAvatar({ avatar, name }) - Avatar with error fallback
 @function DateSeparator({ date }) - Horizontal line with date label
-@function renderContent(content) - Renders file/image or sanitized HTML (DOMPurify)
-@function MessageGroup({ messages, isOwn, onDelete }) - Renders message group with bubbles.
-  Shows trash icon on hover for own messages with confirmation dialog (Supprimer ce message ?).
+@function renderContent(content, onImageClick, onDelete, isOwn) - Renders file/image using `ImageMessage` or `FileMessage`, or sanitized HTML (DOMPurify).
+@function MessageGroup({ messages, isOwn, onDelete, onImageClick }) - Renders message group with bubbles.
+  Now passes `onImageClick` to `renderContent`. Shows trash icon on hover for own text messages with confirmation dialog.
 @function handleDelete(msgId) - Calls onDelete after user confirmation
 @function HeaderAvatar({ avatar, name }) - Header avatar
 @function ContactAvatar({ contact, onlineUsers }) - Contact avatar with status dot
+
+_Scroll-to-bottom button:_ Fixed position chevron-down button appears when not at bottom,
+  scrolls to latest messages on click.
+_File upload preview:_ Displays a preview (thumbnail for images, icon for others) of the selected file above the message input, with a close button.
+_Image lightbox:_ Full-screen overlay to view clicked images, includes download and close buttons.
 ```
 
 ### `components/chat/chat-utils.js`
@@ -637,6 +661,19 @@ _Scroll-to-bottom button:_ Fixed position chevron-down button appears when not a
 @function parseFileContent
 @param {string} content
 @returns {Object|null} { filename, url, isImage } or null
+```
+
+### `components/chat/useLongPress.js`
+
+```js
+@function useLongPress
+@param {Function} onLongPress - Callback function to execute on long press.
+@param {Function} onTap - Optional callback function to execute on a regular tap/click (if no long press occurs).
+@param {number} delay - Duration in milliseconds to trigger a long press (default: 500ms).
+@description A custom React hook to detect long press and tap gestures on touch devices, and regular clicks on desktop.
+  Useful for implementing context menus or special actions on long holds.
+@returns {Object} An object containing event handlers (`onClick`, `onTouchStart`, `onTouchEnd`, `onTouchMove`)
+  to be spread onto a DOM element.
 ```
 
 ### `components/archives/ArchiveGrid.jsx`
