@@ -264,14 +264,10 @@ router.post("/security-questions", auth, async (req, res) => {
   }));
 
   for (const q of sanitized) {
-    if (!q.question || q.question.length < 4)
-      return res.status(400).json({ error: "Question trop courte (min 4 caracteres)." });
-    if (q.question.length > 200)
-      return res.status(400).json({ error: "Question trop longue (max 200 caracteres)." });
-    if (!q.answer || q.answer.length < 2)
-      return res.status(400).json({ error: "Reponse requise pour chaque question (min 2 caracteres)." });
-    if (q.answer.length > 100)
-      return res.status(400).json({ error: "Reponse trop longue (max 100 caracteres)." });
+    if (!q.question)
+      return res.status(400).json({ error: "Chaque question doit etre renseignee." });
+    if (!q.answer)
+      return res.status(400).json({ error: "Chaque reponse doit etre renseignee." });
   }
 
   const uniqueQuestions = new Set(sanitized.map((q) => q.question.toLowerCase()));
