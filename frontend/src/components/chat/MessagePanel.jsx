@@ -13,6 +13,8 @@ import {
   faXmark,
   faDownload,
   faEye,
+  faShieldHalved,
+  faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import UserAvatar from "../ui/UserAvatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -529,6 +531,7 @@ export default function MessagePanel({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingMessage, setDeletingMessage] = useState(false);
+  const [profanityModal, setProfanityModal] = useState(null);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const inputRef = useRef(null);
@@ -652,7 +655,7 @@ export default function MessagePanel({
     if (!trimmed && !selectedFile) return;
 
     if (contact.isGlobal && containsProfanity(trimmed)) {
-      alert("Message contenant des propos inappropries detecte. Veuillez respecter les autres membres.");
+      setProfanityModal({ type: "message" });
       return;
     }
 
@@ -704,7 +707,7 @@ export default function MessagePanel({
     }
     setSelectedFile(file);
     if (contact.isGlobal && containsProfanity(file.name)) {
-      alert("Nom de fichier inapproprié détecté. Veuillez respecter les autres membres.");
+      setProfanityModal({ type: "file", fileName: file.name });
       e.target.value = "";
       return;
     }
@@ -1019,6 +1022,73 @@ export default function MessagePanel({
         onCancel={cancelDeleteMessage}
         onConfirm={confirmDeleteMessage}
       />
+
+      {profanityModal && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setProfanityModal(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="p-6 text-center"
+              style={{
+                background: "linear-gradient(160deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
+              }}
+            >
+              <div
+                className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                style={{ background: "rgba(239, 68, 68, 0.15)" }}
+              >
+                <FontAwesomeIcon
+                  icon={faTriangleExclamation}
+                  className="text-red-400 text-2xl"
+                />
+              </div>
+              <h3 className="text-white text-lg font-bold mb-2">
+                Contenu inapproprie detecte
+              </h3>
+              <div className="w-12 h-0.5 mx-auto rounded-full bg-red-400/50 mb-4" />
+              <p className="text-white/70 text-sm leading-relaxed">
+                {profanityModal.type === "file" ? (
+                  <>
+                    Le nom de fichier <span className="text-white font-semibold">"{profanityModal.fileName}"</span> contient des propos non autorises.
+                  </>
+                ) : (
+                  <>
+                    Votre message contient des propos non autorises. Veuillez respecter les autres membres de la communaute.
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="px-6 pb-6 pt-4 flex flex-col gap-3">
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <FontAwesomeIcon
+                  icon={faShieldHalved}
+                  className="text-amber-500 text-sm mt-0.5 shrink-0"
+                />
+                <p className="text-amber-700 text-xs leading-relaxed">
+                  Les propos injurieux, discriminatoires ou offensants sont interdits dans le chat global. Les messages prives ne sont pas concernes.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setProfanityModal(null)}
+                className="w-full py-3 rounded-2xl font-bold text-sm text-white transition-all duration-200 active:scale-[0.98]"
+                style={{
+                  background: "linear-gradient(135deg, #0A1A33, #001948)",
+                  boxShadow: "0 4px 16px rgba(0,25,72,0.25)",
+                }}
+              >
+                Compris, je vais modifier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {lightboxImg && (
         <div
