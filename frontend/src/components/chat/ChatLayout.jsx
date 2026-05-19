@@ -223,7 +223,7 @@ export default function ChatLayout() {
       const msgs = msgList.map(formatMsg);
       setMessages((prev) => ({
         ...prev,
-        [contact.id]: [...msgs.reverse(), ...(prev[contact.id] || [])],
+        [contact.id]: [[...msgs].reverse(), ...(prev[contact.id] || [])].flat(),
       }));
     } catch (err) {
       console.error(err);
@@ -438,6 +438,17 @@ export default function ChatLayout() {
       cancelled = true;
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (cleanupListener) cleanupListener();
+      if (socket) {
+        socket.off("message:global");
+        socket.off("message:private");
+        socket.off("user:online");
+        socket.off("user:offline");
+        socket.off("message:seen");
+        socket.off("message:deleted");
+        socket.off("unread:update");
+        socket.off("typing:started");
+        socket.off("typing:stopped");
+      }
     };
   }, [user, formatMsg]);
 

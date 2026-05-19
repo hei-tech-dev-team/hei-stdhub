@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 import Sidebar from "../components/layout/Sidebar";
@@ -548,7 +549,7 @@ export default function ProfilePage() {
 
             {/* Security questions link */}
             <div className="animate-slide-up" style={{ animationDelay: "0.45s" }}>
-              <a href="/security-questions"
+              <Link to="/security-questions"
                 className="block rounded-2xl overflow-hidden p-5 sm:p-6 transition-all duration-200 hover:shadow-md"
                 style={{
                   background: "white",
@@ -568,7 +569,7 @@ export default function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-              </a>
+              </Link>
             </div>
           </div>
         </main>

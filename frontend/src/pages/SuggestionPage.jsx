@@ -58,7 +58,7 @@ export default function SuggestionPage() {
     setLoading(true);
     setError("");
     try {
-      await api.post("/suggestions", form);
+      await api.post("/suggestions", { titre: form.titre.trim(), contenu: form.contenu.trim(), anonyme: form.anonyme });
       setSubmitted(true);
       setForm({ titre: "", contenu: "", anonyme: false });
       localStorage.setItem("last_suggestion_at", Date.now().toString());

@@ -433,11 +433,12 @@ router.get("/reset-password/:token", async (req, res) => {
 });
 
 router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
-  const { token } = req.body;
-  const newPassword = req.body.newPassword || req.body.password;
+  const { token, newPassword } = req.body;
 
-  if (!token || !newPassword)
-    return res.status(400).json({ error: "Token et mot de passe requis." });
+  if (!token)
+    return res.status(400).json({ error: "Token requis." });
+  if (!newPassword)
+    return res.status(400).json({ error: "Nouveau mot de passe requis." });
   if (newPassword.length < 6)
     return res.status(400).json({ error: "Minimum 6 caractères." });
 
