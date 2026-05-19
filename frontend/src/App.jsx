@@ -16,6 +16,7 @@ import BDEPage from "./pages/BDEPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import PingBoxPage from "./pages/PingBoxPage";
 import STDnewsPage from "./pages/STDnewsPage";
+import AlumniTipsPage from "./pages/AlumniTipsPage";
 import OnboardingModal from "./components/ui/OnboardingModal";
 
 function ProtectedRoute({ children }) {
@@ -157,6 +158,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <STDnewsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/alumni-tips"
+        element={
+          <ProtectedRoute>
+            <AlumniTipsPage />
           </ProtectedRoute>
         }
       />
