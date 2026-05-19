@@ -137,6 +137,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     const online = onlineUsers.has(contact.id);
     const avatarInner = (
       <>
+
         <UserAvatar
           avatar={contact.avatar}
           name={contact.name}
@@ -316,6 +317,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                 <div
                   key={u.id}
                   onClick={() => handleStartConversation(u)}
+
                   role="button"
                   tabIndex={0}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left cursor-pointer focus:outline-none focus:bg-white/5"
@@ -332,7 +334,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm text-white truncate block flex items-center gap-1">
+                    <span className="font-semibold text-sm text-white truncate flex items-center gap-1">
                       {u.pseudo}
                       <RoleBadge role={u.role} />
                     </span>
