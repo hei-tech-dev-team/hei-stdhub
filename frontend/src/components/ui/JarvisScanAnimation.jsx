@@ -5,6 +5,7 @@ const NAVY_DARK = "#0A1A33";
 const GOLD = "#DFA408";
 const GOLD_LIGHT = "#F2C94C";
 const GOLD_PREMIUM = "#D4AF37";
+const GOLD_DARK = "#B8860B";
 
 function goldRgba(alpha) {
   return `rgba(223, 164, 8, ${alpha})`;
@@ -16,6 +17,10 @@ function goldLightRgba(alpha) {
 
 function goldPremiumRgba(alpha) {
   return `rgba(212, 175, 55, ${alpha})`;
+}
+
+function goldDarkRgba(alpha) {
+  return `rgba(184, 134, 11, ${alpha})`;
 }
 
 function playJarvisAudio(duration) {
@@ -133,16 +138,14 @@ function playJarvisAudio(duration) {
   }
 }
 
-export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
+export default function JarvisScanAnimation({ onComplete, duration = 3500 }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const audioRef = useRef(null);
 
   const handleComplete = useCallback(() => {
     if (audioRef.current) {
-      try {
-        audioRef.current.ctx.close();
-      } catch {}
+      try { audioRef.current.ctx.close(); } catch {}
       audioRef.current = null;
     }
     if (onComplete) onComplete();
@@ -165,13 +168,22 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
     resize();
     window.addEventListener("resize", resize);
 
-    const particles = Array.from({ length: 80 }, () => ({
+    const particles = Array.from({ length: 120 }, () => ({
       x: Math.random() * canvas.offsetWidth,
       y: Math.random() * canvas.offsetHeight,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      size: Math.random() * 2 + 0.5,
-      alpha: Math.random() * 0.5 + 0.2,
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: (Math.random() - 0.5) * 0.8,
+      size: Math.random() * 2.5 + 0.5,
+      alpha: Math.random() * 0.6 + 0.15,
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    const orbitingDots = Array.from({ length: 24 }, (_, i) => ({
+      angle: (Math.PI * 2 / 24) * i,
+      radius: 0,
+      speed: 0.02 + Math.random() * 0.01,
+      size: 1.5 + Math.random() * 1.5,
+      layer: Math.floor(Math.random() * 3),
     }));
 
     const draw = () => {
@@ -185,68 +197,117 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
 
       const centerX = w / 2;
       const centerY = h / 2;
-      const maxRadius = Math.min(w, h) * 0.35;
+      const maxRadius = Math.min(w, h) * 0.38;
 
       ctx.save();
 
-      const scanAngle = progress * Math.PI * 6;
-      const scanRadius = maxRadius * (0.3 + progress * 0.7);
+      const scanAngle = progress * Math.PI * 8;
+      const scanRadius = maxRadius * (0.2 + progress * 0.8);
 
-      for (let ring = 0; ring < 3; ring++) {
-        const ringRadius = scanRadius * (0.6 + ring * 0.2);
-        const ringAlpha = (1 - progress) * (0.35 - ring * 0.1);
+      const bgGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius * 1.5);
+      bgGrad.addColorStop(0, goldRgba(0.06 * progress));
+      bgGrad.addColorStop(0.5, goldPremiumRgba(0.03 * progress));
+      bgGrad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      for (let ring = 0; ring < 5; ring++) {
+        const ringRadius = scanRadius * (0.4 + ring * 0.15);
+        const ringAlpha = (1 - progress) * (0.25 - ring * 0.04);
+        const dashLen = 4 + ring * 2;
+        const gapLen = 8 + ring * 4;
 
         ctx.beginPath();
         ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = goldRgba(ringAlpha);
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = ring % 2 === 0 ? goldRgba(ringAlpha) : goldPremiumRgba(ringAlpha);
+        ctx.lineWidth = 1;
+        ctx.setLineDash([dashLen, gapLen]);
+        ctx.lineDashOffset = elapsed * 0.02 * (ring % 2 === 0 ? 1 : -1);
         ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      for (let layer = 0; layer < 3; layer++) {
+        const layerRadius = scanRadius * (0.5 + layer * 0.2);
+        orbitingDots
+          .filter((d) => d.layer === layer)
+          .forEach((dot) => {
+            dot.angle += dot.speed * (layer % 2 === 0 ? 1 : -1);
+            const x = centerX + Math.cos(dot.angle) * layerRadius;
+            const y = centerY + Math.sin(dot.angle) * layerRadius;
+            const pulse = 0.5 + Math.sin(elapsed * 0.005 + dot.angle) * 0.5;
+            ctx.beginPath();
+            ctx.arc(x, y, dot.size * pulse, 0, Math.PI * 2);
+            ctx.fillStyle = layer === 0 ? goldLightRgba(0.6) : layer === 1 ? goldRgba(0.5) : goldDarkRgba(0.4);
+            ctx.fill();
+          });
       }
 
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, scanRadius, scanAngle, scanAngle + Math.PI * 0.4);
+      ctx.arc(centerX, centerY, scanRadius, scanAngle, scanAngle + Math.PI * 0.35);
       ctx.closePath();
       const scanGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, scanRadius);
-      scanGrad.addColorStop(0, goldRgba(0.2));
-      scanGrad.addColorStop(0.5, goldPremiumRgba(0.1));
+      scanGrad.addColorStop(0, goldLightRgba(0.25));
+      scanGrad.addColorStop(0.3, goldRgba(0.12));
+      scanGrad.addColorStop(0.7, goldPremiumRgba(0.05));
       scanGrad.addColorStop(1, goldRgba(0));
       ctx.fillStyle = scanGrad;
       ctx.fill();
 
       ctx.beginPath();
-      ctx.arc(centerX, centerY, scanRadius, scanAngle, scanAngle + 0.05);
+      ctx.moveTo(centerX, centerY);
+      const tipX = centerX + Math.cos(scanAngle) * scanRadius;
+      const tipY = centerY + Math.sin(scanAngle) * scanRadius;
+      ctx.lineTo(tipX, tipY);
       ctx.strokeStyle = goldLightRgba(0.9);
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = goldLightRgba(0.5);
+      ctx.shadowBlur = 12;
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
-      for (let i = 0; i < 12; i++) {
-        const angle = (Math.PI * 2 / 12) * i + scanAngle * 0.5;
-        const tickInner = scanRadius * 0.85;
-        const tickOuter = scanRadius * 0.95;
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = goldLightRgba(1);
+      ctx.shadowColor = goldLightRgba(0.8);
+      ctx.shadowBlur = 15;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      for (let i = 0; i < 16; i++) {
+        const angle = (Math.PI * 2 / 16) * i + scanAngle * 0.3;
+        const tickInner = scanRadius * 0.88;
+        const tickOuter = scanRadius * (i % 4 === 0 ? 1.0 : 0.95);
         ctx.beginPath();
-        ctx.moveTo(
-          centerX + Math.cos(angle) * tickInner,
-          centerY + Math.sin(angle) * tickInner,
-        );
-        ctx.lineTo(
-          centerX + Math.cos(angle) * tickOuter,
-          centerY + Math.sin(angle) * tickOuter,
-        );
-        ctx.strokeStyle = goldRgba(0.3 + Math.sin(elapsed * 0.003 + i) * 0.2);
-        ctx.lineWidth = 1;
+        ctx.moveTo(centerX + Math.cos(angle) * tickInner, centerY + Math.sin(angle) * tickInner);
+        ctx.lineTo(centerX + Math.cos(angle) * tickOuter, centerY + Math.sin(angle) * tickOuter);
+        ctx.strokeStyle = goldRgba(0.25 + Math.sin(elapsed * 0.004 + i) * 0.15);
+        ctx.lineWidth = i % 4 === 0 ? 1.5 : 0.8;
         ctx.stroke();
       }
 
-      const corePulse = 0.5 + Math.sin(elapsed * 0.005) * 0.3;
-      const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30);
+      const corePulse = 0.4 + Math.sin(elapsed * 0.006) * 0.3;
+      const coreSize = 25 + progress * 15;
+      const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreSize);
       coreGrad.addColorStop(0, goldLightRgba(corePulse));
-      coreGrad.addColorStop(0.5, goldRgba(0.25));
-      coreGrad.addColorStop(1, goldPremiumRgba(0));
+      coreGrad.addColorStop(0.3, goldRgba(0.2));
+      coreGrad.addColorStop(0.7, goldPremiumRgba(0.08));
+      coreGrad.addColorStop(1, goldRgba(0));
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, coreSize, 0, Math.PI * 2);
       ctx.fillStyle = coreGrad;
+      ctx.shadowColor = goldLightRgba(0.4);
+      ctx.shadowBlur = 20;
       ctx.fill();
+      ctx.shadowBlur = 0;
+
+      const innerRing = coreSize * 0.6;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, innerRing, 0, Math.PI * 2);
+      ctx.strokeStyle = goldLightRgba(0.3 + Math.sin(elapsed * 0.008) * 0.15);
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
       for (const p of particles) {
         p.x += p.vx;
@@ -258,7 +319,8 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
 
         const distToCenter = Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2);
         const proximity = Math.max(0, 1 - distToCenter / scanRadius);
-        const alpha = p.alpha * (0.3 + proximity * 0.7) * (1 - progress * 0.5);
+        const breathe = 0.5 + Math.sin(elapsed * 0.003 + p.phase) * 0.5;
+        const alpha = p.alpha * (0.2 + proximity * 0.8) * breathe * (1 - progress * 0.3);
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -266,29 +328,44 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
         ctx.fill();
       }
 
-      const hexPoints = 6;
-      const hexRadius = scanRadius * 1.1;
-      ctx.beginPath();
-      for (let i = 0; i <= hexPoints; i++) {
-        const angle = (Math.PI * 2 / hexPoints) * i - Math.PI / 2 + scanAngle * 0.1;
-        const x = centerX + Math.cos(angle) * hexRadius;
-        const y = centerY + Math.sin(angle) * hexRadius;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      for (let i = 0; i < 3; i++) {
+        const hexRadius = scanRadius * (1.05 + i * 0.12);
+        const hexPoints = 6;
+        const rotation = scanAngle * 0.05 * (i % 2 === 0 ? 1 : -1);
+        ctx.beginPath();
+        for (let j = 0; j <= hexPoints; j++) {
+          const angle = (Math.PI * 2 / hexPoints) * j - Math.PI / 2 + rotation;
+          const x = centerX + Math.cos(angle) * hexRadius;
+          const y = centerY + Math.sin(angle) * hexRadius;
+          if (j === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = goldRgba(0.1 * (1 - progress * 0.4) * (1 - i * 0.3));
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
       }
-      ctx.closePath();
-      ctx.strokeStyle = goldRgba(0.15 * (1 - progress * 0.5));
-      ctx.lineWidth = 1;
-      ctx.stroke();
 
-      const outerRingRadius = scanRadius * 1.25;
+      const outerDashed = scanRadius * 1.35;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, outerRingRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = goldRgba(0.08 * (1 - progress * 0.3));
+      ctx.arc(centerX, centerY, outerDashed, 0, Math.PI * 2);
+      ctx.strokeStyle = goldRgba(0.06 * (1 - progress * 0.3));
       ctx.lineWidth = 0.5;
-      ctx.setLineDash([4, 8]);
+      ctx.setLineDash([3, 12]);
+      ctx.lineDashOffset = -elapsed * 0.01;
       ctx.stroke();
       ctx.setLineDash([]);
+
+      if (progress > 0.7) {
+        const flashAlpha = (progress - 0.7) / 0.3;
+        const flashGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, scanRadius * 1.2);
+        flashGrad.addColorStop(0, goldLightRgba(flashAlpha * 0.15));
+        flashGrad.addColorStop(1, goldRgba(0));
+        ctx.fillStyle = flashGrad;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, scanRadius * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       ctx.restore();
 
@@ -307,20 +384,21 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener("resize", resize);
       if (audioRef.current) {
-        try {
-          audioRef.current.ctx.close();
-        } catch {}
+        try { audioRef.current.ctx.close(); } catch {}
         audioRef.current = null;
       }
     };
   }, [duration, handleComplete]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: `linear-gradient(160deg, ${NAVY_DARK} 0%, ${NAVY} 50%, ${NAVY_DARK} 100%)` }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: `linear-gradient(160deg, ${NAVY_DARK} 0%, ${NAVY} 50%, ${NAVY_DARK} 100%)` }}
+    >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl" style={{ background: goldRgba(0.05) }} />
-        <div className="absolute top-1/4 -right-24 w-64 h-64 rounded-full blur-2xl" style={{ background: goldRgba(0.04) }} />
-        <div className="absolute bottom-0 left-1/3 w-80 h-80 rounded-full blur-3xl" style={{ background: goldRgba(0.03) }} />
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl" style={{ background: goldRgba(0.06) }} />
+        <div className="absolute top-1/4 -right-24 w-64 h-64 rounded-full blur-2xl" style={{ background: goldPremiumRgba(0.05) }} />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 rounded-full blur-3xl" style={{ background: goldDarkRgba(0.04) }} />
       </div>
       <canvas
         ref={canvasRef}
@@ -328,7 +406,10 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
         style={{ aspectRatio: "1" }}
       />
       <div className="absolute bottom-1/4 left-0 right-0 text-center z-10">
-        <p className="text-sm font-semibold tracking-widest uppercase animate-pulse" style={{ color: GOLD_LIGHT }}>
+        <p
+          className="text-sm font-semibold tracking-widest uppercase animate-pulse"
+          style={{ color: GOLD_LIGHT }}
+        >
           Verification d&apos;identite...
         </p>
       </div>
