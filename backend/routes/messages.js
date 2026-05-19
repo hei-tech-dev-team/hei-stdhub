@@ -50,7 +50,7 @@ if (useCloudinary) {
 
 const CONCURRENCY_LIMIT = 10;
 
-async function* batch(arr, size) {
+async function* batchItems(arr, size) {
   for (let i = 0; i < arr.length; i += size) {
     yield arr.slice(i, i + size);
   }
@@ -58,9 +58,9 @@ async function* batch(arr, size) {
 
 async function sendPushWithConcurrency(subscriptions, payload) {
   const results = [];
-  for (const batch of await iteratorToArray(batch(subscriptions, CONCURRENCY_LIMIT))) {
+  for (const chunk of await iteratorToArray(batchItems(subscriptions, CONCURRENCY_LIMIT))) {
     const batchResults = await Promise.allSettled(
-      batch.map((sub) =>
+      chunk.map((sub) =>
         webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
           payload,
@@ -408,15 +408,38 @@ router.delete("/:id", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
       `DELETE FROM messages WHERE id=$1 AND sender_id=$2
-       RETURNING id, is_global, receiver_id, sender_id`,
+       RETURNING id, is_global, receiver_id, sender_id, content`,
       [req.params.id, req.user.id],
     );
     if (!rows.length)
       return res.status(404).json({ error: "Message introuvable ou non autorisé." });
 
     const msg = rows[0];
+
+    if (useCloudinary && msg.content) {
+      const match = msg.content.match(/\[FILE:[^:]+:([^:]+):/);
+      if (match) {
+        try {
+          const fileUrl = match[1];
+          const urlParts = fileUrl.split("/upload/");
+          if (urlParts.length === 2) {
+            const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+            const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+            await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
+          }
+        } catch (e) {
+          console.warn("Cloudinary delete warning:", e.message);
+        }
+      }
+    }
+
     const io = req.app.get("io");
-    if (io) io.emit("message:deleted", { messageId: msg.id, isGlobal: msg.is_global, receiverId: msg.receiver_id, senderId: msg.sender_id });
+    if (io) io.emit("message:deleted", {
+      messageId: msg.id,
+      isGlobal: msg.is_global,
+      receiverId: msg.receiver_id,
+      senderId: msg.sender_id,
+    });
 
     res.json({ message: "Message supprimé." });
   } catch (err) {
