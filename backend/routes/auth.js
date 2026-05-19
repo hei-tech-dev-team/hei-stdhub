@@ -280,8 +280,10 @@ router.post("/security-questions", auth, async (req, res) => {
 
   try {
     const client = await db.pool.connect();
+    let transactionStarted = false;
     try {
       await client.query("BEGIN");
+      transactionStarted = true;
       await client.query("DELETE FROM user_security_questions WHERE user_id=$1", [req.user.id]);
       for (const q of sanitized) {
         const hash = await bcrypt.hash(q.answer.toLowerCase(), 10);
@@ -293,7 +295,9 @@ router.post("/security-questions", auth, async (req, res) => {
       }
       await client.query("COMMIT");
     } catch (err) {
-      await client.query("ROLLBACK");
+      if (transactionStarted) {
+        try { await client.query("ROLLBACK"); } catch (_) {}
+      }
       throw err;
     } finally {
       client.release();
