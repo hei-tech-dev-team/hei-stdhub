@@ -393,12 +393,11 @@ backend/
 @route POST /invitations/bulk
 @middleware auth, adminOnly
 @param {body} { role, count?, max_uses? }
-<<<<<<< HEAD
+
 @description Generates up to 1000 invitation codes in batches of 100 (batch INSERT)
-=======
 @description Generates up to 1000 invitation codes in a single batch INSERT
   (was previously a sequential loop — now uses one parameterized multi-row INSERT)
->>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
+(perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @returns {JSON} { count, codes: Array }
 @status 201 - Created
 @status 400 - Invalid role
@@ -521,7 +520,6 @@ backend/
 ### Helpers
 
 ```js
-<<<<<<< HEAD
 @function sendPushWithConcurrency
 @param {Array} subscriptions
 @param {string} payload
@@ -530,7 +528,6 @@ backend/
 @returns {Promise<Array>} Results
 
 @async
-=======
 @function sendPushNotifications
 @param {Array} rows - Push subscription rows
 @param {string} payload - JSON stringified notification
@@ -539,30 +536,22 @@ backend/
   On 410/404 error, deletes invalid subscription from DB.
 @returns {Promise<Array>} settled results
 
->>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
+(perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @function sendPushNotification
 @param {number} userId
 @param {Object} options { title, body, tag, url }
 @description
   1. Fetches push subscriptions for userId
-<<<<<<< HEAD
   2. Sends Web Push notification with concurrency limit of 10
   3. On 410/404 error, deletes invalid subscription
-=======
-  2. Calls sendPushNotifications() with parallel batch
->>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @returns {Promise<void>}
 
 @function sendPushToAll
 @param {Object} options { title, body, tag, url }
 @description
   1. Fetches ALL push subscriptions (DISTINCT on endpoint)
-<<<<<<< HEAD
   2. Sends Web Push notification with concurrency limit of 10
   3. On 410/404 error, deletes invalid subscription
-=======
-  2. Calls sendPushNotifications() with parallel batch
->>>>>>> 06dd3f1 (perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
 @returns {Promise<void>}
 ```
 
@@ -665,6 +654,7 @@ backend/
 @route DELETE /:id
 @middleware auth
 @description Hard-deletes message only if sender_id matches current user.
+  If the message content indicates an uploaded file, attempts to delete the corresponding file from Cloudinary (if configured).
   Emits "message:deleted" socket event with message metadata.
 @returns {JSON} { message: "Message supprimé." }
 @status 200
