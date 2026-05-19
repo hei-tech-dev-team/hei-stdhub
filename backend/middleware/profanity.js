@@ -34,25 +34,12 @@ const PROFANITY_WORDS = new Set([
   "bougnoule", "bougoule", "renoi", "renoi", "bougnoul", "raton",
   "bic", "bicot", "boug", "singe", "gorille", "caca",
 
-  // Malagasy - general insults
-  "adala", "adala be", "hadala", "bado", "badoa", "tsy misy dikany",
-  "mpangalatra", "mpamadika", "mpisoloky", "mpitaka", "mpiray tsikombakomba",
-  "jirama", "jirama be", "tsy mahay", "tsy manaja", "tsy manetry tena",
-  "mpandala", "mpamono", "mpamono olona", "mpamono vady", "mpamono fianakaviana",
-  "mpivaro-tena", "mpivarotra tena", "mpivaro-tena", "mpivaro tena",
-  "mpitondra ratsy", "mpitondra ratsy fanahy", "mpitondra ratsy saina",
-
-  // Malagasy - homophobic / transphobic
-  "pelaka", "pelaka be", "sailava", "sailava be", "mbola", "mbola be",
-  "vazaha", "vazaha be", "tsy lehilahy", "tsy vehivavy", "lehilahy tsy lehilahy",
-  "vehivavy tsy vehivavy", "sarongady", "sarongady be", "mpifankatia mitovy fananahana",
-
-  // Malagasy - other offensive
-  "mpanao ratsy", "mpanao heloka", "mpanao heloka bevava", "mpamono",
-  "mpamono olona", "mpamono vady", "mpamono fianakaviana", "mpamono ankizy",
-  "mpivaro-tena", "mpivarotra tena", "mpivaro tena", "mpitondra ratsy",
-  "mpitondra ratsy fanahy", "mpitondra ratsy saina", "mpitondra ratsy fo",
-  "mpitondra ratsy fanahy", "mpitondra ratsy saina", "mpitondra ratsy fo",
+  // Malagasy
+  "fory", "bibity", "bobota", "kimaso", "kdj", "kindaso", "kindinalika",
+  "lln", "lelena", "lelikeee", "pory", "pr", "rp", "por", "pox", "px",
+  "masosopory", "msspr", "masspr", "lindinakika", "tay amin'amany",
+  "manemany", "mnmn", "nemany", "ninanem", "ninaneman", "lataka", "ltk",
+  "tingy", "chatte", "lely",
 
   // Slurs / hate speech (cross-language)
   "kill yourself", "kys", "kill urself", "kill yourself", "go die", "go kill yourself",
