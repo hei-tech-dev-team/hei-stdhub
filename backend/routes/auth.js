@@ -213,6 +213,8 @@ router.post("/login", async (req, res) => {
   const { ref, password } = req.body;
   if (!ref || !password)
     return res.status(400).json({ error: "Référence et mot de passe requis." });
+  if (ref.includes("@"))
+    return res.status(400).json({ error: "Veuillez entrer votre référence, pas votre email." });
 
   try {
     const { rows } = await db.query(

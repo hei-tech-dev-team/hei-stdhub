@@ -21,6 +21,10 @@ export default function LoginPage() {
                   setError("Veuillez remplir tous les champs.");
                   return;
             }
+            if (form.ref.includes("@")) {
+                  setError("Veuillez entrer votre référence, pas votre email.");
+                  return;
+            }
             setLoading(true);
             setError("");
             try {
