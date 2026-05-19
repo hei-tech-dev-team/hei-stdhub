@@ -35,63 +35,6 @@ const ALUMNI_NAV_LINKS = [
 ];
 
 export default function Sidebar() {
-<<<<<<< HEAD
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [open, setOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const prevUnreadRef = useRef(0);
-
-  const playNotificationSound = () => {
-    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
-    audio.volume = 0.4;
-    audio.play().catch(() => {}); // Évite l'erreur si le navigateur bloque l'autoplay
-  };
-
-  useEffect(() => {
-    if (!user) return;
-
-    // Demander la permission pour les notifications système dès que possible
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-
-    if (location.pathname === "/pings") {
-      setPendingCount(0);
-    }
-
-    const updateCounts = async () => {
-      try {
-        const [pingsRes, unreadRes] = await Promise.all([
-          api.get("/pings"),
-          api.get("/messages/unread")
-        ]);
-
-        const pings = Array.isArray(pingsRes.data) ? pingsRes.data : [];
-        setPendingCount(pings.filter(p => p.receiver_id === user.id && p.status === "pending").length);
-
-        const totalUnread = (unreadRes.data.global || 0) + 
-          Object.values(unreadRes.data.contacts || {}).reduce((acc, c) => acc + (c.unread || 0), 0);
-        
-        // Jouer un son si un nouveau message arrive et qu'on n'est pas déjà dans le chat
-        if (totalUnread > prevUnreadRef.current && location.pathname !== "/chat") {
-          playNotificationSound();
-        }
-        
-        setUnreadCount(location.pathname === "/chat" ? 0 : totalUnread);
-        prevUnreadRef.current = totalUnread;
-      } catch (err) {
-        console.error("Erreur lors de la mise à jour des badges :", err);
-      }
-    };
-
-    updateCounts();
-    const interval = setInterval(updateCounts, 10000); // Vérification toutes les 10 secondes
-    return () => clearInterval(interval);
-  }, [user, location.pathname]);
-=======
       const { user, logout } = useAuth();
       const navigate = useNavigate();
       const location = useLocation();
@@ -107,7 +50,6 @@ export default function Sidebar() {
             audio.volume = 0.4;
             audio.play().catch(() => {}); // Évite l'erreur si le navigateur bloque l'autoplay
       };
->>>>>>> origin/main
 
       useEffect(() => {
             if (!user) return;
@@ -223,34 +165,6 @@ export default function Sidebar() {
                               </button>
                         </div>
 
-<<<<<<< HEAD
-        <nav className="flex flex-col gap-1 flex-1">
-          {/* Alumni: accès limité */}
-          {(user?.role === "alumni" ? ALUMNI_NAV_LINKS : NAV_LINKS).map(({ to, label, icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={handleNavClick}
-              className={({ isActive }) =>
-                isActive ? "sidebar-link-active" : "sidebar-link"
-              }
-            >
-              <FontAwesomeIcon icon={icon} className="w-4 h-4 shrink-0" />
-              <span className="truncate">{label}</span>
-              {to === "/chat" && unreadCount > 0 && (
-                <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5 shadow-lg animate-pulse">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-              {to === "/pings" && pendingCount > 0 && (
-                <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5">
-                  {pendingCount > 99 ? "99+" : pendingCount}
-                </span>
-              )}
-            </NavLink>
-          ))}
-=======
                         <nav className="flex flex-col gap-1 flex-1">
                               {/* Alumni: accès limité */}
                               {(user?.role === "alumni"
@@ -293,7 +207,6 @@ export default function Sidebar() {
                                                 )}
                                     </NavLink>
                               ))}
->>>>>>> origin/main
 
                               {/* Suggestions — visible par étudiants, profs et alumni */}
                               {["student", "teacher", "alumni"].includes(
