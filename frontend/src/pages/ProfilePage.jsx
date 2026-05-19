@@ -106,9 +106,7 @@ export default function ProfilePage() {
     try {
       const fd = new FormData();
       fd.append("avatar", file);
-      const { data } = await api.patch("/auth/avatar", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data } = await api.patch("/auth/avatar", fd);
       setUser(data);
       setSuccessAvatar(true);
       setAvatarPreview("");
