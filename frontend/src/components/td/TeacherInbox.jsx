@@ -64,9 +64,7 @@ export default function TeacherInbox() {
     <div className="flex flex-col h-full gap-5">
       {/* En-tête */}
       <div
-        className={`transition-all duration-700 ease-out ${
-          true ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        }`}
+        className="transition-all duration-700 ease-out opacity-100 translate-y-0"
       >
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-navy/10 flex items-center justify-center">
