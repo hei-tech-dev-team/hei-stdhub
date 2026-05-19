@@ -304,6 +304,7 @@ router.patch("/seen", auth, async (req, res) => {
       for (const row of rows) {
         io.to(`user:${row.sender_id}`).emit("message:seen", {
           messageId: row.id,
+          readerId: req.user.id,
         });
       }
     }
@@ -329,6 +330,7 @@ router.patch("/:id/seen", auth, async (req, res) => {
     if (io) {
       io.to(`user:${rows[0].sender_id}`).emit("message:seen", {
         messageId: rows[0].id,
+        readerId: req.user.id,
       });
     }
 

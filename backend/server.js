@@ -195,6 +195,7 @@ io.on("connection", (socket) => {
     onlineUsers.set(userId, socket.id);
     socket.userId = userId;
     socket.join(`user:${userId}`);
+    socket.join("global-chat");
 
     // Broadcast to others only (not to self)
     socket.broadcast.emit("user:online", userId);
@@ -212,7 +213,25 @@ io.on("connection", (socket) => {
 
   socket.on("message:seen", ({ messageId, senderId }) => {
     if (!messageId || !senderId) return;
-    io.to(`user:${senderId}`).emit("message:seen", { messageId });
+    io.to(`user:${senderId}`).emit("message:seen", { messageId, readerId: socket.userId });
+  });
+
+  socket.on("typing:started", ({ contactId, isGlobal }) => {
+    if (!contactId) return;
+    if (isGlobal) {
+      socket.to("global-chat").emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
+    } else {
+      io.to(`user:${contactId}`).emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
+    }
+  });
+
+  socket.on("typing:stopped", ({ contactId, isGlobal }) => {
+    if (!contactId) return;
+    if (isGlobal) {
+      socket.to("global-chat").emit("typing:stopped", { userId: socket.userId });
+    } else {
+      io.to(`user:${contactId}`).emit("typing:stopped", { userId: socket.userId });
+    }
   });
 
   socket.on("bde:join", () => {

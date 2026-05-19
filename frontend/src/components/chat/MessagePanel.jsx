@@ -470,6 +470,11 @@ export default function MessagePanel({
   onScrollToBottom,
   onlineUsers,
   onLoadOlder,
+  replyTo,
+  onReply,
+  typingUsers,
+  socketState,
+  onTypingChange,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -735,13 +740,17 @@ export default function MessagePanel({
               {!contact.isGlobal && <RoleBadge role={contact.role} />}
             </h3>
             <p className="text-white/40 text-xs mt-0.5 truncate">
-              {contact.isGlobal
-                ? "Chat global – tous les membres"
-                : contact.role === "teacher"
-                  ? "Professeur"
-                  : contact.role === "bde"
-                    ? "Bureau des étudiants"
-                    : "Étudiant"}
+              {typingUsers && typingUsers.length > 0
+                ? typingUsers.length === 1
+                  ? `${typingUsers[0]} est en train d'écrire…`
+                  : `${typingUsers.length} personnes écrivent…`
+                : contact.isGlobal
+                  ? "Chat global – tous les membres"
+                  : contact.role === "teacher"
+                    ? "Professeur"
+                    : contact.role === "bde"
+                      ? "Bureau des étudiants"
+                      : "Étudiant"}
             </p>
           </div>
         </Link>
@@ -753,6 +762,20 @@ export default function MessagePanel({
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
+        {socketState && socketState !== "connected" && (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${
+              socketState === "reconnecting" ? "bg-amber-400 animate-pulse" :
+              socketState === "connect_error" || socketState === "reconnect_failed" ? "bg-red-400" :
+              "bg-gray-400"
+            }`} />
+            <span className="text-white/50 text-[10px] hidden sm:inline">
+              {socketState === "reconnecting" ? "Reconnexion…" :
+               socketState === "connect_error" || socketState === "reconnect_failed" ? "Hors ligne" :
+               "Connexion…"}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -913,7 +936,10 @@ export default function MessagePanel({
             className="flex-1 min-w-0 text-sm text-white bg-transparent focus:outline-none placeholder:text-white/30"
             placeholder="Écrire un message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (onTypingChange) onTypingChange(e.target.value.length > 0);
+            }}
             onKeyDown={handleKey}
           />
           <button

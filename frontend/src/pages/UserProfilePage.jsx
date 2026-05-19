@@ -250,7 +250,7 @@ export default function UserProfilePage() {
                 style={{ transitionDelay: "250ms" }}
               >
                 <Link
-                  to={`/chat`}
+                  to={`/chat?contact=${profile.id}`}
                   className="block rounded-2xl overflow-hidden p-5 sm:p-6 transition-all duration-200 hover:shadow-md"
                   style={{
                     background: "white",
