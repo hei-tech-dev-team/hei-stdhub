@@ -1,19 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { Mail, ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, User, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, User, Lock, Eye, EyeOff } from "lucide-react";
 import api from "../api/axios";
+import JarvisScanAnimation from "../components/ui/JarvisScanAnimation";
 
 export default function ForgotPasswordPage() {
-  const [method, setMethod] = useState("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
-  // Email method
-  const [email, setEmail] = useState("");
-
-  // Security questions method
   const [step, setStep] = useState(1);
   const [ref, setRef] = useState("");
   const [userInfo, setUserInfo] = useState(null);
@@ -23,29 +19,13 @@ export default function ForgotPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
-  const handleEmailSubmit = async (e) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      setError("Veuillez entrer votre adresse email.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await api.post("/auth/forgot-password/send-email", { email: email.trim() });
-      setDone(true);
-    } catch (err) {
-      setError(err.response?.data?.error || "Erreur serveur.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [showJarvis, setShowJarvis] = useState(false);
+  const [jarvisTrigger, setJarvisTrigger] = useState(null);
 
   const handleRefLookup = async (e) => {
     e.preventDefault();
     if (!ref.trim()) {
-      setError("Veuillez entrer votre référence (ex: STD25001).");
+      setError("Veuillez entrer votre reference (ex: STD25001).");
       return;
     }
     setLoading(true);
@@ -56,7 +36,7 @@ export default function ForgotPasswordPage() {
       setQuestions(res.data.questions);
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.error || "Référence introuvable.");
+      setError(err.response?.data?.error || "Reference introuvable.");
     } finally {
       setLoading(false);
     }
@@ -71,7 +51,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     const missing = questions.filter((q) => !answers[q.key]?.trim());
     if (missing.length) {
-      setError("Veuillez répondre à toutes les questions.");
+      setError("Veuillez repondre a toutes les questions.");
       return;
     }
     setLoading(true);
@@ -86,11 +66,19 @@ export default function ForgotPasswordPage() {
         answers: answersArray,
       });
       setResetToken(res.data.token);
-      setStep(3);
+      setShowJarvis(true);
+      setJarvisTrigger("verify");
     } catch (err) {
-      setError(err.response?.data?.error || "Réponses incorrectes.");
+      setError(err.response?.data?.error || "Reponses incorrectes.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleJarvisComplete = () => {
+    setShowJarvis(false);
+    if (jarvisTrigger === "verify") {
+      setStep(3);
     }
   };
 
@@ -101,7 +89,7 @@ export default function ForgotPasswordPage() {
       return;
     }
     if (password.length < 6) {
-      setError("Le mot de passe doit contenir 6 caractères minimum.");
+      setError("Le mot de passe doit contenir 6 caracteres minimum.");
       return;
     }
     if (password !== confirmPassword) {
@@ -112,33 +100,30 @@ export default function ForgotPasswordPage() {
     setError("");
     try {
       await api.post("/auth/reset-password", { token: resetToken, newPassword: password });
-      setDone(true);
+      setShowJarvis(true);
+      setJarvisTrigger("reset");
     } catch (err) {
-      setError(err.response?.data?.error || "Impossible de réinitialiser le mot de passe.");
+      setError(err.response?.data?.error || "Impossible de reinitialiser le mot de passe.");
     } finally {
       setLoading(false);
     }
   };
 
-  const leftPanelContent = () => {
-    if (method === "email") {
-      return {
-        subtitle: "Entrez votre email pour recevoir un lien de réinitialisation.",
-        badge: "Vérification par email",
-        hint: "Le lien est valable 5 minutes.",
-      };
-    }
-    return {
-      subtitle: "Répondez à vos questions de sécurité pour vérifier votre identité.",
-      badge: "Questions de sécurité",
-      hint: step === 1 ? "Identifiez-vous" : step === 2 ? "Vérification" : "Réinitialisation",
-    };
+  const handleJarvisResetComplete = () => {
+    setShowJarvis(false);
+    setDone(true);
   };
 
-  const left = leftPanelContent();
+  if (showJarvis && jarvisTrigger === "reset") {
+    return <JarvisScanAnimation onComplete={handleJarvisResetComplete} duration={3000} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
+      {showJarvis && jarvisTrigger === "verify" && (
+        <JarvisScanAnimation onComplete={handleJarvisComplete} duration={3000} />
+      )}
+
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
@@ -165,7 +150,7 @@ export default function ForgotPasswordPage() {
               </div>
               <div>
                 <span className="text-white font-bold text-lg leading-none block">HEI STDhub</span>
-                <span className="text-white/60 text-xs">Plateforme étudiante</span>
+                <span className="text-white/60 text-xs">Plateforme etudiante</span>
               </div>
             </div>
 
@@ -173,14 +158,18 @@ export default function ForgotPasswordPage() {
               <h2 className="text-white text-3xl font-bold leading-snug mb-3">
                 Mot de passe
                 <br />
-                oublié ?
+                oublie ?
               </h2>
-              <p className="text-white/60 text-sm leading-relaxed">{left.subtitle}</p>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Repondez a vos questions de securite pour verifier votre identite.
+              </p>
             </div>
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
-              <p className="text-white/80 text-xs font-medium">{left.badge}</p>
-              <p className="text-white/50 text-xs mt-0.5">{left.hint}</p>
+              <p className="text-white/80 text-xs font-medium">Questions de securite</p>
+              <p className="text-white/50 text-xs mt-0.5">
+                {step === 1 ? "Identifiez-vous" : step === 2 ? "Verification" : "Reinitialisation"}
+              </p>
             </div>
           </div>
 
@@ -196,13 +185,9 @@ export default function ForgotPasswordPage() {
                   <CheckCircle size={36} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-navy mb-2">
-                    {method === "email" ? "Email envoyé" : "Mot de passe réinitialisé"}
-                  </h2>
+                  <h2 className="text-2xl font-bold text-navy mb-2">Mot de passe reinitialise</h2>
                   <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    {method === "email"
-                      ? "Si un compte est associé à cet email, un lien de réinitialisation a été envoyé."
-                      : "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."}
+                    Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
                   </p>
                 </div>
                 <Link
@@ -210,96 +195,16 @@ export default function ForgotPasswordPage() {
                   className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200"
                   style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
                 >
-                  Retour à la connexion
+                  Retour a la connexion
                 </Link>
               </div>
             ) : (
               <>
-                {/* Method selector */}
-                {step === 1 && method === "email" ? null : step > 1 ? null : (
-                  <div className="mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-navy">Réinitialisation</h1>
-                    <p className="text-gray-400 text-sm mt-1">Choisissez votre méthode de vérification</p>
-                    <div className="flex gap-3 mt-4">
-                      <button
-                        type="button"
-                        onClick={() => { setMethod("email"); setError(""); }}
-                        className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
-                          method === "email"
-                            ? "border-navy bg-navy/5"
-                            : "border-gray-200 hover:border-navy/40"
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
-                          <Mail size={18} className="text-white" />
-                        </div>
-                        <span className="text-sm font-bold text-navy">Email</span>
-                        <span className="text-xs text-gray-400">Lien par email</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setMethod("security"); setError(""); }}
-                        className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
-                          method === "security"
-                            ? "border-navy bg-navy/5"
-                            : "border-gray-200 hover:border-navy/40"
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
-                          <ShieldCheck size={18} className="text-white" />
-                        </div>
-                        <span className="text-sm font-bold text-navy">Questions</span>
-                        <span className="text-xs text-gray-400">Questions de sécurité</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {method === "email" && step === 1 && (
+                {step === 1 && (
                   <>
                     <div className="mb-8">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Réinitialisation</h1>
-                      <p className="text-gray-400 text-sm mt-1">Entrez votre adresse email pour recevoir un lien</p>
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
-                        <AlertCircle size={16} /> {error}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleEmailSubmit} className="flex flex-col gap-5">
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Adresse email</label>
-                        <div className="relative">
-                          <Mail size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                          <input
-                            type="email"
-                            className="input-field pl-10"
-                            placeholder="exemple@email.com"
-                            value={email}
-                            onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                            autoComplete="email"
-                          />
-                        </div>
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-                      >
-                        {loading ? "Envoi..." : "Envoyer le lien"}
-                      </button>
-                    </form>
-                  </>
-                )}
-
-                {method === "security" && step === 1 && (
-                  <>
-                    <div className="mb-8">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Vérification</h1>
-                      <p className="text-gray-400 text-sm mt-1">Entrez votre référence étudiant</p>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Reinitialisation</h1>
+                      <p className="text-gray-400 text-sm mt-1">Entrez votre reference etudiant</p>
                     </div>
 
                     {error && (
@@ -310,7 +215,7 @@ export default function ForgotPasswordPage() {
 
                     <form onSubmit={handleRefLookup} className="flex flex-col gap-5">
                       <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Référence</label>
+                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Reference</label>
                         <div className="relative">
                           <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
@@ -328,17 +233,17 @@ export default function ForgotPasswordPage() {
                         className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
                       >
-                        {loading ? "Vérification..." : "Continuer"}
+                        {loading ? "Verification..." : "Continuer"}
                       </button>
                     </form>
                   </>
                 )}
 
-                {method === "security" && step === 2 && (
+                {step === 2 && (
                   <>
                     <div className="mb-6">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Vérification</h1>
-                      <p className="text-gray-400 text-sm mt-1">{userInfo?.prenom}, répondez à vos questions de sécurité</p>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Verification</h1>
+                      <p className="text-gray-400 text-sm mt-1">{userInfo?.prenom}, repondez a vos questions de securite</p>
                     </div>
 
                     {error && (
@@ -354,7 +259,7 @@ export default function ForgotPasswordPage() {
                           <input
                             type="text"
                             className="input-field"
-                            placeholder="Votre réponse"
+                            placeholder="Votre reponse"
                             value={answers[q.key] || ""}
                             onChange={(e) => handleAnswer(q.key, e.target.value)}
                             autoComplete="off"
@@ -367,17 +272,17 @@ export default function ForgotPasswordPage() {
                         className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
                       >
-                        {loading ? "Vérification..." : "Vérifier mes réponses"}
+                        {loading ? "Verification..." : "Verifier mes reponses"}
                       </button>
                     </form>
                   </>
                 )}
 
-                {method === "security" && step === 3 && (
+                {step === 3 && (
                   <>
                     <div className="mb-6">
                       <h1 className="text-2xl sm:text-3xl font-bold text-navy">Nouveau mot de passe</h1>
-                      <p className="text-gray-400 text-sm mt-1">Choisissez un mot de passe sécurisé</p>
+                      <p className="text-gray-400 text-sm mt-1">Choisissez un mot de passe securise</p>
                     </div>
 
                     {error && (
@@ -394,7 +299,7 @@ export default function ForgotPasswordPage() {
                           <input
                             type={showPassword ? "text" : "password"}
                             className="input-field pl-10 pr-11"
-                            placeholder="Minimum 6 caractères"
+                            placeholder="Minimum 6 caracteres"
                             value={password}
                             onChange={(e) => { setPassword(e.target.value); setError(""); }}
                             autoComplete="new-password"
@@ -415,7 +320,7 @@ export default function ForgotPasswordPage() {
                           <input
                             type={showPassword ? "text" : "password"}
                             className="input-field pl-10"
-                            placeholder="Répétez le mot de passe"
+                            placeholder="Repetez le mot de passe"
                             value={confirmPassword}
                             onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
                             autoComplete="new-password"
@@ -428,7 +333,7 @@ export default function ForgotPasswordPage() {
                         className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
                       >
-                        {loading ? "Mise à jour..." : "Changer le mot de passe"}
+                        {loading ? "Mise a jour..." : "Changer le mot de passe"}
                       </button>
                     </form>
                   </>
@@ -447,7 +352,7 @@ export default function ForgotPasswordPage() {
                       to="/login"
                       className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
                     >
-                      <ArrowLeft size={14} /> Retour à la connexion
+                      <ArrowLeft size={14} /> Retour a la connexion
                     </Link>
                   )}
                 </div>
