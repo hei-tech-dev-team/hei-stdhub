@@ -22,6 +22,8 @@ import {
   faBan,
   faUserPlus,
   faMagic,
+  faNewspaper,
+  faImage,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
@@ -100,6 +102,16 @@ export default function AdminPage() {
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerDone, setRegisterDone] = useState(false);
 
+  // Annonces
+  const [annTitle, setAnnTitle] = useState("");
+  const [annContent, setAnnContent] = useState("");
+  const [annImage, setAnnImage] = useState(null);
+  const [annImagePreview, setAnnImagePreview] = useState(null);
+  const [annTargetLevel, setAnnTargetLevel] = useState("");
+  const [annSubmitting, setAnnSubmitting] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const [annLoading, setAnnLoading] = useState(false);
+
   const now = new Date();
   const month = now.getMonth();
   const currentYear = now.getFullYear().toString().slice(-2);
@@ -123,7 +135,7 @@ export default function AdminPage() {
       api
         .get("/admin/stats")
         .then(({ data }) => setStats(data))
-        .catch(console.error);
+        .catch(() => {});
     };
     fetchStats();
     const interval = setInterval(fetchStats, 3000);
@@ -209,6 +221,23 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab === "invitations") loadInvitations();
   }, [tab, loadInvitations]);
+
+  // Charger annonces
+  const loadAnnouncements = useCallback(async () => {
+    setAnnLoading(true);
+    try {
+      const { data } = await api.get("/announcements");
+      setAnnouncements(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAnnLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "annonces") loadAnnouncements();
+  }, [tab, loadAnnouncements]);
 
   // Changer rôle
   const handleRoleChange = async (userId, newRole) => {
@@ -402,6 +431,7 @@ export default function AdminPage() {
               {[
                 { key: "users", label: "Utilisateurs" },
                 { key: "invitations", label: "Invitations" },
+                { key: "annonces", label: "Annonces" },
                 ...(isSeptember
                   ? [{ key: "upgrade", label: "Passage de classe" }]
                   : []),
@@ -1106,6 +1136,191 @@ export default function AdminPage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Tab: Annonces */}
+          {tab === "annonces" && (
+            <div className="flex flex-col gap-4">
+              {/* Composer */}
+              <div className="bg-white rounded-2xl shadow-card p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-navy/10 text-navy flex items-center justify-center">
+                    <FontAwesomeIcon icon={faNewspaper} className="text-lg" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-navy text-base">Publier une annonce</h2>
+                    <p className="text-xs text-gray-400">Visible par tous les utilisateurs</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <input
+                    className="input-field"
+                    placeholder="Titre de l'annonce"
+                    value={annTitle}
+                    onChange={(e) => setAnnTitle(e.target.value)}
+                  />
+                  <textarea
+                    className="input-field min-h-[100px] resize-y"
+                    placeholder="Contenu de l'annonce..."
+                    value={annContent}
+                    onChange={(e) => setAnnContent(e.target.value)}
+                  />
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface text-navy text-sm font-bold hover:bg-navy/10 transition cursor-pointer">
+                      <FontAwesomeIcon icon={faImage} />
+                      {annImage ? "Changer l'image" : "Ajouter une image"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setAnnImage(file);
+                            setAnnImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </label>
+                    {annImage && (
+                      <button
+                        type="button"
+                        onClick={() => { setAnnImage(null); setAnnImagePreview(null); }}
+                        className="text-red-400 hover:text-red-600 text-sm font-bold"
+                      >
+                        <FontAwesomeIcon icon={faTimes} className="mr-1" />
+                        Retirer
+                      </button>
+                    )}
+                  </div>
+                  {annImagePreview && (
+                    <img src={annImagePreview} alt="Aperçu" className="w-full max-h-48 object-cover rounded-xl" />
+                  )}
+
+                  {/* Level selector */}
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
+                      <FontAwesomeIcon icon={faUsers} className="mr-1" />
+                      Visible par
+                    </p>
+                    <div className="flex gap-2">
+                      {["Tous", "L1", "L2", "L3"].map((l) => (
+                        <button
+                          key={l}
+                          type="button"
+                          onClick={() => setAnnTargetLevel(l === "Tous" ? "" : l)}
+                          className={
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition " +
+                            ((l === "Tous" && !annTargetLevel) || annTargetLevel === l
+                              ? "bg-navy text-white shadow-sm"
+                              : "bg-white border border-contact text-navy hover:border-navy")
+                          }
+                        >
+                          {l === "Tous" ? "Tout le monde" : l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!annTitle.trim() || !annContent.trim()) return;
+                      setAnnSubmitting(true);
+                      try {
+                        const form = new FormData();
+                        form.append("title", annTitle.trim());
+                        form.append("content", annContent.trim());
+                        form.append("target_level", annTargetLevel || "");
+                        if (annImage) form.append("image", annImage);
+                        await api.post("/announcements", form, {
+                          headers: { "Content-Type": "multipart/form-data" },
+                        });
+                        setAnnTitle("");
+                        setAnnContent("");
+                        setAnnImage(null);
+                        setAnnImagePreview(null);
+                        setAnnTargetLevel("");
+                        loadAnnouncements();
+                      } catch (err) {
+                        console.error(err);
+                      } finally {
+                        setAnnSubmitting(false);
+                      }
+                    }}
+                    disabled={annSubmitting || !annTitle.trim() || !annContent.trim()}
+                    className="btn-primary self-start flex items-center gap-2 disabled:opacity-60"
+                  >
+                    {annSubmitting ? (
+                      <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                    ) : (
+                      <FontAwesomeIcon icon={faNewspaper} />
+                    )}
+                    Publier
+                  </button>
+                </div>
+              </div>
+
+              {/* Existing announcements */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">
+                  Annonces publiées ({announcements.length})
+                </h3>
+                {annLoading && (
+                  <div className="flex justify-center py-8">
+                    <FontAwesomeIcon icon={faSpinner} className="text-navy text-2xl animate-spin" />
+                  </div>
+                )}
+                {!annLoading && announcements.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 text-sm">Aucune annonce publiée.</p>
+                  </div>
+                )}
+                <div className="flex flex-col gap-3">
+                  {announcements.map((ann) => (
+                    <div key={ann.id} className="bg-white rounded-2xl shadow-card p-4 flex items-start gap-4">
+                      {ann.image_url && (
+                        <img src={ann.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-navy text-sm truncate">
+                        {ann.title}
+                        {ann.target_level && (
+                          <span className={"ml-2 text-xs font-bold px-2 py-0.5 rounded-full " + ({
+                            L1: "bg-cyan-100 text-cyan-700",
+                            L2: "bg-emerald-100 text-emerald-700",
+                            L3: "bg-amber-100 text-amber-700",
+                          }[ann.target_level] || "bg-gray-100 text-gray-600")}>
+                            {ann.target_level}
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-xs text-gray-400 line-clamp-2 mt-1">{ann.content}</p>
+                        <p className="text-xs text-gray-300 mt-1">
+                          {new Date(ann.created_at).toLocaleDateString("fr-FR")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm("Supprimer cette annonce ?")) return;
+                          try {
+                            await api.delete(`/announcements/${ann.id}`);
+                            loadAnnouncements();
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-600 transition shrink-0"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
