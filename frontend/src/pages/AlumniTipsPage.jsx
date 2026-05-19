@@ -7,7 +7,7 @@ import {
   faXmark,
   faImage,
   faCheckCircle,
-  faAlertCircle,
+  faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
@@ -100,7 +100,7 @@ export default function AlumniTipsPage() {
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
-              <FontAwesomeIcon icon={faAlertCircle} /> {error}
+              <FontAwesomeIcon icon={faCircleExclamation} /> {error}
             </div>
           )}
 
