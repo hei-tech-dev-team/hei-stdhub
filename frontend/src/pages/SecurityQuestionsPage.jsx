@@ -1,13 +1,62 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle, AlertCircle, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import api from "../api/axios";
 import JarvisScanAnimation from "../components/ui/JarvisScanAnimation";
 
+function generateQuestionId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return `q_${crypto.randomUUID()}`;
+  }
+  return `q_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function QuestionEditor({ question, index, onQuestionChange, onAnswerChange, onRemove, canRemove }) {
+  return (
+    <div
+      className="rounded-2xl border border-navy/30 bg-navy/[0.04] transition-all duration-200 focus-within:border-navy focus-within:shadow-sm"
+    >
+      <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+        <span className="text-xs font-bold text-gray-400 shrink-0">Q{index + 1}</span>
+        <input
+          type="text"
+          className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b-2 border-gray-200 pb-1.5 focus:border-navy outline-none placeholder:text-gray-400 transition-colors duration-200"
+          placeholder="Redigez votre question..."
+          value={question.question}
+          onChange={(e) => onQuestionChange(question.id, e.target.value)}
+          inputMode="text"
+          autoComplete="off"
+        />
+        {canRemove && (
+          <button
+            type="button"
+            onClick={() => onRemove(question.id)}
+            className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            title="Supprimer"
+            aria-label={`Supprimer la question ${index + 1}`}
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
+      </div>
+      <div className="px-4 pb-3">
+        <input
+          type="text"
+          className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:border-navy outline-none transition-all duration-200 placeholder:text-gray-400"
+          placeholder="Votre reponse"
+          value={question.answer}
+          onChange={(e) => onAnswerChange(question.id, e.target.value)}
+          inputMode="text"
+          autoComplete="off"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function SecurityQuestionsPage() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -18,40 +67,37 @@ export default function SecurityQuestionsPage() {
     api.get("/auth/security-questions")
       .then((res) => {
         const existing = res.data.questions || [];
-        setQuestions(existing.map((q) => ({ id: q.question_key, question: q.question_text })));
-        const initialAnswers = {};
-        existing.forEach((q) => { initialAnswers[q.question_key] = ""; });
-        setAnswers(initialAnswers);
+        const mapped = existing.map((q) => ({
+          id: q.question_key,
+          question: q.question_text,
+          answer: "",
+        }));
+        setQuestions(mapped);
       })
       .catch((err) => setError(err.response?.data?.error || "Erreur de chargement."))
       .finally(() => setLoading(false));
   }, []);
 
-  const addQuestion = () => {
+  const addQuestion = useCallback(() => {
     if (questions.length >= 4) return;
-    const id = `q_${Date.now()}`;
-    setQuestions((prev) => [...prev, { id, question: "" }]);
+    setQuestions((prev) => [...prev, { id: generateQuestionId(), question: "", answer: "" }]);
     setError("");
-  };
+  }, [questions.length]);
 
-  const removeQuestion = (id) => {
+  const removeQuestion = useCallback((id) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
-    setAnswers((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  };
-
-  const setQuestionText = (id, value) => {
-    setQuestions((prev) => prev.map((q) => q.id === id ? { ...q, question: value } : q));
     setError("");
-  };
+  }, []);
 
-  const handleAnswer = (id, value) => {
-    setAnswers((prev) => ({ ...prev, [id]: value }));
+  const setQuestionText = useCallback((id, value) => {
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, question: value } : q)));
     setError("");
-  };
+  }, []);
+
+  const handleAnswer = useCallback((id, value) => {
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, answer: value } : q)));
+    setError("");
+  }, []);
 
   const handleSave = async () => {
     if (questions.length < 2) {
@@ -61,8 +107,8 @@ export default function SecurityQuestionsPage() {
     for (const q of questions) {
       if (!q.question.trim()) { setError("Veuillez rediger toutes vos questions."); return; }
       if (q.question.trim().length < 10) { setError("Question trop courte (min 10 caracteres)."); return; }
-      if (!answers[q.id]?.trim()) { setError("Veuillez repondre a toutes les questions."); return; }
-      if (answers[q.id].trim().length < 2) { setError("Reponse trop courte (min 2 caracteres)."); return; }
+      if (!q.answer?.trim()) { setError("Veuillez repondre a toutes les questions."); return; }
+      if (q.answer.trim().length < 2) { setError("Reponse trop courte (min 2 caracteres)."); return; }
     }
     const uniqueQuestions = new Set(questions.map((q) => q.question.trim().toLowerCase()));
     if (uniqueQuestions.size !== questions.length) {
@@ -74,7 +120,7 @@ export default function SecurityQuestionsPage() {
     try {
       const payload = questions.map((q) => ({
         question: q.question.trim(),
-        answer: answers[q.id],
+        answer: q.answer,
       }));
       await api.post("/auth/security-questions", { questions: payload });
       setShowJarvis(true);
@@ -148,39 +194,15 @@ export default function SecurityQuestionsPage() {
 
                 <div className="space-y-3 mb-6">
                   {questions.map((q, i) => (
-                    <div
+                    <QuestionEditor
                       key={q.id}
-                      className="rounded-2xl border border-navy/30 bg-navy/[0.04] transition-all duration-200 has-[input:focus]:border-navy has-[input:focus]:shadow-sm"
-                    >
-                      <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-400 shrink-0">Q{i + 1}</span>
-                        <input
-                          type="text"
-                          className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b-2 border-gray-200 pb-1.5 focus:border-navy outline-none placeholder:text-gray-400 transition-colors duration-200"
-                          placeholder="Redigez votre question..."
-                          value={q.question}
-                          onChange={(e) => setQuestionText(q.id, e.target.value)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeQuestion(q.id)}
-                          className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition shrink-0"
-                          title="Supprimer"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                      <div className="px-4 pb-3">
-                        <input
-                          type="text"
-                          className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:border-navy outline-none transition-all duration-200 placeholder:text-gray-400"
-                          placeholder="Votre reponse"
-                          value={answers[q.id] || ""}
-                          onChange={(e) => handleAnswer(q.id, e.target.value)}
-                          autoComplete="off"
-                        />
-                      </div>
-                    </div>
+                      question={q}
+                      index={i}
+                      onQuestionChange={setQuestionText}
+                      onAnswerChange={handleAnswer}
+                      onRemove={removeQuestion}
+                      canRemove={questions.length > 2}
+                    />
                   ))}
 
                   {questions.length === 0 && (

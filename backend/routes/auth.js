@@ -243,47 +243,64 @@ router.get("/user/:ref", auth, async (req, res) => {
 router.get("/security-questions", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT question_key, question_text FROM user_security_questions WHERE user_id=$1",
+      "SELECT question_key, question_text FROM user_security_questions WHERE user_id=$1 ORDER BY created_at ASC",
       [req.user.id],
     );
     res.json({ questions: rows, min_required: 2 });
   } catch (err) {
-    console.error(err);
+    console.error("security-questions GET error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
 router.post("/security-questions", auth, async (req, res) => {
   const { questions } = req.body;
-  if (!Array.isArray(questions) || questions.length < 2)
-    return res.status(400).json({ error: "Au moins 2 questions sont requises." });
+  if (!Array.isArray(questions) || questions.length < 2 || questions.length > 4)
+    return res.status(400).json({ error: "Entre 2 et 4 questions sont requises." });
 
-  for (const q of questions) {
-    if (!q.question?.trim() || q.question.trim().length < 10)
+  const sanitized = questions.map((q) => ({
+    question: q.question?.trim(),
+    answer: q.answer?.trim(),
+  }));
+
+  for (const q of sanitized) {
+    if (!q.question || q.question.length < 10)
       return res.status(400).json({ error: "Question trop courte (min 10 caracteres)." });
-    if (!q.answer?.trim())
-      return res.status(400).json({ error: "Reponse requise pour chaque question." });
-    if (q.answer.trim().length < 2)
-      return res.status(400).json({ error: "Reponse trop courte (min 2 caracteres)." });
+    if (q.question.length > 200)
+      return res.status(400).json({ error: "Question trop longue (max 200 caracteres)." });
+    if (!q.answer || q.answer.length < 2)
+      return res.status(400).json({ error: "Reponse requise pour chaque question (min 2 caracteres)." });
+    if (q.answer.length > 100)
+      return res.status(400).json({ error: "Reponse trop longue (max 100 caracteres)." });
   }
 
-  const uniqueQuestions = new Set(questions.map((q) => q.question.trim().toLowerCase()));
-  if (uniqueQuestions.size !== questions.length)
+  const uniqueQuestions = new Set(sanitized.map((q) => q.question.toLowerCase()));
+  if (uniqueQuestions.size !== sanitized.length)
     return res.status(400).json({ error: "Questions dupliquees." });
 
   try {
-    await db.query("DELETE FROM user_security_questions WHERE user_id=$1", [req.user.id]);
-    for (const q of questions) {
-      const hash = await bcrypt.hash(q.answer.trim().toLowerCase(), 10);
-      const key = `custom_${crypto.randomBytes(4).toString("hex")}`;
-      await db.query(
-        "INSERT INTO user_security_questions (user_id, question_key, question_text, answer_hash) VALUES ($1, $2, $3, $4)",
-        [req.user.id, key, q.question.trim(), hash],
-      );
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM user_security_questions WHERE user_id=$1", [req.user.id]);
+      for (const q of sanitized) {
+        const hash = await bcrypt.hash(q.answer.toLowerCase(), 10);
+        const key = `custom_${crypto.randomBytes(8).toString("hex")}`;
+        await client.query(
+          "INSERT INTO user_security_questions (user_id, question_key, question_text, answer_hash) VALUES ($1, $2, $3, $4)",
+          [req.user.id, key, q.question, hash],
+        );
+      }
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
-    res.json({ success: true, count: questions.length });
+    res.json({ success: true, count: sanitized.length });
   } catch (err) {
-    console.error(err);
+    console.error("security-questions POST error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
@@ -292,7 +309,9 @@ router.post("/security-questions", auth, async (req, res) => {
 router.post("/forgot-password/by-ref", async (req, res) => {
   const ref = req.body.ref?.trim().toUpperCase();
   if (!ref)
-    return res.status(400).json({ error: "Référence requise." });
+    return res.status(400).json({ error: "Reference requise." });
+  if (!/^STD\d{5,}$/.test(ref))
+    return res.status(400).json({ error: "Format de reference invalide." });
 
   try {
     const { rows } = await db.query(
@@ -300,10 +319,10 @@ router.post("/forgot-password/by-ref", async (req, res) => {
       [ref],
     );
     if (!rows.length)
-      return res.status(404).json({ error: "Aucun compte trouvé avec cette référence." });
+      return res.status(404).json({ error: "Aucun compte trouve avec cette reference." });
 
     const { rows: sq } = await db.query(
-      "SELECT question_key, question_text FROM user_security_questions WHERE user_id=$1",
+      "SELECT question_key, question_text FROM user_security_questions WHERE user_id=$1 ORDER BY created_at ASC",
       [rows[0].id],
     );
     if (sq.length < 2)
@@ -324,20 +343,32 @@ router.post("/forgot-password/by-ref", async (req, res) => {
 const securityAnswerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  message: { error: "Trop de tentatives. Reessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => req.body.ref?.trim().toUpperCase() || req.ip,
 });
 
 router.post("/forgot-password/verify", securityAnswerLimiter, async (req, res) => {
   const { ref, answers } = req.body;
   if (!ref || !Array.isArray(answers) || answers.length < 2)
-    return res.status(400).json({ error: "Référence et réponses requises." });
+    return res.status(400).json({ error: "Reference et reponses requises." });
+
+  const sanitizedRef = ref.trim().toUpperCase();
+  const sanitizedAnswers = answers.map((a) => ({
+    key: a.key?.trim(),
+    answer: a.answer?.trim(),
+  }));
+
+  for (const a of sanitizedAnswers) {
+    if (!a.key || !a.answer)
+      return res.status(400).json({ error: "Toutes les reponses sont requises." });
+  }
 
   try {
     const { rows: users } = await db.query(
       "SELECT id FROM users WHERE ref=$1",
-      [ref.toUpperCase()],
+      [sanitizedRef],
     );
     if (!users.length)
       return res.status(404).json({ error: "Compte introuvable." });
@@ -349,15 +380,15 @@ router.post("/forgot-password/verify", securityAnswerLimiter, async (req, res) =
     );
 
     if (stored.length < 2)
-      return res.status(400).json({ error: "Questions de sécurité non configurées." });
+      return res.status(400).json({ error: "Questions de securite non configurees." });
 
-    for (const answer of answers) {
+    for (const answer of sanitizedAnswers) {
       const match = stored.find((s) => s.question_key === answer.key);
       if (!match)
-        return res.status(400).json({ error: "Réponse invalide." });
-      const ok = await bcrypt.compare(answer.answer?.trim().toLowerCase() || "", match.answer_hash);
+        return res.status(400).json({ error: "Question invalide." });
+      const ok = await bcrypt.compare(answer.answer.toLowerCase() || "", match.answer_hash);
       if (!ok)
-        return res.status(400).json({ error: "Réponse incorrecte." });
+        return res.status(400).json({ error: "Reponse incorrecte." });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
@@ -372,9 +403,9 @@ router.post("/forgot-password/verify", securityAnswerLimiter, async (req, res) =
       [userId, tokenHash],
     );
 
-    res.json({ token, message: "Identité vérifiée. Vous pouvez réinitialiser votre mot de passe." });
+    res.json({ token, message: "Identite verifiee. Vous pouvez reinitialiser votre mot de passe." });
   } catch (err) {
-    console.error(err);
+    console.error("forgot-password/verify error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
