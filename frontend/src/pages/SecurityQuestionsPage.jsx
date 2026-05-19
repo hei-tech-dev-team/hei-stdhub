@@ -114,9 +114,7 @@ export default function SecurityQuestionsPage() {
     }
     for (const q of questions) {
       if (!q.question.trim()) { setError("Veuillez rediger toutes vos questions."); return; }
-      if (q.question.trim().length < 4) { setError("Question trop courte (min 4 caracteres)."); return; }
       if (!q.answer?.trim()) { setError("Veuillez repondre a toutes les questions."); return; }
-      if (q.answer.trim().length < 2) { setError("Reponse trop courte (min 2 caracteres)."); return; }
     }
     const uniqueQuestions = new Set(questions.map((q) => q.question.trim().toLowerCase()));
     if (uniqueQuestions.size !== questions.length) {
