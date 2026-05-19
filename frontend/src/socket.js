@@ -95,12 +95,12 @@ export const getSocket = async () => {
 
 export const disconnectSocket = () => {
   if (socket) {
+    notifyListeners("disconnected");
     socket.removeAllListeners();
     socket.disconnect();
     socket = null;
     connectionPromise = null;
     reconnectAttempts = 0;
-    notifyListeners("disconnected");
   }
 };
 

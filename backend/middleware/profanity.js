@@ -103,6 +103,7 @@ function containsProfanity(text) {
   }
 
   for (const pattern of PROFANITY_PATTERNS) {
+    pattern.lastIndex = 0;
     if (pattern.test(text)) return true;
   }
 
