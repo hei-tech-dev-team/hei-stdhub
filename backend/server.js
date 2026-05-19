@@ -146,6 +146,7 @@ app.use("/api/push", require("./routes/push"));
 app.use("/api/pings", require("./routes/pings"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/announcements", require("./routes/announcements"));
+app.use("/api/alumni-tips", require("./routes/alumniTips"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) =>
@@ -405,6 +406,32 @@ pool.query(`
       )
     `);
   } catch (err) { console.error("Failed to create chat_favorites table:", err); }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alumni_tips (
+        id            SERIAL       PRIMARY KEY,
+        title         VARCHAR(255) NOT NULL,
+        content       TEXT         NOT NULL,
+        image_url     TEXT         NULL,
+        author_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at    TIMESTAMP    NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (err) { console.error("Failed to create alumni_tips table:", err); }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alumni_tip_reactions (
+        id               SERIAL      PRIMARY KEY,
+        tip_id           INTEGER     NOT NULL REFERENCES alumni_tips(id) ON DELETE CASCADE,
+        user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reaction_type    VARCHAR(20) NOT NULL,
+        created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+        UNIQUE (tip_id, user_id)
+      )
+    `);
+  } catch (err) { console.error("Failed to create alumni_tip_reactions table:", err); }
 })();
 
 const PORT = process.env.PORT || 3001;
