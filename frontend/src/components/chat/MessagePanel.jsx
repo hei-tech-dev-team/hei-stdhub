@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,6 +11,7 @@ import {
   faTrash,
   faSmile,
   faXmark,
+  faDownload,
 } from "@fortawesome/free-solid-svg-icons";
 import UserAvatar from "../ui/UserAvatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -25,6 +26,7 @@ import {
   isFileMessage,
   parseFileContent,
 } from "./chat-utils";
+import { useLongPress } from "./useLongPress";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -65,30 +67,125 @@ function DateSeparator({ date }) {
   );
 }
 
-function renderContent(content) {
+function ImageMessage({ parsed, onImageClick, onDelete, isOwn }) {
+  const [showDelete, setShowDelete] = useState(false);
+
+  const handlers = useLongPress(
+    () => setShowDelete(true),
+    () => onImageClick?.({ url: parsed.url, filename: parsed.filename }),
+  );
+
+  return (
+    <div className="relative" {...handlers}>
+      <img
+        src={parsed.url}
+        alt={parsed.filename}
+        className="max-w-[200px] sm:max-w-[320px] max-h-[300px] w-auto h-auto object-contain rounded-lg block bg-black/20 select-none"
+        loading="lazy"
+        draggable={false}
+      />
+
+      {showDelete && isOwn && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowDelete(false)}
+          />
+          <div className="absolute bottom-full left-0 mb-2 z-50 bg-navy-dark border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fade-in">
+            <button
+              type="button"
+              onClick={() => { setShowDelete(false); onDelete?.(); }}
+              className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition w-full whitespace-nowrap"
+            >
+              <FontAwesomeIcon icon={faTrash} className="text-xs" />
+              Supprimer le message
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function FileMessage({ parsed, onDelete, isOwn }) {
+  const [showDelete, setShowDelete] = useState(false);
+
+  const handleDownload = useCallback(async () => {
+    try {
+      const response = await fetch(parsed.url);
+      const blob = await response.blob();
+      const localUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = localUrl;
+      a.download = parsed.filename || "fichier";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(localUrl);
+    } catch {
+      window.open(parsed.url, "_blank");
+    }
+  }, [parsed.url, parsed.filename]);
+
+  const handlers = useLongPress(
+    () => setShowDelete(true),
+    handleDownload,
+  );
+
+  return (
+    <div
+      className="relative flex items-center gap-2 py-3 px-2 bg-blue-900/90 hover:bg-blue-900 cursor-pointer transition-all max-w-full"
+      {...handlers}
+    >
+      <div className="flex flex-col items-center bg-gold-700/10 border-2 border-gold rounded-lg shrink-0 py-2 px-3">
+        <FontAwesomeIcon className="text-sm text-gold" icon={faFile} />
+        <span className="text-[9px] font-bold text-gold uppercase">
+          {parsed.extension && `.${parsed.extension}`}
+        </span>
+      </div>
+      <div className="flex flex-col text-blue-300 text-xs font-medium">
+        <span className="truncate">{parsed.filename?.substring(0, 20)}...</span>
+        <span>{parsed.size && `(${(parsed.size / 1024).toFixed(1)} KB)`}</span>
+      </div>
+
+      {showDelete && isOwn && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowDelete(false)} />
+          <div className="absolute bottom-full left-0 mb-2 z-50 bg-navy-dark border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fade-in">
+            <button
+              type="button"
+              onClick={() => { setShowDelete(false); onDelete?.(); }}
+              className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition w-full whitespace-nowrap"
+            >
+              <FontAwesomeIcon icon={faTrash} className="text-xs" />
+              Supprimer le message
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function renderContent(content, onImageClick, onDelete, isOwn) {
   const parsed = parseFileContent(content);
   if (parsed) {
     if (parsed.type === "img") {
       return (
-        <a href={parsed.url} target="_blank" rel="noreferrer">
-          <img
-            src={parsed.url}
-            alt={parsed.filename}
-            className="max-w-56 max-h-56 object-cover rounded-lg cursor-pointer hover:opacity-90 transition block"
-          />
-        </a>
+        <ImageMessage
+          parsed={parsed}
+          onImageClick={onImageClick}
+          onDelete={onDelete}
+          isOwn={isOwn}
+        />
       );
     }
     return (
-      <a
-        href={parsed.url}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-2 text-blue-300 hover:text-blue-200 hover:underline text-xs font-medium max-w-full"
-      >
-        <FontAwesomeIcon icon={faFile} />
-        <span className="truncate">{parsed.filename}</span>
-      </a>
+      <FileMessage
+        parsed={parsed}
+        onDelete={onDelete}
+        isOwn={isOwn}
+      />
     );
   }
 
@@ -181,7 +278,7 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
   );
 }
 
-function MessageGroup({ messages, isOwn, onDelete }) {
+function MessageGroup({ messages, isOwn, onDelete, onImageClick }) {
   const [hoveredId, setHoveredId] = useState(null);
 
   const handleDelete = (msg) => {
@@ -198,26 +295,35 @@ function MessageGroup({ messages, isOwn, onDelete }) {
 
         if (isFileMessage(msg.content)) {
           return (
-            <div key={msg.id} className="flex items-end gap-2 mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0">
+            <div
+              key={msg.id}
+              className="group flex items-end gap-2 mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0"
+              onMouseEnter={() => setHoveredId(msg.id)}
+              onMouseLeave={() => setHoveredId(null)}
+            >
               {!isOwn && isFirst && (
                 <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 self-end ring-2 ring-white/20">
-                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
+                  <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
                 </div>
               )}
               {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
               <div className="flex flex-col items-end min-w-0">
-                <div
-                  className={`rounded-xl overflow-hidden ${
-                    isOwn
-                      ? "bg-gold/95 text-navy-dark"
-                      : "bg-white/[0.08] border border-white/10 text-white"
-                  }`}
-                >
-                  {renderContent(msg.content)}
+                <div className={`rounded-xl overflow-hidden ${isOwn ? "bg-gold/95 text-navy-dark" : "bg-white/[0.08] border border-white/10 text-white"}`}>
+                  {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn)}
                 </div>
-                <span className="text-navy-dark/50 text-[10px] mt-1 px-1">
-                  {timeStr}
-                </span>
+                <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+                  <span className="text-[10px] text-white/30">{timeStr}</span>
+                  {isOwn && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(msg)}
+                      className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
+                      title="Supprimer"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -264,7 +370,7 @@ function MessageGroup({ messages, isOwn, onDelete }) {
                     : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
                 }`}
               >
-                {renderContent(msg.content)}
+                {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn)}
               </div>
               <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
                 <span className="text-[10px] text-white/30">{timeStr}</span>
@@ -338,6 +444,9 @@ export default function MessagePanel({
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [lightboxImg, setLightboxImg] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -350,6 +459,33 @@ export default function MessagePanel({
   const scrollRef = useRef(null);
   const prevScrollHeight = useRef(0);
   const prevMsgCount = useRef(messages.length);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    }
+  }, [previewUrl]);
+
+  const handleDownloadImg = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const localUrl = URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = localUrl;
+      a.download = filename || "image";
+      document.body.appendChild(a);
+      a.click();
+      
+      document.body.removeChild(a);
+      URL.revokeObjectURL(localUrl);
+    } catch (error) {
+      window.open(url, "_blank");
+    }
+  };
 
   useEffect(() => {
     if (isAtBottom) {
@@ -433,17 +569,38 @@ export default function MessagePanel({
 
   const handleSend = async () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed && !selectedFile) return;
+    
     setSending(true);
-    await onSend(trimmed);
-    setText("");
-    setShowEmojiPicker(false);
-    setSending(false);
-    onAtBottomChange(true);
-    setTimeout(
-      () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
-      100,
-    );
+
+    try {
+      if (selectedFile) {
+        const fd = new FormData();
+        fd.append("file", selectedFile);
+        const { data } = await api.post("/messages/upload", fd);
+        await onSend(
+          `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}:${selectedFile.size}]`,
+        );
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      } 
+
+      if (trimmed) {
+        await onSend(trimmed);
+        setText("");
+      }
+
+      setShowEmojiPicker(false);
+    } catch (err) {
+      alert("Erreur lors de l'envoi du message.");
+    } finally {
+        setSending(false);
+        onAtBottomChange(true);
+        setTimeout(
+          () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+        100,
+        );
+      };
   };
 
   const handleKey = (e) => {
@@ -460,20 +617,14 @@ export default function MessagePanel({
       alert("Fichier trop volumineux (max 10 Mo).");
       return;
     }
-    setSending(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const { data } = await api.post("/messages/upload", fd);
-      await onSend(
-        `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}]`,
-      );
-    } catch {
-      alert("Échec de l'upload du fichier.");
-    } finally {
-      setSending(false);
-      e.target.value = "";
+    setSelectedFile(file);
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
     }
+    e.target.value = "";
   };
 
   const requestDeleteMessage = (message) => {
@@ -612,6 +763,7 @@ export default function MessagePanel({
                   messages={item.messages}
                   isOwn={item.isOwn}
                   onDelete={requestDeleteMessage}
+                  onImageClick={setLightboxImg}
                 />
               </div>
             );
@@ -639,7 +791,36 @@ export default function MessagePanel({
       </div>
 
       {/* Input */}
-      <div className="px-1 sm:px-6 py-3 sm:py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
+      <div className="relative px-1 sm:px-6 py-3 sm:py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
+
+        {selectedFile && (
+          <div className="absolute bottom-[calc(100%+0.5rem)] left-4 sm:left-10 p-3 bg-navy-dark/95 border border-white/20 rounded-xl backdrop-blur-md flex items-center gap-4 animate-fade-in shadow-xl z-20">
+            <div className="relative">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Preview" className="w-16 h-16 object-cover rounded-lg ring-2 ring-white/10" />
+              ) : (
+                <div className="w-16 h-16 bg-white/5 rounded-lg flex items-center justify-center ring-2 ring-white/10">
+                  <FontAwesomeIcon icon={faFile} className="text-2xl text-gold" />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFile(null);
+                  setPreviewUrl(null);
+                }}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-white text-xs flex items-center justify-center hover:bg-red-400 transition-colors shadow-lg"
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <div className="flex flex-col min-w-[120px] max-w-[200px]">
+              <span className="text-sm text-white font-medium truncate">{selectedFile.name}</span>
+              <span className="text-xs text-white/50">{(selectedFile.size / 1024).toFixed(1)} KB</span>
+            </div>
+          </div>
+        )}
+
         <div className="relative flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
           {showEmojiPicker && (
             <div
@@ -708,7 +889,7 @@ export default function MessagePanel({
           <button
             type="button"
             onClick={handleSend}
-            disabled={!text.trim() || sending}
+            disabled={(!text.trim() && !selectedFile) || sending}
             className="w-10 h-10 rounded-xl bg-gold text-white flex items-center justify-center hover:bg-gold/90 hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {sending ? (
@@ -726,6 +907,49 @@ export default function MessagePanel({
         onCancel={cancelDeleteMessage}
         onConfirm={confirmDeleteMessage}
       />
+
+      {lightboxImg && (
+        <div
+          className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4 animate-fade-in cursor-zoom-out"
+          onClick={() => setLightboxImg(null)}
+        >
+          <div
+            className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between px-6 text-white z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-sm font-medium truncate max-w-[60%] sm:max-w-[80%]">
+              {lightboxImg.filename}
+            </span>
+            <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleDownloadImg(lightboxImg.url, lightboxImg.filename)}
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+              title="Télécharger l'image"
+            >
+              <FontAwesomeIcon icon={faDownload} className="text-sm" />
+            </button>
+            <button
+              onClick={() => setLightboxImg(null)}
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+              title="Fermer"
+            >
+              <FontAwesomeIcon icon={faXmark} className="text-base" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="relative max-w-full max-h-[85vh] flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <img
+            src={lightboxImg.url}
+            alt={lightboxImg.filename}
+            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl select-none animate-scale-in"
+          />
+        </div>
+      </div>
+    )}
     </div>
   );
 }
