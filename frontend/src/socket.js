@@ -10,10 +10,15 @@ export const getSocket = async () => {
   if (connectionPromise) return connectionPromise;
 
   const token = localStorage.getItem("hei_token");
+  if (!token) throw new Error("No auth token available");
 
   socket = io(SOCKET_URL, {
     transports: ["websocket", "polling"],
     auth: { token },
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionAttempts: 5,
+    timeout: 10000,
   });
 
   connectionPromise = new Promise((resolve, reject) => {
@@ -27,8 +32,10 @@ export const getSocket = async () => {
       reject(err);
     });
     setTimeout(() => {
-      connectionPromise = null;
-      reject(new Error("Socket connection timeout"));
+      if (!socket?.connected) {
+        connectionPromise = null;
+        reject(new Error("Socket connection timeout"));
+      }
     }, 10000);
   });
 
@@ -37,15 +44,14 @@ export const getSocket = async () => {
 
 export const disconnectSocket = () => {
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
     socket = null;
+    connectionPromise = null;
   }
 };
 
 export const refreshSocket = async () => {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
+  disconnectSocket();
   return getSocket();
 };

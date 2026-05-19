@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
+import WaveAnimation from "../components/ui/WaveAnimation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -122,7 +123,7 @@ export default function UserProfilePage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar title={`Profil de ${profile.pseudo}`} />
         <main className="flex-1 overflow-y-auto relative">
-          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-[9999]">
             {/* Animated profile header */}
             <div
               className={`transition-all duration-700 ease-out ${
@@ -130,35 +131,25 @@ export default function UserProfilePage() {
               }`}
             >
               <div
-                className="rounded-2xl overflow-hidden mb-6"
+                className="rounded-2xl overflow-hidden mb-6 relative"
                 style={{
-                  background: "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                  background: "linear-gradient(135deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
+                  border: "1px solid rgba(212,175,55,0.15)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.05)",
                 }}
               >
-                {/* Cover accent */}
-                <div className="h-24 sm:h-28 relative overflow-hidden">
+                {/* Cover area */}
+                <div className="h-28 sm:h-36 relative overflow-hidden">
                   <div
                     className="absolute inset-0"
                     style={{
-                      background: "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
+                      background: "linear-gradient(180deg, #0A1A33 0%, #001948 60%, #0A1A33 100%)",
                     }}
                   />
-                  <div className="absolute inset-0 opacity-30">
-                    <div
-                      className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent)" }}
-                    />
-                    <div
-                      className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1), transparent)" }}
-                    />
-                  </div>
                 </div>
 
                 {/* Avatar + info */}
-                <div className="px-6 pb-6 -mt-12 relative">
+                <div className="px-6 pb-6 -mt-12 relative z-[9999]">
                   <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
                     <div className="relative shrink-0">
                       <div
@@ -185,7 +176,7 @@ export default function UserProfilePage() {
                       </h1>
                       <p className="text-gray-500 text-sm mt-0.5">{profile.ref}</p>
                       <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start flex-wrap">
-                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}>
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-[9999] ${roleCfg.cls}`}>
                           <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
                           {roleCfg.label}
                         </span>
@@ -198,6 +189,9 @@ export default function UserProfilePage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Premium wave animation at bottom */}
+                <WaveAnimation />
               </div>
             </div>
 

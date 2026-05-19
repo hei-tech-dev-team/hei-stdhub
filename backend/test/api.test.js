@@ -72,16 +72,16 @@ describe("AUTH", () => {
     expect(res.status).to.equal(401);
   });
 
-  it("POST /auth/forgot-password sans email → 400", async () => {
-    const res = await agent.post("/api/auth/forgot-password").send({});
+  it("POST /auth/forgot-password/send-email sans email → 400", async () => {
+    const res = await agent.post("/api/auth/forgot-password/send-email").send({});
     expect(res.status).to.equal(400);
     expect(res.body).to.have.property("error", "Adresse email requise.");
   });
 
-  it("POST /auth/forgot-password email trop long → 400", async () => {
+  it("POST /auth/forgot-password/send-email email trop long → 400", async () => {
     const longEmail = "a".repeat(250) + "@b.co";
     const res = await agent
-      .post("/api/auth/forgot-password")
+      .post("/api/auth/forgot-password/send-email")
       .send({ email: longEmail });
     expect(res.status).to.equal(400);
     expect(res.body).to.have.property("error", "Adresse email trop longue.");
