@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle, AlertCircle, ShieldCheck, Plus, Trash2 } from "lucide-react";
+import { CheckCircle, AlertCircle, ShieldCheck, Plus, Trash2, Edit2 } from "lucide-react";
 import api from "../api/axios";
 import JarvisScanAnimation from "../components/ui/JarvisScanAnimation";
 
@@ -11,16 +11,21 @@ function generateQuestionId() {
   return `q_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function QuestionEditor({ question, index, onQuestionChange, onAnswerChange, onRemove, canRemove }) {
+function QuestionEditor({ question, index, onQuestionChange, onAnswerChange, onRemove, canRemove, isExisting }) {
   return (
     <div
       className="rounded-2xl border border-navy/30 bg-navy/[0.04] transition-all duration-200 focus-within:border-navy focus-within:shadow-sm"
     >
       <div className="px-4 pt-3 pb-2 flex items-center gap-2">
         <span className="text-xs font-bold text-gray-400 shrink-0">Q{index + 1}</span>
+        {isExisting && (
+          <span className="text-[10px] font-semibold text-navy/60 bg-navy/10 px-2 py-0.5 rounded-full shrink-0">
+            Existante
+          </span>
+        )}
         <input
           type="text"
-          className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b-2 border-gray-200 pb-1.5 focus:border-navy outline-none placeholder:text-gray-400 transition-colors duration-200"
+          className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b-2 border-gray-200 pb-1.5 focus:border-navy outline-none placeholder:text-gray-400 transition-colors duration-200 min-w-0"
           placeholder="Redigez votre question..."
           value={question.question}
           onChange={(e) => onQuestionChange(question.id, e.target.value)}
@@ -31,19 +36,19 @@ function QuestionEditor({ question, index, onQuestionChange, onAnswerChange, onR
           <button
             type="button"
             onClick={() => onRemove(question.id)}
-            className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
             title="Supprimer"
             aria-label={`Supprimer la question ${index + 1}`}
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} />
           </button>
         )}
       </div>
       <div className="px-4 pb-3">
         <input
           type="text"
-          className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:border-navy outline-none transition-all duration-200 placeholder:text-gray-400"
-          placeholder="Votre reponse"
+          className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-3.5 py-3 focus:border-navy outline-none transition-all duration-200 placeholder:text-gray-400"
+          placeholder={isExisting ? "Nouvelle reponse (remplace l'ancienne)" : "Votre reponse"}
           value={question.answer}
           onChange={(e) => onAnswerChange(question.id, e.target.value)}
           inputMode="text"
@@ -62,15 +67,18 @@ export default function SecurityQuestionsPage() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [showJarvis, setShowJarvis] = useState(false);
+  const [hasExisting, setHasExisting] = useState(false);
 
   useEffect(() => {
     api.get("/auth/security-questions")
       .then((res) => {
         const existing = res.data.questions || [];
+        setHasExisting(existing.length > 0);
         const mapped = existing.map((q) => ({
           id: q.question_key,
           question: q.question_text,
           answer: "",
+          isExisting: true,
         }));
         setQuestions(mapped);
       })
@@ -80,7 +88,7 @@ export default function SecurityQuestionsPage() {
 
   const addQuestion = useCallback(() => {
     if (questions.length >= 4) return;
-    setQuestions((prev) => [...prev, { id: generateQuestionId(), question: "", answer: "" }]);
+    setQuestions((prev) => [...prev, { id: generateQuestionId(), question: "", answer: "", isExisting: false }]);
     setError("");
   }, [questions.length]);
 
@@ -150,22 +158,22 @@ export default function SecurityQuestionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-start sm:items-center justify-center px-4 py-6 sm:py-8">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-white/3 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-2xl">
+      <div className="relative w-full max-w-2xl my-4">
         <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden">
-          <div className="p-8 sm:p-10">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
-                <ShieldCheck size={22} className="text-white" />
+          <div className="p-6 sm:p-10">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
+                <ShieldCheck size={20} className="text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-navy">Questions de securite</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-navy">Questions de securite</h1>
                 <p className="text-gray-400 text-xs">Creez vos propres questions pour proteger votre compte</p>
               </div>
             </div>
@@ -184,12 +192,19 @@ export default function SecurityQuestionsPage() {
               <>
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
-                    <AlertCircle size={16} /> {error}
+                    <AlertCircle size={16} className="shrink-0" /> <span>{error}</span>
+                  </div>
+                )}
+
+                {hasExisting && (
+                  <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-2xl mb-5 flex items-start gap-2">
+                    <Edit2 size={15} className="shrink-0 mt-0.5" />
+                    <span>Modifiez vos questions existantes ou ajoutez-en de nouvelles. Les reponses seront remplacees.</span>
                   </div>
                 )}
 
                 <p className="text-gray-500 text-sm mb-4">
-                  Creez 2 a 4 questions personnelles et repondez-y ({questions.length}/4).
+                  Creez 2 a 4 questions personnelles ({questions.length}/4).
                 </p>
 
                 <div className="space-y-3 mb-6">
@@ -202,6 +217,7 @@ export default function SecurityQuestionsPage() {
                       onAnswerChange={handleAnswer}
                       onRemove={removeQuestion}
                       canRemove={questions.length > 2}
+                      isExisting={q.isExisting}
                     />
                   ))}
 
