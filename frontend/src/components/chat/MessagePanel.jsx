@@ -31,6 +31,49 @@ import { useLongPress } from "./useLongPress";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
+const PROFANITY_WORDS = new Set([
+  "fuck", "fucker", "fucking", "shit", "shithead", "bullshit", "bitch", "bastard",
+  "asshole", "ass", "damn", "damnit", "piss", "pissed", "crap", "dick", "dickhead",
+  "cock", "cockhead", "prick", "slut", "whore", "nigger", "nigga", "cunt", "twat",
+  "wanker", "motherfucker", "s.o.b", "son of a bitch", "sonofabitch",
+  "faggot", "fag", "dyke", "tranny", "trannie", "homo", "queer", "sissy",
+  "bender", "pansy", "fairy", "fruitcake", "fruit", "ladyboy", "shemale",
+  "he-she", "transvestite",
+  "putain", "pute", "connard", "connasse", "encule", "enculer", "enculé", "enculée",
+  "foutre", "foutu", "merde", "bordel", "salope", "salaud", "batard", "bâtard",
+  "con", "conne", "cul", "bite", "couille", "couilles", "nique", "niquer",
+  "ta gueule", "tg", "ferme ta gueule", "va te faire foutre", "va te faire enculer",
+  "fils de pute", "filsdepute", "fdp", "ntm", "nique ta mere",
+  "abruti", "abrutie", "debile", "débile", "imbecile", "imbécile", "crétin", "cretin",
+  "trou du cul", "trouduc", "trou de cul", "encule de ta race", "enculé de ta race",
+  "gros con", "grosse conne",
+  "pédé", "pede", "pédale", "pedale", "tapette", "gouine", "tarlouze",
+  "folle", "fiotte", "travelo", "pd",
+  "bougnoule", "bougoule", "renoi", "bougnoul", "raton", "bic", "bicot", "boug", "singe", "gorille",
+  "adala", "hadala", "bado", "mpangalatra", "mpamadika", "mpisoloky", "mpitaka",
+  "mpivaro-tena", "mpivarotra tena", "mpivaro tena",
+  "pelaka", "sailava", "mbola", "tsy lehilahy", "tsy vehivavy", "sarongady",
+  "mpanao ratsy", "mpanao heloka", "mpanao heloka bevava", "mpamono",
+  "kill yourself", "kys", "kill urself", "go die", "go kill yourself",
+  "f4ck", "fck", "fuk", "sh1t", "b1tch", "a$$", "d1ck", "c0ck",
+  "p3d3", "p3d", "t@pette", "tap3tte", "g0uine", "gouin3",
+  "ad@l@", "b@d0", "pel@k@",
+]);
+
+function containsProfanity(text) {
+  if (!text) return false;
+  const normalized = text.toLowerCase()
+    .replace(/[0-9@!$]+/g, (m) => {
+      const map = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "!": "i", "$": "s", "@": "a" };
+      return m.split("").map((c) => map[c] || c).join("");
+    })
+    .replace(/\s+/g, " ").trim();
+  for (const word of PROFANITY_WORDS) {
+    if (normalized.includes(word.toLowerCase())) return true;
+  }
+  return false;
+}
+
 const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300" },
   teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300" },
@@ -604,7 +647,12 @@ export default function MessagePanel({
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed && !selectedFile) return;
-    
+
+    if (contact.isGlobal && containsProfanity(trimmed)) {
+      alert("Message contenant des propos inappropriés détecté. Veuillez respecter les autres membres.");
+      return;
+    }
+
     setSending(true);
 
     try {
@@ -652,6 +700,11 @@ export default function MessagePanel({
       return;
     }
     setSelectedFile(file);
+    if (contact.isGlobal && containsProfanity(file.name)) {
+      alert("Nom de fichier inapproprié détecté. Veuillez respecter les autres membres.");
+      e.target.value = "";
+      return;
+    }
     if (file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
