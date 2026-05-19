@@ -66,13 +66,18 @@ export default function ChatLayout() {
   const toggleFavorite = useCallback(async (id) => {
     setFavorites((prev) => {
       const isFav = prev.includes(id);
-      const next = isFav ? prev.filter((fid) => fid !== id) : [...prev, id];
       if (isFav) {
-        api.delete(`/messages/favorites/${id}`).catch(() => {});
-      } else {
-        api.post("/messages/favorites", { contact_id: id }).catch(() => {});
+        api.delete(`/messages/favorites/${id}`)
+          .catch(() => {
+            setFavorites((p) => [...p, id]);
+          });
+        return prev.filter((fid) => fid !== id);
       }
-      return next;
+      api.post("/messages/favorites", { contact_id: id })
+        .catch(() => {
+          setFavorites((p) => p.filter((fid) => fid !== id));
+        });
+      return [...prev, id];
     });
   }, []);
   const activeContactRef = useRef(activeContact);
