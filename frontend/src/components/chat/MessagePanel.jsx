@@ -604,9 +604,11 @@ export default function MessagePanel({
     };
 
     document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, { passive: true });
     document.addEventListener("keydown", handleEscape);
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
   }, [showEmojiPicker]);
@@ -650,7 +652,7 @@ export default function MessagePanel({
     if (!trimmed && !selectedFile) return;
 
     if (contact.isGlobal && containsProfanity(trimmed)) {
-      alert("Message contenant des propos inappropriés détecté. Veuillez respecter les autres membres.");
+      alert("Message contenant des propos inappropries detecte. Veuillez respecter les autres membres.");
       return;
     }
 
@@ -666,24 +668,25 @@ export default function MessagePanel({
         );
         setSelectedFile(null);
         setPreviewUrl(null);
-      } 
-
-      if (trimmed) {
-        await onSend(trimmed);
-        setText("");
       }
 
+      if (trimmed && !selectedFile) {
+        await onSend(trimmed);
+      }
+
+      setText("");
       setShowEmojiPicker(false);
     } catch (err) {
       alert("Erreur lors de l'envoi du message.");
     } finally {
-        setSending(false);
-        onAtBottomChange(true);
-        setTimeout(
-          () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+      setSending(false);
+      onAtBottomChange(true);
+      setTimeout(
+        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
         100,
-        );
-      };
+      );
+    }
+  };
   };
 
   const handleKey = (e) => {

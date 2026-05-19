@@ -131,15 +131,16 @@ export default function AdminPage() {
 
   // Charger stats avec polling 3 secondes
   useEffect(() => {
+    let cancelled = false;
     const fetchStats = () => {
       api
         .get("/admin/stats")
-        .then(({ data }) => setStats(data))
+        .then(({ data }) => { if (!cancelled) setStats(data); })
         .catch(() => {});
     };
     fetchStats();
     const interval = setInterval(fetchStats, 3000);
-    return () => clearInterval(interval);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
   // Modal invitation
   const [showInvModal, setShowInvModal] = useState(false);
@@ -157,14 +158,6 @@ export default function AdminPage() {
   const [bulkError, setBulkError] = useState("");
   const [bulkCodes, setBulkCodes] = useState([]);
   const [allCopied, setAllCopied] = useState(false);
-
-  // Charger stats
-  useEffect(() => {
-    api
-      .get("/admin/stats")
-      .then(({ data }) => setStats(data))
-      .catch(console.error);
-  }, []);
 
   // Pagination
   const [userPage, setUserPage] = useState(0);
@@ -197,14 +190,17 @@ export default function AdminPage() {
 
   // Real-time new user registration
   useEffect(() => {
+    let socket;
     getSocket()
-      .then((socket) => {
+      .then((s) => {
+        socket = s;
         socket.on("user:registered", (newUser) => {
           const { first_login, ...safeUser } = newUser;
           setUsers((prev) => [safeUser, ...prev]);
         });
       })
       .catch(console.error);
+    return () => { if (socket) socket.off("user:registered"); };
   }, []);
 
   // Charger invitations
