@@ -32,7 +32,7 @@ export default function ResetPasswordPage() {
 
     const verifyToken = async () => {
       if (!token) {
-        setError("Lien de réinitialisation manquant.");
+        setError("Lien de reinitialisation manquant.");
         setChecking(false);
         return;
       }
@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
       } catch (err) {
         if (mounted) {
           setError(
-            err.response?.data?.error || "Lien de réinitialisation invalide.",
+            err.response?.data?.error || "Lien de reinitialisation invalide.",
           );
         }
       } finally {
@@ -57,20 +57,18 @@ export default function ResetPasswordPage() {
     };
   }, [token]);
 
-  const validateForm = () => {
-    if (!password || !confirmPassword)
-      return "Veuillez remplir les deux champs.";
-    if (password.length < 6) return "Le mot de passe doit contenir 6 caractères minimum.";
-    if (password !== confirmPassword)
-      return "Les mots de passe ne correspondent pas.";
-    return "";
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const message = validateForm();
-    if (message) {
-      setError(message);
+    if (!password || !confirmPassword) {
+      setError("Veuillez remplir les deux champs.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir 6 caracteres minimum.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
       return;
     }
 
@@ -85,15 +83,12 @@ export default function ResetPasswordPage() {
       window.setTimeout(() => navigate("/login", { replace: true }), 2500);
     } catch (err) {
       setError(
-        err.response?.data?.error || "Impossible de réinitialiser le mot de passe.",
+        err.response?.data?.error || "Impossible de reinitialiser le mot de passe.",
       );
     } finally {
       setLoading(false);
     }
   };
-
-  const passwordInputType = showPassword ? "text" : "password";
-  const confirmPasswordInputType = showConfirmPassword ? "text" : "password";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
@@ -131,7 +126,7 @@ export default function ResetPasswordPage() {
                   HEI STDhub
                 </span>
                 <span className="text-white/60 text-xs">
-                  Plateforme étudiante
+                  Plateforme etudiante
                 </span>
               </div>
             </div>
@@ -143,17 +138,17 @@ export default function ResetPasswordPage() {
                 mot de passe
               </h2>
               <p className="text-white/60 text-sm leading-relaxed">
-                Choisissez un mot de passe que vous n'utilisez pas déjà sur un
+                Choisissez un mot de passe que vous n&apos;utilisez pas deja sur un
                 autre service.
               </p>
             </div>
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
               <p className="text-white/80 text-xs font-medium">
-                Validation sécurisée
+                Validation securisee
               </p>
               <p className="text-white/50 text-xs mt-0.5">
-                Le lien est désactivé après usage.
+                Le lien est desactive apres usage.
               </p>
             </div>
           </div>
@@ -175,7 +170,7 @@ export default function ResetPasswordPage() {
                   aria-label="Chargement"
                 />
                 <p className="text-gray-400 text-sm">
-                  Vérification du lien...
+                  Verification du lien...
                 </p>
               </div>
             ) : done ? (
@@ -190,10 +185,10 @@ export default function ResetPasswordPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-navy mb-2">
-                    Mot de passe réinitialisé
+                    Mot de passe reinitialise
                   </h1>
                   <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    Vous allez être redirigé vers la connexion.
+                    Vous allez etre redirige vers la connexion.
                   </p>
                 </div>
               </div>
@@ -207,7 +202,7 @@ export default function ResetPasswordPage() {
                     Lien invalide
                   </h1>
                   <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    {error || "Ce lien de réinitialisation n'est plus valide."}
+                    {error || "Ce lien de reinitialisation n&apos;est plus valide."}
                   </p>
                 </div>
                 <Link
@@ -224,7 +219,7 @@ export default function ResetPasswordPage() {
               <>
                 <div className="mb-8">
                   <h1 className="text-2xl sm:text-3xl font-bold text-navy">
-                    Réinitialiser
+                    Reinitialiser
                   </h1>
                   <p className="text-gray-400 text-sm mt-1">
                     Saisissez votre nouveau mot de passe
@@ -249,20 +244,21 @@ export default function ResetPasswordPage() {
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                       />
                       <input
-                        type={passwordInputType}
+                        type={showPassword ? "text" : "password"}
                         className="input-field pl-10 pr-11"
-                        placeholder="Minimum 6 caractères"
+                        placeholder="Minimum 6 caracteres"
                         value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
                           setError("");
                         }}
                         autoComplete="new-password"
+                        inputMode="text"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword((value) => !value)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy min-w-[36px] min-h-[36px] flex items-center justify-center"
                         aria-label={
                           showPassword
                             ? "Masquer le mot de passe"
@@ -284,22 +280,23 @@ export default function ResetPasswordPage() {
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                       />
                       <input
-                        type={confirmPasswordInputType}
+                        type={showConfirmPassword ? "text" : "password"}
                         className="input-field pl-10 pr-11"
-                        placeholder="Répétez le mot de passe"
+                        placeholder="Repetez le mot de passe"
                         value={confirmPassword}
                         onChange={(e) => {
                           setConfirmPassword(e.target.value);
                           setError("");
                         }}
                         autoComplete="new-password"
+                        inputMode="text"
                       />
                       <button
                         type="button"
                         onClick={() =>
                           setShowConfirmPassword((value) => !value)
                         }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy min-w-[36px] min-h-[36px] flex items-center justify-center"
                         aria-label={
                           showConfirmPassword
                             ? "Masquer la confirmation"
@@ -323,7 +320,7 @@ export default function ResetPasswordPage() {
                       background: "linear-gradient(135deg, #0A1A33, #001948)",
                     }}
                   >
-                    {loading ? "Mise à jour..." : "Changer le mot de passe"}
+                    {loading ? "Mise a jour..." : "Changer le mot de passe"}
                   </button>
                 </form>
               </>
@@ -334,7 +331,7 @@ export default function ResetPasswordPage() {
                 to="/login"
                 className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
               >
-                <ArrowLeft size={14} /> Retour à la connexion
+                <ArrowLeft size={14} /> Retour a la connexion
               </Link>
             </div>
           </div>
