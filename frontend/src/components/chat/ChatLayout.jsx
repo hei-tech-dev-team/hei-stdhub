@@ -46,9 +46,26 @@ export default function ChatLayout() {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
   const [contactTotal, setContactTotal] = useState(0);
-  const [favorites, setFavorites] = useState(() =>
-    JSON.parse(localStorage.getItem("chat_favorites") || "[]")
-  );
+  const [favorites, setFavorites] = useState([]);
+
+  useEffect(() => {
+    api.get("/messages/favorites")
+      .then(({ data }) => setFavorites(Array.isArray(data) ? data : []))
+      .catch(() => setFavorites([]));
+  }, []);
+
+  const toggleFavorite = useCallback(async (id) => {
+    setFavorites((prev) => {
+      const isFav = prev.includes(id);
+      const next = isFav ? prev.filter((fid) => fid !== id) : [...prev, id];
+      if (isFav) {
+        api.delete(`/messages/favorites/${id}`).catch(() => {});
+      } else {
+        api.post("/messages/favorites", { contact_id: id }).catch(() => {});
+      }
+      return next;
+    });
+  }, []);
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
@@ -64,16 +81,6 @@ export default function ChatLayout() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
-
-  const toggleFavorite = useCallback((id) => {
-    setFavorites((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((fid) => fid !== id)
-        : [...prev, id];
-      localStorage.setItem("chat_favorites", JSON.stringify(next));
-      return next;
-    });
-  }, []);
 
   const fetchUnread = useCallback(async () => {
     try {

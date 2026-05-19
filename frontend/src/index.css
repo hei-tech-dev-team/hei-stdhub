@@ -16,6 +16,16 @@
     padding: 0;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
+
+  html {
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    touch-action: manipulation;
   }
 
   input, textarea, select {
@@ -163,4 +173,45 @@
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
+}
+
+@keyframes wave-premium {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-25%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes wave-premium-reverse {
+  0% { transform: translateX(-50%); }
+  50% { transform: translateX(-25%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes wave-premium-alt {
+  0% { transform: translateX(-10%); }
+  33% { transform: translateX(-30%); }
+  66% { transform: translateX(-20%); }
+  100% { transform: translateX(-10%); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+@keyframes shooting-star {
+  0% { transform: translate(0, 0); opacity: 0; }
+  4% { opacity: 1; }
+  15% { transform: translate(180px, 120px); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes nebula-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
+}
+
+@keyframes particle-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+  50% { transform: translateY(-20px) scale(1.5); opacity: 1; }
 }
