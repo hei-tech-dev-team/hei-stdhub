@@ -29,108 +29,94 @@ function playJarvisAudio(duration) {
     if (!AudioCtx) return null;
     const ctx = new AudioCtx();
     const master = ctx.createGain();
-    master.gain.value = 0.15;
+    master.gain.value = 0.25;
     master.connect(ctx.destination);
 
     const now = ctx.currentTime;
     const dur = duration / 1000;
 
-    const padOsc1 = ctx.createOscillator();
-    padOsc1.type = "sine";
-    padOsc1.frequency.setValueAtTime(80, now);
-    padOsc1.frequency.linearRampToValueAtTime(120, now + dur);
-    const padGain1 = ctx.createGain();
-    padGain1.gain.setValueAtTime(0, now);
-    padGain1.gain.linearRampToValueAtTime(0.3, now + 0.5);
-    padGain1.gain.setValueAtTime(0.3, now + dur - 0.5);
-    padGain1.gain.linearRampToValueAtTime(0, now + dur);
-    padOsc1.connect(padGain1);
-    padGain1.connect(master);
-    padOsc1.start(now);
-    padOsc1.stop(now + dur);
-
-    const padOsc2 = ctx.createOscillator();
-    padOsc2.type = "sine";
-    padOsc2.frequency.setValueAtTime(160, now);
-    padOsc2.frequency.linearRampToValueAtTime(200, now + dur);
-    const padGain2 = ctx.createGain();
-    padGain2.gain.setValueAtTime(0, now);
-    padGain2.gain.linearRampToValueAtTime(0.15, now + 0.8);
-    padGain2.gain.setValueAtTime(0.15, now + dur - 0.5);
-    padGain2.gain.linearRampToValueAtTime(0, now + dur);
-    padOsc2.connect(padGain2);
-    padGain2.connect(master);
-    padOsc2.start(now);
-    padOsc2.stop(now + dur);
-
-    const arpNotes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5, 1568];
-    const arpInterval = dur / arpNotes.length;
-    arpNotes.forEach((freq, i) => {
-      const t = now + i * arpInterval;
+    function createBeep(startTime, freq, length, vol = 0.3) {
       const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(freq, startTime);
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(vol, startTime + 0.005);
+      gain.gain.setValueAtTime(vol, startTime + length - 0.01);
+      gain.gain.linearRampToValueAtTime(0, startTime + length);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(startTime);
+      osc.stop(startTime + length);
+    }
+
+    function createSweep(startTime, startFreq, endFreq, length, vol = 0.15) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, t);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.12, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, t + arpInterval * 0.9);
-      osc.connect(g);
-      g.connect(master);
-      osc.start(t);
-      osc.stop(t + arpInterval);
-    });
-
-    for (let i = 0; i < 6; i++) {
-      const t = now + 0.3 + i * (dur * 0.12);
-      const sweep = ctx.createOscillator();
-      sweep.type = "sine";
-      sweep.frequency.setValueAtTime(400, t);
-      sweep.frequency.exponentialRampToValueAtTime(2000, t + 0.08);
-      sweep.frequency.exponentialRampToValueAtTime(400, t + 0.15);
-      const sg = ctx.createGain();
-      sg.gain.setValueAtTime(0, t);
-      sg.gain.linearRampToValueAtTime(0.06, t + 0.01);
-      sg.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-      sweep.connect(sg);
-      sg.connect(master);
-      sweep.start(t);
-      sweep.stop(t + 0.2);
+      osc.frequency.setValueAtTime(startFreq, startTime);
+      osc.frequency.linearRampToValueAtTime(endFreq, startTime + length);
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(vol, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + length);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(startTime);
+      osc.stop(startTime + length);
     }
 
-    const noiseLen = 0.05;
-    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * noiseLen, ctx.sampleRate);
-    const noiseData = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < noiseData.length; i++) {
-      noiseData[i] = (Math.random() * 2 - 1) * 0.3;
-    }
-    for (let i = 0; i < 4; i++) {
-      const t = now + 0.5 + i * (dur * 0.15);
-      const src = ctx.createBufferSource();
-      src.buffer = noiseBuffer;
-      const ng = ctx.createGain();
-      ng.gain.setValueAtTime(0.04, t);
-      ng.gain.exponentialRampToValueAtTime(0.001, t + noiseLen);
-      const nf = ctx.createBiquadFilter();
-      nf.type = "highpass";
-      nf.frequency.value = 3000;
-      src.connect(nf);
-      nf.connect(ng);
-      ng.connect(master);
-      src.start(t);
+    function createScannerTone(startTime, length, vol = 0.12) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(800, startTime);
+      osc.frequency.linearRampToValueAtTime(1200, startTime + length * 0.3);
+      osc.frequency.linearRampToValueAtTime(600, startTime + length * 0.6);
+      osc.frequency.linearRampToValueAtTime(1000, startTime + length);
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
+      gain.gain.setValueAtTime(vol, startTime + length * 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + length);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(startTime);
+      osc.stop(startTime + length);
     }
 
-    const endOsc = ctx.createOscillator();
-    endOsc.type = "sine";
-    endOsc.frequency.setValueAtTime(1046.5, now + dur - 0.3);
-    endOsc.frequency.linearRampToValueAtTime(1568, now + dur);
-    const endGain = ctx.createGain();
-    endGain.gain.setValueAtTime(0, now + dur - 0.3);
-    endGain.gain.linearRampToValueAtTime(0.2, now + dur - 0.1);
-    endGain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.5);
-    endOsc.connect(endGain);
-    endGain.connect(master);
-    endOsc.start(now + dur - 0.3);
-    endOsc.stop(now + dur + 0.5);
+    const scanPhase = dur * 0.7;
+    const confirmPhase = dur * 0.3;
+    const scanStart = now + 0.1;
+
+    for (let i = 0; i < 8; i++) {
+      const t = scanStart + i * (scanPhase / 8);
+      createBeep(t, 1000 + i * 100, 0.06, 0.15);
+    }
+
+    for (let i = 0; i < 5; i++) {
+      const t = scanStart + 0.3 + i * (scanPhase / 5);
+      createScannerTone(t, 0.15, 0.1);
+    }
+
+    for (let i = 0; i < 12; i++) {
+      const t = scanStart + 0.6 + i * ((scanPhase - 0.6) / 12);
+      createBeep(t, 800 + (i % 3) * 200, 0.04, 0.12);
+    }
+
+    createSweep(scanStart + scanPhase * 0.5, 400, 2000, 0.3, 0.08);
+    createSweep(scanStart + scanPhase * 0.8, 600, 1800, 0.2, 0.06);
+
+    const confirmStart = now + dur - confirmPhase;
+
+    createBeep(confirmStart, 1200, 0.1, 0.25);
+    createBeep(confirmStart + 0.15, 1400, 0.1, 0.25);
+    createBeep(confirmStart + 0.3, 1600, 0.1, 0.25);
+
+    createBeep(confirmStart + 0.5, 2000, 0.15, 0.3);
+    createBeep(confirmStart + 0.7, 2400, 0.15, 0.3);
+
+    createBeep(confirmStart + 0.9, 3000, 0.2, 0.35);
+
+    createSweep(confirmStart + 1.1, 1500, 4000, 0.3, 0.15);
 
     return { ctx, master };
   } catch {
