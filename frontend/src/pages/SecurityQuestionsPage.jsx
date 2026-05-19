@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, Plus, Trash2 } from "lucide-react";
-import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
+import { CheckCircle, AlertCircle, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import api from "../api/axios";
 import JarvisScanAnimation from "../components/ui/JarvisScanAnimation";
 
 export default function SecurityQuestionsPage() {
   const navigate = useNavigate();
-  const [predefined, setPredefined] = useState([]);
-  const [selected, setSelected] = useState([]);
-  const [customs, setCustoms] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -20,77 +17,65 @@ export default function SecurityQuestionsPage() {
   useEffect(() => {
     api.get("/auth/security-questions")
       .then((res) => {
-        setPredefined(res.data.questions);
+        const existing = res.data.questions || [];
+        setQuestions(existing.map((q) => ({ id: q.question_key, question: q.question_text })));
+        const initialAnswers = {};
+        existing.forEach((q) => { initialAnswers[q.question_key] = ""; });
+        setAnswers(initialAnswers);
       })
       .catch((err) => setError(err.response?.data?.error || "Erreur de chargement."))
       .finally(() => setLoading(false));
   }, []);
 
-  const totalCount = selected.length + customs.length;
-
-  const togglePredefined = (key) => {
-    if (selected.includes(key)) {
-      setSelected((p) => p.filter((k) => k !== key));
-      setAnswers((a) => { const r = { ...a }; delete r[key]; return r; });
-    } else {
-      if (totalCount >= 4) return;
-      setSelected((p) => [...p, key]);
-    }
+  const addQuestion = () => {
+    if (questions.length >= 4) return;
+    const id = `q_${Date.now()}`;
+    setQuestions((prev) => [...prev, { id, question: "" }]);
     setError("");
   };
 
-  const addCustom = () => {
-    if (totalCount >= 4) return;
-    const id = Date.now();
-    setCustoms((p) => [...p, { id, question: "", key: `custom_${id}` }]);
+  const removeQuestion = (id) => {
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+    setAnswers((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const setQuestionText = (id, value) => {
+    setQuestions((prev) => prev.map((q) => q.id === id ? { ...q, question: value } : q));
     setError("");
   };
 
-  const removeCustom = (id) => {
-    setCustoms((p) => p.filter((c) => c.id !== id));
-    setAnswers((a) => { const r = { ...a }; delete r[`custom_${id}`]; return r; });
-  };
-
-  const setCustomQuestion = (id, value) => {
-    setCustoms((p) => p.map((c) => c.id === id ? { ...c, question: value } : c));
-    setError("");
-  };
-
-  const handleAnswer = (key, value) => {
-    setAnswers((prev) => ({ ...prev, [key]: value }));
+  const handleAnswer = (id, value) => {
+    setAnswers((prev) => ({ ...prev, [id]: value }));
     setError("");
   };
 
   const handleSave = async () => {
-    if (totalCount < 2) {
-      setError("Sélectionnez au moins 2 questions ou ajoutez des questions personnalisées.");
+    if (questions.length < 2) {
+      setError("Ajoutez au moins 2 questions.");
       return;
     }
-    const missing = [];
-    for (const key of selected) {
-      if (!answers[key]?.trim()) missing.push(key);
+    for (const q of questions) {
+      if (!q.question.trim()) { setError("Veuillez rediger toutes vos questions."); return; }
+      if (q.question.trim().length < 10) { setError("Question trop courte (min 10 caracteres)."); return; }
+      if (!answers[q.id]?.trim()) { setError("Veuillez repondre a toutes les questions."); return; }
+      if (answers[q.id].trim().length < 2) { setError("Reponse trop courte (min 2 caracteres)."); return; }
     }
-    for (const c of customs) {
-      if (!c.question.trim()) { setError("Veuillez rédiger vos questions personnalisées."); return; }
-      if (c.question.trim().length < 10) { setError("Question personnalisée trop courte (min 10 caractères)."); return; }
-      if (!answers[`custom_${c.id}`]?.trim()) missing.push(c.question);
-    }
-    if (missing.length) {
-      setError("Veuillez répondre à toutes les questions.");
+    const uniqueQuestions = new Set(questions.map((q) => q.question.trim().toLowerCase()));
+    if (uniqueQuestions.size !== questions.length) {
+      setError("Questions dupliquees.");
       return;
     }
     setSaving(true);
     setError("");
     try {
-      const payload = [
-        ...selected.map((key) => ({ key, answer: answers[key] })),
-        ...customs.map((c) => ({
-          custom: true,
-          key: `custom_${c.id}`,
-          question: c.question.trim(),
-          answer: answers[`custom_${c.id}`],
-        })),
-      ];
+      const payload = questions.map((q) => ({
+        question: q.question.trim(),
+        answer: answers[q.id],
+      }));
       await api.post("/auth/security-questions", { questions: payload });
       setShowJarvis(true);
     } catch (err) {
@@ -134,8 +119,8 @@ export default function SecurityQuestionsPage() {
                 <ShieldCheck size={22} className="text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-navy">Questions de sécurité</h1>
-                <p className="text-gray-400 text-xs">Protégez votre compte</p>
+                <h1 className="text-xl font-bold text-navy">Questions de securite</h1>
+                <p className="text-gray-400 text-xs">Creez vos propres questions pour proteger votre compte</p>
               </div>
             </div>
 
@@ -145,7 +130,7 @@ export default function SecurityQuestionsPage() {
                   <CheckCircle size={28} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-navy mb-1">Questions enregistrées</h2>
+                  <h2 className="text-lg font-bold text-navy mb-1">Questions enregistrees</h2>
                   <p className="text-gray-400 text-sm">Redirection vers votre profil...</p>
                 </div>
               </div>
@@ -158,81 +143,27 @@ export default function SecurityQuestionsPage() {
                 )}
 
                 <p className="text-gray-500 text-sm mb-4">
-                  Choisissez 2 à 4 questions et répondez-y ({totalCount}/4 sélectionnée{totalCount > 1 ? "s" : ""}).
+                  Creez 2 a 4 questions personnelles et repondez-y ({questions.length}/4).
                 </p>
 
-                {/* Predefined questions */}
                 <div className="space-y-3 mb-6">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Questions prédéfinies</h3>
-                  {predefined.map((q) => (
-                    <div key={q.key} className={`rounded-2xl border transition-all duration-200 ${selected.includes(q.key) ? "border-navy bg-navy/5" : "border-gray-200"}`}>
-                      <button
-                        type="button"
-                        onClick={() => togglePredefined(q.key)}
-                        className="w-full text-left px-4 py-3 flex items-center gap-3"
-                      >
-                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selected.includes(q.key) ? "bg-navy border-navy" : "border-gray-300"}`}>
-                          {selected.includes(q.key) && <CheckCircle size={14} className="text-white" />}
-                        </div>
-                        <span className="text-sm font-medium text-gray-700">{q.question}</span>
-                      </button>
-                      {selected.includes(q.key) && (
-                        <div className="px-4 pb-3">
-                          <input
-                            type="text"
-                            className="input-field text-sm"
-                            placeholder="Votre réponse"
-                            value={answers[q.key] || ""}
-                            onChange={(e) => handleAnswer(q.key, e.target.value)}
-                            autoComplete="off"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Custom questions */}
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Questions personnalisées</h3>
-                    <button
-                      type="button"
-                      onClick={addCustom}
-                      disabled={totalCount >= 4}
-                      className="text-xs text-gold font-semibold hover:text-navy transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <Plus size={14} /> Ajouter
-                    </button>
-                  </div>
-                  {customs.length === 0 && (
-                    <button
-                      type="button"
-                      onClick={addCustom}
-                      className="w-full rounded-2xl border-2 border-dashed border-gray-200 py-6 flex flex-col items-center gap-2 hover:border-navy/40 hover:bg-navy/5 transition-all duration-200 group cursor-pointer"
-                    >
-                      <Plus size={20} className="text-gray-300 group-hover:text-navy transition" />
-                      <span className="text-xs text-gray-400 group-hover:text-navy font-semibold transition">
-                        Ajouter une question personnalisée
-                      </span>
-                    </button>
-                  )}
-                  {customs.map((c) => (
+                  {questions.map((q, i) => (
                     <div
-                      key={c.id}
+                      key={q.id}
                       className="rounded-2xl border border-navy/30 bg-navy/[0.04] transition-all duration-200 has-[input:focus]:border-navy has-[input:focus]:shadow-sm"
                     >
                       <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400 shrink-0">Q{i + 1}</span>
                         <input
                           type="text"
                           className="flex-1 text-sm font-medium text-gray-700 bg-transparent border-b-2 border-gray-200 pb-1.5 focus:border-navy outline-none placeholder:text-gray-400 transition-colors duration-200"
-                          placeholder="Rédigez votre question personnalisée..."
-                          value={c.question}
-                          onChange={(e) => setCustomQuestion(c.id, e.target.value)}
+                          placeholder="Redigez votre question..."
+                          value={q.question}
+                          onChange={(e) => setQuestionText(q.id, e.target.value)}
                         />
                         <button
                           type="button"
-                          onClick={() => removeCustom(c.id)}
+                          onClick={() => removeQuestion(q.id)}
                           className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition shrink-0"
                           title="Supprimer"
                         >
@@ -243,14 +174,40 @@ export default function SecurityQuestionsPage() {
                         <input
                           type="text"
                           className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:border-navy outline-none transition-all duration-200 placeholder:text-gray-400"
-                          placeholder="Votre réponse"
-                          value={answers[`custom_${c.id}`] || ""}
-                          onChange={(e) => handleAnswer(`custom_${c.id}`, e.target.value)}
+                          placeholder="Votre reponse"
+                          value={answers[q.id] || ""}
+                          onChange={(e) => handleAnswer(q.id, e.target.value)}
                           autoComplete="off"
                         />
                       </div>
                     </div>
                   ))}
+
+                  {questions.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={addQuestion}
+                      className="w-full rounded-2xl border-2 border-dashed border-gray-200 py-6 flex flex-col items-center gap-2 hover:border-navy/40 hover:bg-navy/5 transition-all duration-200 group cursor-pointer"
+                    >
+                      <Plus size={20} className="text-gray-300 group-hover:text-navy transition" />
+                      <span className="text-xs text-gray-400 group-hover:text-navy font-semibold transition">
+                        Ajouter votre premiere question
+                      </span>
+                    </button>
+                  )}
+
+                  {questions.length < 4 && (
+                    <button
+                      type="button"
+                      onClick={addQuestion}
+                      className="w-full rounded-2xl border-2 border-dashed border-gray-200 py-4 flex items-center justify-center gap-2 hover:border-navy/40 hover:bg-navy/5 transition-all duration-200 group"
+                    >
+                      <Plus size={16} className="text-gray-300 group-hover:text-navy transition" />
+                      <span className="text-xs text-gray-400 group-hover:text-navy font-semibold transition">
+                        Ajouter une autre question
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
