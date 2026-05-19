@@ -4,6 +4,7 @@ const compression = require("compression");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
+
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
@@ -33,7 +34,6 @@ webpush.setVapidDetails(
 
 const app = express();
 const server = http.createServer(app);
-app.set("trust proxy", 1);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
@@ -134,6 +134,8 @@ if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
 // Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
+app.use("/api/auth/forgot-password", loginLimiter);
+app.use("/api/auth/reset-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
@@ -259,6 +261,18 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create password_reset_tokens table:", err); }
 
+// Ensure push_subscriptions table exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id         SERIAL       PRIMARY KEY,
+    user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint   TEXT         NOT NULL,
+    auth_key   TEXT         NOT NULL,
+    p256dh_key TEXT         NOT NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, endpoint)
+  )
+`).catch((err) => console.error("Failed to create push_subscriptions table:", err));
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_security_questions (
