@@ -1,9 +1,182 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
 import { ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, User, Lock, Eye, EyeOff } from "lucide-react";
 import api from "../api/axios";
 import JarvisScanAnimation from "../components/ui/JarvisScanAnimation";
+
+function StepRefLookup({ ref, setRef, onSubmit, loading, error }) {
+  return (
+    <>
+      <div className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-navy">Reinitialisation</h1>
+        <p className="text-gray-400 text-sm mt-1">Entrez votre reference etudiant</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Reference</label>
+          <div className="relative">
+            <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              className="input-field pl-10 uppercase"
+              placeholder="STD25001"
+              value={ref}
+              onChange={(e) => setRef(e.target.value.toUpperCase())}
+              inputMode="text"
+              autoComplete="username"
+            />
+          </div>
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+        >
+          {loading ? "Verification..." : "Continuer"}
+        </button>
+      </form>
+    </>
+  );
+}
+
+function StepVerifyQuestions({ userInfo, questions, answers, setAnswers, onSubmit, loading, error, onBack }) {
+  const handleAnswer = useCallback((key, value) => {
+    setAnswers((prev) => ({ ...prev, [key]: value }));
+  }, [setAnswers]);
+
+  return (
+    <>
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-navy">Verification</h1>
+        <p className="text-gray-400 text-sm mt-1">{userInfo?.prenom}, repondez a vos questions de securite</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {questions.map((q, i) => (
+          <div key={q.key}>
+            <label className="text-xs font-bold text-gray-500 mb-2 block">Question {i + 1} : {q.question}</label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Votre reponse"
+              value={answers[q.key] || ""}
+              onChange={(e) => handleAnswer(q.key, e.target.value)}
+              inputMode="text"
+              autoComplete="off"
+            />
+          </div>
+        ))}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+        >
+          {loading ? "Verification..." : "Verifier mes reponses"}
+        </button>
+      </form>
+    </>
+  );
+}
+
+function StepNewPassword({ onSubmit, loading, error, onBack }) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(e, password, confirmPassword);
+  };
+
+  return (
+    <>
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-navy">Nouveau mot de passe</h1>
+        <p className="text-gray-400 text-sm mt-1">Choisissez un mot de passe securise</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Nouveau mot de passe</label>
+          <div className="relative">
+            <Lock size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type={showPassword ? "text" : "password"}
+              className="input-field pl-10 pr-11"
+              placeholder="Minimum 6 caracteres"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); }}
+              autoComplete="new-password"
+              inputMode="text"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy min-w-[36px] min-h-[36px] flex items-center justify-center"
+              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Confirmer</label>
+          <div className="relative">
+            <ShieldCheck size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              className="input-field pl-10 pr-11"
+              placeholder="Repetez le mot de passe"
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); }}
+              autoComplete="new-password"
+              inputMode="text"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy min-w-[36px] min-h-[36px] flex items-center justify-center"
+              aria-label={showConfirmPassword ? "Masquer la confirmation" : "Afficher la confirmation"}
+            >
+              {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+        >
+          {loading ? "Mise a jour..." : "Changer le mot de passe"}
+        </button>
+      </form>
+    </>
+  );
+}
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
@@ -16,35 +189,29 @@ export default function ForgotPasswordPage() {
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [resetToken, setResetToken] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [showJarvis, setShowJarvis] = useState(false);
   const [jarvisTrigger, setJarvisTrigger] = useState(null);
 
   const handleRefLookup = async (e) => {
     e.preventDefault();
-    if (!ref.trim()) {
+    const trimmed = ref.trim();
+    if (!trimmed) {
       setError("Veuillez entrer votre reference (ex: STD25001).");
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const res = await api.post("/auth/forgot-password/by-ref", { ref: ref.trim() });
+      const res = await api.post("/auth/forgot-password/by-ref", { ref: trimmed });
       setUserInfo(res.data);
       setQuestions(res.data.questions);
+      setAnswers({});
       setStep(2);
     } catch (err) {
       setError(err.response?.data?.error || "Reference introuvable.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAnswer = (key, value) => {
-    setAnswers((prev) => ({ ...prev, [key]: value }));
-    setError("");
   };
 
   const handleVerify = async (e) => {
@@ -82,8 +249,7 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleReset = async (e) => {
-    e.preventDefault();
+  const handleReset = async (_e, password, confirmPassword) => {
     if (!password || !confirmPassword) {
       setError("Veuillez remplir les deux champs.");
       return;
@@ -114,16 +280,23 @@ export default function ForgotPasswordPage() {
     setDone(true);
   };
 
+  const goBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+      setError("");
+    }
+  };
+
   if (showJarvis && jarvisTrigger === "reset") {
     return <JarvisScanAnimation onComplete={handleJarvisResetComplete} duration={3000} />;
   }
 
+  if (showJarvis && jarvisTrigger === "verify") {
+    return <JarvisScanAnimation onComplete={handleJarvisComplete} duration={3000} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
-      {showJarvis && jarvisTrigger === "verify" && (
-        <JarvisScanAnimation onComplete={handleJarvisComplete} duration={3000} />
-      )}
-
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
@@ -201,148 +374,41 @@ export default function ForgotPasswordPage() {
             ) : (
               <>
                 {step === 1 && (
-                  <>
-                    <div className="mb-8">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Reinitialisation</h1>
-                      <p className="text-gray-400 text-sm mt-1">Entrez votre reference etudiant</p>
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
-                        <AlertCircle size={16} /> {error}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleRefLookup} className="flex flex-col gap-5">
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Reference</label>
-                        <div className="relative">
-                          <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                          <input
-                            type="text"
-                            className="input-field pl-10 uppercase"
-                            placeholder="STD25001"
-                            value={ref}
-                            onChange={(e) => { setRef(e.target.value); setError(""); }}
-                          />
-                        </div>
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-                      >
-                        {loading ? "Verification..." : "Continuer"}
-                      </button>
-                    </form>
-                  </>
+                  <StepRefLookup
+                    ref={ref}
+                    setRef={setRef}
+                    onSubmit={handleRefLookup}
+                    loading={loading}
+                    error={error}
+                  />
                 )}
 
                 {step === 2 && (
-                  <>
-                    <div className="mb-6">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Verification</h1>
-                      <p className="text-gray-400 text-sm mt-1">{userInfo?.prenom}, repondez a vos questions de securite</p>
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
-                        <AlertCircle size={16} /> {error}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleVerify} className="flex flex-col gap-4">
-                      {questions.map((q, i) => (
-                        <div key={q.key}>
-                          <label className="text-xs font-bold text-gray-500 mb-2 block">Question {i + 1} : {q.question}</label>
-                          <input
-                            type="text"
-                            className="input-field"
-                            placeholder="Votre reponse"
-                            value={answers[q.key] || ""}
-                            onChange={(e) => handleAnswer(q.key, e.target.value)}
-                            autoComplete="off"
-                          />
-                        </div>
-                      ))}
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-                      >
-                        {loading ? "Verification..." : "Verifier mes reponses"}
-                      </button>
-                    </form>
-                  </>
+                  <StepVerifyQuestions
+                    userInfo={userInfo}
+                    questions={questions}
+                    answers={answers}
+                    setAnswers={setAnswers}
+                    onSubmit={handleVerify}
+                    loading={loading}
+                    error={error}
+                    onBack={goBack}
+                  />
                 )}
 
                 {step === 3 && (
-                  <>
-                    <div className="mb-6">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-navy">Nouveau mot de passe</h1>
-                      <p className="text-gray-400 text-sm mt-1">Choisissez un mot de passe securise</p>
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
-                        <AlertCircle size={16} /> {error}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleReset} className="flex flex-col gap-4">
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Nouveau mot de passe</label>
-                        <div className="relative">
-                          <Lock size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            className="input-field pl-10 pr-11"
-                            placeholder="Minimum 6 caracteres"
-                            value={password}
-                            onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                            autoComplete="new-password"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword((v) => !v)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy"
-                          >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Confirmer</label>
-                        <div className="relative">
-                          <ShieldCheck size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            className="input-field pl-10"
-                            placeholder="Repetez le mot de passe"
-                            value={confirmPassword}
-                            onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
-                            autoComplete="new-password"
-                          />
-                        </div>
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-                      >
-                        {loading ? "Mise a jour..." : "Changer le mot de passe"}
-                      </button>
-                    </form>
-                  </>
+                  <StepNewPassword
+                    onSubmit={handleReset}
+                    loading={loading}
+                    error={error}
+                    onBack={goBack}
+                  />
                 )}
 
                 <div className="mt-6 text-center">
                   {step > 1 ? (
                     <button
-                      onClick={() => { setStep(step - 1); setError(""); }}
+                      onClick={goBack}
                       className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
                     >
                       <ArrowLeft size={14} /> Retour
