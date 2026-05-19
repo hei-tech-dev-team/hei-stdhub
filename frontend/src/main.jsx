@@ -44,6 +44,12 @@ if ("serviceWorker" in navigator) {
       console.error("SW registration failed:", err);
     });
   });
+
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data?.type === "socket-sync-request") {
+      import("./socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
+    }
+  });
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

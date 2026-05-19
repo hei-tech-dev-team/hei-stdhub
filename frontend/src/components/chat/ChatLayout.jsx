@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import { getSocket, disconnectSocket } from "../../socket";
+import { getSocket, disconnectSocket, onConnectionChange } from "../../socket";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
@@ -36,6 +37,7 @@ function showNotification(title, body) {
 
 export default function ChatLayout() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contacts, setContacts] = useState([GLOBAL_CONTACT]);
   const [activeContact, setActiveContact] = useState(GLOBAL_CONTACT);
   const [messages, setMessages] = useState({});
@@ -47,6 +49,13 @@ export default function ChatLayout() {
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
   const [contactTotal, setContactTotal] = useState(0);
   const [favorites, setFavorites] = useState([]);
+  const [typingUsers, setTypingUsers] = useState({});
+  const [socketState, setSocketState] = useState("connecting");
+
+  const typingTimeoutRef = useRef(null);
+  const lastTypingEmitRef = useRef(0);
+  const TYPING_TIMEOUT_MS = 3000;
+  const TYPING_THROTTLE_MS = 1500;
 
   useEffect(() => {
     api.get("/messages/favorites")
@@ -115,6 +124,13 @@ export default function ChatLayout() {
         }));
         setContacts([GLOBAL_CONTACT, ...formatted]);
         if (data.total) setContactTotal(data.total);
+
+        const contactParam = searchParams.get("contact");
+        if (contactParam) {
+          const target = formatted.find((c) => String(c.id) === contactParam);
+          if (target) setActiveContact(target);
+          setSearchParams({}, { replace: true });
+        }
       })
       .catch(console.error);
     fetchUnread();
@@ -218,9 +234,49 @@ export default function ChatLayout() {
     }
   }, [activeContact, loadMessages, markSeen]);
 
+  const emitTyping = useCallback(async (isTyping) => {
+    const contact = activeContactRef.current;
+    if (!contact) return;
+    const now = Date.now();
+    if (isTyping && now - lastTypingEmitRef.current < TYPING_THROTTLE_MS) return;
+    lastTypingEmitRef.current = now;
+
+    try {
+      const s = await getSocket();
+      s.emit(isTyping ? "typing:started" : "typing:stopped", {
+        contactId: contact.isGlobal ? "global" : contact.id,
+        isGlobal: contact.isGlobal,
+      });
+    } catch {}
+  }, []);
+
+  const emitTypingThrottled = useCallback((isTyping) => {
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    emitTyping(isTyping);
+    if (isTyping) {
+      typingTimeoutRef.current = setTimeout(() => {
+        emitTyping(false);
+      }, TYPING_TIMEOUT_MS);
+    }
+  }, [emitTyping]);
+
   useEffect(() => {
     let cancelled = false;
     let socket;
+    let cleanupListener;
+
+    cleanupListener = onConnectionChange((state) => {
+      setSocketState(state);
+      if (state === "reconnected" || state === "connected") {
+        getSocket().then((s) => {
+          s.emit("user:join", user.id);
+          fetchUnread();
+          if (activeContactRef.current) {
+            markSeen(activeContactRef.current);
+          }
+        }).catch(console.error);
+      }
+    });
 
     getSocket()
       .then((s) => {
@@ -351,12 +407,32 @@ export default function ChatLayout() {
           }));
         });
 
+        socket.on("typing:started", ({ userId, pseudo }) => {
+          const active = activeContactRef.current;
+          if (!active) return;
+          if (active.isGlobal) {
+            setTypingUsers((prev) => ({ ...prev, [userId]: pseudo }));
+          } else if (String(userId) === String(active.id)) {
+            setTypingUsers((prev) => ({ ...prev, [userId]: pseudo }));
+          }
+        });
+
+        socket.on("typing:stopped", ({ userId }) => {
+          setTypingUsers((prev) => {
+            const next = { ...prev };
+            delete next[userId];
+            return next;
+          });
+        });
+
         if (cancelled) return;
       })
       .catch(console.error);
 
     return () => {
       cancelled = true;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (cleanupListener) cleanupListener();
     };
   }, [user, formatMsg]);
 
@@ -382,6 +458,7 @@ export default function ChatLayout() {
         : { content, receiver_id: activeContact.id, is_global: false };
       await api.post("/messages", payload);
       setReplyTo(null);
+      emitTyping(false);
     } catch (err) {
       console.error(err);
     }
@@ -392,11 +469,16 @@ export default function ChatLayout() {
     setShowContactList(false);
     setReplyTo(null);
     setIsAtBottom(true);
+    setTypingUsers({});
   };
 
   const handleScrollToBottom = () => {
     setIsAtBottom(true);
   };
+
+  const typingList = useMemo(() => {
+    return Object.values(typingUsers).filter(Boolean);
+  }, [typingUsers]);
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
@@ -442,6 +524,9 @@ export default function ChatLayout() {
           onLoadOlder={() => loadOlderMessages(activeContact)}
           replyTo={replyTo}
           onReply={setReplyTo}
+          typingUsers={typingList}
+          socketState={socketState}
+          onTypingChange={emitTypingThrottled}
         />
       </div>
     </div>
