@@ -13,11 +13,25 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(
     Promise.all([
       clients.claim(),
-      // Clean old caches
       caches.keys().then((keys) =>
         Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
       ),
     ]),
+  );
+});
+
+self.addEventListener("fetch", (e) => {
+  e.respondWith(
+    caches.match(e.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(e.request).then((response) => {
+        if (response.ok && response.type === "basic") {
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(e.request, clone));
+        }
+        return response;
+      });
+    }),
   );
 });
 
@@ -53,16 +67,22 @@ self.addEventListener("notificationclick", (e) => {
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ("focus" in client) return client.focus();
+        if (client.url.includes(url) && "focus" in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(url);
     }),
   );
 });
 
-// Keep SW alive on mobile for push delivery
 self.addEventListener("message", (e) => {
   if (e.data === "ping") {
     e.source?.postMessage("pong");
+  }
+  if (e.data?.type === "sync-socket") {
+    clients.matchAll({ type: "window" }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: "socket-sync-request" });
+      });
+    });
   }
 });
