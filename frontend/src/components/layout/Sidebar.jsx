@@ -15,6 +15,7 @@ import {
       faUsersRectangle,
       faBell,
       faNewspaper,
+      faGraduationCap,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import STDHUB_LOGO from "../../assets/stdhub-logo-pwa.png";
@@ -31,6 +32,8 @@ const NAV_LINKS = [
 
 const ALUMNI_NAV_LINKS = [
       { to: "/", label: "Accueil", icon: faHouse, end: true },
+      { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
+      { to: "/alumni-tips", label: "AlumniTips", icon: faGraduationCap, end: false },
       { to: "/chat", label: "Chat", icon: faComments, end: false },
 ];
 
