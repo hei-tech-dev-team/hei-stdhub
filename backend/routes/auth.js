@@ -264,8 +264,8 @@ router.post("/security-questions", auth, async (req, res) => {
   }));
 
   for (const q of sanitized) {
-    if (!q.question || q.question.length < 10)
-      return res.status(400).json({ error: "Question trop courte (min 10 caracteres)." });
+    if (!q.question || q.question.length < 4)
+      return res.status(400).json({ error: "Question trop courte (min 4 caracteres)." });
     if (q.question.length > 200)
       return res.status(400).json({ error: "Question trop longue (max 200 caracteres)." });
     if (!q.answer || q.answer.length < 2)
