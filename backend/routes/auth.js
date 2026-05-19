@@ -120,6 +120,12 @@ router.post("/register", async (req, res) => {
       .status(400)
       .json({ error: "Un professeur doit avoir au moins une UE." });
 
+  if (role === "alumni") {
+    const refUpper = ref.trim().toUpperCase();
+    if (!/^STD2[12]\d{3,}$/.test(refUpper))
+      return res.status(400).json({ error: "Les alumni doivent avoir une reference STD21xxx ou STD22xxx." });
+  }
+
   const adminUser = tryGetAdminFromToken(req);
   if (!inviteCode && !adminUser)
     return res.status(400).json({ error: "Code d'invitation requis." });
