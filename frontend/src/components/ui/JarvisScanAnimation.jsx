@@ -1,8 +1,152 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
+
+const NAVY = "#001948";
+const NAVY_DARK = "#0A1A33";
+const GOLD = "#DFA408";
+const GOLD_LIGHT = "#F2C94C";
+const GOLD_PREMIUM = "#D4AF37";
+
+function goldRgba(alpha) {
+  return `rgba(223, 164, 8, ${alpha})`;
+}
+
+function goldLightRgba(alpha) {
+  return `rgba(242, 201, 76, ${alpha})`;
+}
+
+function goldPremiumRgba(alpha) {
+  return `rgba(212, 175, 55, ${alpha})`;
+}
+
+function playJarvisAudio(duration) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    const ctx = new AudioCtx();
+    const master = ctx.createGain();
+    master.gain.value = 0.15;
+    master.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+    const dur = duration / 1000;
+
+    const padOsc1 = ctx.createOscillator();
+    padOsc1.type = "sine";
+    padOsc1.frequency.setValueAtTime(80, now);
+    padOsc1.frequency.linearRampToValueAtTime(120, now + dur);
+    const padGain1 = ctx.createGain();
+    padGain1.gain.setValueAtTime(0, now);
+    padGain1.gain.linearRampToValueAtTime(0.3, now + 0.5);
+    padGain1.gain.setValueAtTime(0.3, now + dur - 0.5);
+    padGain1.gain.linearRampToValueAtTime(0, now + dur);
+    padOsc1.connect(padGain1);
+    padGain1.connect(master);
+    padOsc1.start(now);
+    padOsc1.stop(now + dur);
+
+    const padOsc2 = ctx.createOscillator();
+    padOsc2.type = "sine";
+    padOsc2.frequency.setValueAtTime(160, now);
+    padOsc2.frequency.linearRampToValueAtTime(200, now + dur);
+    const padGain2 = ctx.createGain();
+    padGain2.gain.setValueAtTime(0, now);
+    padGain2.gain.linearRampToValueAtTime(0.15, now + 0.8);
+    padGain2.gain.setValueAtTime(0.15, now + dur - 0.5);
+    padGain2.gain.linearRampToValueAtTime(0, now + dur);
+    padOsc2.connect(padGain2);
+    padGain2.connect(master);
+    padOsc2.start(now);
+    padOsc2.stop(now + dur);
+
+    const arpNotes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5, 1568];
+    const arpInterval = dur / arpNotes.length;
+    arpNotes.forEach((freq, i) => {
+      const t = now + i * arpInterval;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, t);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.12, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + arpInterval * 0.9);
+      osc.connect(g);
+      g.connect(master);
+      osc.start(t);
+      osc.stop(t + arpInterval);
+    });
+
+    for (let i = 0; i < 6; i++) {
+      const t = now + 0.3 + i * (dur * 0.12);
+      const sweep = ctx.createOscillator();
+      sweep.type = "sine";
+      sweep.frequency.setValueAtTime(400, t);
+      sweep.frequency.exponentialRampToValueAtTime(2000, t + 0.08);
+      sweep.frequency.exponentialRampToValueAtTime(400, t + 0.15);
+      const sg = ctx.createGain();
+      sg.gain.setValueAtTime(0, t);
+      sg.gain.linearRampToValueAtTime(0.06, t + 0.01);
+      sg.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      sweep.connect(sg);
+      sg.connect(master);
+      sweep.start(t);
+      sweep.stop(t + 0.2);
+    }
+
+    const noiseLen = 0.05;
+    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * noiseLen, ctx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) {
+      noiseData[i] = (Math.random() * 2 - 1) * 0.3;
+    }
+    for (let i = 0; i < 4; i++) {
+      const t = now + 0.5 + i * (dur * 0.15);
+      const src = ctx.createBufferSource();
+      src.buffer = noiseBuffer;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.04, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + noiseLen);
+      const nf = ctx.createBiquadFilter();
+      nf.type = "highpass";
+      nf.frequency.value = 3000;
+      src.connect(nf);
+      nf.connect(ng);
+      ng.connect(master);
+      src.start(t);
+    }
+
+    const endOsc = ctx.createOscillator();
+    endOsc.type = "sine";
+    endOsc.frequency.setValueAtTime(1046.5, now + dur - 0.3);
+    endOsc.frequency.linearRampToValueAtTime(1568, now + dur);
+    const endGain = ctx.createGain();
+    endGain.gain.setValueAtTime(0, now + dur - 0.3);
+    endGain.gain.linearRampToValueAtTime(0.2, now + dur - 0.1);
+    endGain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.5);
+    endOsc.connect(endGain);
+    endGain.connect(master);
+    endOsc.start(now + dur - 0.3);
+    endOsc.stop(now + dur + 0.5);
+
+    return { ctx, master };
+  } catch {
+    return null;
+  }
+}
 
 export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
+  const audioRef = useRef(null);
+
+  const handleComplete = useCallback(() => {
+    if (audioRef.current) {
+      try {
+        audioRef.current.ctx.close();
+      } catch {}
+      audioRef.current = null;
+    }
+    if (onComplete) onComplete();
+  }, [onComplete]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -10,6 +154,8 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
     const ctx = canvas.getContext("2d");
     let startTime = Date.now();
     let running = true;
+
+    audioRef.current = playJarvisAudio(duration);
 
     const resize = () => {
       canvas.width = canvas.offsetWidth * window.devicePixelRatio;
@@ -48,38 +194,29 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
 
       for (let ring = 0; ring < 3; ring++) {
         const ringRadius = scanRadius * (0.6 + ring * 0.2);
-        const ringAlpha = (1 - progress) * (0.3 - ring * 0.08);
+        const ringAlpha = (1 - progress) * (0.35 - ring * 0.1);
 
         ctx.beginPath();
         ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0, 180, 255, ${ringAlpha})`;
+        ctx.strokeStyle = goldRgba(ringAlpha);
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
-
-      const gradient = ctx.createConicalGradient
-        ? null
-        : ctx.createLinearGradient(
-            centerX - scanRadius,
-            centerY,
-            centerX + scanRadius,
-            centerY,
-          );
 
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, scanRadius, scanAngle, scanAngle + Math.PI * 0.4);
       ctx.closePath();
       const scanGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, scanRadius);
-      scanGrad.addColorStop(0, "rgba(0, 180, 255, 0.15)");
-      scanGrad.addColorStop(0.5, "rgba(0, 120, 255, 0.08)");
-      scanGrad.addColorStop(1, "rgba(0, 60, 200, 0)");
+      scanGrad.addColorStop(0, goldRgba(0.2));
+      scanGrad.addColorStop(0.5, goldPremiumRgba(0.1));
+      scanGrad.addColorStop(1, goldRgba(0));
       ctx.fillStyle = scanGrad;
       ctx.fill();
 
       ctx.beginPath();
       ctx.arc(centerX, centerY, scanRadius, scanAngle, scanAngle + 0.05);
-      ctx.strokeStyle = "rgba(0, 200, 255, 0.8)";
+      ctx.strokeStyle = goldLightRgba(0.9);
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -96,16 +233,16 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
           centerX + Math.cos(angle) * tickOuter,
           centerY + Math.sin(angle) * tickOuter,
         );
-        ctx.strokeStyle = `rgba(0, 180, 255, ${0.3 + Math.sin(elapsed * 0.003 + i) * 0.2})`;
+        ctx.strokeStyle = goldRgba(0.3 + Math.sin(elapsed * 0.003 + i) * 0.2);
         ctx.lineWidth = 1;
         ctx.stroke();
       }
 
       const corePulse = 0.5 + Math.sin(elapsed * 0.005) * 0.3;
       const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30);
-      coreGrad.addColorStop(0, `rgba(0, 220, 255, ${corePulse})`);
-      coreGrad.addColorStop(0.5, "rgba(0, 150, 255, 0.2)");
-      coreGrad.addColorStop(1, "rgba(0, 100, 255, 0)");
+      coreGrad.addColorStop(0, goldLightRgba(corePulse));
+      coreGrad.addColorStop(0.5, goldRgba(0.25));
+      coreGrad.addColorStop(1, goldPremiumRgba(0));
       ctx.beginPath();
       ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
       ctx.fillStyle = coreGrad;
@@ -125,7 +262,7 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 180, 255, ${alpha})`;
+        ctx.fillStyle = goldRgba(alpha);
         ctx.fill();
       }
 
@@ -140,9 +277,18 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
         else ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.strokeStyle = `rgba(0, 180, 255, ${0.15 * (1 - progress * 0.5)})`;
+      ctx.strokeStyle = goldRgba(0.15 * (1 - progress * 0.5));
       ctx.lineWidth = 1;
       ctx.stroke();
+
+      const outerRingRadius = scanRadius * 1.25;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerRingRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = goldRgba(0.08 * (1 - progress * 0.3));
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([4, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       ctx.restore();
 
@@ -150,7 +296,7 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
         animRef.current = requestAnimationFrame(draw);
       } else {
         running = false;
-        if (onComplete) onComplete();
+        handleComplete();
       }
     };
 
@@ -160,18 +306,29 @@ export default function JarvisScanAnimation({ onComplete, duration = 3000 }) {
       running = false;
       cancelAnimationFrame(animRef.current);
       window.removeEventListener("resize", resize);
+      if (audioRef.current) {
+        try {
+          audioRef.current.ctx.close();
+        } catch {}
+        audioRef.current = null;
+      }
     };
-  }, [duration, onComplete]);
+  }, [duration, handleComplete]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1A33]/95 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: `linear-gradient(160deg, ${NAVY_DARK} 0%, ${NAVY} 50%, ${NAVY_DARK} 100%)` }}>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl" style={{ background: goldRgba(0.05) }} />
+        <div className="absolute top-1/4 -right-24 w-64 h-64 rounded-full blur-2xl" style={{ background: goldRgba(0.04) }} />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 rounded-full blur-3xl" style={{ background: goldRgba(0.03) }} />
+      </div>
       <canvas
         ref={canvasRef}
-        className="w-full h-full max-w-lg max-h-lg"
+        className="w-full h-full max-w-lg max-h-lg relative z-10"
         style={{ aspectRatio: "1" }}
       />
-      <div className="absolute bottom-1/4 left-0 right-0 text-center">
-        <p className="text-cyan-400 text-sm font-semibold tracking-widest uppercase animate-pulse">
+      <div className="absolute bottom-1/4 left-0 right-0 text-center z-10">
+        <p className="text-sm font-semibold tracking-widest uppercase animate-pulse" style={{ color: GOLD_LIGHT }}>
           Verification d&apos;identite...
         </p>
       </div>
