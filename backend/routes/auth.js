@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
+const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
@@ -66,6 +67,19 @@ const makeToken = (user) =>
 
 const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
+
+const USER_PROFILE_FIELDS = `
+  id, ref, nom, prenom, email, pseudo, role, level, ues, avatar, first_login,
+  profile_background, cover_border_color, avatar_border_color, cover_parallax,
+  welcome_message_theme, welcome_message_enabled, welcome_bubble_url
+`;
+
+const toPublicUrl = (req, filePath) => {
+  if (!filePath) return null;
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+  const normalizedPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
+  return `${req.protocol}://${req.get("host")}${normalizedPath}`;
+};
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -153,7 +167,7 @@ router.post("/register", async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues)
  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
- RETURNING id, ref, nom, prenom, email, pseudo, role, level, ues, first_login`,
+ RETURNING ${USER_PROFILE_FIELDS}`,
       [
         ref.toUpperCase(),
         capitalize(nom),
@@ -198,7 +212,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, ues, avatar, first_login
+      `SELECT ${USER_PROFILE_FIELDS}, password
        FROM users WHERE ref=$1`,
       [ref.toUpperCase()],
     );
@@ -226,7 +240,7 @@ router.post("/login", async (req, res) => {
 router.get("/user/:ref", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT id, ref, nom, prenom, pseudo, role, level, avatar FROM users WHERE ref=$1",
+      `SELECT ${USER_PROFILE_FIELDS} FROM users WHERE ref=$1`,
       [req.params.ref.toUpperCase()],
     );
     if (!rows.length)
@@ -346,7 +360,7 @@ const securityAnswerLimiter = rateLimit({
   message: { error: "Trop de tentatives. Reessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.body.ref?.trim().toUpperCase() || req.ip,
+  keyGenerator: (req) => req.body.ref?.trim().toUpperCase() || ipKeyGenerator(req.ip),
 });
 
 router.post("/forgot-password/verify", securityAnswerLimiter, async (req, res) => {
@@ -489,7 +503,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar
+      `SELECT ${USER_PROFILE_FIELDS}
        FROM users WHERE id=$1`,
       [req.user.id],
     );
@@ -530,11 +544,123 @@ router.patch("/profile", auth, async (req, res) => {
 
     const { rows } = await db.query(
       `UPDATE users SET pseudo=$1 WHERE id=$2
-       RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+       RETURNING ${USER_PROFILE_FIELDS}`,
       [pseudo.trim(), req.user.id],
     );
     res.json(rows[0]);
   } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.get("/bubbles", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, file_path, filename, label
+       FROM welcome_bubbles
+       ORDER BY id ASC`,
+    );
+    res.json({
+      bubbles: rows.map((row) => ({
+        id: row.id,
+        filename: row.filename,
+        label: row.label || row.filename,
+        url: toPublicUrl(req, row.file_path),
+      })),
+    });
+  } catch (err) {
+    console.error("bubbles error:", err?.message || err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.get("/backgrounds", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, file_path, filename, mime_type, label
+       FROM profile_backgrounds
+       ORDER BY id ASC`,
+    );
+    res.json({
+      backgrounds: rows.map((row) => ({
+        id: row.id,
+        filename: row.filename,
+        mime_type: row.mime_type,
+        label: row.label || row.filename,
+        url: toPublicUrl(req, row.file_path),
+      })),
+    });
+  } catch (err) {
+    console.error("backgrounds error:", err?.message || err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.patch("/profile-background", auth, async (req, res) => {
+  const { url } = req.body;
+  const profileBackground = typeof url === "string" && url.trim() ? url.trim() : null;
+
+  try {
+    const { rows } = await db.query(
+      `UPDATE users
+       SET profile_background=$1
+       WHERE id=$2
+       RETURNING ${USER_PROFILE_FIELDS}`,
+      [profileBackground, req.user.id],
+    );
+    if (!rows.length) return res.status(404).json({ error: "Utilisateur introuvable." });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("profile-background error:", err?.message || err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.patch("/profile-customization", auth, async (req, res) => {
+  const {
+    profile_background,
+    cover_border_color,
+    avatar_border_color,
+    cover_parallax,
+    welcome_message_theme,
+    welcome_message_enabled,
+    welcome_bubble_url,
+  } = req.body;
+
+  const cleanString = (value) =>
+    typeof value === "string" && value.trim() ? value.trim() : null;
+
+  const theme = cleanString(welcome_message_theme) || "simple";
+  if (theme.length > 50)
+    return res.status(400).json({ error: "Theme de message invalide." });
+
+  try {
+    const { rows } = await db.query(
+      `UPDATE users
+       SET profile_background=$1,
+           cover_border_color=$2,
+           avatar_border_color=$3,
+           cover_parallax=$4,
+           welcome_message_theme=$5,
+           welcome_message_enabled=$6,
+           welcome_bubble_url=$7
+       WHERE id=$8
+       RETURNING ${USER_PROFILE_FIELDS}`,
+      [
+        cleanString(profile_background),
+        cleanString(cover_border_color),
+        cleanString(avatar_border_color),
+        typeof cover_parallax === "boolean" ? cover_parallax : true,
+        theme,
+        !!welcome_message_enabled,
+        cleanString(welcome_bubble_url),
+        req.user.id,
+      ],
+    );
+    if (!rows.length) return res.status(404).json({ error: "Utilisateur introuvable." });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("profile-customization error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
@@ -576,7 +702,7 @@ router.patch("/avatar", auth, (req, res) => {
 
       const { rows } = await db.query(
         `UPDATE users SET avatar=$1 WHERE id=$2
-         RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+         RETURNING ${USER_PROFILE_FIELDS}`,
         [avatarUrl, req.user.id],
       );
       res.json(rows[0]);

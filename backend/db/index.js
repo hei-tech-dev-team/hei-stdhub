@@ -16,6 +16,34 @@ const ensureIndexes = async () => {
   try {
     await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
     await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login BOOLEAN NOT NULL DEFAULT TRUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_background TEXT NULL;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_border_color VARCHAR(32) NULL;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_border_color VARCHAR(32) NULL;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_parallax BOOLEAN NOT NULL DEFAULT TRUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS welcome_message_theme VARCHAR(50) NOT NULL DEFAULT 'simple';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS welcome_message_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS welcome_bubble_url TEXT NULL;
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS profile_backgrounds (
+        id SERIAL PRIMARY KEY,
+        file_path TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        mime_type TEXT NULL,
+        label TEXT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS welcome_bubbles (
+        id SERIAL PRIMARY KEY,
+        file_path TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        label TEXT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_global_chat_read_user ON global_chat_read(user_id);
       CREATE INDEX IF NOT EXISTS idx_invitations_code ON invitations(code);
       CREATE INDEX IF NOT EXISTS idx_invitations_expires ON invitations(expires_at) WHERE use_count < max_uses;

@@ -1,10 +1,20 @@
-const CACHE = "hei-stdhub-v1";
+const CACHE = "hei-stdhub-v2";
+const PRECACHE_URLS = ["/logo.png", "/manifest.json"];
+
+const shouldCache = (request, response) => {
+  if (request.method !== "GET" || !response.ok || response.type !== "basic") return false;
+  const url = new URL(request.url);
+  return (
+    url.origin === self.location.origin &&
+    ["/logo.png", "/logo-browser.png", "/logo-pwa.png", "/manifest.json"].includes(url.pathname)
+  );
+};
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then((cache) =>
-      cache.addAll(["/", "/logo.png", "/manifest.json"]),
+      cache.addAll(PRECACHE_URLS),
     ),
   );
 });
@@ -21,17 +31,17 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
+  if (e.request.method !== "GET") return;
+
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(e.request).then((response) => {
-        if (response.ok && response.type === "basic") {
-          const clone = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(e.request, clone));
+    fetch(e.request)
+      .then((response) => {
+        if (shouldCache(e.request, response)) {
+          caches.open(CACHE).then((cache) => cache.put(e.request, response.clone()));
         }
         return response;
-      });
-    }),
+      })
+      .catch(() => caches.match(e.request)),
   );
 });
 

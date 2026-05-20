@@ -27,7 +27,17 @@ document.addEventListener("wheel", (e) => {
   if (e.ctrlKey) e.preventDefault();
 }, { passive: false });
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => registrations.forEach((reg) => reg.unregister()))
+    .catch(() => {});
+  caches?.keys?.()
+    .then((keys) => keys.forEach((key) => caches.delete(key)))
+    .catch(() => {});
+}
+
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").then((reg) => {
       reg.addEventListener("updatefound", () => {
