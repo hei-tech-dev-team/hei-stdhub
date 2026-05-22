@@ -7,7 +7,7 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 **Frontend:** React 19, Vite, Tailwind CSS, React Router 7, Socket.IO Client, Font Awesome, Lucide React, jsPDF, html2canvas, DOMPurify  
 **Backend:** Express 5, Socket.IO 4, PostgreSQL (Supabase), JWT (jsonwebtoken + bcryptjs), Nodemailer (Resend/SMTP), Cloudinary (file uploads), Multer, express-rate-limit, web-push  
 **Testing:** Mocha + Chai (200 backend tests)  
-**Documentation:** `FOR_DEV.md` (overview), `FOR_BACK_DEV.md` (backend), `FOR_FRONT_DEV.md` (frontend), `FOR_QA.md` (testing), `FOR_OPS.md` (ops), `FOR_CONTRIBUTING.md` (contribute), `ALL_ABOUT_API.md` (API reference)  
+**Documentation:** `docs/FOR_DEV.md` (overview), `docs/FOR_BACK_DEV.md` (backend), `docs/FOR_FRONT_DEV.md` (frontend), `docs/FOR_QA.md` (testing), `docs/FOR_OPS.md` (ops), `docs/FOR_CONTRIBUTING.md` (contribute), `docs/ALL_ABOUT_API.md` (API reference)  
 **Deployment:** Vercel (frontend) + Render (backend)
 
 ## Features
