@@ -123,7 +123,7 @@ export default function UserProfilePage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar title={`Profil de ${profile.pseudo}`} />
         <main className="flex-1 overflow-y-auto relative">
-          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-[9999]">
+          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-[45]">
             {/* Animated profile header */}
             <div
               className={`transition-all duration-700 ease-out ${
@@ -149,7 +149,7 @@ export default function UserProfilePage() {
                 </div>
 
                 {/* Avatar + info */}
-                <div className="px-6 pb-6 -mt-12 relative z-[9999]">
+                <div className="px-6 pb-6 -mt-12 relative z-[45]">
                   <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
                     <div className="relative shrink-0">
                       <div
@@ -176,7 +176,7 @@ export default function UserProfilePage() {
                       </h1>
                       <p className="text-gray-500 text-sm mt-0.5">{profile.ref}</p>
                       <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start flex-wrap">
-                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-[9999] ${roleCfg.cls}`}>
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-[45] ${roleCfg.cls}`}>
                           <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
                           {roleCfg.label}
                         </span>
