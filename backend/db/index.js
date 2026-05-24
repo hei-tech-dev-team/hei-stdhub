@@ -1,13 +1,57 @@
 const { Pool } = require("pg");
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 25,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
+const url = require("url");
 
-pool.on("connect", () => { /* suppress noisy logs */ });
+const makePool = () => {
+  const envHost = process.env.PGHOST || process.env.DB_HOST;
+  if (envHost) {
+    return new Pool({
+      host: envHost,
+      port: Number(process.env.PGPORT || process.env.DB_PORT || 5432),
+      user: process.env.PGUSER || process.env.DB_USER || "n8mare",
+      password: process.env.PGPASSWORD || process.env.DB_PASSWORD || "",
+      database: process.env.PGDATABASE || process.env.DB_NAME || "hei_stdhub",
+      max: 25,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
+  }
+
+  const conn = process.env.DATABASE_URL || "";
+  if (conn.startsWith("postgresql://") || conn.startsWith("postgres://")) {
+    try {
+      const parsed = new url.URL(conn);
+      const params = {
+        host: parsed.hostname ? decodeURIComponent(parsed.hostname) : "/var/run/postgresql",
+        port: Number(parsed.port || 5432),
+        user: decodeURIComponent(parsed.username || "n8mare"),
+        password: decodeURIComponent(parsed.password || ""),
+        database: parsed.pathname ? parsed.pathname.replace(/^\//, "") : "hei_stdhub",
+        max: 25,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      };
+      const hostParam = parsed.searchParams.get("host");
+      if (hostParam) params.host = hostParam;
+      return new Pool(params);
+    } catch {
+      return new Pool({ connectionString: conn, max: 25, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000 });
+    }
+  }
+
+  return new Pool({
+    host: "/var/run/postgresql",
+    user: "n8mare",
+    database: "hei_stdhub",
+    max: 25,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
+};
+
+const pool = makePool();
+
+pool.on("connect", () => {});
 pool.on("error", (err) => {
   console.error("PG pool error:", err);
 });
