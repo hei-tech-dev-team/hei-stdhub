@@ -1,299 +1,33 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { ArrowLeft, CheckCircle, AlertCircle, ShieldCheck, User, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, Mail, Loader } from "lucide-react";
 import api from "../api/axios";
-import JarvisScanAnimation from "../components/ui/JarvisScanAnimation";
-
-function StepRefLookup({ ref, setRef, onSubmit, loading, error }) {
-  return (
-    <>
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-navy">Reinitialisation</h1>
-        <p className="text-gray-400 text-sm mt-1">Entrez votre reference etudiant</p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
-
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
-        <div>
-          <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Reference</label>
-          <div className="relative">
-            <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              className="input-field pl-10 uppercase"
-              placeholder="STD25001"
-              value={ref}
-              onChange={(e) => setRef(e.target.value.toUpperCase())}
-              inputMode="text"
-              autoComplete="username"
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-          style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-        >
-          {loading ? "Verification..." : "Continuer"}
-        </button>
-      </form>
-    </>
-  );
-}
-
-function StepVerifyQuestions({ userInfo, questions, answers, setAnswers, onSubmit, loading, error, onBack }) {
-  const handleAnswer = useCallback((key, value) => {
-    setAnswers((prev) => ({ ...prev, [key]: value }));
-  }, [setAnswers]);
-
-  return (
-    <>
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-navy">Verification</h1>
-        <p className="text-gray-400 text-sm mt-1">{userInfo?.prenom}, repondez a vos questions de securite</p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
-
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        {questions.map((q, i) => (
-          <div key={q.key}>
-            <label className="text-xs font-bold text-gray-500 mb-2 block">Question {i + 1} : {q.question}</label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="Votre reponse"
-              value={answers[q.key] || ""}
-              onChange={(e) => handleAnswer(q.key, e.target.value)}
-              inputMode="text"
-              autoComplete="off"
-            />
-          </div>
-        ))}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-          style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-        >
-          {loading ? "Verification..." : "Verifier mes reponses"}
-        </button>
-      </form>
-    </>
-  );
-}
-
-function StepNewPassword({ onSubmit, loading, error, onBack }) {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(e, password, confirmPassword);
-  };
-
-  return (
-    <>
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-navy">Nouveau mot de passe</h1>
-        <p className="text-gray-400 text-sm mt-1">Choisissez un mot de passe securise</p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div>
-          <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Nouveau mot de passe</label>
-          <div className="relative">
-            <Lock size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type={showPassword ? "text" : "password"}
-              className="input-field pl-10 pr-11"
-              placeholder="Minimum 6 caracteres"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); }}
-              autoComplete="new-password"
-              inputMode="text"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy min-w-[36px] min-h-[36px] flex items-center justify-center"
-              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
-        <div>
-          <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Confirmer</label>
-          <div className="relative">
-            <ShieldCheck size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              className="input-field pl-10 pr-11"
-              placeholder="Repetez le mot de passe"
-              value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); }}
-              autoComplete="new-password"
-              inputMode="text"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy min-w-[36px] min-h-[36px] flex items-center justify-center"
-              aria-label={showConfirmPassword ? "Masquer la confirmation" : "Afficher la confirmation"}
-            >
-              {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-          style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-        >
-          {loading ? "Mise a jour..." : "Changer le mot de passe"}
-        </button>
-      </form>
-    </>
-  );
-}
 
 export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
-  const [step, setStep] = useState(1);
-  const [ref, setRef] = useState("");
-  const [userInfo, setUserInfo] = useState(null);
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [resetToken, setResetToken] = useState("");
-  const [showJarvis, setShowJarvis] = useState(false);
-  const [jarvisTrigger, setJarvisTrigger] = useState(null);
-
-  const handleRefLookup = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const trimmed = ref.trim();
+    const trimmed = email.trim();
     if (!trimmed) {
-      setError("Veuillez entrer votre reference (ex: STD25001).");
+      setError("Veuillez entrer votre adresse email.");
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const res = await api.post("/auth/forgot-password/by-ref", { ref: trimmed });
-      setUserInfo(res.data);
-      setQuestions(res.data.questions);
-      setAnswers({});
-      setStep(2);
+      await api.post("/auth/forgot-password", { email: trimmed });
+      setDone(true);
     } catch (err) {
-      setError(err.response?.data?.error || "Reference introuvable.");
+      setError(err.response?.data?.error || "Erreur lors de l'envoi de l'email.");
     } finally {
       setLoading(false);
     }
   };
-
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    const missing = questions.filter((q) => !answers[q.key]?.trim());
-    if (missing.length) {
-      setError("Veuillez repondre a toutes les questions.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const answersArray = questions.map((q) => ({
-        key: q.key,
-        answer: answers[q.key],
-      }));
-      const res = await api.post("/auth/forgot-password/verify", {
-        ref: ref.trim().toUpperCase(),
-        answers: answersArray,
-      });
-      setResetToken(res.data.token);
-      setShowJarvis(true);
-      setJarvisTrigger("verify");
-    } catch (err) {
-      setError(err.response?.data?.error || "Reponses incorrectes.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleJarvisComplete = () => {
-    setShowJarvis(false);
-    if (jarvisTrigger === "verify") {
-      setStep(3);
-    }
-  };
-
-  const handleReset = async (_e, password, confirmPassword) => {
-    if (!password || !confirmPassword) {
-      setError("Veuillez remplir les deux champs.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Le mot de passe doit contenir 6 caracteres minimum.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await api.post("/auth/reset-password", { token: resetToken, newPassword: password });
-      setShowJarvis(true);
-      setJarvisTrigger("reset");
-    } catch (err) {
-      setError(err.response?.data?.error || "Impossible de reinitialiser le mot de passe.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleJarvisResetComplete = () => {
-    setShowJarvis(false);
-    setDone(true);
-  };
-
-  const goBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-      setError("");
-    }
-  };
-
-  if (showJarvis && jarvisTrigger === "reset") {
-    return <JarvisScanAnimation onComplete={handleJarvisResetComplete} duration={3000} />;
-  }
-
-  if (showJarvis && jarvisTrigger === "verify") {
-    return <JarvisScanAnimation onComplete={handleJarvisComplete} duration={3000} />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
@@ -334,15 +68,13 @@ export default function ForgotPasswordPage() {
                 oublie ?
               </h2>
               <p className="text-white/60 text-sm leading-relaxed">
-                Repondez a vos questions de securite pour verifier votre identite.
+                Saisissez votre email pour recevoir un lien de reinitialisation.
               </p>
             </div>
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
-              <p className="text-white/80 text-xs font-medium">Questions de securite</p>
-              <p className="text-white/50 text-xs mt-0.5">
-                {step === 1 ? "Identifiez-vous" : step === 2 ? "Verification" : "Reinitialisation"}
-              </p>
+              <p className="text-white/80 text-xs font-medium">Email securise</p>
+              <p className="text-white/50 text-xs mt-0.5">Lien valable 5 minutes</p>
             </div>
           </div>
 
@@ -358,9 +90,9 @@ export default function ForgotPasswordPage() {
                   <CheckCircle size={36} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-navy mb-2">Mot de passe reinitialise</h2>
+                  <h2 className="text-2xl font-bold text-navy mb-2">Email envoye</h2>
                   <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
+                    Si un compte existe avec cette adresse, vous recevrez un lien de reinitialisation sous quelques minutes.
                   </p>
                 </div>
                 <Link
@@ -373,54 +105,54 @@ export default function ForgotPasswordPage() {
               </div>
             ) : (
               <>
-                {step === 1 && (
-                  <StepRefLookup
-                    ref={ref}
-                    setRef={setRef}
-                    onSubmit={handleRefLookup}
-                    loading={loading}
-                    error={error}
-                  />
+                <div className="mb-8">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-navy">Reinitialisation</h1>
+                  <p className="text-gray-400 text-sm mt-1">Entrez votre email pour recevoir un lien</p>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
+                    <AlertCircle size={16} /> {error}
+                  </div>
                 )}
 
-                {step === 2 && (
-                  <StepVerifyQuestions
-                    userInfo={userInfo}
-                    questions={questions}
-                    answers={answers}
-                    setAnswers={setAnswers}
-                    onSubmit={handleVerify}
-                    loading={loading}
-                    error={error}
-                    onBack={goBack}
-                  />
-                )}
-
-                {step === 3 && (
-                  <StepNewPassword
-                    onSubmit={handleReset}
-                    loading={loading}
-                    error={error}
-                    onBack={goBack}
-                  />
-                )}
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Email</label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="email"
+                        className="input-field pl-10"
+                        placeholder="votre.email@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        inputMode="email"
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+                  >
+                    {loading ? (
+                      <><Loader size={16} className="animate-spin" /> Envoi en cours...</>
+                    ) : (
+                      "Envoyer le lien"
+                    )}
+                  </button>
+                </form>
 
                 <div className="mt-6 text-center">
-                  {step > 1 ? (
-                    <button
-                      onClick={goBack}
-                      className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
-                    >
-                      <ArrowLeft size={14} /> Retour
-                    </button>
-                  ) : (
-                    <Link
-                      to="/login"
-                      className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
-                    >
-                      <ArrowLeft size={14} /> Retour a la connexion
-                    </Link>
-                  )}
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
+                  >
+                    <ArrowLeft size={14} /> Retour a la connexion
+                  </Link>
                 </div>
               </>
             )}
