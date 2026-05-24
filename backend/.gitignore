@@ -9,6 +9,9 @@ node_modules/
 # Fichiers uploadés par les utilisateurs
 uploads/
 
+# Flask-Mail virtual environment
+flaskmail/venv/
+
 # Logs
 npm-debug.log*
 logs/
