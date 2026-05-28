@@ -27,6 +27,22 @@ document.addEventListener("wheel", (e) => {
   if (e.ctrlKey) e.preventDefault();
 }, { passive: false });
 
+async function fetchMissedNotifications() {
+  if (!localStorage.getItem("hei_token")) return;
+  try {
+    const { default: api } = await import("./api/axios");
+    const { data } = await api.get("/push/notifications");
+    if (data && data.length > 0) {
+      const unread = data.filter((n) => !n.is_read);
+      if (unread.length > 0) {
+        api.patch("/push/notifications/read", { ids: unread.map((n) => n.id) }).catch(() => {});
+      }
+    }
+  } catch {
+    // Offline or not authenticated
+  }
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").then((reg) => {
@@ -49,7 +65,13 @@ if ("serviceWorker" in navigator) {
     if (e.data?.type === "socket-sync-request") {
       import("./socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
     }
+    if (e.data?.type === "push-subscription-change") {
+      import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {}));
+    }
   });
+
+  fetchMissedNotifications();
+  window.addEventListener("online", fetchMissedNotifications);
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

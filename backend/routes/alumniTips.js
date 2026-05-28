@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const { containsProfanity } = require("../middleware/profanity");
+const { sendPushToAll } = require("../services/notificationService");
 
 const router = express.Router();
 
@@ -125,6 +126,14 @@ router.post("/", auth, alumniOnly, (req, res) => {
       `, [title.trim(), content.trim(), imageUrl, req.user.id]);
 
       res.status(201).json(result.rows[0]);
+
+      sendPushToAll({
+        title: "Nouveau conseil Alumni",
+        body: result.rows[0].title,
+        tag: `alumni-tip-${result.rows[0].id}`,
+        url: "/alumni-tips",
+        type: "alumni_tip",
+      }).catch(() => {});
     } catch (err) {
       console.error("Error creating alumni tip:", err);
       res.status(500).json({ error: "Erreur serveur." });

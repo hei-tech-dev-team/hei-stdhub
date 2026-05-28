@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const { containsProfanity } = require("../middleware/profanity");
+const { sendPushToAll } = require("../services/notificationService");
 
 const router = express.Router();
 
@@ -144,6 +145,14 @@ router.post("/", auth, adminOnly, (req, res) => {
       `, [title.trim(), content.trim(), imageUrl, req.user.id, target_level || null]);
 
       res.status(201).json(result.rows[0]);
+
+      sendPushToAll({
+        title: "Nouvelle annonce – HEI STDnews",
+        body: result.rows[0].title,
+        tag: `announcement-${result.rows[0].id}`,
+        url: "/announcements",
+        type: "announcement",
+      }).catch(() => {});
     } catch (err) {
       console.error("Error creating announcement:", err);
       res.status(500).json({ error: "Erreur serveur." });

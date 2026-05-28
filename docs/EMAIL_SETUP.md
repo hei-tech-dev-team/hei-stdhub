@@ -2,59 +2,25 @@
 
 ## Architecture
 
-Le service email utilise un micro-service **Python Flask-Mail** qui remplace l'ancien système nodemailer/Resend.
+Le service email utilise **Nodemailer** directement depuis le backend Node.js (plus de micro-service Python).
 
 ```
 Frontend → Backend Node.js (POST /api/auth/forgot-password)
                 ↓
-         Flask-Mail (Python) sur port 5050
-                ↓
-         SMTP Gmail (gratuit)
+          Nodemailer → SMTP Gmail
 ```
 
-## Prérequis
+## Variables d'environnement
 
-- Python 3.10+
-- pip
-
-## Installation Flask-Mail
-
-```bash
-# Depuis la racine
-make flaskmail-install
-
-# Ou manuellement
-cd backend/flaskmail
-python3 -m venv venv
-venv/bin/pip install -r requirements.txt
-```
-
-## Démarrage
-
-```bash
-# Terminal 1 — Flask-Mail
-make flaskmail
-
-# Terminal 2 — Backend
-cd backend && npm run dev
-
-# Terminal 3 — Frontend
-cd frontend && npm run dev
-```
-
-Le backend détecte automatiquement Flask-Mail sur `http://localhost:5050`.
-
-## Variables d'environnement (`backend/.env`)
+Dans `backend/.env` ou les variables d'environnement Render :
 
 ```env
-# SMTP Gmail (gratuit)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=hei.fatratra@gmail.com
 SMTP_PASS=le-mot-de-passe-d-application
-SMTP_FROM=HEI STDhub <hei.fatratra@gmail.com>
-
-CLIENT_URL=http://localhost:5173
+SMTP_FROM="HEI STDhub <hei.fatratra@gmail.com>"
+CLIENT_URL=https://hei-stdhub.vercel.app
 ```
 
 **Obtenir un mot de passe d'application Gmail :**
@@ -62,36 +28,29 @@ CLIENT_URL=http://localhost:5173
 2. Active la Validation en deux étapes
 3. Va dans https://myaccount.google.com/apppasswords
 4. Génère un mot de passe pour "Mail"
-5. Copie le code à 16 caractères
+5. Copie le code à 16 caractères dans `SMTP_PASS`
 
 ## Flux "Mot de passe oublié"
 
 1. **Frontend** → user entre son email → `POST /api/auth/forgot-password`
 2. **Backend** : cherche l'utilisateur par email, génère un token SHA-256, stocke en DB (5 min)
 3. **Backend** : répond immédiatement (message générique de sécurité)
-4. **Backend** : appelle Flask-Mail via HTTP
-5. **Flask-Mail** : envoie l'email via SMTP Gmail
-6. **User** : clique sur le lien → `ResetPasswordPage` → nouveau mot de passe
+4. **Backend** : envoie l'email directement via Nodemailer → SMTP Gmail
+5. **User** : clique sur le lien → `ResetPasswordPage` → nouveau mot de passe
 
 ## Dépannage
 
 | Symptôme | Cause | Solution |
 |----------|-------|----------|
-| Flask ne répond pas | Service non démarré | Lancer `make flaskmail` |
 | SMTP 535 "Authentication failed" | Mauvais mot de passe | Régénérer sur https://myaccount.google.com/apppasswords |
 | Timeout SMTP | Port bloqué | Vérifier le pare-feu, utiliser le port 587 |
-| Erreur DB "Ident authentication" | Connexion PostgreSQL | Vérifier `DATABASE_URL` dans `backend/.env` |
+| Aucun email reçu | `SMTP_PASS` non défini | Vérifier les variables d'environnement sur Render |
 
 ## Test rapide
 
 ```bash
-# Tester Flask-Mail directement
-curl -X POST http://localhost:5050/send-reset-email \
+# Vérifier que le backend démarre correctement
+curl -X POST http://localhost:3001/api/auth/forgot-password \
   -H "Content-Type: application/json" \
-  -d '{"email":"destinataire@example.com","token":"test-123","prenom":"Test"}'
+  -d '{"email":"test@hei.mg"}'
 ```
-
-## Référence
-
-- Code du service : `backend/flaskmail/`
-- Documentation détaillée : `backend/flaskmail/README.md`
