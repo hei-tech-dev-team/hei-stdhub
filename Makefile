@@ -23,3 +23,4 @@ flaskmail-install:
 
 flaskmail:
 	backend/flaskmail/venv/bin/python backend/flaskmail/app.py
+

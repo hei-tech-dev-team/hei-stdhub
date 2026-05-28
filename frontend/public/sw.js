@@ -74,6 +74,16 @@ self.addEventListener("notificationclick", (e) => {
   );
 });
 
+self.addEventListener("pushsubscriptionchange", (e) => {
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: "push-subscription-change" });
+      });
+    }),
+  );
+});
+
 self.addEventListener("message", (e) => {
   if (e.data === "ping") {
     e.source?.postMessage("pong");
