@@ -102,6 +102,14 @@ export default function ForgotPasswordPage() {
                 >
                   Retour a la connexion
                 </Link>
+                <div className="mt-5 text-center border-t border-gray-100 pt-5">
+                  <Link
+                    to="/forgot-password/security-questions"
+                    className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-navy transition font-medium underline underline-offset-2"
+                  >
+                    Je n&apos;ai pas recu le mail
+                  </Link>
+                </div>
               </div>
             ) : (
               <>

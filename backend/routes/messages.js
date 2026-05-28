@@ -8,7 +8,7 @@ const { containsProfanity } = require("../middleware/profanity");
 const multer = require("multer");
 const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
-const webpush = require("web-push");
+const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
 const router = express.Router();
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
@@ -47,43 +47,6 @@ if (useCloudinary) {
     }),
     limits: { fileSize: 10 * 1024 * 1024 },
   }).single("file");
-}
-
-const CONCURRENCY_LIMIT = 10;
-
-async function* batchItems(arr, size) {
-  for (let i = 0; i < arr.length; i += size) {
-    yield arr.slice(i, i + size);
-  }
-}
-
-async function sendPushWithConcurrency(subscriptions, payload) {
-  const results = [];
-  for (const chunk of await iteratorToArray(batchItems(subscriptions, CONCURRENCY_LIMIT))) {
-    const batchResults = await Promise.allSettled(
-      chunk.map((sub) =>
-        webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
-          payload,
-        ).catch(async (err) => {
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            await db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]);
-          }
-          throw err;
-        })
-      ),
-    );
-    results.push(...batchResults);
-  }
-  return results;
-}
-
-async function iteratorToArray(iter) {
-  const arr = [];
-  for await (const item of iter) {
-    arr.push(item);
-  }
-  return arr;
 }
 
 // Search users by ref or pseudo
@@ -262,6 +225,7 @@ router.post("/", auth, async (req, res) => {
         body: `${senderName}: ${content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200)}`,
         tag: "global-chat",
         url: "/chat",
+        type: "global_chat",
       }).catch(() => {});
     } else {
       if (io) {
@@ -275,11 +239,12 @@ router.post("/", auth, async (req, res) => {
         });
       }
 
-      sendPushNotification(receiver_id, {
+      sendPushToUser(receiver_id, {
         title: senderName || "Message",
         body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
         tag: `private-${req.user.id}`,
         url: "/chat",
+        type: "private_message",
       }).catch(() => {});
     }
 
@@ -472,29 +437,6 @@ router.post("/upload", auth, (req, res) => {
     });
   });
 });
-
-async function sendPushToAll({ title, body, tag, url }) {
-  const { rows } = await db.query(
-    `SELECT DISTINCT ON (endpoint) endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
-     FROM push_subscriptions`,
-  );
-  if (!rows.length) return;
-
-  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  await sendPushWithConcurrency(rows, payload);
-}
-
-async function sendPushNotification(userId, { title, body, tag, url }) {
-  const { rows } = await db.query(
-    `SELECT endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
-     FROM push_subscriptions WHERE user_id=$1`,
-    [userId],
-  );
-  if (!rows.length) return;
-
-  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  await sendPushWithConcurrency(rows, payload);
-}
 
 router.get("/favorites", auth, async (req, res) => {
   try {
