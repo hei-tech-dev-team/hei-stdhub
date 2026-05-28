@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test mocha test/**/*.test.js",
-    "start": "node server.js",
+    "start": "bash start.sh",
     "dev": "nodemon server.js",
     "flaskmail": "python3 flaskmail/app.py",
+    "postinstall": "python3 -m venv flaskmail/venv && flaskmail/venv/bin/pip install -q -r flaskmail/requirements.txt",
     "release:patch": "node ../scripts/bump-version.js patch",
     "release:minor": "node ../scripts/bump-version.js minor",
     "release:major": "node ../scripts/bump-version.js major"
