@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
+const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
 const auth = require("../middleware/auth");
 const { sendPasswordResetEmail } = require("../services/mailer");
@@ -397,7 +398,7 @@ const securityAnswerLimiter = rateLimit({
   message: { error: "Trop de tentatives. Reessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.body.ref?.trim().toUpperCase() || req.ip,
+  keyGenerator: (req) => req.body.ref?.trim().toUpperCase() || ipKeyGenerator(req),
 });
 
 router.post("/forgot-password/verify-security", securityAnswerLimiter, async (req, res) => {
