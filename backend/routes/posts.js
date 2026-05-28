@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const { sendPushToAll } = require("../services/notificationService");
 
 
 const router = express.Router();
@@ -126,6 +127,14 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
       ],
     );
     res.status(201).json(rows[0]);
+
+    sendPushToAll({
+      title: `Nouveau cours – ${ue}`,
+      body: `${title} (${type})`,
+      tag: `post-${rows[0].id}`,
+      url: "/posts",
+      type: "new_post",
+    }).catch(() => {});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });

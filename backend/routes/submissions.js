@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const multer = require("multer");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const { sendPushToAll } = require("../services/notificationService");
 
 const router = express.Router();
 
@@ -83,6 +84,14 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
       ],
     );
     res.status(201).json(rows[0]);
+
+    sendPushToAll({
+      title: `Nouveau dépôt – ${ue}`,
+      body: `${prenom} ${nom} (${ref}) a déposé un ${type}`,
+      tag: `submission-${rows[0].id}`,
+      url: "/submissions",
+      type: "new_submission",
+    }).catch(() => {});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
