@@ -3,6 +3,7 @@ import { useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ForgotPasswordSecurityPage from "./pages/ForgotPasswordSecurityPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import HomePage from "./pages/HomePage";
 import ArchivesPage from "./pages/ArchivesPage";
@@ -63,6 +64,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/forgot-password/security-questions" element={<ForgotPasswordSecurityPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/"

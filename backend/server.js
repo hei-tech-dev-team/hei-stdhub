@@ -328,6 +328,21 @@ const { pool } = require("./db");
 
   try {
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_notifications (
+        id         SERIAL       PRIMARY KEY,
+        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type       VARCHAR(50)  NOT NULL,
+        title      VARCHAR(255) NOT NULL,
+        body       TEXT         NOT NULL DEFAULT '',
+        data       JSONB        NULL,
+        is_read    BOOLEAN      NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (err) { console.error("Failed to create push_notifications table:", err); }
+
+  try {
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS global_chat_read (
         user_id            INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         last_read_msg_id   INTEGER   NOT NULL DEFAULT 0,
