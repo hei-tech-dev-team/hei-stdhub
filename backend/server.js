@@ -33,15 +33,19 @@ webpush.setVapidDetails(
 );
 
 const app = express();
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
 app.use((req, res, next) => {
   req.socket.setTimeout(REQUEST_TIMEOUT);
-  req.socket.on("timeout", () => {
-    if (!res.headersSent) res.status(503).json({ error: "Requête expirée." });
-  });
+  if (req.socket.listenerCount("timeout") === 0) {
+    req.socket.on("timeout", () => {
+      if (!res.headersSent) res.status(503).json({ error: "Requête expirée." });
+    });
+  }
   next();
 });
 
