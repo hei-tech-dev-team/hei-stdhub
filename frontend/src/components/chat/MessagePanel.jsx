@@ -25,7 +25,6 @@ import {
   GROUP_GAP,
   formatTime,
   formatDateLabel,
-  formatTooltipDate,
   isFileMessage,
   parseFileContent,
 } from "./chat-utils";
@@ -181,7 +180,7 @@ function ImageMessage({ parsed, onImageClick, onDelete, onDownload, isOwn }) {
   );
 }
 
-function FileMessage({ parsed, onDelete, isOwn, showDelete, onShowDeleteChange }) {
+function FileMessage({ parsed, onShowDeleteChange }) {
   const handleDownload = useCallback(async () => {
     try {
       const response = await fetch(parsed.url);
@@ -242,9 +241,6 @@ function renderContent(content, onImageClick, onDelete, isOwn, onDownload, msgId
     return (
       <FileMessage
         parsed={parsed}
-        onDelete={onDelete}
-        isOwn={isOwn}
-        showDelete={showDelete}
         onShowDeleteChange={onShowDeleteChange}
       />
     );
@@ -341,7 +337,6 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
 
 function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
   const [showDeleteFileId, setShowDeleteFileId] = useState(null);
-  const [hoveredId, setHoveredId] = useState(null);
 
   const handleDelete = (msg) => {
     onDelete?.(msg);
@@ -353,15 +348,12 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
         const isFirst = idx === 0;
         const date = new Date(msg.createdAt);
         const timeStr = formatTime(date);
-        const tooltipStr = formatTooltipDate(date);
 
         if (isFileMessage(msg.content)) {
           return (
             <div
               key={msg.id}
               className="group flex flex-col items-end mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0"
-              onMouseEnter={() => setHoveredId(msg.id)}
-              onMouseLeave={() => setHoveredId(null)}
             >
               <div className="flex  items-center gap-2">
                 {isOwn && showDeleteFileId === msg.id && (
@@ -411,8 +403,6 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
               isOwn ? "flex-row-reverse" : "flex-row"
             } animate-message-in`}
             style={{ animationDelay: `${idx * 0.03}s` }}
-            onMouseEnter={() => setHoveredId(msg.id)}
-            onMouseLeave={() => setHoveredId(null)}
           >
             {!isOwn && isFirst && (
               <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
@@ -516,8 +506,6 @@ export default function MessagePanel({
   onScrollToBottom,
   onlineUsers,
   onLoadOlder,
-  replyTo,
-  onReply,
   typingUsers,
   socketState,
   onTypingChange,
@@ -563,7 +551,7 @@ export default function MessagePanel({
       
       document.body.removeChild(a);
       URL.revokeObjectURL(localUrl);
-    } catch (error) {
+    } catch (_error) {
       window.open(url, "_blank");
     }
   };
@@ -679,7 +667,7 @@ export default function MessagePanel({
 
       setText("");
       setShowEmojiPicker(false);
-    } catch (err) {
+    } catch (_err) {
       alert("Erreur lors de l'envoi du message.");
     } finally {
       setSending(false);

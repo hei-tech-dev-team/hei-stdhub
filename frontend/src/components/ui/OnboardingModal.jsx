@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -86,14 +86,7 @@ export default function OnboardingModal() {
   const { firstLogin, dismissOnboarding } = useAuth();
   const [step, setStep] = useState(0);
   const [animDir, setAnimDir] = useState(null);
-  const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
-
-  useEffect(() => {
-    if (firstLogin) {
-      requestAnimationFrame(() => setVisible(true));
-    }
-  }, [firstLogin]);
 
   const total = steps.length;
   const current = steps[step];

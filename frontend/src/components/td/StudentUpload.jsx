@@ -6,7 +6,6 @@ import {
   faCheckCircle,
   faTrash,
   faSpinner,
-  faFile,
   faGraduationCap,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";

@@ -5,7 +5,6 @@ const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 let socket = null;
 let connectionPromise = null;
 let listeners = new Set();
-let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 12;
 const BASE_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 30000;
@@ -31,8 +30,6 @@ export const getSocket = async () => {
   const token = localStorage.getItem("hei_token");
   if (!token) throw new Error("No auth token available");
 
-  reconnectAttempts = 0;
-
   socket = io(SOCKET_URL, {
     transports: ["websocket", "polling"],
     auth: { token },
@@ -46,7 +43,6 @@ export const getSocket = async () => {
 
   socket.on("connect", () => {
     connectionPromise = null;
-    reconnectAttempts = 0;
     notifyListeners("connected", { socketId: socket.id });
   });
 
@@ -55,12 +51,10 @@ export const getSocket = async () => {
   });
 
   socket.on("reconnect_attempt", (attempt) => {
-    reconnectAttempts = attempt;
     notifyListeners("reconnecting", { attempt, max: MAX_RECONNECT_ATTEMPTS });
   });
 
   socket.on("reconnect", (attempt) => {
-    reconnectAttempts = 0;
     notifyListeners("reconnected", { attempt });
   });
 
@@ -100,7 +94,6 @@ export const disconnectSocket = () => {
     socket.disconnect();
     socket = null;
     connectionPromise = null;
-    reconnectAttempts = 0;
   }
 };
 
