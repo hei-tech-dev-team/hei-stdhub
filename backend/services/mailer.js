@@ -93,13 +93,13 @@ async function sendViaNodemailer({ user, token }) {
     text:
       `Bonjour ${displayName},\n\n` +
       `Vous avez demandé la réinitialisation de votre mot de passe HEI STDhub.\n` +
-      `Ce lien est valable pendant 5 minutes :\n${resetUrl}\n\n` +
+      `Ce lien est valable pendant 1 heure :\n${resetUrl}\n\n` +
       `Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.`,
     html:
       `<p>Bonjour ${displayName},</p>` +
       `<p>Vous avez demandé la réinitialisation de votre mot de passe HEI STDhub.</p>` +
       `<p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>` +
-      `<p>Ce lien est valable pendant 5 minutes.</p>` +
+      `<p>Ce lien est valable pendant 1 heure.</p>` +
       `<p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>`,
   });
   console.info("Email sent via Nodemailer to " + user.email);

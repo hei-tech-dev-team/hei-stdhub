@@ -50,14 +50,14 @@ def send_reset_email(to_email, prenom, token):
     body_text = (
         f"Bonjour {display_name},\n\n"
         f"Vous avez demandé la réinitialisation de votre mot de passe HEI STDhub.\n"
-        f"Ce lien est valable pendant 5 minutes :\n{reset_url}\n\n"
+        f"Ce lien est valable pendant 1 heure :\n{reset_url}\n\n"
         f"Si vous n'êtes pas à l'origine de cette demande, ignorez cet email."
     )
     body_html = (
         f"<p>Bonjour {display_name},</p>"
         f"<p>Vous avez demandé la réinitialisation de votre mot de passe HEI STDhub.</p>"
         f'<p><a href="{reset_url}">Réinitialiser mon mot de passe</a></p>'
-        f"<p>Ce lien est valable pendant 5 minutes.</p>"
+        f"<p>Ce lien est valable pendant 1 heure.</p>"
         f"<p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>"
     )
 
