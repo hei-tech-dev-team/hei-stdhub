@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
               <p className="text-white/80 text-xs font-medium">Email securise</p>
-              <p className="text-white/50 text-xs mt-0.5">Lien valable 5 minutes</p>
+              <p className="text-white/50 text-xs mt-0.5">Lien valable 1 heure</p>
             </div>
           </div>
 
