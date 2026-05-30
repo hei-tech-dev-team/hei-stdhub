@@ -340,7 +340,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
       [user.id],
     );
     await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')",
       [user.id, tokenHash],
     );
 
@@ -451,7 +451,7 @@ router.post("/forgot-password/verify-security", securityAnswerLimiter, async (re
       [userId],
     );
     await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')",
       [userId, tokenHash],
     );
 
