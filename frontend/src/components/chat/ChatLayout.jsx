@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import { getSocket, disconnectSocket, onConnectionChange } from "../../socket";
+import { getSocket, onConnectionChange } from "../../socket";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
@@ -11,13 +11,6 @@ const GLOBAL_CONTACT = {
   name: "Chat global",
   isGlobal: true,
 };
-
-function requestNotifyPermission() {
-  if (!("Notification" in window)) return;
-  if (Notification.permission === "default") {
-    Notification.requestPermission();
-  }
-}
 
 function showNotification(title, body) {
   if (!("Notification" in window)) return;

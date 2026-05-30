@@ -6,7 +6,6 @@ import {
   faInbox,
   faDownload,
   faExternalLinkAlt,
-  faSpinner,
   faChevronLeft,
   faChevronRight,
   faFileAlt,
