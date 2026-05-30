@@ -81,7 +81,7 @@ Le `npm start` (via `start.sh`) lance automatiquement Flask-Mail en arrière-pla
 ## Flux "Mot de passe oublié"
 
 1. **Frontend** → user entre son email → `POST /api/auth/forgot-password`
-2. **Backend** : cherche l'utilisateur par email, génère un token SHA-256, stocke en DB (5 min)
+2. **Backend** : cherche l'utilisateur par email, génère un token SHA-256, stocke en DB (1 h)
 3. **Backend** : répond immédiatement (message générique de sécurité)
 4. **Backend** : appelle Flask-Mail via HTTP (`POST /send-reset-email`)
 5. **Flask-Mail** : envoie l'email via SMTP Gmail
