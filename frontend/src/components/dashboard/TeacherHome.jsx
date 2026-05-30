@@ -6,7 +6,6 @@ import {
   faTimes,
   faSpinner,
   faTrash,
-  faBookOpen,
   faExternalLinkAlt,
   faDownload,
 } from "@fortawesome/free-solid-svg-icons";

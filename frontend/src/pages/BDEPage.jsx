@@ -404,7 +404,6 @@ export default function BDEPage() {
   const [remoteDragId, setRemoteDragId] = useState(null);
   const [remoteDragOver, setRemoteDragOver] = useState(null);
   const boardRef = useRef(null);
-  const dragCounter = useRef(1);
 
   useEffect(() => {
     api
