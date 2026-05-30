@@ -195,7 +195,7 @@ export default function AdminPage() {
       .then((s) => {
         socket = s;
         socket.on("user:registered", (newUser) => {
-          const { first_login, ...safeUser } = newUser;
+          const { first_login: _firstLogin, ...safeUser } = newUser;
           setUsers((prev) => [safeUser, ...prev]);
         });
       })

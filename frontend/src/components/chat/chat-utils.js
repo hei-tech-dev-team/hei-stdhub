@@ -82,14 +82,25 @@ export const parseFileContent = (content) => {
   if (!content || !content.startsWith("[FILE:") || !content.endsWith("]")) return null;
   const inner = content.slice(6, -1);
 
-  // new format: [FILE:filename:url:img] or [FILE:filename:url:file]
-  const newMatch = inner.match(/^(.*?):(.+):(img|file):(\d+)$/);
+  // new format: [FILE:filename:url:img] or [FILE:filename:url:file], with optional size.
+  const newMatch = inner.match(/^(.*?):(.+):(img|file)(?::(\d+))?$/);
   if (newMatch) {
-    const dotIndex = newMatch[1].lastIndexOf('.');
-    const extension = dotIndex !== -1 && dotIndex !== 0 
-    ? newMatch[1].slice(dotIndex + 1).toLowerCase() 
-    : '';
-    return { filename: newMatch[1], url: newMatch[2], type: newMatch[3], size: parseInt(newMatch[4]), extension: extension };
+    const file = {
+      filename: newMatch[1],
+      url: newMatch[2],
+      type: newMatch[3],
+    };
+
+    if (newMatch[4]) {
+      const dotIndex = file.filename.lastIndexOf(".");
+      file.size = Number.parseInt(newMatch[4], 10);
+      file.extension =
+        dotIndex !== -1 && dotIndex !== 0
+          ? file.filename.slice(dotIndex + 1).toLowerCase()
+          : "";
+    }
+
+    return file;
   }
 
   // old format: [FILE:filename:url]

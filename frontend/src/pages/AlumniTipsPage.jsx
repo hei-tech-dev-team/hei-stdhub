@@ -3,18 +3,15 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGraduationCap,
   faSpinner,
-  faPaperclip,
   faXmark,
   faImage,
   faCheckCircle,
   faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 
 export default function AlumniTipsPage() {
-  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
