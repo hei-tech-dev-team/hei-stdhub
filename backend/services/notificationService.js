@@ -17,12 +17,24 @@ async function iteratorToArray(iter) {
   return arr;
 }
 
+function pushWithTimeout(subscription, payload, ms = 10000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error("webpush timeout"));
+    }, ms);
+    webpush
+      .sendNotification(subscription, payload)
+      .then((r) => { clearTimeout(timer); resolve(r); })
+      .catch((e) => { clearTimeout(timer); reject(e); });
+  });
+}
+
 async function sendPushWithConcurrency(subscriptions, payload) {
   const results = [];
   for (const chunk of await iteratorToArray(batchItems(subscriptions, CONCURRENCY_LIMIT))) {
     const batchResults = await Promise.allSettled(
       chunk.map((sub) =>
-        webpush.sendNotification(
+        pushWithTimeout(
           { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
           payload,
         ).catch(async (err) => {
