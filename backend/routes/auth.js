@@ -484,13 +484,45 @@ router.get("/reset-password/:token", async (req, res) => {
   }
 });
 
+router.post("/forgot-password/send-email", async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  if (!email)
+    return res.status(400).json({ error: "Adresse email requise." });
+  if (email.length > 254)
+    return res.status(400).json({ error: "Adresse email trop longue." });
+
+  try {
+    const { rows } = await db.query(
+      "SELECT id FROM users WHERE email=$1",
+      [email],
+    );
+    if (!rows.length)
+      return res.status(200).json({ message: "Si un compte existe avec cet email, un lien de reinitialisation vous a ete envoye." });
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashResetToken(token);
+
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
+      [rows[0].id],
+    );
+    await db.query(
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')",
+      [rows[0].id, tokenHash],
+    );
+
+    res.json({ message: "Si un compte existe avec cet email, un lien de reinitialisation vous a ete envoye." });
+  } catch (err) {
+    console.error("forgot-password/send-email error:", err?.message || err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
   const { token, newPassword } = req.body;
 
-  if (!token)
-    return res.status(400).json({ error: "Token requis." });
-  if (!newPassword)
-    return res.status(400).json({ error: "Nouveau mot de passe requis." });
+  if (!token || !newPassword)
+    return res.status(400).json({ error: "Token et mot de passe requis." });
   if (newPassword.length < 6)
     return res.status(400).json({ error: "Minimum 6 caractères." });
 

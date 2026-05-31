@@ -33,7 +33,7 @@ const NAV_LINKS = [
 const ALUMNI_NAV_LINKS = [
       { to: "/", label: "Accueil", icon: faHouse, end: true },
       { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
-      { to: "/alumni-tips", label: "AlumniTips", icon: faGraduationCap, end: false },
+      { to: "/alumni-spotlight", label: "AlumniSpotlight", icon: faGraduationCap, end: false },
       { to: "/chat", label: "Chat", icon: faComments, end: false },
 ];
 

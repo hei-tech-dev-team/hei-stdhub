@@ -2,7 +2,8 @@
 
 ## Architecture
 
-Le service email utilise un micro-service **Python Flask-Mail** qui tourne à côté du backend Node.js.
+Le service email utilise un micro-service **Python Flask-Mail** qui tourne à côté du backend Node.js en local.
+En production, le backend Node.js peut aussi envoyer directement via **Resend** ou SMTP si Flask-Mail n'est pas disponible.
 
 ```
 Frontend → Backend Node.js (POST /api/auth/forgot-password)
@@ -12,7 +13,7 @@ Frontend → Backend Node.js (POST /api/auth/forgot-password)
            SMTP Gmail (ou autre fournisseur)
 ```
 
-Si Flask-Mail est indisponible, le backend **tombe automatiquement** sur Nodemailer (SMTP direct).
+Si Flask-Mail est indisponible, le backend **tombe automatiquement** sur Resend si `RESEND_API_KEY` est configuré, puis Nodemailer (SMTP direct).
 
 ## Prérequis
 
@@ -51,7 +52,15 @@ Le backend détecte automatiquement Flask-Mail via `FLASKMAIL_URL` (défaut: `ht
 
 ### Production (Render)
 
-Le `npm start` (via `start.sh`) lance automatiquement Flask-Mail en arrière-plan puis démarre le serveur Node.js.
+Le plus simple en production est de configurer Resend sur le backend :
+
+```env
+RESEND_API_KEY=re_...
+RESEND_FROM=HEI STDhub <onboarding@resend.dev>
+CLIENT_URL=https://hei-stdhub.vercel.app
+```
+
+Le `npm start` (via `start.sh`) lance Flask-Mail si les dépendances Python sont présentes, puis démarre le serveur Node.js. Si Flask-Mail n'est pas disponible, l'envoi passe par Resend ou SMTP.
 
 **Configuration Render nécessaire :**
 1. Python 3 est préinstallé sur Render (gratuit)
@@ -63,11 +72,13 @@ Le `npm start` (via `start.sh`) lance automatiquement Flask-Mail en arrière-pla
 | Variable | Défaut | Description |
 |----------|--------|-------------|
 | `FLASKMAIL_URL` | `http://localhost:5050` | URL du microservice Flask-Mail |
-| `SMTP_HOST` | `smtp.gmail.com` | Serveur SMTP |
+| `RESEND_API_KEY` | — | Clé API Resend, chemin recommandé en production |
+| `RESEND_FROM` | — | Expéditeur Resend |
+| `SMTP_HOST` / `EMAIL_HOST` | `smtp.gmail.com` | Serveur SMTP |
 | `SMTP_PORT` | `587` | Port SMTP (587 = STARTTLS, 465 = SSL) |
 | `SMTP_SECURE` | (vide) | `true` pour SSL (port 465) |
-| `SMTP_USER` | — | Identifiant SMTP |
-| `SMTP_PASS` | — | Mot de passe d'application |
+| `SMTP_USER` / `EMAIL_USER` | — | Identifiant SMTP |
+| `SMTP_PASS` / `EMAIL_PASS` | — | Mot de passe d'application |
 | `SMTP_FROM` | `SMTP_USER` | Expéditeur des emails |
 | `CLIENT_URL` | `http://localhost:5173` | URL du frontend (pour le lien de reset) |
 
@@ -84,7 +95,7 @@ Le `npm start` (via `start.sh`) lance automatiquement Flask-Mail en arrière-pla
 2. **Backend** : cherche l'utilisateur par email, génère un token SHA-256, stocke en DB (1 h)
 3. **Backend** : répond immédiatement (message générique de sécurité)
 4. **Backend** : appelle Flask-Mail via HTTP (`POST /send-reset-email`)
-5. **Flask-Mail** : envoie l'email via SMTP Gmail
+5. **Flask-Mail / Resend / SMTP** : envoie l'email
 6. **User** : clique sur le lien → `ResetPasswordPage` → nouveau mot de passe
 
 ## Dépannage
@@ -94,7 +105,7 @@ Le `npm start` (via `start.sh`) lance automatiquement Flask-Mail en arrière-pla
 | Flask ne répond pas | Service non démarré | Vérifier que `start.sh` lance Flask-Mail |
 | SMTP 535 "Authentication failed" | Mauvais mot de passe | Régénérer sur https://myaccount.google.com/apppasswords |
 | Timeout SMTP | Port bloqué | Vérifier le pare-feu, utiliser le port 587 |
-| Aucun email reçu | Flask-Mail ou SMTP défaillant | Vérifier les logs (le backend tombe sur Nodemailer) |
+| Aucun email reçu | Flask-Mail, Resend ou SMTP défaillant | Vérifier les logs et les variables `RESEND_API_KEY` ou `SMTP_*` |
 | "Flask-Mail did not start in time" | Python/venv manquant | Exécuter `make flaskmail-install` |
 
 ## Test rapide
