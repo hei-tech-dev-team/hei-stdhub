@@ -19,12 +19,18 @@ else:
 
 app = Flask(__name__)
 
-app.config["MAIL_SERVER"] = os.getenv("SMTP_HOST", "smtp.gmail.com")
-app.config["MAIL_PORT"] = int(os.getenv("SMTP_PORT", "587"))
-app.config["MAIL_USE_TLS"] = os.getenv("SMTP_SECURE", "").lower() != "true"
-app.config["MAIL_USE_SSL"] = os.getenv("SMTP_SECURE", "").lower() == "true"
-app.config["MAIL_USERNAME"] = os.getenv("SMTP_USER", "")
-app.config["MAIL_PASSWORD"] = os.getenv("SMTP_PASS", "")
+mail_port = int(os.getenv("SMTP_PORT") or os.getenv("EMAIL_PORT") or "587")
+mail_secure = (
+    (os.getenv("SMTP_SECURE") or os.getenv("EMAIL_SECURE") or "").lower() == "true"
+    or mail_port == 465
+)
+
+app.config["MAIL_SERVER"] = os.getenv("SMTP_HOST") or os.getenv("EMAIL_HOST") or "smtp.gmail.com"
+app.config["MAIL_PORT"] = mail_port
+app.config["MAIL_USE_TLS"] = not mail_secure
+app.config["MAIL_USE_SSL"] = mail_secure
+app.config["MAIL_USERNAME"] = os.getenv("SMTP_USER") or os.getenv("EMAIL_USER") or ""
+app.config["MAIL_PASSWORD"] = os.getenv("SMTP_PASS") or os.getenv("EMAIL_PASS") or ""
 app.config["MAIL_DEFAULT_SENDER"] = (
     os.getenv("SMTP_FROM")
     or os.getenv("MAIL_FROM")

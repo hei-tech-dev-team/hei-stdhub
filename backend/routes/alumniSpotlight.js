@@ -33,14 +33,14 @@ if (useCloudinary) {
   const storage = new CloudinaryStorage({
     cloudinary,
     params: {
-      folder: "hei-stdhub/alumni-tips",
+      folder: "hei-stdhub/alumni-spotlight",
       allowed_formats: ["jpg", "jpeg", "png", "webp"],
       transformation: [{ width: 1200, crop: "limit" }],
     },
   });
   upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }).single("image");
 } else {
-  const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "alumni-tips");
+  const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "alumni-spotlight");
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOAD_DIR),
@@ -56,7 +56,7 @@ router.get("/", auth, async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT t.*, u.pseudo AS author_pseudo, u.avatar AS author_avatar, u.ref AS author_ref
-      FROM alumni_tips t
+      FROM alumni_spotlight t
       JOIN users u ON u.id = t.author_id
       ORDER BY t.created_at DESC
     `);
@@ -95,7 +95,7 @@ router.get("/", auth, async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching alumni tips:", err);
+    console.error("Error fetching alumni spotlight:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
@@ -116,11 +116,11 @@ router.post("/", auth, alumniOnly, (req, res) => {
       }
 
       const imageUrl = req.file
-        ? req.file.secure_url || `${req.protocol}://${req.get("host")}/uploads/alumni-tips/${req.file.filename}`
+        ? req.file.secure_url || `${req.protocol}://${req.get("host")}/uploads/alumni-spotlight/${req.file.filename}`
         : null;
 
       const result = await db.query(`
-        INSERT INTO alumni_tips (title, content, image_url, author_id)
+        INSERT INTO alumni_spotlight (title, content, image_url, author_id)
         VALUES ($1, $2, $3, $4)
         RETURNING *
       `, [title.trim(), content.trim(), imageUrl, req.user.id]);
@@ -131,7 +131,7 @@ router.post("/", auth, alumniOnly, (req, res) => {
         title: "Nouveau conseil Alumni",
         body: result.rows[0].title,
         tag: `alumni-tip-${result.rows[0].id}`,
-        url: "/alumni-tips",
+        url: "/alumni-spotlight",
         type: "alumni_tip",
       }).catch(() => {});
     } catch (err) {
@@ -144,7 +144,7 @@ router.post("/", auth, alumniOnly, (req, res) => {
 router.delete("/:id", auth, async (req, res) => {
   try {
     const result = await db.query(
-      "DELETE FROM alumni_tips WHERE id = $1 AND author_id = $2 RETURNING id",
+      "DELETE FROM alumni_spotlight WHERE id = $1 AND author_id = $2 RETURNING id",
       [req.params.id, req.user.id]
     );
     if (result.rowCount === 0) {
@@ -165,7 +165,7 @@ router.post("/:id/react", auth, async (req, res) => {
       return res.status(400).json({ error: "Type de réaction invalide." });
     }
 
-    const tip = await db.query("SELECT id FROM alumni_tips WHERE id = $1", [req.params.id]);
+    const tip = await db.query("SELECT id FROM alumni_spotlight WHERE id = $1", [req.params.id]);
     if (tip.rowCount === 0) {
       return res.status(404).json({ error: "Tip introuvable." });
     }

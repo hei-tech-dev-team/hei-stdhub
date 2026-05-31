@@ -132,7 +132,7 @@ export default function ChatLayout() {
       })
       .catch(console.error);
     fetchUnread();
-  }, [fetchUnread]);
+  }, [fetchUnread, searchParams, setSearchParams]);
 
   const markSeen = useCallback(async (contact) => {
     if (contact.isGlobal) {
@@ -443,7 +443,7 @@ export default function ChatLayout() {
         socket.off("typing:stopped");
       }
     };
-  }, [user, formatMsg]);
+  }, [user, formatMsg, fetchUnread, markSeen]);
 
   const deleteMessage = async (messageId) => {
     try {

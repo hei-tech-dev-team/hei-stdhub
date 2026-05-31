@@ -8,7 +8,7 @@ const PROFANITY_WORDS = new Set([
   // English - homophobic / transphobic
   "faggot", "fag", "dyke", "tranny", "trannie", "homo", "queer", "sissy",
   "bender", "pansy", "fairy", "fruitcake", "fruit", "ladyboy", "shemale",
-  "he-she", "it", "transvestite", "breasticle", "man-hater", "manhater",
+  "he-she", "transvestite", "breasticle", "man-hater", "manhater",
 
   // English - racial
   "wetback", "spic", "chink", "gook", "kike", "raghead", "towelhead",
