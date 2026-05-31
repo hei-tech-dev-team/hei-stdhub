@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { ArrowLeft, CheckCircle, AlertCircle, Mail, Loader } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, Mail, Loader, KeyRound } from "lucide-react";
 import api from "../api/axios";
 
 export default function ForgotPasswordPage() {
+  const navigate = useNavigate();
+
+  const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = async (e) => {
+  const handleSendCode = async (e) => {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed) {
@@ -20,10 +24,33 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError("");
     try {
-      await api.post("/auth/forgot-password", { email: trimmed });
-      setDone(true);
+      const res = await api.post("/auth/forgot-password", { email: trimmed });
+      setMessage(res.data.message || "Code envoye.");
+      setStep("code");
     } catch (err) {
-      setError(err.response?.data?.error || "Erreur lors de l'envoi de l'email.");
+      setError(err.response?.data?.error || "Erreur lors de l'envoi du code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed || trimmed.length !== 6) {
+      setError("Veuillez entrer le code a 6 caracteres.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.post("/auth/forgot-password/verify-code", {
+        email: email.trim(),
+        code: trimmed,
+      });
+      navigate(`/reset-password?token=${res.data.token}`);
+    } catch (err) {
+      setError(err.response?.data?.error || "Code invalide.");
     } finally {
       setLoading(false);
     }
@@ -68,13 +95,15 @@ export default function ForgotPasswordPage() {
                 oublie ?
               </h2>
               <p className="text-white/60 text-sm leading-relaxed">
-                Saisissez votre email pour recevoir un lien de reinitialisation.
+                {step === "email"
+                  ? "Saisissez votre email pour recevoir un code de verification."
+                  : "Entrez le code a 6 caracteres recu par notification."}
               </p>
             </div>
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
-              <p className="text-white/80 text-xs font-medium">Email securise</p>
-              <p className="text-white/50 text-xs mt-0.5">Lien valable 1 heure</p>
+              <p className="text-white/80 text-xs font-medium">Code de verification</p>
+              <p className="text-white/50 text-xs mt-0.5">Valable 10 minutes</p>
             </div>
           </div>
 
@@ -84,47 +113,20 @@ export default function ForgotPasswordPage() {
               <span className="text-navy font-bold text-lg">HEI STDhub</span>
             </div>
 
-            {done ? (
-              <div className="flex flex-col items-center text-center gap-5 py-6">
-                <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}>
-                  <CheckCircle size={36} className="text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-navy mb-2">Email envoye</h2>
-                  <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    Si un compte existe avec cette adresse, vous recevrez un lien de reinitialisation sous quelques minutes.
-                  </p>
-                </div>
-                <Link
-                  to="/login"
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200"
-                  style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-                >
-                  Retour a la connexion
-                </Link>
-                <div className="mt-5 text-center border-t border-gray-100 pt-5">
-                  <Link
-                    to="/forgot-password/security-questions"
-                    className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-navy transition font-medium underline underline-offset-2"
-                  >
-                    Je n&apos;ai pas recu le mail
-                  </Link>
-                </div>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
+                <AlertCircle size={16} /> {error}
               </div>
-            ) : (
+            )}
+
+            {step === "email" ? (
               <>
                 <div className="mb-8">
                   <h1 className="text-2xl sm:text-3xl font-bold text-navy">Reinitialisation</h1>
-                  <p className="text-gray-400 text-sm mt-1">Entrez votre email pour recevoir un lien</p>
+                  <p className="text-gray-400 text-sm mt-1">Entrez votre email pour recevoir un code</p>
                 </div>
 
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
-                    <AlertCircle size={16} /> {error}
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                <form onSubmit={handleSendCode} className="flex flex-col gap-5">
                   <div>
                     <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Email</label>
                     <div className="relative">
@@ -132,7 +134,7 @@ export default function ForgotPasswordPage() {
                       <input
                         type="email"
                         className="input-field pl-10"
-                        placeholder="votre.email@email.com"
+                        placeholder="hei.exemple@gmail.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         inputMode="email"
@@ -149,21 +151,79 @@ export default function ForgotPasswordPage() {
                     {loading ? (
                       <><Loader size={16} className="animate-spin" /> Envoi en cours...</>
                     ) : (
-                      "Envoyer le lien"
+                      "Envoyer le code"
+                    )}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-1">
+                    <KeyRound size={20} className="text-navy" />
+                    <h1 className="text-xl sm:text-2xl font-bold text-navy">Code de verification</h1>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Un code a 6 caracteres a ete envoye a <span className="font-semibold text-navy">{email}</span>
+                  </p>
+                </div>
+
+                {message && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
+                    <CheckCircle size={16} /> {message}
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyCode} className="flex flex-col gap-5">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Code</label>
+                    <input
+                      type="text"
+                      className="input-field text-center text-2xl tracking-[0.5em] font-bold"
+                      placeholder="••••••"
+                      maxLength={6}
+                      value={code}
+                      onChange={(e) => {
+                        setCode(e.target.value.toUpperCase());
+                        setError("");
+                      }}
+                      inputMode="text"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+                  >
+                    {loading ? (
+                      <><Loader size={16} className="animate-spin" /> Verification...</>
+                    ) : (
+                      "Verifier le code"
                     )}
                   </button>
                 </form>
 
                 <div className="mt-6 text-center">
-                  <Link
-                    to="/login"
+                  <button
+                    onClick={() => { setStep("email"); setCode(""); setError(""); setMessage(""); }}
                     className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
                   >
-                    <ArrowLeft size={14} /> Retour a la connexion
-                  </Link>
+                    <ArrowLeft size={14} /> Changer d&apos;email
+                  </button>
                 </div>
               </>
             )}
+
+            <div className="mt-6 text-center">
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
+              >
+                <ArrowLeft size={14} /> Retour a la connexion
+              </Link>
+            </div>
           </div>
         </div>
       </div>
