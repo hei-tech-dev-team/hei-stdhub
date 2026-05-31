@@ -136,7 +136,7 @@ function generateSuggestionReport(suggestions) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...NAVY);
-  doc.text("STATISTIQUES", margin, y);
+  doc.text("STATISTIQUES — SUM", margin, y);
   y += 2;
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
@@ -274,7 +274,7 @@ function generateSuggestionReport(suggestions) {
         doc.setTextColor(...RED);
         doc.setFontSize(6.5);
         doc.setFont("helvetica", "bold");
-        doc.text("Justification :", margin + 18, y + 7);
+        doc.text("Justification du BDE :", margin + 18, y + 7);
 
         doc.setTextColor(140, 60, 60);
         doc.setFontSize(7);
@@ -291,7 +291,7 @@ function generateSuggestionReport(suggestions) {
   }
 
   renderSection(acceptes, "Suggestions acceptees", GREEN, 1);
-  renderSection(aDiscuter, "Suggestions a discuter", AMBER, 2);
+  renderSection(aDiscuter, "Suggestions a approfondir", AMBER, 2);
   renderSection(refuses, "Suggestions refusees", RED, 3);
 
   // ═══════════════════════════════════

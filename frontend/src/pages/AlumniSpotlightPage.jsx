@@ -11,7 +11,7 @@ import {
 import api from "../api/axios";
 import Sidebar from "../components/layout/Sidebar";
 
-export default function AlumniTipsPage() {
+export default function AlumniSpotlightPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
@@ -58,7 +58,7 @@ export default function AlumniTipsPage() {
       fd.append("title", title.trim());
       fd.append("content", content.trim());
       if (selectedFile) fd.append("image", selectedFile);
-      await api.post("/alumni-tips", fd, {
+      await api.post("/alumni-spotlight", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setSuccess(true);
@@ -84,7 +84,7 @@ export default function AlumniTipsPage() {
               <FontAwesomeIcon icon={faGraduationCap} className="text-lg" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-navy">AlumniTips</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-navy">AlumniSpotlight</h1>
               <p className="text-gray-400 text-sm">Partagez votre experience HEI</p>
             </div>
           </div>

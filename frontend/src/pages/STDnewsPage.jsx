@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faThumbsUp,
@@ -34,38 +34,38 @@ const LEVELS = ["Tous", "L1", "L2", "L3"];
 export default function STDnewsPage() {
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
-  const [alumniTips, setAlumniTips] = useState([]);
+  const [alumniSpotlight, setAlumniSpotlight] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reacting, setReacting] = useState({});
   const [levelFilter, setLevelFilter] = useState("Tous");
   const [showAlumniOnly, setShowAlumniOnly] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [levelFilter]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [annRes, tipsRes] = await Promise.all([
         api.get("/announcements", { params: levelFilter !== "Tous" ? { level: levelFilter } : {} }),
-        api.get("/alumni-tips"),
+        api.get("/alumni-spotlight"),
       ]);
       setAnnouncements(annRes.data || []);
-      setAlumniTips(tipsRes.data || []);
+      setAlumniSpotlight(tipsRes.data || []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [levelFilter]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleReact = async (id, reactionType, source) => {
     const key = `${source}-${id}-${reactionType}`;
     setReacting((prev) => ({ ...prev, [key]: true }));
     try {
-      const endpoint = source === "tip" ? `/alumni-tips/${id}/react` : `/announcements/${id}/react`;
-      const items = source === "tip" ? alumniTips : announcements;
+      const endpoint = source === "tip" ? `/alumni-spotlight/${id}/react` : `/announcements/${id}/react`;
+      const items = source === "tip" ? alumniSpotlight : announcements;
       const item = items.find((a) => a.id === id);
       if (item.user_reaction === reactionType) {
         await api.delete(endpoint);
@@ -82,8 +82,8 @@ export default function STDnewsPage() {
 
   const handleDeleteTip = async (id) => {
     try {
-      await api.delete(`/alumni-tips/${id}`);
-      setAlumniTips((prev) => prev.filter((t) => t.id !== id));
+      await api.delete(`/alumni-spotlight/${id}`);
+      setAlumniSpotlight((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
       console.error("Erreur lors de la suppression:", err);
     }
@@ -116,10 +116,10 @@ export default function STDnewsPage() {
   );
 
   const mergedItems = showAlumniOnly
-    ? alumniTips.map((t) => ({ ...t, source: "tip" }))
+    ? alumniSpotlight.map((t) => ({ ...t, source: "tip" }))
     : [
         ...announcements.map((a) => ({ ...a, source: "announcement" })),
-        ...alumniTips.map((t) => ({ ...t, source: "tip" })),
+        ...alumniSpotlight.map((t) => ({ ...t, source: "tip" })),
       ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const renderReactions = (item) => {
@@ -198,7 +198,7 @@ export default function STDnewsPage() {
                 }
               >
                 <FontAwesomeIcon icon={faGraduationCap} className="text-[10px]" />
-                AlumniTips
+                AlumniSpotlight
               </button>
             </div>
           </div>
