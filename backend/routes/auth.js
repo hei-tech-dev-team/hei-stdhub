@@ -8,7 +8,6 @@ const rateLimit = require("express-rate-limit");
 const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { sendPasswordResetEmail } = require("../services/mailer");
 const multer = require("multer");
 
 const capitalize = (str) =>
@@ -240,73 +239,6 @@ router.get("/user/:ref", auth, async (req, res) => {
   }
 });
 
-// ---- Security questions endpoints ----
-
-router.get("/security-questions", auth, async (req, res) => {
-  try {
-    const { rows } = await db.query(
-      "SELECT question_key, question_text FROM user_security_questions WHERE user_id=$1 ORDER BY created_at ASC",
-      [req.user.id],
-    );
-    res.json({ questions: rows, min_required: 2 });
-  } catch (err) {
-    console.error("security-questions GET error:", err?.message || err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
-router.post("/security-questions", auth, async (req, res) => {
-  const { questions } = req.body;
-  if (!Array.isArray(questions) || questions.length < 2 || questions.length > 4)
-    return res.status(400).json({ error: "Entre 2 et 4 questions sont requises." });
-
-  const sanitized = questions.map((q) => ({
-    question: q.question?.trim(),
-    answer: q.answer?.trim(),
-  }));
-
-  for (const q of sanitized) {
-    if (!q.question)
-      return res.status(400).json({ error: "Chaque question doit etre renseignee." });
-    if (!q.answer)
-      return res.status(400).json({ error: "Chaque reponse doit etre renseignee." });
-  }
-
-  const uniqueQuestions = new Set(sanitized.map((q) => q.question.toLowerCase()));
-  if (uniqueQuestions.size !== sanitized.length)
-    return res.status(400).json({ error: "Questions dupliquees." });
-
-  try {
-    const client = await db.pool.connect();
-    let transactionStarted = false;
-    try {
-      await client.query("BEGIN");
-      transactionStarted = true;
-      await client.query("DELETE FROM user_security_questions WHERE user_id=$1", [req.user.id]);
-      for (const q of sanitized) {
-        const hash = await bcrypt.hash(q.answer.toLowerCase(), 10);
-        const key = `custom_${crypto.randomBytes(8).toString("hex")}`;
-        await client.query(
-          "INSERT INTO user_security_questions (user_id, question_key, question_text, answer_hash) VALUES ($1, $2, $3, $4)",
-          [req.user.id, key, q.question, hash],
-        );
-      }
-      await client.query("COMMIT");
-    } catch (err) {
-      if (transactionStarted) {
-        try { await client.query("ROLLBACK"); } catch (_) {}
-      }
-      throw err;
-    } finally {
-      client.release();
-    }
-    res.json({ success: true, count: sanitized.length });
-  } catch (err) {
-    console.error("security-questions POST error:", err?.message || err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -316,7 +248,14 @@ const forgotPasswordLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === "test",
 });
 
-// Forgot password — email-based reset
+// Generate a 6-character alphanumeric reset code
+const generateResetCode = () =>
+  Array.from({ length: 6 }, () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return chars[crypto.randomInt(chars.length)];
+  }).join("");
+
+// Forgot password — step 1: request a reset code (fake-eye push notification)
 router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email)
@@ -324,140 +263,100 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      "SELECT id, ref, prenom, nom, email, pseudo FROM users WHERE email=$1",
+      "SELECT id, ref, prenom FROM users WHERE email=$1",
       [email],
     );
+
     if (!rows.length)
-      return res.status(200).json({ message: "Si un compte existe avec cet email, un lien de reinitialisation vous a ete envoye." });
+      return res.json({ message: "Si un compte existe, un code vous sera envoye." });
 
     const user = rows[0];
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(token);
+    const code = generateResetCode();
+    const codeHash = hashResetToken(code);
 
     await db.query(
       "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
       [user.id],
     );
     await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')",
-      [user.id, tokenHash],
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '10 minutes')",
+      [user.id, codeHash],
     );
 
     try {
-      await sendPasswordResetEmail({ user, token });
-    } catch (emailErr) {
-      console.error("sendPasswordResetEmail error:", emailErr?.message || emailErr);
-    }
+      const { sendPushToUser } = require("../services/notificationService");
+      await sendPushToUser(user.id, {
+        title: "Code de reinitialisation",
+        body: `Votre code: ${code}`,
+        tag: "reset-code",
+        type: "reset-code",
+      });
+    } catch (_) {}
 
-    res.json({ message: "Si un compte existe avec cet email, un lien de reinitialisation vous a ete envoye." });
+    res.json({
+      message: "Code de verification envoye.",
+      ...(process.env.NODE_ENV !== "production" ? { code } : {}),
+    });
   } catch (err) {
     console.error("forgot-password error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-// Forgot password — step 2: security questions fallback (find user by ref)
-router.post("/forgot-password/by-ref", async (req, res) => {
-  const ref = req.body.ref?.trim().toUpperCase();
-  if (!ref)
-    return res.status(400).json({ error: "Reference requise." });
-  if (!/^STD\d{5,}$/.test(ref))
-    return res.status(400).json({ error: "Format de reference invalide." });
-
-  try {
-    const { rows } = await db.query(
-      "SELECT id, ref, prenom FROM users WHERE ref=$1",
-      [ref],
-    );
-    if (!rows.length)
-      return res.status(404).json({ error: "Aucun compte trouve avec cette reference." });
-
-    const { rows: sq } = await db.query(
-      "SELECT question_key, question_text FROM user_security_questions WHERE user_id=$1 ORDER BY created_at ASC",
-      [rows[0].id],
-    );
-    if (sq.length < 2)
-      return res.status(400).json({
-        error: "Aucune question de securite configuree. Contactez un administrateur.",
-      });
-
-    const questions = sq.map((r) => ({ key: r.question_key, question: r.question_text }));
-
-    res.json({ user_id: rows[0].id, prenom: rows[0].prenom, questions });
-  } catch (err) {
-    console.error("forgot-password/by-ref error:", err?.message || err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
-// Forgot password — step 3: verify security questions answers
-const securityAnswerLimiter = rateLimit({
+// Forgot password — step 2: verify the 6-character code
+const verifyCodeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: "Trop de tentatives. Reessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.body.ref?.trim().toUpperCase() || ipKeyGenerator(req),
+  keyGenerator: (req) => req.body.email?.trim().toLowerCase() || ipKeyGenerator(req),
 });
 
-router.post("/forgot-password/verify-security", securityAnswerLimiter, async (req, res) => {
-  const { ref, answers } = req.body;
-  if (!ref || !Array.isArray(answers) || answers.length < 2)
-    return res.status(400).json({ error: "Reference et reponses requises." });
+router.post("/forgot-password/verify-code", verifyCodeLimiter, async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code)
+    return res.status(400).json({ error: "Email et code requis." });
 
-  const sanitizedRef = ref.trim().toUpperCase();
-  const sanitizedAnswers = answers.map((a) => ({
-    key: a.key?.trim(),
-    answer: a.answer?.trim(),
-  }));
-
-  for (const a of sanitizedAnswers) {
-    if (!a.key || !a.answer)
-      return res.status(400).json({ error: "Toutes les reponses sont requises." });
-  }
+  const sanitizedCode = code.trim().toUpperCase();
 
   try {
     const { rows: users } = await db.query(
-      "SELECT id FROM users WHERE ref=$1",
-      [sanitizedRef],
+      "SELECT id FROM users WHERE email=$1",
+      [email.trim().toLowerCase()],
     );
     if (!users.length)
-      return res.status(404).json({ error: "Compte introuvable." });
+      return res.status(404).json({ error: "Aucun compte trouve avec cet email." });
 
     const userId = users[0].id;
-    const { rows: stored } = await db.query(
-      "SELECT question_key, answer_hash FROM user_security_questions WHERE user_id=$1",
-      [userId],
+    const codeHash = hashResetToken(sanitizedCode);
+
+    const { rows: tokens } = await db.query(
+      `SELECT id FROM password_reset_tokens
+       WHERE user_id=$1 AND token_hash=$2 AND used_at IS NULL AND expires_at > NOW()
+       LIMIT 1`,
+      [userId, codeHash],
     );
 
-    if (stored.length < 2)
-      return res.status(400).json({ error: "Questions de securite non configurees." });
-
-    for (const answer of sanitizedAnswers) {
-      const match = stored.find((s) => s.question_key === answer.key);
-      if (!match)
-        return res.status(400).json({ error: "Question invalide." });
-      const ok = await bcrypt.compare(answer.answer.toLowerCase() || "", match.answer_hash);
-      if (!ok)
-        return res.status(400).json({ error: "Reponse incorrecte." });
-    }
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(token);
+    if (!tokens.length)
+      return res.status(400).json({ error: "Code invalide ou expire." });
 
     await db.query(
-      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
-      [userId],
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE id=$1",
+      [tokens[0].id],
     );
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenHash = hashResetToken(resetToken);
+
     await db.query(
       "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')",
-      [userId, tokenHash],
+      [userId, resetTokenHash],
     );
 
-    res.json({ token, message: "Identite verifiee. Vous pouvez reinitialiser votre mot de passe." });
+    res.json({ token: resetToken, message: "Code valide. Vous pouvez reinitialiser votre mot de passe." });
   } catch (err) {
-    console.error("forgot-password/verify-security error:", err?.message || err);
+    console.error("forgot-password/verify-code error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
@@ -480,40 +379,6 @@ router.get("/reset-password/:token", async (req, res) => {
     res.json({ valid: true });
   } catch (err) {
     console.error("ERREUR /auth/reset-password/:token:", err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
-router.post("/forgot-password/send-email", async (req, res) => {
-  const email = req.body.email?.trim().toLowerCase();
-  if (!email)
-    return res.status(400).json({ error: "Adresse email requise." });
-  if (email.length > 254)
-    return res.status(400).json({ error: "Adresse email trop longue." });
-
-  try {
-    const { rows } = await db.query(
-      "SELECT id FROM users WHERE email=$1",
-      [email],
-    );
-    if (!rows.length)
-      return res.status(200).json({ message: "Si un compte existe avec cet email, un lien de reinitialisation vous a ete envoye." });
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(token);
-
-    await db.query(
-      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
-      [rows[0].id],
-    );
-    await db.query(
-      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')",
-      [rows[0].id, tokenHash],
-    );
-
-    res.json({ message: "Si un compte existe avec cet email, un lien de reinitialisation vous a ete envoye." });
-  } catch (err) {
-    console.error("forgot-password/send-email error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
