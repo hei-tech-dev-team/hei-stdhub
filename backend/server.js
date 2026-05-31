@@ -290,26 +290,7 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create password_reset_tokens table:", err); }
 
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_security_questions (
-        id            SERIAL       PRIMARY KEY,
-        user_id       INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        question_key  VARCHAR(255) NOT NULL,
-        question_text TEXT         NULL,
-        answer_hash   VARCHAR(60)  NOT NULL,
-        created_at    TIMESTAMP    NOT NULL DEFAULT NOW(),
-        UNIQUE (user_id, question_key)
-      )
-    `);
-  } catch (err) { console.error("Failed to create user_security_questions table:", err); }
 
-  try {
-    await pool.query(`ALTER TABLE user_security_questions ADD COLUMN IF NOT EXISTS question_text TEXT NULL`);
-  } catch (_) {}
-  try {
-    await pool.query(`ALTER TABLE user_security_questions ALTER COLUMN question_key TYPE VARCHAR(255)`);
-  } catch (_) {}
 
   try {
     await pool.query(`ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check`);
