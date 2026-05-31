@@ -17,7 +17,7 @@ import BDEPage from "./pages/BDEPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import PingBoxPage from "./pages/PingBoxPage";
 import STDnewsPage from "./pages/STDnewsPage";
-import AlumniTipsPage from "./pages/AlumniTipsPage";
+import AlumniSpotlightPage from "./pages/AlumniSpotlightPage";
 import OnboardingModal from "./components/ui/OnboardingModal";
 
 function ProtectedRoute({ children }) {
@@ -164,10 +164,10 @@ export default function App() {
         }
       />
       <Route
-        path="/alumni-tips"
-        element={
-          <ProtectedRoute>
-            <AlumniTipsPage />
+        path="/alumni-spotlight"
+                element={
+                  <ProtectedRoute>
+            <AlumniSpotlightPage />
           </ProtectedRoute>
         }
       />
