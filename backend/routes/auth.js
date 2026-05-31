@@ -293,10 +293,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
       });
     } catch (_) {}
 
-    res.json({
-      message: "Code de verification envoye.",
-      ...(process.env.NODE_ENV !== "production" ? { code } : {}),
-    });
+    res.json({ message: "Code de verification envoye." });
   } catch (err) {
     console.error("forgot-password error:", err?.message || err);
     res.status(500).json({ error: "Erreur serveur." });

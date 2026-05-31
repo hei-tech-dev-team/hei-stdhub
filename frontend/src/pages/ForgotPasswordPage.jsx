@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { ArrowLeft, CheckCircle, AlertCircle, Mail, Loader, KeyRound } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, Mail, Loader, KeyRound, Bell, RefreshCw } from "lucide-react";
 import api from "../api/axios";
 
 export default function ForgotPasswordPage() {
@@ -24,11 +24,25 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await api.post("/auth/forgot-password", { email: trimmed });
-      setMessage(res.data.message || "Code envoye.");
+      await api.post("/auth/forgot-password", { email: trimmed });
+      setMessage("Verifiez vos notifications push.");
       setStep("code");
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'envoi du code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await api.post("/auth/forgot-password", { email: email.trim() });
+      setMessage("Nouveau code envoye. Verifiez vos notifications.");
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors de l'envoi.");
     } finally {
       setLoading(false);
     }
@@ -97,13 +111,13 @@ export default function ForgotPasswordPage() {
               <p className="text-white/60 text-sm leading-relaxed">
                 {step === "email"
                   ? "Saisissez votre email pour recevoir un code de verification."
-                  : "Entrez le code a 6 caracteres recu par notification."}
+                  : "Entrez le code recu par notification push."}
               </p>
             </div>
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
-              <p className="text-white/80 text-xs font-medium">Code de verification</p>
-              <p className="text-white/50 text-xs mt-0.5">Valable 10 minutes</p>
+              <p className="text-white/80 text-xs font-medium">Notification push</p>
+              <p className="text-white/50 text-xs mt-0.5">Valable 10 minutes - Desktop & Mobile</p>
             </div>
           </div>
 
@@ -158,14 +172,24 @@ export default function ForgotPasswordPage() {
               </>
             ) : (
               <>
-                <div className="mb-8">
+                <div className="mb-6">
                   <div className="flex items-center gap-2 mb-1">
                     <KeyRound size={20} className="text-navy" />
                     <h1 className="text-xl sm:text-2xl font-bold text-navy">Code de verification</h1>
                   </div>
-                  <p className="text-gray-400 text-sm mt-1">
+                  <p className="text-gray-400 text-sm">
                     Un code a 6 caracteres a ete envoye a <span className="font-semibold text-navy">{email}</span>
                   </p>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-2xl mb-5 flex items-start gap-3">
+                  <Bell size={18} className="shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">Verifiez vos notifications</p>
+                    <p className="text-blue-600/80 text-xs mt-1">
+                      Le code a ete envoye par notification push sur votre appareil (ordinateur ou mobile).
+                    </p>
+                  </div>
                 </div>
 
                 {message && (
@@ -205,18 +229,25 @@ export default function ForgotPasswordPage() {
                   </button>
                 </form>
 
-                <div className="mt-6 text-center">
+                <div className="mt-5 flex items-center justify-between">
                   <button
                     onClick={() => { setStep("email"); setCode(""); setError(""); setMessage(""); }}
-                    className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-navy transition font-medium"
                   >
                     <ArrowLeft size={14} /> Changer d&apos;email
+                  </button>
+                  <button
+                    onClick={handleResend}
+                    disabled={loading}
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-navy transition font-medium disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Renvoyer
                   </button>
                 </div>
               </>
             )}
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center border-t border-gray-100 pt-5">
               <Link
                 to="/login"
                 className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-navy transition font-medium"
