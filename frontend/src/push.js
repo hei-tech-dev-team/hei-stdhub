@@ -42,8 +42,8 @@ export async function subscribeToPush() {
     });
 
     await api.post("/push/subscribe", { subscription: sub.toJSON() });
-  } catch {
-    // Push not supported or user denied
+  } catch (err) {
+    console.warn("Push subscription failed:", err?.message || err);
   }
 }
 
