@@ -52,44 +52,59 @@ if (useCloudinary) {
   upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }).single("image");
 }
 
-// GET / — list all announcements (newest first), optional ?level filter
+// GET / — list all announcements (newest first), optional ?level filter, paginated
 router.get("/", auth, async (req, res) => {
   try {
     const level = req.query.level;
-    let result;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+    let query, countQuery, params;
     if (level && ["L1", "L2", "L3"].includes(level)) {
-      result = await db.query(`
+      query = `
         SELECT a.*, u.pseudo AS author_pseudo, u.avatar AS author_avatar
         FROM announcements a
         JOIN users u ON u.id = a.author_id
         WHERE a.target_level IS NULL OR a.target_level = $1
         ORDER BY a.created_at DESC
-      `, [level]);
+        LIMIT $2 OFFSET $3`;
+      countQuery = `SELECT COUNT(*) FROM announcements WHERE target_level IS NULL OR target_level = $1`;
+      params = [level];
     } else {
-      result = await db.query(`
+      query = `
         SELECT a.*, u.pseudo AS author_pseudo, u.avatar AS author_avatar
         FROM announcements a
         JOIN users u ON u.id = a.author_id
         ORDER BY a.created_at DESC
-      `);
+        LIMIT $1 OFFSET $2`;
+      countQuery = `SELECT COUNT(*) FROM announcements`;
+      params = [];
     }
-    const announcements = result.rows;
+
+    const [dataResult, countResult] = await Promise.all([
+      db.query(query, level ? [level, limit, offset] : [limit, offset]),
+      db.query(countQuery, params),
+    ]);
+
+    const announcements = dataResult.rows;
+    const total = parseInt(countResult.rows[0]?.count || 0);
 
     // Fetch reactions for each announcement
     if (announcements.length > 0) {
       const ids = announcements.map((a) => a.id);
-      const reactionsResult = await db.query(`
-        SELECT announcement_id, reaction_type, COUNT(*)::int AS count
-        FROM announcement_reactions
-        WHERE announcement_id = ANY($1::int[])
-        GROUP BY announcement_id, reaction_type
-      `, [ids]);
-
-      const userReactionsResult = await db.query(`
-        SELECT announcement_id, reaction_type
-        FROM announcement_reactions
-        WHERE announcement_id = ANY($1::int[]) AND user_id = $2
-      `, [ids, req.user.id]);
+      const [reactionsResult, userReactionsResult] = await Promise.all([
+        db.query(`
+          SELECT announcement_id, reaction_type, COUNT(*)::int AS count
+          FROM announcement_reactions
+          WHERE announcement_id = ANY($1::int[])
+          GROUP BY announcement_id, reaction_type
+        `, [ids]),
+        db.query(`
+          SELECT announcement_id, reaction_type
+          FROM announcement_reactions
+          WHERE announcement_id = ANY($1::int[]) AND user_id = $2
+        `, [ids, req.user.id]),
+      ]);
 
       const reactionsMap = {};
       for (const r of reactionsResult.rows) {
@@ -108,7 +123,7 @@ router.get("/", auth, async (req, res) => {
       }
     }
 
-    res.json(announcements);
+    res.json({ announcements, total, limit, offset });
   } catch (err) {
     console.error("Error fetching announcements:", err);
     res.status(500).json({ error: "Erreur serveur." });
