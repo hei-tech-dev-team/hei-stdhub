@@ -141,12 +141,12 @@ export default function Sidebar() {
                   <aside
                         className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-60 min-h-screen bg-navy flex flex-col py-6 px-4 shrink-0
+        w-60 h-screen bg-navy flex flex-col py-6 px-4 shrink-0
         transform transition-transform duration-300
         ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
                   >
-                        <div className="flex items-center justify-between px-2 mb-10">
+                        <div className="flex items-center justify-between px-2 mb-10 shrink-0">
                               <div className="flex items-center gap-3">
                                     <img
                                           src={STDHUB_LOGO}
@@ -168,7 +168,7 @@ export default function Sidebar() {
                               </button>
                         </div>
 
-                        <nav className="flex flex-col gap-1 flex-1">
+                        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
                               {/* Alumni: accès limité */}
                               {(user?.role === "alumni"
                                     ? ALUMNI_NAV_LINKS
@@ -281,7 +281,7 @@ export default function Sidebar() {
                               )}
                         </nav>
 
-                        <div className="border-t border-white/10 pt-4 mt-4">
+                        <div className="border-t border-white/10 pt-4 mt-4 shrink-0">
                               <p className="text-white/40 text-xs px-2 mb-1 uppercase tracking-widest truncate">
                                     {user?.role === "teacher"
                                           ? "Professeur"
