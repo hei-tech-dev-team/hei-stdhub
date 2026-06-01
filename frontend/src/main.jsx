@@ -45,7 +45,7 @@ async function fetchMissedNotifications() {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").then((reg) => {
+    navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((reg) => {
       reg.addEventListener("updatefound", () => {
         const newSW = reg.installing;
         if (newSW) {
@@ -56,6 +56,12 @@ if ("serviceWorker" in navigator) {
           });
         }
       });
+
+      reg.pushManager.getSubscription().then((sub) => {
+        if (sub) {
+          import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {}));
+        }
+      }).catch(() => {});
     }).catch((err) => {
       console.error("SW registration failed:", err);
     });
@@ -72,6 +78,15 @@ if ("serviceWorker" in navigator) {
 
   fetchMissedNotifications();
   window.addEventListener("online", fetchMissedNotifications);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      fetchMissedNotifications();
+      if (localStorage.getItem("hei_token")) {
+        import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {}));
+      }
+    }
+  });
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
