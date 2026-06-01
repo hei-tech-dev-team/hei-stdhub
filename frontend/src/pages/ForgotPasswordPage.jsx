@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
     setError("");
     try {
       await api.post("/auth/forgot-password", { email: trimmed });
-      setMessage("Verifiez vos notifications push.");
+      setMessage("Verifiez vos notifications.");
       setStep("code");
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'envoi du code.");
@@ -111,13 +111,13 @@ export default function ForgotPasswordPage() {
               <p className="text-white/60 text-sm leading-relaxed">
                 {step === "email"
                   ? "Saisissez votre email pour recevoir un code de verification."
-                  : "Entrez le code recu par notification push."}
+                  : "Entrez le code recu."}
               </p>
             </div>
 
             <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
-              <p className="text-white/80 text-xs font-medium">Notification push</p>
-              <p className="text-white/50 text-xs mt-0.5">Valable 10 minutes - Desktop & Mobile</p>
+              <p className="text-white/80 text-xs font-medium">Code de reinistialisation envoye</p>
+              <p className="text-white/50 text-xs mt-0.5">Valable 10 minutes</p>
             </div>
           </div>
 
@@ -187,7 +187,7 @@ export default function ForgotPasswordPage() {
                   <div>
                     <p className="font-semibold">Verifiez vos notifications</p>
                     <p className="text-blue-600/80 text-xs mt-1">
-                      Le code a ete envoye par notification push sur votre appareil (ordinateur ou mobile).
+                      Le code a ete envoye sur votre appareil (ordinateur ou mobile).
                     </p>
                   </div>
                 </div>
