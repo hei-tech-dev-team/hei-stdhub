@@ -52,11 +52,26 @@ app.use((req, res, next) => {
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 0 : 10,
+  max: process.env.NODE_ENV === "test" ? 10000 : 3,
   message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 50,
+  message: { error: "Trop de requêtes. Réessayez dans 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 15,
+  message: { error: "Trop de requêtes d'écriture. Réessayez dans 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Socket.io setup — optimized for 1000+ concurrent connections
@@ -120,25 +135,20 @@ app.use(
   }),
 );
 
-// Keep the Render instance awake — ping health endpoint every 14 minutes
-if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
-  const https = require("https");
-  setInterval(
-    () => {
-      https
-        .get(process.env.BACKEND_URL + "/api/health", (res) => {
-          console.log("Keep-alive ping:", res.statusCode);
-        })
-        .on("error", (e) => console.error("Keep-alive error:", e.message));
-    },
-    14 * 60 * 1000,
-  );
-}
-
 // Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
 app.use("/api/auth/reset-password", loginLimiter);
+
+// Global API rate limiters — aggressive to protect the DB
+app.use("/api", (req, res, next) => {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    return writeLimiter(req, res, next);
+  }
+  next();
+});
+app.use("/api", generalLimiter);
+
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));

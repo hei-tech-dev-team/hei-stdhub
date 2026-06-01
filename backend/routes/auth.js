@@ -70,11 +70,10 @@ const hashResetToken = (token) =>
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 0 : 10,
+  max: process.env.NODE_ENV === "test" ? 10000 : 3,
   message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
 });
 
 const tryGetAdminFromToken = (req) => {
@@ -241,11 +240,10 @@ router.get("/user/:ref", auth, async (req, res) => {
 
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === "test" ? 10000 : 2,
   message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
 });
 
 // Generate a 6-character alphanumeric reset code
@@ -288,7 +286,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
       sendPushToUser(user.id, {
         title: "Code de reinitialisation",
         body: `Votre code: ${code}`,
-        tag: "reset-code",
+        tag: `reset-${user.id}`,
         type: "reset-code",
       }).catch(() => {});
     } catch (_) {}
@@ -303,7 +301,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
 // Forgot password — step 2: verify the 6-character code
 const verifyCodeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: process.env.NODE_ENV === "test" ? 10000 : 2,
   message: { error: "Trop de tentatives. Reessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,

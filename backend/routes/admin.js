@@ -12,20 +12,21 @@ const adminOnly = (req, res, next) => {
 
 router.get("/stats", auth, adminOnly, async (req, res) => {
       try {
-            const [users, posts, submissions, messages] = await Promise.all([
-                  db.query("SELECT COUNT(*) FROM users"),
-                  db.query("SELECT COUNT(*) FROM posts"),
-                  db.query("SELECT COUNT(*) FROM submissions"),
-                  db.query("SELECT COUNT(*) FROM messages"),
+            const [counts, byRole] = await Promise.all([
+                  db.query(`
+                    SELECT
+                      (SELECT COUNT(*) FROM users) AS total_users,
+                      (SELECT COUNT(*) FROM posts) AS total_posts,
+                      (SELECT COUNT(*) FROM submissions) AS total_submissions,
+                      (SELECT COUNT(*) FROM messages) AS total_messages
+                  `),
+                  db.query("SELECT role, COUNT(*) FROM users GROUP BY role"),
             ]);
-            const byRole = await db.query(
-                  "SELECT role, COUNT(*) FROM users GROUP BY role",
-            );
             res.json({
-                  total_users: parseInt(users.rows[0].count),
-                  total_posts: parseInt(posts.rows[0].count),
-                  total_submissions: parseInt(submissions.rows[0].count),
-                  total_messages: parseInt(messages.rows[0].count),
+                  total_users: parseInt(counts.rows[0].total_users),
+                  total_posts: parseInt(counts.rows[0].total_posts),
+                  total_submissions: parseInt(counts.rows[0].total_submissions),
+                  total_messages: parseInt(counts.rows[0].total_messages),
                   by_role: byRole.rows,
             });
       } catch (err) {
