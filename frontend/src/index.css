@@ -217,34 +217,25 @@
 }
 
 @keyframes box-confirm {
-  0% { transform: scale(1); background: transparent; }
-  30% { transform: scale(1.15); }
-  60% { transform: scale(0.95); }
+  0% { transform: scale(1); }
+  30% { transform: scale(1.12); }
+  60% { transform: scale(0.97); }
   100% { transform: scale(1); }
 }
 
 .animate-box-confirm {
-  animation: box-confirm 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes check-draw {
-  0% { stroke-dashoffset: 24; }
-  100% { stroke-dashoffset: 0; }
-}
-
-.animate-check-draw {
-  animation: check-draw 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: box-confirm 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes success-pop {
   0% { opacity: 0; transform: scale(0.5) translateY(10px); }
-  50% { transform: scale(1.1) translateY(0); }
-  70% { transform: scale(0.95) translateY(0); }
+  50% { transform: scale(1.08) translateY(0); }
+  70% { transform: scale(0.97) translateY(0); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .animate-success-pop {
-  animation: success-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s forwards;
+  animation: success-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s forwards;
   opacity: 0;
 }
 
