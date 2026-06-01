@@ -56,6 +56,7 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
     refreshSocket().catch(() => {});
+    subscribeToPush();
     return data.user;
   };
 
@@ -66,6 +67,7 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
     refreshSocket().catch(() => {});
+    subscribeToPush();
     return data.user;
   };
 
