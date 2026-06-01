@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { ArrowLeft, CheckCircle, AlertCircle, Mail, Loader, KeyRound, Bell, RefreshCw } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, Mail, Loader, KeyRound, Bell, RefreshCw, Sparkles } from "lucide-react";
 import api from "../api/axios";
 
 export default function ForgotPasswordPage() {
@@ -9,10 +9,12 @@ export default function ForgotPasswordPage() {
 
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [codeSuccess, setCodeSuccess] = useState(false);
+  const inputRefs = useRef([]);
 
   const handleSendCode = async (e) => {
     e.preventDefault();
@@ -38,9 +40,12 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError("");
     setMessage("");
+    setCodeDigits(["", "", "", "", "", ""]);
+    setCodeSuccess(false);
     try {
       await api.post("/auth/forgot-password", { email: email.trim() });
       setMessage("Nouveau code envoye. Verifiez vos notifications.");
+      inputRefs.current[0]?.focus();
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'envoi.");
     } finally {
@@ -48,10 +53,50 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const handleDigitChange = useCallback((index, value) => {
+    if (codeSuccess) return;
+    const digit = value.slice(0, 1).toUpperCase();
+    const newDigits = [...codeDigits];
+    newDigits[index] = digit;
+    setCodeDigits(newDigits);
+    setError("");
+
+    if (digit && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  }, [codeDigits, codeSuccess]);
+
+  const handleDigitPaste = useCallback((e) => {
+    e.preventDefault();
+    if (codeSuccess) return;
+    const pasted = (e.clipboardData?.getData("text") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newDigits = [...codeDigits];
+    for (let i = 0; i < pasted.length; i++) {
+      newDigits[i] = pasted[i];
+    }
+    setCodeDigits(newDigits);
+    setError("");
+    const nextEmpty = pasted.length < 6 ? pasted.length : 5;
+    inputRefs.current[nextEmpty]?.focus();
+  }, [codeDigits, codeSuccess]);
+
+  const handleDigitKeyDown = useCallback((index, e) => {
+    if (e.key === "Backspace") {
+      if (codeDigits[index]) {
+        const newDigits = [...codeDigits];
+        newDigits[index] = "";
+        setCodeDigits(newDigits);
+      } else if (index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    }
+  }, [codeDigits]);
+
   const handleVerifyCode = async (e) => {
     e.preventDefault();
-    const trimmed = code.trim();
-    if (!trimmed || trimmed.length !== 6) {
+    const code = codeDigits.join("");
+    if (code.length !== 6) {
       setError("Veuillez entrer le code a 6 caracteres.");
       return;
     }
@@ -60,11 +105,14 @@ export default function ForgotPasswordPage() {
     try {
       const res = await api.post("/auth/forgot-password/verify-code", {
         email: email.trim(),
-        code: trimmed,
+        code,
       });
-      navigate(`/reset-password?token=${res.data.token}`);
+      setCodeSuccess(true);
+      setTimeout(() => navigate(`/reset-password?token=${res.data.token}`), 1200);
     } catch (err) {
       setError(err.response?.data?.error || "Code invalide.");
+      inputRefs.current[0]?.focus();
+      setCodeDigits(["", "", "", "", "", ""]);
     } finally {
       setLoading(false);
     }
@@ -200,38 +248,64 @@ export default function ForgotPasswordPage() {
 
                 <form onSubmit={handleVerifyCode} className="flex flex-col gap-5">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Code</label>
-                    <input
-                      type="text"
-                      className="input-field text-center text-2xl tracking-[0.5em] font-bold"
-                      placeholder="••••••"
-                      maxLength={6}
-                      value={code}
-                      onChange={(e) => {
-                        setCode(e.target.value.toUpperCase());
-                        setError("");
-                      }}
-                      inputMode="text"
-                      autoComplete="off"
-                    />
+                    <label className="text-xs font-bold text-gray-500 mb-3 block uppercase tracking-wide">Code de verification</label>
+                    <div className="flex gap-2 justify-center" onPaste={handleDigitPaste}>
+                      {codeDigits.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={el => { inputRefs.current[i] = el; }}
+                          type="text"
+                          maxLength={1}
+                          value={codeSuccess ? "" : digit}
+                          onChange={e => handleDigitChange(i, e.target.value)}
+                          onKeyDown={e => handleDigitKeyDown(i, e)}
+                          disabled={codeSuccess}
+                          className={`
+                            w-11 h-14 sm:w-12 sm:h-14 text-center text-2xl font-bold
+                            border-2 rounded-xl outline-none
+                            transition-all duration-200
+                            ${codeSuccess
+                              ? "border-green-400 bg-green-50 text-green-600 scale-110"
+                              : digit
+                                ? "border-navy bg-white shadow-sm"
+                                : "border-gray-200 bg-gray-50/50 hover:border-gray-300"
+                            }
+                            focus:border-navy focus:ring-2 focus:ring-navy/20
+                            [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none
+                            [&::-webkit-outer-spin-button]:appearance-none
+                          `}
+                          inputMode="text"
+                          autoComplete="off"
+                          aria-label={`Chiffre ${i + 1}`}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
-                  >
-                    {loading ? (
-                      <><Loader size={16} className="animate-spin" /> Verification...</>
-                    ) : (
-                      "Verifier le code"
-                    )}
-                  </button>
+
+                  {codeSuccess ? (
+                    <div className="flex items-center justify-center gap-2 text-green-600 font-semibold text-sm py-3.5 animate-bounce-in">
+                      <Sparkles size={18} />
+                      Code valide ! Redirection...
+                    </div>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{ background: "linear-gradient(135deg, #0A1A33, #001948)" }}
+                    >
+                      {loading ? (
+                        <><Loader size={16} className="animate-spin" /> Verification...</>
+                      ) : (
+                        "Verifier le code"
+                      )}
+                    </button>
+                  )}
                 </form>
 
                 <div className="mt-5 flex items-center justify-between">
                   <button
-                    onClick={() => { setStep("email"); setCode(""); setError(""); setMessage(""); }}
+                    onClick={() => { setStep("email"); setCodeDigits(["", "", "", "", "", ""]); setCodeSuccess(false); setError(""); setMessage(""); }}
                     className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-navy transition font-medium"
                   >
                     <ArrowLeft size={14} /> Changer d&apos;email
