@@ -108,7 +108,7 @@ export default function ForgotPasswordPage() {
         code,
       });
       setCodeSuccess(true);
-      setTimeout(() => navigate(`/reset-password?token=${res.data.token}`), 1200);
+      setTimeout(() => navigate(`/reset-password?token=${res.data.token}`), 2500);
     } catch (err) {
       setError(err.response?.data?.error || "Code invalide.");
       inputRefs.current[0]?.focus();
@@ -249,43 +249,71 @@ export default function ForgotPasswordPage() {
                 <form onSubmit={handleVerifyCode} className="flex flex-col gap-5">
                   <div>
                     <label className="text-xs font-bold text-gray-500 mb-3 block uppercase tracking-wide">Code de verification</label>
-                    <div className="flex gap-2 justify-center" onPaste={handleDigitPaste}>
+                    <div className="flex gap-2 justify-center relative" onPaste={handleDigitPaste}>
                       {codeDigits.map((digit, i) => (
-                        <input
-                          key={i}
-                          ref={el => { inputRefs.current[i] = el; }}
-                          type="text"
-                          maxLength={1}
-                          value={codeSuccess ? "" : digit}
-                          onChange={e => handleDigitChange(i, e.target.value)}
-                          onKeyDown={e => handleDigitKeyDown(i, e)}
-                          disabled={codeSuccess}
-                          className={`
-                            w-11 h-14 sm:w-12 sm:h-14 text-center text-2xl font-bold
-                            border-2 rounded-xl outline-none
-                            transition-all duration-200
-                            ${codeSuccess
-                              ? "border-green-400 bg-green-50 text-green-600 scale-110"
-                              : digit
-                                ? "border-navy bg-white shadow-sm"
-                                : "border-gray-200 bg-gray-50/50 hover:border-gray-300"
-                            }
-                            focus:border-navy focus:ring-2 focus:ring-navy/20
-                            [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none
-                            [&::-webkit-outer-spin-button]:appearance-none
-                          `}
-                          inputMode="text"
-                          autoComplete="off"
-                          aria-label={`Chiffre ${i + 1}`}
-                        />
+                        <div key={i} className="relative">
+                          <input
+                            ref={el => { inputRefs.current[i] = el; }}
+                            type="text"
+                            maxLength={1}
+                            value={digit}
+                            onChange={e => handleDigitChange(i, e.target.value)}
+                            onKeyDown={e => handleDigitKeyDown(i, e)}
+                            disabled={codeSuccess}
+                            className={`
+                              w-11 h-14 sm:w-12 sm:h-14 text-center text-2xl font-bold
+                              border-2 rounded-xl outline-none
+                              transition-all duration-300
+                              ${codeSuccess
+                                ? `border-green-400 bg-green-50 text-green-700 animate-box-confirm`
+                                : digit
+                                  ? "border-navy bg-white shadow-sm"
+                                  : "border-gray-200 bg-gray-50/50 hover:border-gray-300"
+                              }
+                              focus:border-navy focus:ring-2 focus:ring-navy/20
+                              [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none
+                              [&::-webkit-outer-spin-button]:appearance-none
+                            `}
+                            style={codeSuccess ? { animationDelay: `${i * 80}ms` } : undefined}
+                            inputMode="text"
+                            autoComplete="off"
+                            aria-label={`Chiffre ${i + 1}`}
+                          />
+                          {codeSuccess && (
+                            <svg
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 text-green-500"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{ animationDelay: `${i * 80 + 300}ms` }}
+                            >
+                              <polyline
+                                className="animate-check-draw"
+                                points="20 6 9 17 4 12"
+                                strokeDasharray="24"
+                                strokeDashoffset="24"
+                                style={{ animationDelay: `${i * 80 + 300}ms` }}
+                              />
+                            </svg>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
 
                   {codeSuccess ? (
-                    <div className="flex items-center justify-center gap-2 text-green-600 font-semibold text-sm py-3.5 animate-bounce-in">
-                      <Sparkles size={18} />
-                      Code valide ! Redirection...
+                    <div className="flex flex-col items-center gap-2 animate-success-pop">
+                      <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
+                        <CheckCircle size={18} />
+                        Code valide
+                      </div>
+                      <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 rounded-full animate-[fill-bar_2s_ease-out_0.8s_forwards]"
+                             style={{ width: "0%" }} />
+                      </div>
                     </div>
                   ) : (
                     <button
