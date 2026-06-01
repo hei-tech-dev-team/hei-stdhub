@@ -8,7 +8,7 @@ const { containsProfanity } = require("../middleware/profanity");
 const multer = require("multer");
 const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
-const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
+const { sendPushToUser } = require("../services/notificationService");
 const router = express.Router();
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
@@ -219,14 +219,6 @@ router.post("/", auth, async (req, res) => {
 
     if (is_global) {
       if (io) io.emit("message:global", fullMsg);
-
-      sendPushToAll({
-        title: "HEI STDhub – Chat global",
-        body: `${senderName}: ${content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200)}`,
-        tag: "global-chat",
-        url: "/chat",
-        type: "global_chat",
-      }).catch(() => {});
     } else {
       if (io) {
         io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
