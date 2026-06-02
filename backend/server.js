@@ -419,9 +419,9 @@ const { pool } = require("./db");
 
   try {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS alumni_spotlight_reactions (
+      CREATE TABLE IF NOT EXISTS alumni_tip_reactions (
         id               SERIAL      PRIMARY KEY,
-        spotlight_id     INTEGER     NOT NULL REFERENCES alumni_spotlight(id) ON DELETE CASCADE,
+        tip_id           INTEGER     NOT NULL REFERENCES alumni_spotlight(id) ON DELETE CASCADE,
         user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         reaction_type    VARCHAR(20) NOT NULL,
         created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
