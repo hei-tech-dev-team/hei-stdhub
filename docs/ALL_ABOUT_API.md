@@ -19,7 +19,7 @@
 |--------|---------|------|------------------------|
 | `GET` | Read data | Read | `GET /api/messages/global` |
 | `POST` | Create data | Create | `POST /api/messages` |
-| `PATCH` | Partial update | Update | `PATCH /api/messages/:id/seen` |
+| `PATCH` | Partial update | Update | `PATCH /api/messages/seen` |
 | `DELETE` | Remove data | Delete | `DELETE /api/messages/:id` |
 | `PUT` | Full replace | Update | Not used (we use PATCH) |
 
@@ -34,7 +34,7 @@
 | `403` | Forbidden | Wrong role (e.g., student on admin route) |
 | `404` | Not Found | Resource doesn't exist |
 | `409` | Conflict | Duplicate ref/email/pseudo |
-| `429` | Too Many Requests | Rate limited (auth routes: 10 req/15min) |
+| `429` | Too Many Requests | Rate limited |
 | `500` | Server Error | Database down, uncaught exception |
 
 ---
@@ -122,81 +122,21 @@ io.to(`user:${userId}`).emit("message:private", msg); // Server → specific use
 | `user:join` | Client → Server | `userId` | Joins socket room, tracks online |
 | `message:global` | Server → All | `fullMsg` | New global chat message |
 | `message:private` | Server → User | `fullMsg` | New private message |
-| `message:seen` | Server → Sender | `{ messageId }` | Receiver read the message |
+| `message:seen` | Server → Sender | `{ messageId, readerId }` | Receiver read the message |
 | `message:deleted` | Server → All | `{ messageId, isGlobal, receiverId, senderId }` | A message was deleted |
 | `unread:update` | Server → Sender | `{ contactId, unread, pending }` | Unread count changed |
 | `user:online` / `user:offline` | Server → All | `userId` | Online status change |
+| `typing:started` / `typing:stopped` | Server → User/Room | `{ userId, pseudo }` | Typing indicators |
+| `ping:new` | Server → Receiver | `{ id, sender, created_at }` | New ping received |
+| `ping:accepted` | Server → Sender | `{ id, receiver_id }` | Ping accepted |
+| `ping:refused` | Server → Sender | `{ id, receiver_id }` | Ping refused |
+| `user:registered` | Server → All | `newUser` | New user registered |
 | `bde:drag-*` | Client ↔ Server | various | Real-time Kanban drag sync |
-
----
-
-## Nodemailer / Email Service
-
-### How it works
-
-The email service (`backend/services/mailer.js`) tries multiple providers in order:
-
-```
-sendPasswordResetEmail({ user, token })
-    │
-    ├── 1. Resend API (if RESEND_API_KEY set)
-    │        POST https://api.resend.com/emails
-    │
-    ├── 2. SMTP (if SMTP_HOST set)
-    │        Nodemailer.createTransport({ host, port, auth })
-    │
-    └── 3. Fallback: log to console
-             console.log("EMAIL would be sent:", ...)
-```
-
-### Key functions
-
-| Function | Purpose |
-|----------|---------|
-| `sendPasswordResetEmail({ user, token })` | Sends password reset link |
-| `sendEmail({ user, subject, text, html })` | Generic email sender |
-| `getFrontendUrl()` | Builds frontend URL from env vars |
-| `escapeHtml(value)` | Sanitizes user data for HTML emails |
-
-### Security
-
-- Reset tokens: 32-byte random hex, SHA-256 hashed in DB
-- Expiry: 1 hour
-- Single-use: marked `used_at` after consumption
-- Generic responses prevent email enumeration
-
----
-
-## try/catch in API Calls
-
-See `FOR_DEV.md` for a detailed explanation. Quick reference:
-
-```js
-// Backend — every route uses try/catch
-try {
-  const { rows } = await db.query("SELECT * FROM users WHERE id=$1", [id]);
-  res.json(rows);
-} catch (err) {
-  console.error(err);                                    // Debug log
-  res.status(500).json({ error: "Erreur serveur." });   // Safe message
-}
-
-// Frontend — every API call uses try/catch
-try {
-  const { data } = await api.get("/messages/global");
-  setMessages(data);
-} catch (err) {
-  setError(err.response?.data?.error || "Erreur.");
-}
-```
-
-Without try/catch, a database error would crash the server (backend) or leave the UI in a broken state (frontend).
+| `bde:update` | Server → BDE room | `{ id, statut, justification }` | Suggestion status updated |
 
 ---
 
 ## Axios (HTTP client)
-
-See `FOR_DEV.md` for a detailed comparison with `fetch`. Quick reference:
 
 | Operation | Code |
 |-----------|------|
@@ -216,49 +156,54 @@ The configured instance (`api/axios.js`) automatically:
 
 ### Auth (`/api/auth`)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/register` | No | Register with invite code (checks pseudo uniqueness) |
-| POST | `/login` | No | Login (10 req/15min rate limit) |
-| POST | `/forgot-password` | No | Request password reset email |
-| GET | `/reset-password/:token` | No | Verify reset token |
-| POST | `/reset-password` | No | Execute password reset |
-| GET | `/me` | Yes | Get current user profile |
-| POST | `/verify-invite` | No | Validate invitation code |
-| PATCH | `/profile` | Yes | Update pseudo (checks uniqueness) |
-| PATCH | `/password` | Yes | Change password |
-| PATCH | `/avatar` | Yes | Upload avatar (Cloudinary/local) |
+| Method | Path | Auth | Role | Description |
+|--------|------|------|------|-------------|
+| POST | `/register` | No (invite) | Any | Register with invite code (checks pseudo uniqueness) |
+| POST | `/login` | No | Any | Login (3 req/15min rate limit) |
+| GET | `/user/:ref` | Yes | Any | Get public profile by reference |
+| POST | `/forgot-password` | No | Any | Request password reset code via push notification |
+| POST | `/forgot-password/verify-code` | No | Any | Verify 6-char reset code, returns reset token |
+| GET | `/reset-password/:token` | No | Any | Verify reset token validity |
+| POST | `/reset-password` | No | Any | Execute password reset with token |
+| GET | `/me` | Yes | Any | Get current authenticated user |
+| POST | `/verify-invite` | No | Any | Validate invitation code, return role |
+| PATCH | `/profile` | Yes | Any | Update pseudo (checks uniqueness) |
+| PATCH | `/password` | Yes | Any | Change password (requires current) |
+| PATCH | `/avatar` | Yes | Any | Upload avatar (Cloudinary/local, max 5MB) |
 
 ### Messages (`/api/messages`)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/search?q=` | Yes | Search users by ref/pseudo |
-| GET | `/contacts` | Yes | List all users (?q=, ?limit=, ?offset=) |
-| GET | `/global` | Yes | Global messages (?before=, ?limit=) |
-| GET | `/private/:userId` | Yes | PM history (?before=, ?limit=) |
-| POST | `/` | Yes | Send message (global/private) + push notification |
-| PATCH | `/seen` | Yes | Batch mark messages as seen `{ ids: number[] }` |
-| PATCH | `/:id/seen` | Yes | Mark single message as seen |
-| POST | `/upload` | Yes | Upload file for chat sharing |
-| GET | `/unread` | Yes | Unread counts (global + per-contact) |
-| POST | `/global/read` | Yes | Mark global chat read up to messageId |
-| DELETE | `/:id` | Yes | Delete own message (sender only) |
+| Method | Path | Auth | Role | Description |
+|--------|------|------|------|-------------|
+| GET | `/search?q=` | Yes | Any | Search users by ref/pseudo (limit 10) |
+| GET | `/contacts?q=&limit=&offset=` | Yes | Any | List all users with pagination (default 200) |
+| GET | `/global?before=&limit=` | Yes | Any | Global messages (cursor pagination, max 500) |
+| GET | `/private/:userId?before=&limit=` | Yes | Any | PM history (cursor pagination, max 500) |
+| POST | `/` | Yes | Any | Send message (global/private) + push notification |
+| PATCH | `/seen` | Yes | Any | Batch mark messages as seen `{ ids: number[] }` |
+| PATCH | `/:id/seen` | Yes | Any | Mark single message as seen (legacy) |
+| POST | `/upload` | Yes | Any | Upload file for chat sharing (max 10MB) |
+| GET | `/unread` | Yes | Any | Unread counts (global + per-contact) |
+| POST | `/global/read` | Yes | Any | Mark global chat read up to messageId |
+| DELETE | `/:id` | Yes | Sender | Delete own message (sender only) + Cloudinary cleanup |
+| GET | `/favorites` | Yes | Any | List favorite contact IDs |
+| POST | `/favorites` | Yes | Any | Add contact to favorites |
+| DELETE | `/favorites/:contactId` | Yes | Any | Remove contact from favorites |
 
 ### Posts (`/api/posts`)
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| GET | `/` | No | Any | List posts (?ue=, ?type=, ?level=) |
-| POST | `/` | Yes | teacher/admin | Create post (file or link) |
+| GET | `/` | No | Any | List posts (?ue=, ?type=, ?level=, ?limit=, ?offset=) |
+| POST | `/` | Yes | teacher/admin | Create post (file max 20MB or link) + push to all |
 | DELETE | `/:id` | Yes | teacher/admin | Delete post |
 
 ### Submissions (`/api/submissions`)
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| POST | `/` | Yes | Any | Submit homework (file or link) |
-| GET | `/` | Yes | teacher/admin | List submissions (filtered by teacher's UEs) |
+| POST | `/` | Yes | Any | Submit homework (file max 10MB or link) + push to all |
+| GET | `/` | Yes | teacher/admin | List submissions (teachers see only their UEs) |
 
 ### Supports (`/api/supports`)
 
@@ -272,38 +217,73 @@ The configured instance (`api/axios.js`) automatically:
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| POST | `/` | Yes | student/teacher/alumni/admin | Submit suggestion |
+| POST | `/` | Yes | student/teacher/alumni/admin | Submit suggestion (profanity filtered) |
 | GET | `/` | Yes | bde | List suggestions (?limit=, ?offset=) |
-| PATCH | `/:id` | Yes | bde | Update suggestion status |
-| POST | `/confirm` | Yes | bde | Confirm round: post summary to global chat |
+| PATCH | `/:id` | Yes | bde | Update suggestion status (recu/accepte/a_discuter/refuse) |
+| POST | `/confirm` | Yes | bde | Confirm round: post summary to global chat + delete all |
 | POST | `/report` | Yes | bde/admin | Generate PDF report |
 
 ### Admin (`/api/admin`)
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| GET | `/stats` | Yes | admin | Platform stats (polled every 3s) |
-| GET | `/users` | Yes | admin | List users (?q=, ?role=, ?limit=, ?offset=) |
+| GET | `/stats` | Yes | admin | Platform stats (users, posts, submissions, messages, by_role) |
+| GET | `/users?q=&role=&limit=&offset=` | Yes | admin | List users with search and role filter (max 200) |
 | PATCH | `/users/:id/role` | Yes | admin | Change user role |
-| DELETE | `/users/:id` | Yes | admin | Delete user (not self) |
-| POST | `/invitations` | Yes | admin | Generate invitation (14d expiry) |
-| POST | `/invitations/bulk` | Yes | admin | Bulk generate (batch INSERT, up to 1000) |
-| GET | `/invitations` | Yes | admin | List invitations (?limit=, ?offset=) |
+| PATCH | `/users/:id/email` | Yes | admin | Change user email |
+| DELETE | `/users/:id` | Yes | admin | Delete user (cannot delete self) |
+| POST | `/class-upgrade` | Yes | admin | Upgrade all students L1→L2→L3→alumni (exclude failed refs) |
+| POST | `/invitations` | Yes | admin | Generate single invitation code (14d expiry) |
+| POST | `/invitations/bulk` | Yes | admin | Bulk generate up to 1000 codes (batch INSERT) |
+| GET | `/invitations?limit=&offset=` | Yes | admin | List invitations (max 200) |
 | DELETE | `/invitations/:id` | Yes | admin | Delete invitation |
 
-### Push (`/api/push`)
+### Announcements (`/api/announcements`)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/subscribe` | Yes | Subscribe to push notifications |
-| DELETE | `/subscribe` | Yes | Unsubscribe |
+| Method | Path | Auth | Role | Description |
+|--------|------|------|------|-------------|
+| GET | `/` | Yes | Any | List announcements (?level=, ?limit=, ?offset=) + reactions |
+| POST | `/` | Yes | admin | Create announcement (optional image, target_level, max 10MB) + push |
+| DELETE | `/:id` | Yes | admin | Delete announcement |
+| POST | `/:id/react` | Yes | Any | Upsert reaction (like/haha/dont_like/sad) |
+| DELETE | `/:id/react` | Yes | Any | Remove reaction |
+
+### Alumni Spotlight (`/api/alumni-spotlight`)
+
+| Method | Path | Auth | Role | Description |
+|--------|------|------|------|-------------|
+| GET | `/` | Yes | Any | List all tips + reactions |
+| POST | `/` | Yes | alumni | Create tip (optional image, max 10MB) + push |
+| DELETE | `/:id` | Yes | owner | Delete own tip |
+| POST | `/:id/react` | Yes | Any | Upsert reaction (like/haha/dont_like/sad) |
+| DELETE | `/:id/react` | Yes | Any | Remove reaction |
+
+### Push Notifications (`/api/push`)
+
+| Method | Path | Auth | Role | Description |
+|--------|------|------|------|-------------|
+| POST | `/subscribe` | Yes | Any | Subscribe to push notifications |
+| DELETE | `/subscribe` | Yes | Any | Unsubscribe |
+| GET | `/notifications` | Yes | Any | Get last 50 push notifications |
+| PATCH | `/notifications/read` | Yes | Any | Mark notifications as read |
+| GET | `/notifications/unread-count` | Yes | Any | Get unread push notification count |
+
+### Pings (`/api/pings`)
+
+| Method | Path | Auth | Role | Description |
+|--------|------|------|------|-------------|
+| POST | `/` | Yes | Any | Send ping to another user (cannot ping self) |
+| GET | `/` | Yes | Any | Get all pings (sent and received) |
+| PATCH | `/:id/accept` | Yes | receiver | Accept a pending ping |
+| PATCH | `/:id/refuse` | Yes | receiver | Refuse a pending ping |
 
 ### Health & Misc
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/health` | No | Health check |
-| GET | `/push/vapid-key` | No | Get VAPID public key |
+| GET | `/api/health` | No | Health check `{ status: "ok", time: Date }` |
+| GET | `/api/push/vapid-key` | No | Get VAPID public key |
+| GET | `/uploads/*` | No | Static file serving (avatars, announcements, chat, submissions) 7d cache |
 
 ---
 
@@ -311,13 +291,20 @@ The configured instance (`api/axios.js`) automatically:
 
 | Table | Purpose | Key columns |
 |-------|---------|-------------|
-| `users` | User accounts | id, ref, pseudo (UNIQUE), email, password, role, level, avatar, ues, first_login |
+| `users` | User accounts | id, ref (UNIQUE), pseudo (UNIQUE), email, password (bcrypt), role (ENUM), level, avatar, ues (TEXT[]), first_login |
 | `messages` | Chat messages | id, sender_id, receiver_id, content, is_global, seen, seen_at |
 | `global_chat_read` | Per-user global chat read tracking | user_id (PK), last_read_msg_id |
 | `push_subscriptions` | Web Push endpoints | user_id, endpoint (UNIQUE combo), auth_key, p256dh_key |
-| `posts` | Course materials | id, title, ue, type, file_path, link, author_id |
-| `submissions` | Homework submissions | id, student_id, ref, level, groupe, ue, type, file_path |
-| `supports` | External resource links | id, ue, label, url, author_id |
+| `push_notifications` | Persistent notification history | user_id, type, title, body, data (JSONB), is_read |
+| `posts` | Course materials | id, title, ue, type (cours/td/examen), file_path, link, author_id |
+| `submissions` | Homework submissions | id, student_id, ref, level, groupe, ue, type (TD/Examen), file_path |
+| `supports` | External resource links | id, ue, label, url (https://), author_id |
 | `suggestions` | BDE suggestions | id, student_id, titre, contenu, anonyme, statut, justification |
-| `invitations` | Registration codes | code, role, max_uses, use_count, expires_at |
+| `announcements` | Admin announcements | id, title, content, image_url, target_level, author_id |
+| `announcement_reactions` | Announcement reactions | announcement_id, user_id (UNIQUE), reaction_type |
+| `alumni_spotlight` | Alumni tips | id, title, content, image_url, author_id |
+| `alumni_spotlight_reactions` | Alumni tip reactions | tip_id, user_id (UNIQUE), reaction_type |
+| `invitations` | Registration codes | code (UNIQUE), role, max_uses, use_count, expires_at, created_by |
 | `password_reset_tokens` | Password reset | user_id, token_hash (SHA-256), expires_at, used_at |
+| `pings` | Peer-to-peer pings | sender_id, receiver_id, status (pending/accepted/refused) |
+| `chat_favorites` | Favorite contacts | user_id, contact_id (PK combo) |

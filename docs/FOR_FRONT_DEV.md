@@ -4,66 +4,32 @@
 
 ```
 frontend/src/
-├── main.jsx                    # React entry, service worker registration
-├── App.jsx                     # Router with protected/admin/BDE routes
-├── index.css                   # Tailwind + custom glassmorphism/card styles
+├── main.jsx                    # React entry, push notification fetch + mark read
+├── App.jsx                     # Router with ProtectedRoute, AdminRoute, BDERoute guards
+├── index.css                   # Tailwind + custom glassmorphism/card/animation styles
 ├── api/
-│   └── axios.js                # Axios instance + auth interceptor
+│   └── axios.js                # Axios instance + auth interceptor (401 redirect skip auth routes)
 ├── context/
-│   └── AuthContext.jsx          # Auth provider (login, register, logout)
-├── socket.js                   # Socket.IO client singleton
-├── push.js                     # Push subscription helpers
+│   └── AuthContext.jsx          # Auth provider (login, register, logout, token verify on mount)
+├── socket.js                   # Socket.IO client singleton (lazy connect, JWT auth, reconnect)
+├── push.js                     # Push subscription helpers (VAPID, subscribe, unsubscribe)
 ├── utils/
-│   └── roleFilter.js           # Role filtering utilities
+│   └── roleFilter.js           # expandRoleFilter, determineRegisterRole, validateRegisterEmail
 ├── assets/
-│   └── logos.js                # Logo URLs
-├── pages/                      # 12 page components
-└── components/                 # Reusable components
+│   └── logos.js                # HEI_WHITE_LOGO, HEI_BLUE_LOGO
+├── pages/                      # 16 page components
+└── components/
     ├── layout/                 # Sidebar, Navbar
-    ├── dashboard/              # StudentHome, TeacherHome, AlumniHome
-    ├── chat/                   # ChatLayout, ContactList, MessagePanel, useLongPress
-    ├── archives/               # ArchiveGrid
+    ├── dashboard/              # StudentHome, TeacherHome, AlumniHome, AdminHome
+    ├── chat/                   # ChatLayout, ContactList, MessagePanel, useLongPress, chat-utils
+    ├── archives/               # ArchiveGrid, ArchiveCard
     ├── td/                     # StudentUpload, TeacherInbox
-    └── ui/                     # Avatar, Badge, OnboardingModal
+    └── ui/                     # Avatar, Badge, OnboardingModal, UserAvatar, GlassDomeLogo, JarvisScanAnimation, WaveAnimation
 ```
 
 ---
 
-## `main.jsx` — Entry Point
-
-```jsx
-@function Service Worker Registration
-@description Registers service worker at /sw.js on window load for PWA support
-@side-effects Registers service worker for offline/push capabilities
-```
-
----
-
-## `App.jsx` — Router & Guards
-
-```jsx
-@function ProtectedRoute
-@param {ReactNode} children
-@description If loading, shows spinner. If no user, redirects to /login. Otherwise renders children.
-@returns {ReactNode}
-
-@function AdminRoute
-@param {ReactNode} children
-@description If loading, returns null. If not admin, redirects to /. Otherwise renders children.
-@returns {ReactNode}
-
-@function BDERoute
-@param {ReactNode} children
-@description If loading, returns null. If not bde, redirects to /. Otherwise renders children.
-@returns {ReactNode}
-
-@function App
-@description Main app component. Renders all routes with appropriate guards.
-  If user.firstLogin, renders OnboardingModal.
-@returns {ReactNode}
-```
-
-### Route Table
+## Route Table
 
 | Path | Component | Guard |
 |------|-----------|-------|
@@ -79,693 +45,223 @@ frontend/src/
 | `/bde` | BDEPage | BDERoute (bde only) |
 | `/admin` | AdminPage | AdminRoute (admin only) |
 | `/profile` | ProfilePage | ProtectedRoute |
+| `/profile/:ref` | UserProfilePage | ProtectedRoute |
+| `/ping-box` | PingBoxPage | ProtectedRoute |
+| `/std-news` | STDnewsPage | ProtectedRoute |
+| `/alumni-spotlight` | AlumniSpotlightPage | ProtectedRoute (alumni only) |
 
 ---
 
-## `api/axios.js` — Axios Instance
+## Key Files
 
-```js
-@function getApiBaseUrl
-@returns {string} VITE_API_URL or "http://localhost:3001" + "/api"
+### `main.jsx` — Entry Point
+- React 19 StrictMode root render
+- Service worker registration (`/sw.js`) for PWA
+- On mount: fetches `GET /push/notifications`, marks them read via `PATCH /push/notifications/read`
 
-@type AxiosInstance
-@name api
-@description Axios instance with baseURL from getApiBaseUrl()
+### `App.jsx` — Router & Guards
+- `ProtectedRoute`: loading→spinner, no user→redirect `/login`, else→children
+- `AdminRoute`: loading→null, not admin→redirect `/`, else→children
+- `BDERoute`: loading→null, not bde→redirect `/`, else→children
+- If `user.firstLogin`, renders `OnboardingModal` overlay
+- 16 routes with guards
 
-@description Request Interceptor
-@param {Object} config
-@description Reads hei_token from localStorage and sets Authorization header
+### `api/axios.js` — Axios Instance
+- Base URL: `VITE_API_URL || "http://localhost:3001"` + `/api`
+- Request interceptor: injects `Bearer <token>` from `localStorage("hei_token")`
+- Response interceptor: on 401 (non-auth routes), clears token, redirects to `/login`
 
-@description Response Interceptor
-@param {Object} response - pass through
-@param {Object} error
-@description On 401 (non-auth routes): clears token, redirects to /login
-  Skips auth routes (login, register, forgot-password, reset-password, verify-invite)
-```
+### `context/AuthContext.jsx` — Auth State
+- On mount: reads token from localStorage, calls `GET /auth/me` to validate
+- `login(ref, password)`: `POST /auth/login`, stores token+user, triggers push subscribe
+- `register(formData)`: `POST /auth/register`, stores token+user, triggers push subscribe
+- `logout()`: clears localStorage, sets user null
+- `dismissOnboarding()`: sets firstLogin false
 
----
+### `socket.js` — Socket.IO Client
+- Lazy singleton: `getSocket()` creates connection on first call
+- Auth via `handshake.auth.token`
+- Transports: `["websocket", "polling"]`, 10s timeout
+- `disconnectSocket()`, `refreshSocket()`, `onConnectionChange(listener)`
+- Exports events: user:join, message:global/private, user:online/offline, message:seen, message:deleted, unread:update, typing:started/stopped, user:registered, bde:drag-*, bde:update
 
-## `context/AuthContext.jsx` — Auth State
+### `push.js` — Push Notifications
+- `subscribeToPush()`: checks support, gets VAPID key from `GET /push/vapid-key`, subscribes via PushManager, `POST /push/subscribe`
+- `unsubscribeFromPush()`: gets subscription, `DELETE /push/subscribe`, unsubscribes
+- `urlBase64ToUint8Array(base64)`: VAPID key converter
 
-```js
-@function getSavedUser
-@returns {Object|null} Parsed user from localStorage hei_user, or null on failure
-
-@function AuthProvider
-@param {ReactNode} children
-@description Provides auth context: user, setUser, login, register, logout, loading, firstLogin, dismissOnboarding
-
-@state user - User object from localStorage/API
-@state firstLogin - boolean, triggers onboarding modal
-@state loading - boolean, true while verifying token on mount
-
-@effect Token Validation
-@description On mount, reads token from localStorage. If exists, calls GET /auth/me to validate.
-  On success: sets user state and localStorage. On 401: clears auth state.
-  Finally: sets loading to false.
-
-@async
-@function login
-@param {string} ref
-@param {string} password
-@description POST /auth/login. Stores token+user in localStorage. Sets firstLogin if true.
-@returns {Object} User object
-
-@async
-@function register
-@param {Object} formData
-@description POST /auth/register with form data. Stores token+user in localStorage.
-@returns {Object} User object
-
-@function dismissOnboarding
-@description Sets firstLogin to false
-
-@function logout
-@description Removes hei_token and hei_user from localStorage. Sets user to null.
-
-@function useAuth
-@returns {Object} AuthContext value
-```
-
----
-
-## `socket.js` — Socket.IO Client
-
-```js
-@async
-@function getSocket
-@description Returns singleton Socket.IO connection. Creates new connection if none exists.
-  Uses VITE_API_URL or "http://localhost:3001" with websocket+polling transports.
-  Resolves on "connect", rejects on "connect_error". Times out after 10s.
-@returns {Promise<Socket>}
-
-@function disconnectSocket
-@description Disconnects socket and sets to null
-```
-
----
-
-## `push.js` — Push Notifications
-
-```js
-@async
-@function subscribeToPush
-@description
-  1. Checks for serviceWorker + PushManager support
-  2. Waits for service worker ready
-  3. Skips if already subscribed
-  4. Fetches VAPID key from GET /push/vapid-key
-  5. Subscribes with userVisibleOnly: true
-  6. POSTs subscription to /push/subscribe
-@side-effects Registers browser push notifications
-@error-handling Silently catches all errors
-
-@async
-@function unsubscribeFromPush
-@description
-  1. Gets existing push subscription
-  2. DELETEs /push/subscribe with endpoint
-  3. Calls sub.unsubscribe()
-@error-handling Silently catches all errors
-
-@function urlBase64ToUint8Array
-@param {string} base64
-@returns {Uint8Array} Decoded VAPID key
-```
-
----
-
-## `utils/roleFilter.js`
-
-```js
-@function expandRoleFilter
-@param {string} role
-@returns {string} "student,bde" if role is "student", otherwise unchanged
-
-@function determineRegisterRole
-@param {string} inviteRole
-@param {boolean} isAlumni
-@returns {string} "teacher", "alumni", or "student"
-
-@function validateRegisterEmail
-@param {string} email
-@param {string} role
-@returns {boolean} true if email is valid for the given role
-  - student: must match hei.xxx@gmail.com
-  - alumni: must contain "@"
-  - other: always true
-```
+### `utils/roleFilter.js`
+- `expandRoleFilter(role)`: `"student"` → `"student,bde"`, else unchanged
+- `determineRegisterRole(inviteRole, isAlumni)`: maps to teacher/alumni/student
+- `validateRegisterEmail(email, role)`: student → `hei.xxx@gmail.com`, alumni → contains `@`, other → always true
 
 ---
 
 ## Pages
 
 ### `LoginPage.jsx`
-
-```jsx
-@function LoginPage
-@description Login form with alumni/student toggle, ref+password fields,
-  show/hide password toggle, error display, loading state.
-  On success, navigates to "/".
-
-@state form: { ref, password }
-@state error, loading, showPwd, isAlumni
-
-@function set(key, val) - Updates form field
-@async @function handleSubmit(e) - Validates, calls login(), navigates on success
-```
+- Alumni/student toggle, ref + password fields, show/hide password, error/loading states
+- `handleSubmit`: calls `login()`, navigates to `/`
 
 ### `RegisterPage.jsx`
-
-```jsx
-@function RegisterPage
-@description Two-step registration: 1) verify invite code, 2) fill user details.
-  Role-specific fields (teacher: UE selection, student: level).
-  Password confirmation, email validation per role.
-
-@state form: { nom, prenom, email, ref, pseudo, role, level, password, confirmPassword, inviteCode, ues }
-@state codeVerified, codeLoading, codeError, isAlumni, showPwd, showConfirm
-
-@function set(k, v) - Updates form field
-@function toggleUE(ue) - Toggles UE selection for teachers
-@async @function verifyCode() - POST /auth/verify-invite
-@function validate() - Returns error string or null
-@async @function handleSubmit(e) - Validates, calls register(), navigates on success
-```
+- Two-step: 1) verify invite code (`POST /auth/verify-invite`), 2) fill user details
+- Role-specific fields: teacher → UE selection (multi-select), student → level auto, alumni → ref validation
+- Password confirmation, email validation per role, pseudo availability checked on submit
 
 ### `ForgotPasswordPage.jsx`
-
-```jsx
-@function ForgotPasswordPage
-@description Email input for password reset. Shows success state with instructions.
-@state email, loading, sent, error
-@async @function handleSubmit(e) - POST /auth/forgot-password
-```
+- Email input → `POST /auth/forgot-password`
+- 6-box code verification with staggered confirm animation → `POST /auth/forgot-password/verify-code`
+- Receives reset token, navigates to `/reset-password?token=...`
 
 ### `ResetPasswordPage.jsx`
-
-```jsx
-@function ResetPasswordPage
-@description 4 states: checking token, invalid token, valid token form, success.
-  Token from URL search params. Auto-redirects to /login after 2.5s on success.
-
-@state token, checking, validToken, password, confirmPassword, showPassword, showConfirmPassword
-@state loading, done, error
-
-@effect Token verification on mount - GET /auth/reset-password/:token
-@function validateForm() - Checks non-empty, min 6 chars, password match
-@async @function handleSubmit(e) - POST /auth/reset-password
-```
+- 4 states: checking token, invalid, valid form, success
+- `GET /auth/reset-password/:token` on mount
+- `POST /auth/reset-password` with new password
+- Auto-redirect to `/login` after 2.5s on success
 
 ### `HomePage.jsx`
-
-```jsx
-@function HomePage
-@description Role-based dashboard:
-  - alumni: AlumniHome
-  - teacher/admin: TeacherHome
-  - student/bde: StudentHome
-@renders Sidebar + conditional dashboard component
-```
+- Role-based dashboard: alumni→AlumniHome, teacher/admin→TeacherHome, student/bde→StudentHome
 
 ### `ArchivesPage.jsx`
-
-```jsx
-@function ArchivesPage
-@renders Sidebar + Navbar("Archives de cours") + ArchiveGrid
-```
+- Navbar("Archives de cours") + ArchiveGrid
+- UEs grouped by year (L1/L2/L3), click opens side panel with support links
 
 ### `TDPage.jsx`
-
-```jsx
-@function TDPage
-@description Renders TeacherInbox for teacher/admin, StudentUpload for others
-@renders Sidebar + Navbar("TD / Examen") + conditional component
-```
+- Teacher/admin → TeacherInbox (submissions table)
+- Others → StudentUpload (homework submission form)
 
 ### `ChatPage.jsx`
-
-```jsx
-@function ChatPage
-@renders Full-height dark gradient background + Sidebar + ChatLayout
-```
+- Dark gradient full-height background + ChatLayout
 
 ### `SuggestionPage.jsx`
+- Title + content + anonymous toggle, character counters (20+ for content)
+- `POST /suggestions`, auto-clear success after 4s
 
-```jsx
-@function SuggestionPage
-@description Form to submit suggestions to BDE. Anonymous toggle, character counters,
-  BDE info card (different text for teachers vs students). Auto-clears success after 4s.
-
-@state form: { titre, contenu, anonyme }
-@state loading, submitted, error
-
-@function set(k, v)
-@async @function handleSubmit(e) - Validates (titre required, contenu >= 20 chars),
-  POST /suggestions
-```
-
-### `BDEPage.jsx`
-
-```jsx
-@function BDEPage
-@description Kanban board for suggestion triage. 4 columns: Recu, Accepte,
-  A discuter, Refuse. Drag-and-drop (mouse + touch), real-time sync via Socket.IO,
-  PDF report generation, confirmation with global chat post.
-
-@constants COLUMNS - 4 column configs with colors, icons, labels
-@state suggestions, loading, sending, done, dragId, dragOver, justModal, error
-@state remoteDragId, remoteDragOver (for real-time sync)
-
-@effect Initial fetch - GET /suggestions
-@effect Socket setup - listens for bde:drag-*, bde:update
-
-@function generatePDF(suggestions) - Client-side PDF via jsPDF with navy/gold branding
-@function getByStatut(statut) - Filters suggestions by status
-@function emitDragStart/DragOver/DragEnd/Update - Socket emit helpers
-@function handleDragStart/DragOver/Drop - Mouse drag handlers
-@function handleTouchStart/Move/End - Touch drag handlers
-@async @function updateStatut(id, statut, justification) - PATCH /suggestions/:id
-@function handleJustConfirm - Validates justification, calls updateStatut with "refuse"
-@async @function handleConfirmAll - POST /suggestions/confirm + generate PDF
-```
+### `BDEPage.jsx` — Kanban Board
+- 4 columns: Reçu (blue), Accepté (green), À discuter (orange), Refusé (red)
+- Drag-and-drop (mouse + touch), real-time sync via Socket.IO
+- Justification modal for refusal, confirm round posts to global chat
+- `GET /suggestions`, `PATCH /suggestions/:id`, `POST /suggestions/confirm`
+- Client-side PDF generation via jsPDF with navy/gold branding
 
 ### `AdminPage.jsx`
-
-```jsx
-@function AdminPage
-@description Full admin panel with tabs: Users, Invitations, Passage de classe (September),
-  Nouveaux L1 (November). Stats polling every 3s.
-  Users and invitations now paginated (50 per page) with server-side search.
-
-@constants ROLE_CONFIG - Role to label/icon/color mapping
-@constants PAGE_SIZE = 50
-
-@function StatCard({ icon, label, value, color })
-@param {Object} props - { icon: FontAwesomeIcon, label: string, value: number|string, color: string }
-@renders A stat card with icon, value, and label
-
-@state tab, stats, users, invitations, search, roleFilter, loading, copiedId
-@state userPage, userTotal, invPage, invTotal (pagination)
-@state failedRefs, failedInput, upgradeLoading, upgradeDone (class upgrade)
-@state newL1, generatedRef, registerLoading, registerDone (L1 registration)
-@state showInvModal, invRole, invMaxUses, invLoading, invError (invitation modal)
-@state showBulkModal, bulkRole, bulkCount, bulkCodes (bulk invitation)
-@computed isSeptember = month === 8 (0-indexed), isNovember = month === 10
-
-@effect Scroll listener - show/hide scroll-to-top button
-@effect Stats polling every 3s - GET /admin/stats
-@effect Reset userPage on search/roleFilter change
-@async @function loadUsers() - GET /admin/users?q=&role=&limit=50&offset=N
-@async @function loadInvitations() - GET /admin/invitations?limit=50&offset=N
-@async @function handleRoleChange(userId, newRole) - PATCH /admin/users/:id/role
-@async @function handleDelete(userId, ref) - DELETE /admin/users/:id (with confirm)
-@async @function handleCreateInvitation() - POST /admin/invitations
-@async @function handleDeleteInvitation(id) - DELETE /admin/invitations/:id
-@function handleAddFailedRef / handleRemoveFailedRef - Class upgrade helpers
-@async @function handleUpgrade() - POST /admin/class-upgrade
-@function getGroupFromChar(char) - Maps letter to X1-X4 group
-@async @function handleRegisterL1(e) - POST /auth/register for new L1
-@function handleCopy(id, code) - Clipboard copy with 2s feedback
-```
+- Tabs: Users, Invitations, Stats, Passage de classe (Sept), Nouveaux L1 (Nov)
+- Users: paginated (50/page), search + role filter, role/email change, delete
+- Invitations: paginated, create (single + bulk up to 1000), delete, copy to clipboard
+- Stats: polling every 3s via `GET /admin/stats`
+- Class upgrade: L1→L2→L3→alumni with failed refs exclusion
+- L1 registration: auto-generate STD ref, register via `POST /auth/register`
+- Seasonal tabs: September (month 8), November (month 10)
 
 ### `ProfilePage.jsx`
+- Avatar upload (PATCH /auth/avatar), pseudo edit (PATCH /auth/profile), password change (PATCH /auth/password)
+- Glassmorphism redesign, staggered entrance animation, rotating border avatar, toast feedback
 
-```jsx
-@function ProfilePage
-@description User profile with avatar upload, pseudo edit, password change.
+### `UserProfilePage.jsx`
+- View any user's public profile from `/profile/:ref`
+- `GET /auth/user/:ref`, send ping via `POST /pings`
 
-@state pseudo, currentPwd, newPwd, confirmPwd
-@state loadingPseudo, loadingPwd, loadingAvatar
-@state successPseudo, successPwd, errorPseudo, errorPwd
-@state showCurrent, showNew, showConfirm, visible (entrance animation)
+### `PingBoxPage.jsx`
+- Two tabs: Received (accept/refuse) + Sent (pending/accepted/refused)
+- `GET /pings`, `PATCH /pings/:id/accept`, `PATCH /pings/:id/refuse`
 
-@effect Entrance animation via requestAnimationFrame
-@async @function handleAvatar(e) - PATCH /auth/avatar (multipart)
-@async @function handlePseudo(e) - PATCH /auth/profile
-@async @function handlePassword(e) - PATCH /auth/password (with confirm check)
+### `STDnewsPage.jsx`
+- Combined feed: announcements + alumni tips
+- Reactions (like/haha/dont_like/sad) via POST/DELETE
+- Alumni can delete own tips
+- `GET /announcements`, `GET /alumni-spotlight`, reaction endpoints
 
-@function PwdInput({ value, setValue, placeholder, show, toggle })
-@param {Object} props - Password input with show/hide toggle
-@renders Styled password field
-```
+### `AlumniSpotlightPage.jsx`
+- Create alumni tips with optional image upload
+- `POST /alumni-spotlight` with FormData
 
 ---
 
 ## Components
 
-### `components/layout/Sidebar.jsx`
-
-```jsx
-@function Sidebar
-@description Navigation sidebar with role-based links, mobile hamburger menu.
-  Alumni: only Accueil + Chat. Others: Accueil, Archives, TD/Examen, Chat.
-  Conditional links: Suggestions (student/teacher/alumni), BDE (bde), Admin (admin).
-
-@state open - mobile drawer toggle
-@constants NAV_LINKS - standard nav links
-@constants ALUMNI_NAV_LINKS - restricted alumni links
-
-@function handleLogout() - Calls logout(), navigates to /login
-@function handleNavClick() - Closes mobile drawer
-```
-
-### `components/layout/Navbar.jsx`
-
-```jsx
-@function Navbar
-@param {string} title - Optional page title
-@description Shows alumni badge (if user is alumni), page title pill, profile button.
-@renders Header with conditional elements
-```
-
-### `components/dashboard/StudentHome.jsx`
-
-```jsx
-@function StudentHome
-@description Course post cards filtered by level (Tous/L1/L2/L3).
-  Each card shows type badge, UE, date, title, description, author, file/link.
-
-@state posts, filter (defaults to user.level), loading
-@effect Fetch posts on mount and filter change - GET /posts?level=
-@function handleFilterChange(level) - Updates filter, shows loading
-```
-
-### `components/dashboard/TeacherHome.jsx`
-
-```jsx
-@function TeacherHome
-@description Post creation form (drag-and-drop file upload, link input, UE select from
-  teacher's assigned UEs, type toggle) + list of existing posts with delete.
-
-@state teacherUes, form, posts, dragOver, loading, fetching, error
-@effect Fetch all posts on mount - GET /posts
-@function set(k, v) - Form field updater
-@function handleDrop(e) - File drag-and-drop handler
-@function handleFileInput(e) - File input change handler
-@async @function handleSubmit(e) - POST /posts (multipart/form-data)
-@async @function handleDelete(id) - DELETE /posts/:id (with confirm)
-```
-
-### `components/dashboard/AlumniHome.jsx`
-
-```jsx
-@function AlumniHome
-@description Hero section with graduation cap, greeting, promo info.
-  Quick links grid: Chat, Suggestions BDE, Mon Profil.
-@constants QUICK_LINKS - 3 links with icons and descriptions
-```
-
-### `components/chat/ChatLayout.jsx`
-
-```jsx
-@function ChatLayout
-@description Main chat orchestrator. Manages contacts, messages, Socket.IO connections,
-  push subscriptions. Handles global + private messaging.
-  Supports infinite scroll (loadOlderMessages with cursor pagination).
-  Batch seen marking via PATCH /messages/seen (replaces N+1 individual calls).
-
-@constants GLOBAL_CONTACT - { id: "global", name: "Chat global", isGlobal: true }
-
-@state contacts, activeContact, messages, showContactList, loadingMessages, onlineUsers, isAtBottom, unread
-@state unread: { global: number, contacts: { [contactId]: { unread, pending } } }
-@state contactTotal - total number of contacts
-
-@ref activeContactRef, isAtBottomRef, messagesRef - Refs to avoid stale closures in socket handlers
-
-@function requestNotifyPermission() - Requests Notification API permission
-@function showNotification(title, body) - Shows browser notification if tab is hidden
-
-@effect Init - request notification permission, subscribe to push
-@effect Fetch contacts - GET /messages/contacts?limit=500, then fetchUnread
-
-@async @function fetchUnread() - GET /messages/unread, sets unread state
-@async @function markGlobalRead(messageId) - POST /messages/global/read
-@async @function markSeen(contact) - Batch marks messages as seen.
-  For global: calls markGlobalRead(lastMsg.id), sets global unread to 0.
-  For private: collects all unseen message IDs, sends single PATCH /messages/seen.
-  Replaces individual PATCH /messages/:id/seen calls.
-
-@function formatMsg(m) - Normalizes raw message shape (adds own, seen, senderAvatar, etc.)
-@async @function loadMessages(contact, silent?) - GET /messages/global or /messages/private/:id
-@async @function loadOlderMessages(contact) - Cursor-based: GET ?before={oldestId}&limit=100
-  Prepends older messages to the list. Supports infinite scroll.
-@effect Load messages on contact change
-@effect Socket setup: listen for:
-  - message:global — append to global chat, increment unread if not active tab
-  - message:private — append to contact chat, increment unread if not active conversation
-  - user:online / user:offline — update onlineUsers Set
-  - message:seen — update seen flag in all message lists, decrement pending count
-  - message:deleted — filter out deleted message from all lists
-  - unread:update — update unread/pending for a contact (sent by server after sending)
-
-@async @function sendMessage(content) - POST /messages (global or private)
-@async @function deleteMessage(messageId) - DELETE /messages/:id, removes from local state
-@function handleSelectContact(contact) - Switch active contact, scroll to bottom
-
-@changelog 1.4.0
-  - Updated support contact email in RegisterPage to stdhub.admin@gmail.com
-
-@changelog 1.3.4
-  - Chat contact toggle moved to right of chat name on mobile header
-  - Avoids overlap with Sidebar hamburger menu on left side
-  - Added shrink-0 to prevent button from collapsing on small screens
-```
-
-### `components/chat/ContactList.jsx`
-
-```jsx
-@function ContactList
-@param {Array} contacts
-@param {string|number} activeId
-@param {Function} onSelect
-@param {Set} onlineUsers
-@description Contact sidebar with search, new conversation modal, online indicators, role badges.
-
-@state search, showSearch, searchQuery, searchResults, searching
-
-@function RoleBadge({ role }) - Role badge component
-@function StatusDot({ online }) - Online/offline dot component
-@function ContactAvatar({ contact, isActive }) - Avatar with fallback
-@param {Object} unread - { global: number, contacts: { [contactId]: { unread, pending } } }
-
-@function getUnreadCount(contact) - Returns unread count (messages I haven't read) for a contact
-@computed sorted - Contacts sorted by unread count (highest first), then alphabetically
-@function handleSearch(q) - GET /messages/search?q=
-@function handleStartConversation(u) - Starts private chat with searched user
-
-_unread badge:_ Gold pill badge showing unread count (capped at 99+) next to contact name
-```
-
-### `components/chat/MessagePanel.jsx`
-
-```jsx
-@function MessagePanel
-@param {Object} contact
-@param {Array} messages
-@param {boolean} loading
-@param {Function} onSend
-@param {Function} onDelete
-@param {Function} onOpenContacts
-@param {boolean} isAtBottom
-@param {Function} onAtBottomChange
-@param {Function} onScrollToBottom
-@param {Set} onlineUsers
-@param {Function} onLoadOlder - Callback for infinite scroll (triggered when scrollTop < 80)
-@description Full message panel with grouped messages, date separators, file sharing,
-  image preview, read receipts, message deletion (trash icon on hover for own messages),
-  scroll-to-bottom button, auto-scroll, infinite scroll (load older on scroll to top).
-  Now includes an image lightbox for viewing full-size images and a file upload preview.
-
-@state text, sending, loadingOlder
-@state selectedFile - File chosen for upload (File object)
-@state lightboxImg - { url: string, filename: string } object for the currently displayed image in lightbox
-@state previewUrl - URL for the selected file preview (revoked on unmount/change)
-@state showEmojiPicker, deleteTarget
-
-@ref bottomRef, fileRef, scrollRef, prevScrollHeight
-
-@effect Revokes previewUrl when component unmounts or previewUrl changes to prevent memory leaks.
-@useMemo grouped - Groups by sender within 5min gap, inserts date separators
-@effect Auto-scroll on new messages (if already at bottom)
-@effect Preserve scroll position when older messages loaded (prevScrollHeight)
-@function handleScroll() - Detects scroll position + triggers loadOlder at top
-@async @function handleSend() - Trims and sends message. Now handles file upload first if a file is selected.
-  Sends "[FILE:...]" message for files. Clears selected file and preview after send.
-@function handleKey(e) - Send on Enter (not Shift+Enter)
-@function handleFile(e) - Captures selected file, sets `selectedFile` and `previewUrl` for preview.
-@async @function handleDownloadImg(url, filename) - Downloads an image, handling potential errors and falling back to opening in a new tab.
-
-@function ImageMessage({ parsed, onImageClick, onDelete, isOwn })
-@param {Object} parsed - Parsed file content { url, filename, type, ... }
-@param {Function} onImageClick - Callback when image is clicked (for lightbox)
-@param {Function} onDelete - Callback to delete the message
-@param {boolean} isOwn - True if the message belongs to the current user
-@description Renders an image message with a long-press gesture for deletion (if `isOwn`) or click for lightbox.
-
-@function FileMessage({ parsed, onDelete, isOwn })
-@param {Object} parsed - Parsed file content { url, filename, type, ... }
-@param {Function} onDelete - Callback to delete the message
-@param {boolean} isOwn - True if the message belongs to the current user
-@description Renders a generic file message with a long-press gesture for deletion (if `isOwn`) or click for download.
-
-@function RoleBadge({ role }) - Role badge in chat header
-@function ChatAvatar({ avatar, name }) - Avatar with error fallback
-@function DateSeparator({ date }) - Horizontal line with date label
-@function renderContent(content, onImageClick, onDelete, isOwn) - Renders file/image using `ImageMessage` or `FileMessage`, or sanitized HTML (DOMPurify).
-@function MessageGroup({ messages, isOwn, onDelete, onImageClick }) - Renders message group with bubbles.
-  Now passes `onImageClick` to `renderContent`. Shows trash icon on hover for own text messages with confirmation dialog.
-@function handleDelete(msgId) - Calls onDelete after user confirmation
-@function HeaderAvatar({ avatar, name }) - Header avatar
-@function ContactAvatar({ contact, onlineUsers }) - Contact avatar with status dot
-
-_Scroll-to-bottom button:_ Fixed position chevron-down button appears when not at bottom,
-  scrolls to latest messages on click.
-_File upload preview:_ Displays a preview (thumbnail for images, icon for others) of the selected file above the message input, with a close button.
-_Image lightbox:_ Full-screen overlay to view clicked images, includes download and close buttons.
-```
-
-### `components/chat/chat-utils.js`
-
-```js
-@constants SECOND, MINUTE, HOUR, DAY, GROUP_GAP (5 minutes)
-
-@function isSameDay
-@param {Date} a, b
-@returns {boolean} true if same year, month, day
-
-@function getDayDiff
-@param {Date} a, b
-@returns {number} Days between a and b
-
-@function formatTime
-@param {Date} date
-@returns {string} "HH:MM" in French locale
-
-@function formatDateLabel
-@param {Date} date
-@returns {string} "Aujourd'hui" / "Hier" / weekday / "day month" / "day month year"
-
-@function formatMessageTime
-@param {Date} date
-@returns {string} Smart time label based on distance from now
-
-@function formatTooltipDate
-@param {Date} date
-@returns {string} Full date-time string
-
-@function isFileMessage
-@param {string} content
-@returns {boolean} true if content matches [FILE:...] pattern
-
-@function parseFileContent
-@param {string} content
-@returns {Object|null} { filename, url, isImage } or null
-```
-
-### `components/chat/useLongPress.js`
-
-```js
-@function useLongPress
-@param {Function} onLongPress - Callback function to execute on long press.
-@param {Function} onTap - Optional callback function to execute on a regular tap/click (if no long press occurs).
-@param {number} delay - Duration in milliseconds to trigger a long press (default: 500ms).
-@description A custom React hook to detect long press and tap gestures on touch devices, and regular clicks on desktop.
-  Useful for implementing context menus or special actions on long holds.
-@returns {Object} An object containing event handlers (`onClick`, `onTouchStart`, `onTouchEnd`, `onTouchMove`)
-  to be spread onto a DOM element.
-```
-
-### `components/archives/ArchiveGrid.jsx`
-
-```jsx
-@function ArchiveGrid
-@description Grid of UEs grouped by year. Clicking opens side panel with support links.
-  Teachers can add/delete support links.
-@state selectedUe, supports, showSupports, adding, newLabel, newUrl
-@effect Fetch supports when selectedUe changes
-@async @function handleAddSupport() - POST /supports
-@async @function handleDeleteSupport() - DELETE /supports/:id
-```
-
-### `components/td/StudentUpload.jsx`
-
-```jsx
-@function StudentUpload
-@description Homework submission form with pre-filled user info,
-  level/group/UE/type selection, file drag-and-drop or link input.
-@state form with student info + file/link
-@async @function handleSubmit(e) - POST /submissions
-```
-
-### `components/td/TeacherInbox.jsx`
-
-```jsx
-@function TeacherInbox
-@description Filterable paginated table of student submissions with server-side search,
-  type/UE filters, download links. 50 per page, pagination controls.
-@state submissions, search, typeFilter, ueFilter, loading, page, total
-@effect Fetch submissions - GET /submissions?search=&type=&ue=&limit=50&offset=N
-@effect Reset page to 0 on filter/search change
-```
-
-### `components/ui/Avatar.jsx`
-
-```jsx
-@function Avatar
-@param {string} src - Image URL
-@param {string} name - Fallback initials text
-@param {string} size - "sm" | "md" | "lg" (default)
-@description Circular avatar with image or letter fallback.
-@state error - tracks image load failure
-@renders img or initial letter circle
-```
-
-### `components/ui/Badge.jsx`
-
-```jsx
-@function Badge
-@param {string} type - "cours" | "td" | "examen"
-@description Colored badge matching post type. Green for cours, blue for td, red for examen.
-@renders Styled badge with label
-```
-
-### `components/ui/OnboardingModal.jsx`
-
-```jsx
-@function OnboardingModal
-@description 5-step onboarding wizard with animated transitions, floating particles,
-  gold sparkle effects, progressive disclosure of app features.
-@state step - current onboarding step (1-5)
-@state dismissed - true after completion
-@function next / prev - Navigation
-@function handleDismiss - Calls dismissOnboarding from AuthContext, sets dismissed
-@renders Full-screen modal overlay with step content
-```
+### `Sidebar.jsx`
+- Role-based nav: alumni→restricted (Accueil, Chat, Suggestions, Profile), others→full
+- Conditional: Suggestions (student/teacher/alumni), BDE (bde), Admin (admin)
+- Mobile hamburger drawer, active link highlighting
+- Fetches pings + unread counts for badges
+
+### `Navbar.jsx`
+- Alumni badge (if alumni), page title pill, profile button
+
+### `StudentHome.jsx`
+- Course posts filtered by level (Tous/L1/L2/L3), card layout with type badge
+
+### `TeacherHome.jsx`
+- Post creation (drag-drop file upload, link input, UE from teacher's assigned UEs, type toggle)
+- List existing posts with delete
+
+### `AlumniHome.jsx`
+- Hero section with graduation cap, promo info, quick links (Chat, BDE Suggestions, Profile)
+
+### `AdminHome.jsx`
+- Announcements CRUD + reactions, `POST /announcements`, `DELETE /announcements/:id`, reaction endpoints
+
+### `ChatLayout.jsx`
+- Manages contacts, messages, Socket.IO, push subscriptions
+- Infinite scroll with cursor pagination (`before` param)
+- Batch seen marking (`PATCH /messages/seen`)
+- Favorites, unread counts, global read tracking
+- `sendMessage`, `deleteMessage`, `loadOlderMessages`
+
+### `ContactList.jsx`
+- Contact sidebar with search, new conversation modal, online indicators, role badges, unread badges
+
+### `MessagePanel.jsx`
+- Grouped messages with date separators, file sharing (upload preview), image lightbox, emoji picker
+- Infinite scroll, scroll-to-bottom button, delete confirmation
+- `POST /messages/upload`, file download via fetch blob
+
+### `chat-utils.js`
+- `isSameDay`, `getDayDiff`, `formatTime`, `formatDateLabel`, `formatMessageTime`, `formatTooltipDate`
+- `isFileMessage(content)`, `parseFileContent(content)` → `{ filename, url, isImage }`
+- `shouldGroup(a, b)` — within 5 min gap
+
+### `useLongPress.js`
+- Custom hook for long-press gesture (touch + desktop), configurable delay, tap fallback
+
+### `ArchiveGrid.jsx`
+- UE grid grouped by year, side panel with support links (teachers can add/delete)
+- `GET /supports/:ue`, `POST /supports`, `DELETE /supports/:id`
+
+### `ArchiveCard.jsx`
+- Single archive card with type badge, date, download link
+
+### `StudentUpload.jsx`
+- Homework form: pre-filled user info, level/group/UE/type selectors, file drag-drop or link
+
+### `TeacherInbox.jsx`
+- Paginated submission table (50/page), server-side search, type/UE filter, download links
+
+### UI Components
+- `Avatar.jsx` — Image with initial-letter fallback, sm/md/lg sizes
+- `Badge.jsx` — Type badge (cours/td/examen) with color coding
+- `OnboardingModal.jsx` — 5-step wizard with floating particles, spring transitions, gold sparkle
+- `UserAvatar.jsx` — Avatar with role badge overlay
+- `GlassDomeLogo.jsx` — Animated glass dome SVG logo
+- `JarvisScanAnimation.jsx` — Sci-fi scanning animation
+- `WaveAnimation.jsx` — Animated wave SVG
 
 ---
 
 ## Styling (`index.css`)
 
-```css
-@description Custom styles extending Tailwind. Key classes:
-
-@class .sidebar-link / .sidebar-link-active - Navigation link styles
-@class .card - White rounded card with padding
-@class .badge-td / .badge-examen / .badge-cours - Type badge variants
-@class .input-field - Form input with navy border and focus ring
-@class .btn-primary - Navy button with hover darkening
-@class .btn-gold - Gold button with hover darkening
-@class .btn-danger - Red button
-@class .btn-success - Green button
-@class .glass / .glass-heavy / .glass-border / .glass-card - Glassmorphism effects
-@class .status-dot / .status-online / .status-offline - Online indicators
-@class .animate-message-in / .animate-fade-in / .animate-slide-up - Animation utilities
-@class .touch-target - Min 44px touch targets for mobile
-```
+### Key Classes
+- `.sidebar-link / .sidebar-link-active` — Navigation link styles
+- `.card` — White rounded card with padding
+- `.badge-td / .badge-examen / .badge-cours` — Type badge variants
+- `.input-field` — Navy border + focus ring
+- `.btn-primary / .btn-gold / .btn-danger / .btn-success` — Button variants
+- `.glass / .glass-heavy / .glass-border / .glass-card` — Glassmorphism effects
+- `.status-dot / .status-online / .status-offline` — Online indicators
+- `.animate-message-in / .animate-fade-in / .animate-slide-up` — Animations
+- `.touch-target` — Min 44px touch targets for mobile
 
 ### Tailwind Custom Theme (`tailwind.config.js`)
-
 ```js
 colors: {
   navy: { DEFAULT: "#001948", dark: "#0A1A33" },
