@@ -47,7 +47,7 @@ export default function STDnewsPage() {
         api.get("/announcements", { params: levelFilter !== "Tous" ? { level: levelFilter } : {} }),
         api.get("/alumni-spotlight"),
       ]);
-      setAnnouncements(annRes.data || []);
+      setAnnouncements(annRes.data?.announcements || []);
       setAlumniSpotlight(tipsRes.data || []);
     } catch (err) {
       console.error(err);

@@ -408,7 +408,7 @@ export default function BDEPage() {
   useEffect(() => {
     api
       .get("/suggestions")
-      .then(({ data }) => setSuggestions(data))
+      .then(({ data }) => setSuggestions(data.suggestions || []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
