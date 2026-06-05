@@ -13,8 +13,6 @@ router.post("/", auth, async (req, res) => {
   const { titre, contenu, anonyme } = req.body;
   if (!titre?.trim() || !contenu?.trim())
     return res.status(400).json({ error: "Titre et contenu requis." });
-  if (containsProfanity(titre) || containsProfanity(contenu))
-    return res.status(400).json({ error: "Contenu inapproprié détecté. Veuillez respecter les règles de la communauté." });
 
   try {
     const { rows } = await db.query(
