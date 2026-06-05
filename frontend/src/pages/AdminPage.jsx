@@ -177,7 +177,7 @@ export default function AdminPage() {
     api
       .get("/admin/users", { params })
       .then(({ data }) => {
-        setUsers(data.users || data);
+        setUsers(data.users || []);
         setUserTotal(data.total || 0);
       })
       .catch(console.error)
@@ -208,7 +208,7 @@ export default function AdminPage() {
     api
       .get("/admin/invitations", { params: { limit: PAGE_SIZE, offset: invPage * PAGE_SIZE } })
       .then(({ data }) => {
-        setInvitations(data.invitations || data);
+        setInvitations(data.invitations || []);
         setInvTotal(data.total || 0);
       })
       .catch(console.error);
@@ -223,7 +223,7 @@ export default function AdminPage() {
     setAnnLoading(true);
     try {
       const { data } = await api.get("/announcements");
-      setAnnouncements(data);
+      setAnnouncements(data.announcements || []);
     } catch (err) {
       console.error(err);
     } finally {
