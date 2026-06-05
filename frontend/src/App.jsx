@@ -64,7 +64,7 @@ export default function App() {
         <meta name="description" content="HEI STDhub – la plateforme étudiante de l'HEI pour partager les cours, TDs, archives et suivre l'actualité du campus. Connexion entre étudiants et enseignants." />
         <meta name="keywords" content="HEI STDhub, HEI stdhub, hei-stdhub, HEI students, HEI étudiants, HEI cours, HEI TD, HEI archives, HEI campus" />
         <meta name="robots" content="index, follow" />
-        <meta name="google-site-verification" content="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" />
+        <meta name="google-site-verification" content="0aPPiamPtnQc4mFJun2ATrN1P8--rtRj2aaan-nNM3Q" />
         <link rel="canonical" href="https://hei-stdhub.vercel.app" />
       </Helmet>
       <Routes>

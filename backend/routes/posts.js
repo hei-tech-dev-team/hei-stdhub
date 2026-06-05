@@ -134,7 +134,7 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
       tag: `post-${rows[0].id}`,
       url: "/posts",
       type: "new_post",
-    }).catch(() => {});
+    }).catch((err) => console.error("sendPushToAll error (posts):", err?.message));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });

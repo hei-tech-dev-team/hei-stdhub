@@ -133,7 +133,7 @@ router.post("/", auth, alumniOnly, (req, res) => {
         tag: `alumni-tip-${result.rows[0].id}`,
         url: "/alumni-spotlight",
         type: "alumni_tip",
-      }).catch(() => {});
+      }).catch((err) => console.error("sendPushToAll error (alumniSpotlight):", err?.message));
     } catch (err) {
       console.error("Error creating alumni tip:", err);
       res.status(500).json({ error: "Erreur serveur." });

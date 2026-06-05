@@ -237,7 +237,7 @@ router.post("/", auth, async (req, res) => {
         tag: `private-${req.user.id}`,
         url: "/chat",
         type: "private_message",
-      }).catch(() => {});
+      }).catch((err) => console.error("sendPushToUser error (messages):", err?.message));
     }
 
     res.status(201).json(fullMsg);
