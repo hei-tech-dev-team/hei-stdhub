@@ -35,7 +35,7 @@ const PROFANITY_WORDS = new Set([
   "bic", "bicot", "boug", "singe", "gorille", "caca",
 
   // Malagasy
-  "fory", "bibity", "bobota", "kimaso", "kdj", "kindaso", "kindinalika",
+  "fory", "bibity", "bobota", "kimaso", "kdj", "kndj", "kindaso", "kindinalika",
   "lln", "lelena", "lelikeee", "pory", "pr", "rp", "por", "pox", "px",
   "masosopory", "msspr", "masspr", "lindinakika", "tay amin'amany",
   "manemany", "mnmn", "nemany", "ninanem", "ninaneman", "lataka", "ltk",
