@@ -78,7 +78,7 @@ app.use((req, res, next) => {
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 3,
+  max: process.env.NODE_ENV === "test" ? 10000 : 5,
   message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -86,7 +86,7 @@ const loginLimiter = rateLimit({
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 50,
+  max: process.env.NODE_ENV === "test" ? 10000 : 500,
   message: { error: "Trop de requêtes. Réessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -94,7 +94,7 @@ const generalLimiter = rateLimit({
 
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 15,
+  max: process.env.NODE_ENV === "test" ? 10000 : 100,
   message: { error: "Trop de requêtes d'écriture. Réessayez dans 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
