@@ -24,6 +24,7 @@ export default function ForgotPasswordPage() {
       const [error, setError] = useState("");
       const [message, setMessage] = useState("");
       const [codeSuccess, setCodeSuccess] = useState(false);
+      const [resetToken, setResetToken] = useState("");
       const inputRefs = useRef([]);
 
       const handleSendCode = async (e) => {
@@ -141,14 +142,8 @@ export default function ForgotPasswordPage() {
                               code,
                         },
                   );
+                  setResetToken(res.data.token);
                   setCodeSuccess(true);
-                  setTimeout(
-                        () =>
-                              navigate(
-                                    `/reset-password?token=${res.data.token}`,
-                              ),
-                        3000,
-                  );
             } catch (err) {
                   setError(err.response?.data?.error || "Code invalide.");
                   inputRefs.current[0]?.focus();
@@ -463,7 +458,7 @@ export default function ForgotPasswordPage() {
                                                       </div>
 
                                                       {codeSuccess ? (
-                                                            <div className="flex flex-col items-center gap-2 animate-success-pop">
+                                                            <div className="flex flex-col items-center gap-4 animate-success-pop">
                                                                   <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
                                                                         <CheckCircle
                                                                               size={
@@ -473,14 +468,21 @@ export default function ForgotPasswordPage() {
                                                                         Code
                                                                         valide
                                                                   </div>
-                                                                  <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
-                                                                        <div
-                                                                              className="h-full bg-green-500 rounded-full animate-[fill-bar_2s_ease-out_0.8s_forwards]"
-                                                                              style={{
-                                                                                    width: "0%",
-                                                                              }}
-                                                                        />
-                                                                  </div>
+                                                                  <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                              navigate(
+                                                                                    `/reset-password?token=${resetToken}`,
+                                                                              )
+                                                                        }
+                                                                        className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200"
+                                                                        style={{
+                                                                              background:
+                                                                                    "linear-gradient(135deg, #0A1A33, #001948)",
+                                                                        }}
+                                                                  >
+                                                                        Continuer
+                                                                  </button>
                                                             </div>
                                                       ) : (
                                                             <button

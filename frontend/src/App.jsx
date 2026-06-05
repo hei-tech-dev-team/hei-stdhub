@@ -42,14 +42,32 @@ function ProtectedRoute({ children }) {
 
 function AdminRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
+          <p className="text-navy font-semibold text-sm">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
   if (!user || user.role !== "admin") return <Navigate to="/" replace />;
   return children;
 }
 
 function BDERoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
+          <p className="text-navy font-semibold text-sm">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
   if (!user || user.role !== "bde") return <Navigate to="/" replace />;
   return children;
 }
