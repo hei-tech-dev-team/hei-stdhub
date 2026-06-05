@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
                   setDone(true);
                   window.setTimeout(
                         () => navigate("/login", { replace: true }),
-                        2500,
+                        5000,
                   );
             } catch (err) {
                   setError(
@@ -208,9 +208,24 @@ export default function ResetPasswordPage() {
                                                       <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
                                                             Vous allez etre
                                                             redirige vers la
-                                                            connexion.
+                                                            connexion dans quelques
+                                                            instants.
                                                       </p>
                                                 </div>
+                                                <button
+                                                      onClick={() =>
+                                                            navigate("/login", {
+                                                                  replace: true,
+                                                            })
+                                                      }
+                                                      className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200"
+                                                      style={{
+                                                            background:
+                                                                  "linear-gradient(135deg, #0A1A33, #001948)",
+                                                      }}
+                                                >
+                                                      Se connecter
+                                                </button>
                                           </div>
                                     ) : !validToken ? (
                                           <div className="flex flex-col items-center text-center gap-5 py-6">

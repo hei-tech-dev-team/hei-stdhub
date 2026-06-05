@@ -149,7 +149,7 @@ router.post("/confirm", auth, async (req, res) => {
       [req.user.id, chatMsg],
     );
 
-    await db.query("DELETE FROM suggestions");
+    await db.query("DELETE FROM suggestions WHERE statut != 'recu'");
 
     res.json({
       suggestions,
