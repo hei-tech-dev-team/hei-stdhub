@@ -124,6 +124,10 @@ export default function ProfilePage() {
 
   const handlePseudo = async (e) => {
     e.preventDefault();
+    if (!pseudo.trim()) {
+      setErrorPseudo("Le pseudo ne peut pas être vide.");
+      return;
+    }
     setErrorPseudo("");
     setLoadingPseudo(true);
     try {
@@ -141,6 +145,14 @@ export default function ProfilePage() {
   const handlePassword = async (e) => {
     e.preventDefault();
     setErrorPwd("");
+    if (!currentPwd) {
+      setErrorPwd("Veuillez entrer votre mot de passe actuel.");
+      return;
+    }
+    if (newPwd.length < 6) {
+      setErrorPwd("Le nouveau mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
     if (newPwd !== confirmPwd) {
       setErrorPwd("Les mots de passe ne correspondent pas.");
       return;

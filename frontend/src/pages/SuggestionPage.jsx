@@ -214,7 +214,7 @@ export default function SuggestionPage() {
                       setForm({ titre: "", contenu: "", anonyme: false });
                       setError("");
                     }}
-                    className="btn-danger"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
                   >
                     Effacer
                   </button>
