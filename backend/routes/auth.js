@@ -288,7 +288,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
         body: `Votre code: ${code}`,
         tag: `reset-${user.id}`,
         type: "reset-code",
-      }).catch(() => {});
+      }).catch((err) => console.error("sendPushToUser error (auth):", err?.message));
     } catch (_) {}
 
     res.json({ message: "Code de verification envoye." });

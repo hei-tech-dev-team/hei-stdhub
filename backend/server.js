@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const compression = require("compression");
 const path = require("path");
+const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
 
@@ -18,13 +19,38 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-// VAPID keys — auto-generated if missing
-if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+// VAPID keys — auto-generated if missing, persisted to disk across restarts
+const VAPID_KEYS_FILE = process.env.VAPID_KEYS_FILE || path.join(__dirname, ".vapid-keys.json");
+
+function loadOrGenerateVapidKeys() {
+  // 1. Environment variables (production best practice)
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    console.info("VAPID keys loaded from environment variables.");
+    return;
+  }
+  // 2. Persistent file from a previous run
+  try {
+    const saved = JSON.parse(fs.readFileSync(VAPID_KEYS_FILE, "utf8"));
+    if (saved.publicKey && saved.privateKey) {
+      process.env.VAPID_PUBLIC_KEY = saved.publicKey;
+      process.env.VAPID_PRIVATE_KEY = saved.privateKey;
+      console.info("VAPID keys loaded from persistent file.");
+      return;
+    }
+  } catch {}
+  // 3. Generate and persist so they survive restarts
   const vapidKeys = webpush.generateVAPIDKeys();
-  process.env.VAPID_PUBLIC_KEY ||= vapidKeys.publicKey;
-  process.env.VAPID_PRIVATE_KEY ||= vapidKeys.privateKey;
-  console.info("VAPID keys generated for this runtime. Configure persistent keys in production env.");
+  process.env.VAPID_PUBLIC_KEY = vapidKeys.publicKey;
+  process.env.VAPID_PRIVATE_KEY = vapidKeys.privateKey;
+  try {
+    fs.writeFileSync(VAPID_KEYS_FILE, JSON.stringify(vapidKeys, null, 2));
+    console.info(`VAPID keys generated and persisted to ${VAPID_KEYS_FILE}.`);
+  } catch (err) {
+    console.warn("VAPID keys generated for this runtime but could not persist:", err.message);
+  }
 }
+
+loadOrGenerateVapidKeys();
 
 webpush.setVapidDetails(
   "mailto:hei@stdhub.app",

@@ -91,7 +91,7 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
       tag: `submission-${rows[0].id}`,
       url: "/submissions",
       type: "new_submission",
-    }).catch(() => {});
+    }).catch((err) => console.error("sendPushToAll error (submissions):", err?.message));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
