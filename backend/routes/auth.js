@@ -60,7 +60,7 @@ const router = express.Router();
 
 const makeToken = (user) =>
   jwt.sign(
-    { id: user.id, ref: user.ref, role: user.role, ues: user.ues || [], level: user.level || null },
+    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [], level: user.level || null },
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
@@ -174,8 +174,6 @@ router.post("/register", async (req, res) => {
         [newUser.id, inviteCode.toUpperCase()],
       );
     }
-
-    await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [newUser.id]);
 
     try {
       const io = req.app.get("io");

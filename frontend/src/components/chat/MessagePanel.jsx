@@ -520,6 +520,7 @@ export default function MessagePanel({
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingMessage, setDeletingMessage] = useState(false);
   const [profanityModal, setProfanityModal] = useState(null);
+  const [error, setError] = useState("");
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const inputRef = useRef(null);
@@ -639,6 +640,7 @@ export default function MessagePanel({
   };
 
   const handleSend = async () => {
+    setError("");
     const trimmed = text.trim();
     if (!trimmed && !selectedFile) return;
 
@@ -668,7 +670,7 @@ export default function MessagePanel({
       setText("");
       setShowEmojiPicker(false);
     } catch (_err) {
-      alert("Erreur lors de l'envoi du message.");
+      setError("Erreur lors de l'envoi du message.");
     } finally {
       setSending(false);
       onAtBottomChange(true);
@@ -687,10 +689,11 @@ export default function MessagePanel({
   };
 
   const handleFile = async (e) => {
+    setError("");
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert("Fichier trop volumineux (max 10 Mo).");
+      setError("Fichier trop volumineux (max 10 Mo).");
       return;
     }
     setSelectedFile(file);
@@ -893,6 +896,15 @@ export default function MessagePanel({
       {/* Input */}
       <div className="relative px-1 sm:px-6 py-3 sm:py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
 
+        {error && (
+          <div
+            className="absolute bottom-[calc(100%+0.5rem)] right-4 sm:right-10 px-4 py-2 bg-red-500/20 border border-red-400/30 rounded-xl backdrop-blur-md flex items-center gap-2 animate-fade-in shadow-xl z-20 cursor-pointer"
+            onClick={() => setError("")}
+          >
+            <FontAwesomeIcon icon={faTriangleExclamation} className="text-xs text-red-300 shrink-0" />
+            <span className="text-xs text-red-300">{error}</span>
+          </div>
+        )}
         {selectedFile && (
           <div className="absolute bottom-[calc(100%+0.5rem)] left-4 sm:left-10 p-3 bg-navy-dark/95 border border-white/20 rounded-xl backdrop-blur-md flex items-center gap-4 animate-fade-in shadow-xl z-20">
             <div className="relative">
@@ -985,6 +997,7 @@ export default function MessagePanel({
             value={text}
             onChange={(e) => {
               setText(e.target.value);
+              if (error) setError("");
               if (onTypingChange) onTypingChange(e.target.value.length > 0);
             }}
             onKeyDown={handleKey}

@@ -152,7 +152,7 @@ export default function LoginPage() {
                                       ].map((r) => (
                                         <div
                                           key={r.key}
-                                          onClick={() => { setLoginRole(r.key); setError(""); setForm({ ref: "", password: "" }); }}
+                                          onClick={() => { setLoginRole(r.key); setError(""); }}
                                           className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
                                             loginRole === r.key
                                               ? r.key === "alumni"

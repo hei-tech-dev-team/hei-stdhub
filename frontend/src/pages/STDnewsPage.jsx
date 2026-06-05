@@ -189,7 +189,7 @@ export default function STDnewsPage() {
               ))}
               <button
                 type="button"
-                onClick={() => setShowAlumniOnly((v) => !v)}
+                onClick={() => setShowAlumniOnly((v) => { if (!v) setLevelFilter("Tous"); return !v; })}
                 className={
                   "flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition " +
                   (showAlumniOnly
