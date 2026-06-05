@@ -36,7 +36,7 @@ const PROFANITY_WORDS = new Set([
 
   // Malagasy
   "fory", "bibity", "bobota", "kimaso", "kdj", "kndj", "kindaso", "kindinalika",
-  "lln", "lelena", "lelikeee", "pory", "pr", "rp", "por", "pox", "px",
+  "lln", "lelena", "lelikeee", "pory",
   "masosopory", "msspr", "masspr", "lindinakika", "tay amin'amany",
   "manemany", "mnmn", "nemany", "ninanem", "ninaneman", "lataka", "ltk",
   "tingy", "chatte", "lely",
