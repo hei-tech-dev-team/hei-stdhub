@@ -6,6 +6,9 @@ node_modules/
 .env.local
 .env.production
 
+# VAPID keys persisted on first run (fallback when env vars are not set)
+.vapid-keys.json
+
 # Fichiers uploadés par les utilisateurs
 uploads/
 

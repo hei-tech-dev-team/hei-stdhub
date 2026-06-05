@@ -167,7 +167,7 @@ router.post("/", auth, adminOnly, (req, res) => {
         tag: `announcement-${result.rows[0].id}`,
         url: "/announcements",
         type: "announcement",
-      }).catch(() => {});
+      }).catch((err) => console.error("sendPushToAll error (announcements):", err?.message));
     } catch (err) {
       console.error("Error creating announcement:", err);
       res.status(500).json({ error: "Erreur serveur." });
