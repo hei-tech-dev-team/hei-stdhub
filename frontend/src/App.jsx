@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
@@ -58,6 +59,13 @@ export default function App() {
 
   return (
     <>
+      <Helmet>
+        <title>HEI STDhub</title>
+        <meta name="description" content="HEI STDhub – la plateforme étudiante de l'HEI pour partager les cours, TDs, archives et suivre l'actualité du campus. Connexion entre étudiants et enseignants." />
+        <meta name="keywords" content="HEI STDhub, HEI stdhub, hei-stdhub, HEI students, HEI étudiants, HEI cours, HEI TD, HEI archives, HEI campus" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://hei-stdhub.vercel.app" />
+      </Helmet>
       <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
