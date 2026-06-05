@@ -51,7 +51,7 @@ const PROFANITY_WORDS = new Set([
   "pédé", "pede", "pédale", "pedale", "tapette", "gouine", "tarlouze",
   "folle", "fiotte", "travelo", "pd",
   "bougnoule", "bougoule", "renoi", "bougnoul", "raton", "bic", "bicot", "boug", "singe", "gorille",
-  "fory", "bibity", "bobota", "kimaso", "kdj", "kindaso", "kindinalika",
+  "fory", "bibity", "bobota", "kimaso", "kdj", "kndj", "kindaso", "kindinalika",
   "lln", "lelena", "lelikeee", "pory", "pr", "rp", "por", "pox", "px",
   "masosopory", "msspr", "masspr", "lindinakika", "tay amin'amany",
   "manemany", "mnmn", "nemany", "ninanem", "ninaneman", "lataka", "ltk",
@@ -1059,7 +1059,7 @@ export default function MessagePanel({
                   className="text-amber-500 text-sm mt-0.5 shrink-0"
                 />
                 <p className="text-amber-700 text-xs leading-relaxed">
-                  Les propos injurieux, discriminatoires ou offensants sont interdits dans le chat global. Les messages prives ne sont pas concernes.
+                   Les propos injurieux, discriminatoires ou offensants sont interdits dans le chat global. Les messages prives ne sont pas concernes.
                 </p>
               </div>
 
