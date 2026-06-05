@@ -22,20 +22,7 @@ export default function SuggestionPage() {
 
   const validateContent = (content) => {
     if (!content) return "Le contenu est requis.";
-    if (content.length < 20)
-      return `La suggestion doit faire au moins 20 caractères. (${content.length}/20)`;
-
-    const words = content.toLowerCase().split(/\s+/).filter(Boolean);
-    const hasUnusual = words.some(w => !/^[a-zàâéèêëîïôûùüÿ0-9.,!?;:'"()]+$/.test(w));
-    if (hasUnusual) return "Le contenu contient des caractères inhabituels ou des mots mal formés.";
-    const hasRepetitions = words.some((w, i) => w.length > 3 && words.slice(i + 1, i + 3).includes(w));
-    if (hasRepetitions) return "Le contenu contient trop de répétitions.";
-    const hasCharabia = /[bcdfghjklmnpqrstvwxz]{6,}/i.test(content) || words.some(w => w.length > 20);
-    if (hasCharabia) return "Le contenu semble être incohérent ou mal formé.";
-    const common = ["le", "la", "un", "une", "de", "et", "que", "est", "pour", "dans", "des", "les", "je", "sur", "avec", "en", "au", "aux"];
-    if (!words.some(w => common.includes(w))) return "La suggestion doit être écrite en français lisible (mots courants manquants).";
-    
-    return null; // Pas d'erreur
+    return null;
   };
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
