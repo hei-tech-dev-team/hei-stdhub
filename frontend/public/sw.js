@@ -1,12 +1,7 @@
-const CACHE = "hei-stdhub-v1";
+const CACHE = "hei-stdhub-v2";
 
-self.addEventListener("install", (e) => {
+self.addEventListener("install", () => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then((cache) =>
-      cache.addAll(["/", "/logo.png", "/manifest.json"]),
-    ),
-  );
 });
 
 self.addEventListener("activate", (e) => {
@@ -21,6 +16,15 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request).catch(() =>
+        caches.match("/").then((r) => r || new Response("", { status: 503 })),
+      ),
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
@@ -30,7 +34,7 @@ self.addEventListener("fetch", (e) => {
           caches.open(CACHE).then((cache) => cache.put(e.request, clone));
         }
         return response;
-      });
+      }).catch(() => new Response("", { status: 503 }));
     }),
   );
 });
