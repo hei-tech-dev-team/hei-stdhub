@@ -1,4 +1,4 @@
-# HEI STDhub v2 — v1.6.0
+# HEI STDhub — v1.6.0
 
 Full-stack web platform for HEI students, alumni, teachers, and admin. Access course materials (cours, TD, examens), submit homework, chat in real-time with role badges, suggest improvements to the BDE, browse alumni tips & school announcements, ping other users, and manage the school community — all with a navy/gold glassmorphism UI.
 
