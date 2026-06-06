@@ -3,9 +3,18 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./context/AuthContext";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
+
+// Global error handler — prevents white screen on unhandled runtime errors
+window.addEventListener("error", (e) => {
+  console.error("Global error caught:", e.error || e.message);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("Unhandled promise rejection:", e.reason);
+});
 
 // Prevent double-tap zoom only (accessibility: preserve pinch-zoom and Ctrl+scroll)
 let lastTouchEnd = 0;
@@ -83,10 +92,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <HelmetProvider>
-        <AuthProvider>
-          <App />
-          <Analytics />
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <App />
+            <Analytics />
+          </AuthProvider>
+        </ErrorBoundary>
       </HelmetProvider>
     </BrowserRouter>
   </React.StrictMode>,
