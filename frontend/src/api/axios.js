@@ -7,6 +7,7 @@ const getApiBaseUrl = () => {
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
+  timeout: 15000,
 });
 
 api.interceptors.request.use((config) => {
@@ -27,13 +28,16 @@ api.interceptors.response.use(
       url.includes("/auth/register") ||
       url.includes("/auth/verify-invite");
 
-    // Ne rediriger que si c'est un vrai 401 et pas un problème réseau
     const is401 = err.response?.status === 401;
     const isNetworkError = !err.response;
 
     if (is401 && !isAuthRoute && !isNetworkError) {
       localStorage.removeItem("hei_token");
       window.location.href = "/login";
+    }
+
+    if (err.code === "ECONNABORTED" && !err.response) {
+      err.userMessage = "Le serveur démarre, veuillez patienter quelques instants...";
     }
 
     return Promise.reject(err);
