@@ -19,7 +19,8 @@ export default defineConfig({
         manualChunks: {
           vendor: ["react", "react-dom", "react-router-dom"],
           socket: ["socket.io-client"],
-          ui: ["lucide-react", "@fortawesome/fontawesome-svg-core", "@fortawesome/free-solid-svg-icons"],
+          lucide: ["lucide-react"],
+          fa: ["@fortawesome/fontawesome-svg-core", "@fortawesome/free-solid-svg-icons"],
           pdf: ["jspdf"],
           emoji: ["emoji-picker-react"],
         },
