@@ -89,13 +89,21 @@ export default function AdminPage() {
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
-  // Passage de classe (Septembre)
+  const isOctober = now.getMonth() === 9;
+
+  // Passage de classe
   const [failedRefs, setFailedRefs] = useState([]);
   const [failedInput, setFailedInput] = useState("");
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [upgradeDone, setUpgradeDone] = useState(false);
 
-  // Nouveaux L1 (Novembre)
+  // Passage alumni
+  const [alumniFailedRefs, setAlumniFailedRefs] = useState([]);
+  const [alumniFailedInput, setAlumniFailedInput] = useState("");
+  const [alumniUpgradeLoading, setAlumniUpgradeLoading] = useState(false);
+  const [alumniUpgradeDone, setAlumniUpgradeDone] = useState(false);
+
+  // Nouveaux étudiants
   const [newL1, setNewL1] = useState({
     nom: "", prenom: "", email: "", groupChar: "",
   });
@@ -116,8 +124,6 @@ export default function AdminPage() {
   const now = new Date();
   const month = now.getMonth();
   const currentYear = now.getFullYear().toString().slice(-2);
-  const isSeptember = month === 8;
-  const isNovember = month === 10;
 
   const mainRef = useRef();
   // Afficher bouton "remonter en haut"
@@ -340,6 +346,20 @@ export default function AdminPage() {
     }
   };
 
+  const handleAlumniUpgrade = async () => {
+    setAlumniUpgradeLoading(true);
+    try {
+      await api.post("/admin/alumni-upgrade", { failed_refs: alumniFailedRefs });
+      setAlumniUpgradeDone(true);
+      setAlumniFailedRefs([]);
+      loadUsers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAlumniUpgradeLoading(false);
+    }
+  };
+
   // Nouveaux L1
   const getGroupFromChar = (char) => {
     const c = char.toUpperCase();
@@ -434,10 +454,9 @@ export default function AdminPage() {
                 { key: "users", label: "Utilisateurs" },
                 { key: "invitations", label: "Invitations" },
                 { key: "annonces", label: "Annonces" },
-                ...(isSeptember
-                  ? [{ key: "upgrade", label: "Passage de classe" }]
-                  : []),
-                ...(isNovember ? [{ key: "new-l1", label: "Nouveaux L1" }] : []),
+                { key: "upgrade", label: "Passage de classe" },
+                { key: "alumni-upgrade", label: "Section Alumni" },
+                { key: "new-l1", label: "Nouveaux étudiants" },
               ].map((t) => (
                 <button
                   key={t.key}
@@ -778,16 +797,22 @@ export default function AdminPage() {
               )}
             </>
           )}
-          {/* Tab: Passage de classe (Septembre) */}
+          {/* Tab: Passage de classe */}
           {tab === "upgrade" && (
-            <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className={`bg-white rounded-2xl shadow-card p-6 ${!isOctober ? "opacity-70" : ""}`}>
+              {!isOctober && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faGraduationCap} />
+                  Disponible uniquement en octobre.
+                </div>
+              )}
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
                   <FontAwesomeIcon icon={faGraduationCap} className="text-lg" />
                 </div>
                 <div>
                   <h2 className="font-bold text-navy text-base">
-                    Passage de classe — Septembre {now.getFullYear()}
+                    Passage de classe — {now.getFullYear()}
                   </h2>
                   <p className="text-xs text-gray-400">
                     Saisissez les étudiants qui{" "}
@@ -817,11 +842,13 @@ export default function AdminPage() {
                       handleAddFailedRef();
                     }
                   }}
+                  disabled={!isOctober}
                 />
                 <button
                   type="button"
                   onClick={handleAddFailedRef}
                   className="btn-primary"
+                  disabled={!isOctober}
                 >
                   <FontAwesomeIcon icon={faBan} className="text-sm" />
                 </button>
@@ -843,6 +870,7 @@ export default function AdminPage() {
                           type="button"
                           onClick={() => handleRemoveFailedRef(ref)}
                           className="hover:text-red-800"
+                          disabled={!isOctober}
                         >
                           <FontAwesomeIcon icon={faTimes} size="xs" />
                         </button>
@@ -865,8 +893,8 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={handleUpgrade}
-                disabled={upgradeLoading}
-                className="btn-primary flex items-center gap-2 disabled:opacity-60"
+                disabled={upgradeLoading || !isOctober}
+                className="btn-primary flex items-center gap-2 disabled:opacity-40"
               >
                 {upgradeLoading ? (
                   <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
@@ -878,7 +906,115 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Tab: Nouveaux L1 (Novembre) */}
+          {/* Tab: Section Alumni */}
+          {tab === "alumni-upgrade" && (
+            <div className={`bg-white rounded-2xl shadow-card p-6 ${!isOctober ? "opacity-70" : ""}`}>
+              {!isOctober && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faGraduationCap} />
+                  Disponible uniquement en octobre.
+                </div>
+              )}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faGraduationCap} className="text-lg" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-navy text-base">
+                    Passage en section Alumni
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Promouvoir les étudiants <strong>L3</strong> en{" "}
+                    <strong>AlumniHEI</strong>. Saisissez ceux qui{" "}
+                    <strong className="text-red-500">ne passent pas</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {alumniUpgradeDone && (
+                <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCheck} />
+                  Passage en Alumni effectué avec succès !
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  className="input-field flex-1 font-mono uppercase"
+                  placeholder="Référence STD (ex: STD23001)"
+                  value={alumniFailedInput}
+                  onChange={(e) => setAlumniFailedInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const ref = alumniFailedInput.trim().toUpperCase();
+                      if (ref && !alumniFailedRefs.includes(ref)) {
+                        setAlumniFailedRefs((prev) => [...prev, ref]);
+                        setAlumniFailedInput("");
+                      }
+                    }
+                  }}
+                  disabled={!isOctober}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ref = alumniFailedInput.trim().toUpperCase();
+                    if (ref && !alumniFailedRefs.includes(ref)) {
+                      setAlumniFailedRefs((prev) => [...prev, ref]);
+                      setAlumniFailedInput("");
+                    }
+                  }}
+                  className="btn-primary"
+                  disabled={!isOctober}
+                >
+                  <FontAwesomeIcon icon={faBan} className="text-sm" />
+                </button>
+              </div>
+
+              {alumniFailedRefs.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                    Étudiants exclus ({alumniFailedRefs.length})
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {alumniFailedRefs.map((ref) => (
+                      <span
+                        key={ref}
+                        className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full"
+                      >
+                        {ref}
+                        <button
+                          type="button"
+                          onClick={() => setAlumniFailedRefs((prev) => prev.filter((r) => r !== ref))}
+                          className="hover:text-red-800"
+                          disabled={!isOctober}
+                        >
+                          <FontAwesomeIcon icon={faTimes} size="xs" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleAlumniUpgrade}
+                disabled={alumniUpgradeLoading || !isOctober}
+                className="btn-primary flex items-center gap-2 disabled:opacity-40"
+              >
+                {alumniUpgradeLoading ? (
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                ) : (
+                  <FontAwesomeIcon icon={faArrowRight} />
+                )}
+                Promouvoir en Alumni
+              </button>
+            </div>
+          )}
+
+          {/* Tab: Nouveaux étudiants */}
           {tab === "new-l1" && (
             <div className="bg-white rounded-2xl shadow-card p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -887,10 +1023,10 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <h2 className="font-bold text-navy text-base">
-                    Nouveaux étudiants L1 — STD{currentYear}XXX
+                    Nouveaux étudiants
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Inscrivez les nouveaux étudiants de première année. La
+                    Inscrivez des étudiants manuellement. La
                     référence est saisie manuellement (ex: STD26001).
                   </p>
                 </div>

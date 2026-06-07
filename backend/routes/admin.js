@@ -151,6 +151,21 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
       }
 });
 
+// Passage en alumni : L3->alumni uniquement
+router.post("/alumni-upgrade", auth, adminOnly, async (req, res) => {
+  const { failed_refs } = req.body;
+  try {
+    const result = await db.query(
+      "UPDATE users SET level = 'alumni', role = 'alumni' WHERE level = 'L3' AND ref != ALL($1::text[]) RETURNING id, ref, level, role",
+      [failed_refs || []]
+    );
+    res.json({ upgraded: result.rows.length, users: result.rows });
+  } catch (err) {
+    console.error("ERREUR alumni-upgrade:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 // Passage de classe : L1->L2, L2->L3, L3->alumni
 router.post("/class-upgrade", auth, adminOnly, async (req, res) => {
   const { failed_refs } = req.body;
