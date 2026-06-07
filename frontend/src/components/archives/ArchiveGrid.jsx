@@ -23,9 +23,9 @@ const NAVY_DARK = "#0A1A33";
 const UES_BY_LEVEL = {
   L1: [
     "WEB1", "PROG1", "SYS1", "DONNEES1", "THEORIE1-P1", "THEORIE1-P2",
-    "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1", "DONNEES2", "IA1",
+    "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1", "LV1",
   ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4-SYS3", "DONNEES2", "IA1"],
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
 };
 
@@ -40,9 +40,32 @@ const YEAR_CONFIG = [
   { id: "L3", label: "TROISIEME ANNEE", subtitle: "Semestre 5 & 6" },
 ];
 
+const CUSTOM_UES_KEY = "archive_custom_ues";
+
+function loadCustomUes() {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOM_UES_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCustomUes(data) {
+  localStorage.setItem(CUSTOM_UES_KEY, JSON.stringify(data));
+}
+
+function mergeUes(hardcoded, custom) {
+  const result = {};
+  for (const level of ["L1", "L2", "L3"]) {
+    result[level] = [...(hardcoded[level] || []), ...(custom[level] || [])];
+  }
+  return result;
+}
+
 export default function ArchiveGrid() {
   const { user } = useAuth();
   const isTeacher = user?.role === "teacher" || user?.role === "admin";
+  const isAdmin = user?.role === "admin";
 
   const [selectedUE, setSelectedUE] = useState(null);
   const [supports, setSupports] = useState([]);
@@ -54,7 +77,17 @@ export default function ArchiveGrid() {
   const [addError, setAddError] = useState("");
   const [visible, setVisible] = useState(false);
   const [otherUes, setOtherUes] = useState([]);
+  const [customUes, setCustomUes] = useState(loadCustomUes);
+  const [showAddUE, setShowAddUE] = useState(false);
+  const [addUECode, setAddUECode] = useState("");
+  const [addUELevel, setAddUELevel] = useState("L1");
   const panelRef = useRef(null);
+
+  const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
+  const effectiveUeToLevel = Object.entries(effectiveUEs).reduce((map, [level, ues]) => {
+    ues.forEach((ue) => { map[ue] = level; });
+    return map;
+  }, {});
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -63,14 +96,14 @@ export default function ArchiveGrid() {
   useEffect(() => {
     api.get("/posts").then(({ data }) => {
       const allPosts = data.posts || [];
-      const known = new Set(Object.keys(ueToLevel));
+      const known = new Set(Object.keys(effectiveUeToLevel));
       const others = new Set();
       allPosts.forEach((p) => {
         if (p.ue && !known.has(p.ue)) others.add(p.ue);
       });
       setOtherUes([...others].sort());
     }).catch(() => {});
-  }, []);
+  }, [customUes]);
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
@@ -145,7 +178,7 @@ export default function ArchiveGrid() {
           {allYears.map((year, yi) => {
             const ues = year.id === "Autre"
               ? otherUes
-              : UES_BY_LEVEL[year.id] || [];
+              : effectiveUEs[year.id] || [];
             if (ues.length === 0) return null;
 
             return (
@@ -224,6 +257,77 @@ export default function ArchiveGrid() {
             );
           })}
         </div>
+
+        {isAdmin && (
+          <div className="relative">
+            {showAddUE && (
+              <div className="mb-6 p-4 bg-gradient-to-br from-navy/5 to-transparent rounded-2xl border border-navy/10 flex flex-col gap-3 animate-slide-up">
+                <p className="text-xs font-bold text-navy/60 uppercase tracking-wide">
+                  Nouvelle UE
+                </p>
+                <div className="flex gap-3">
+                  <input
+                    className="input-field flex-1"
+                    placeholder="Code UE (ex: NOUVELLE1)"
+                    value={addUECode}
+                    onChange={(e) => setAddUECode(e.target.value.toUpperCase())}
+                    autoFocus
+                  />
+                  <select
+                    className="input-field w-24"
+                    value={addUELevel}
+                    onChange={(e) => setAddUELevel(e.target.value)}
+                  >
+                    <option value="L1">L1</option>
+                    <option value="L2">L2</option>
+                    <option value="L3">L3</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = addUECode.trim();
+                      if (!code) return;
+                      const updated = { ...customUes };
+                      if (!updated[addUELevel]) updated[addUELevel] = [];
+                      if (updated[addUELevel].includes(code)) return;
+                      updated[addUELevel] = [...updated[addUELevel], code];
+                      saveCustomUes(updated);
+                      setCustomUes(updated);
+                      setAddUECode("");
+                      setShowAddUE(false);
+                    }}
+                    className="bg-navy text-white rounded-xl text-sm px-4 py-2 hover:bg-navy/90 transition-all duration-200 active:scale-90"
+                  >
+                    Ajouter
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddUE(false);
+                      setAddUECode("");
+                    }}
+                    className="text-sm text-gray-400 hover:text-navy px-3 py-2 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowAddUE((p) => !p)}
+              className="w-12 h-12 rounded-2xl bg-navy text-white shadow-lg shadow-navy/30
+                flex items-center justify-center hover:bg-navy/90
+                transition-all duration-200 active:scale-90
+                border-2 border-gold/30 hover:border-gold/60"
+              title="Ajouter une UE"
+            >
+              <FontAwesomeIcon icon={faPlus} className="text-lg" />
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedUE && (
