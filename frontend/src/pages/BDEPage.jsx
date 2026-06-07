@@ -123,10 +123,7 @@ const generatePDF = (suggestions) => {
     doc.text("HEI", margin + 10, 17, { align: "center" });
   }
 
-  doc.setTextColor(...GOLD);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("HEI STDhub", margin + 22, 13);
+
 
   doc.setTextColor(...WHITE);
   doc.setFontSize(22);
@@ -276,7 +273,7 @@ const generatePDF = (suggestions) => {
   doc.setTextColor(...NAVY);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("Document généré par le Bureau Des Étudiants — HEI STDhub", margin, y);
+  doc.text("Document généré par le Bureau Des Étudiants", margin, y);
   y += 5;
   doc.setTextColor(...GRAY);
   doc.setFontSize(8);
