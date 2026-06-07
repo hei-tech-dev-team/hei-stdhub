@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
+import { Import } from "lucide-react";
 
 // Block pinch-zoom and gesture zoom on mobile
 document.addEventListener("gesturestart", (e) => e.preventDefault());
@@ -43,7 +44,7 @@ async function fetchMissedNotifications() {
   }
 }
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").then((reg) => {
       reg.addEventListener("updatefound", () => {
