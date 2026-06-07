@@ -111,8 +111,8 @@ app.use(
     maxAge: 600,
   }),
 );
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "500kb" }));
+app.use(express.urlencoded({ extended: true, limit: "500kb" }));
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"), {
@@ -415,10 +415,10 @@ const { pool } = require("./db");
         user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         reaction_type    VARCHAR(20) NOT NULL,
         created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
-        UNIQUE (tip_id, user_id)
+        UNIQUE (spotlight_id, user_id)
       )
     `);
-  } catch (err) { console.error("Failed to create alumni_tip_reactions table:", err); }
+  } catch (err) { console.error("Failed to create alumni_spotlight_reactions table:", err); }
 })();
 
 const PORT = process.env.PORT || 3001;

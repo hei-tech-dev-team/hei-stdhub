@@ -104,8 +104,8 @@ router.get("/contacts", auth, async (req, res) => {
 // Get global chat messages (paginated, last 200 by default, supports before cursor)
 router.get("/global", auth, async (req, res) => {
   try {
-    const { before, limit = 200 } = req.query;
-    const msgLimit = Math.min(parseInt(limit) || 200, 500);
+    const { before, limit = 50 } = req.query;
+    const msgLimit = Math.min(parseInt(limit) || 50, 200);
     let query;
     let params;
     if (before) {
@@ -120,15 +120,13 @@ router.get("/global", auth, async (req, res) => {
       params = [before, msgLimit];
     } else {
       query = `
-        SELECT * FROM (
-          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
-                 u.role AS sender_role, u.avatar AS sender_avatar
-          FROM messages m
-          LEFT JOIN users u ON m.sender_id = u.id
-          WHERE m.is_global = TRUE
-          ORDER BY m.created_at DESC
-          LIMIT $1
-        ) sub ORDER BY created_at ASC`;
+        SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+              u.role AS sender_role, u.avatar AS sender_avatar
+        FROM messages m
+        LEFT JOIN users u ON m.sender_id = u.id
+        WHERE m.is_global = TRUE
+        ORDER BY m.created_at ASC
+        LIMIT $1`;
       params = [msgLimit];
     }
     const { rows } = await db.query(query, params);
@@ -162,19 +160,17 @@ router.get("/private/:userId", auth, async (req, res) => {
       params = [before, req.user.id, req.params.userId, msgLimit];
     } else {
       query = `
-        SELECT * FROM (
-          SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
-          FROM messages m
-          LEFT JOIN users u ON m.sender_id = u.id
-          WHERE m.is_global = FALSE
-            AND (
-              (m.sender_id = $1 AND m.receiver_id = $2)
-              OR
-              (m.sender_id = $2 AND m.receiver_id = $1)
-            )
-          ORDER BY m.created_at DESC
-          LIMIT $3
-        ) sub ORDER BY created_at ASC`;
+        SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
+        FROM messages m
+        LEFT JOIN users u ON m.sender_id = u.id
+        WHERE m.is_global = FALSE
+        AND (
+          (m.sender_id = $1 AND m.receiver_id = $2)
+          OR
+          (m.sender_id = $2 AND m.receiver_id = $1)
+        )
+        ORDER BY m.created_at ASC
+        LIMIT $3`;
       params = [req.user.id, req.params.userId, msgLimit];
     }
     const { rows } = await db.query(query, params);
@@ -313,32 +309,32 @@ router.get("/unread", auth, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { rows: globalRows } = await db.query(
-      `SELECT COALESCE(g.last_read_msg_id, 0) AS last_read
-       FROM global_chat_read g WHERE g.user_id=$1`,
-      [userId],
-    );
-    const lastRead = globalRows[0]?.last_read || 0;
-    const { rows: globalUnread } = await db.query(
-      `SELECT COUNT(*)::int AS count FROM messages
-       WHERE is_global=TRUE AND id > $1`,
-      [lastRead],
-    );
-
-    const { rows: privateUnread } = await db.query(
-      `SELECT
-         CASE WHEN sender_id=$1 THEN receiver_id ELSE sender_id END AS contact_id,
-         COUNT(*) FILTER (WHERE receiver_id=$1 AND seen=FALSE)::int AS unread,
-         COUNT(*) FILTER (WHERE sender_id=$1 AND seen=FALSE)::int AS pending
-       FROM messages
-       WHERE is_global=FALSE
-         AND ($1 IN (sender_id, receiver_id))
-       GROUP BY contact_id`,
-      [userId],
-    );
+    const [unreadRes, privateUnreadRes] = await Promise.all([
+      db.query(
+        `SELECT COUNT(m.id)::int AS count
+        FROM messages m
+        WHERE m.is_global = TRUE
+          AND m.id > COALESCE(
+            (SELECT last_read_msg_id FROM global_chat_read WHERE user_id=$1),
+            0
+          )`,
+        [userId],
+      ),
+      db.query(
+        `SELECT
+          CASE WHEN sender_id=$1 THEN receiver_id ELSE sender_id END AS contact_id,
+          COUNT(*) FILTER (WHERE receiver_id=$1 AND seen=FALSE)::int AS unread,
+          COUNT(*) FILTER (WHERE sender_id=$1 AND seen=FALSE)::int AS pending
+        FROM messages
+        WHERE is_global=FALSE
+          AND ($1 IN (sender_id, receiver_id))
+        GROUP BY contact_id`,
+        [userId],
+      ),
+    ]);
 
     const contacts = {};
-    for (const row of privateUnread) {
+    for (const row of privateUnreadRes.rows) {
       contacts[row.contact_id] = {
         unread: parseInt(row.unread, 10),
         pending: parseInt(row.pending, 10),
@@ -346,9 +342,10 @@ router.get("/unread", auth, async (req, res) => {
     }
 
     res.json({
-      global: parseInt(globalUnread[0]?.count, 10) || 0,
+      global: unreadRes.rows[0]?.count || 0,
       contacts,
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
