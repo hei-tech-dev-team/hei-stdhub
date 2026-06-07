@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
@@ -22,11 +22,18 @@ const STDnewsPage = lazy(() => import("./pages/STDnewsPage"));
 const AlumniSpotlightPage = lazy(() => import("./pages/AlumniSpotlightPage"));
 
 function LoadingFallback() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
-        <p className="text-navy font-semibold text-sm">Chargement...</p>
+        <p className="text-navy font-semibold text-sm">
+          {slow ? "Le serveur démarre, veuillez patienter..." : "Chargement..."}
+        </p>
       </div>
     </div>
   );
