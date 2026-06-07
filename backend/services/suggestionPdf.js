@@ -77,10 +77,7 @@ function generateSuggestionReport(suggestions) {
     doc.text("HEI", margin + 10, 17, { align: "center" });
   }
 
-  doc.setTextColor(...GOLD);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("HEI STDhub", margin + 22, 13);
+
 
   doc.setTextColor(...WHITE);
   doc.setFontSize(22);
@@ -241,7 +238,7 @@ function generateSuggestionReport(suggestions) {
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text(
-    "Document généré par le Bureau Des Étudiants — HEI STDhub",
+    "Document généré par le Bureau Des Étudiants",
     margin,
     y,
   );
