@@ -69,9 +69,9 @@ const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
 const resetPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 5,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 6,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -237,9 +237,9 @@ router.get("/user/:ref", auth, async (req, res) => {
 });
 
 const forgotPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 3,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 4,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -298,9 +298,9 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
 
 // Forgot password — step 2: verify the 6-character code
 const verifyCodeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 5,
-  message: { error: "Trop de tentatives. Reessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 6,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.body.email?.trim().toLowerCase() || ipKeyGenerator(req),
