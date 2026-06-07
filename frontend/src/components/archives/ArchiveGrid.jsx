@@ -5,6 +5,17 @@ import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import ArchiveCard from "./ArchiveCard";
 
+const UES_BY_LEVEL = {
+  L1: ["WEB1", "PROG1", "SYS1", "DONNEES1", "THEORIE1-P1", "THEORIE1-P2", "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1", "DONNEES2", "IA1"],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
+  L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
+};
+
+const ueToLevel = Object.entries(UES_BY_LEVEL).reduce((map, [level, ues]) => {
+  ues.forEach(ue => { map[ue] = level; });
+  return map;
+}, {});
+
 export default function ArchiveGrid() {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
@@ -26,14 +37,19 @@ export default function ArchiveGrid() {
       const ueMap = {};
       allPosts.forEach((p) => {
         if (!p.ue) return;
-        const year = p.target_level || "Autre";
-        if (!ueMap[year]) ueMap[year] = new Set();
-        ueMap[year].add(p.ue);
+        const level = ueToLevel[p.ue] || "Autre";
+        if (!ueMap[level]) ueMap[level] = new Set();
+        ueMap[level].add(p.ue);
       });
-      const grouped = Object.entries(ueMap).map(([year, ueSet]) => ({
-        year,
-        ues: [...ueSet].sort(),
-      })).sort((a, b) => a.year.localeCompare(b.year));
+      const grouped = Object.entries(ueMap)
+        .map(([level, ueSet]) => ({
+          level,
+          ues: [...ueSet].sort(),
+        }))
+        .sort((a, b) => {
+          const order = { L1: 1, L2: 2, L3: 3, Autre: 4 };
+          return (order[a.level] || 99) - (order[b.level] || 99);
+        });
       setUes(grouped);
     }).catch(console.error);
   }, []);
@@ -82,10 +98,10 @@ export default function ArchiveGrid() {
     <div className="flex gap-6 h-full">
       <div className="flex-1 overflow-y-auto">
         {ues.map((group) => (
-          <div key={group.year} className="mb-8">
+          <div key={group.level} className="mb-8">
             <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
               <FontAwesomeIcon icon={faFolderOpen} className="text-gold text-sm" />
-              {group.year === "Autre" ? "Autres" : `Niveau ${group.year}`}
+              {group.level === "Autre" ? "Autres" : `Niveau ${group.level}`}
               <span className="text-xs text-gray-400 font-normal">({group.ues.length} UE{group.ues.length > 1 ? "s" : ""})</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
