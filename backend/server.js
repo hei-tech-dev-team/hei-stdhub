@@ -78,23 +78,7 @@ app.use((req, res, next) => {
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 8,
-  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const generalLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 600,
-  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const writeLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 120,
+  max: process.env.NODE_ENV === "test" ? 10000 : 20,
   message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -165,15 +149,6 @@ app.use(
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
 app.use("/api/auth/reset-password", loginLimiter);
-
-// Global API rate limiters — aggressive to protect the DB
-app.use("/api", (req, res, next) => {
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
-    return writeLimiter(req, res, next);
-  }
-  next();
-});
-app.use("/api", generalLimiter);
 
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));

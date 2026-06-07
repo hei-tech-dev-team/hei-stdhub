@@ -85,6 +85,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [userError, setUserError] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
@@ -129,7 +130,7 @@ export default function AdminPage() {
     return () => mainEl.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Charger stats avec polling 3 secondes
+  // Charger stats avec polling 15 secondes
   useEffect(() => {
     let cancelled = false;
     const fetchStats = () => {
@@ -139,7 +140,7 @@ export default function AdminPage() {
         .catch(() => {});
     };
     fetchStats();
-    const interval = setInterval(fetchStats, 3000);
+    const interval = setInterval(fetchStats, 15000);
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
   // Modal invitation
@@ -171,6 +172,7 @@ export default function AdminPage() {
   // Charger utilisateurs avec pagination
   const loadUsers = useCallback(() => {
     setLoading(true);
+    setUserError("");
     const params = { limit: PAGE_SIZE, offset: userPage * PAGE_SIZE };
     if (search) params.q = search;
     if (roleFilter) params.role = expandRoleFilter(roleFilter);
@@ -180,7 +182,11 @@ export default function AdminPage() {
         setUsers(data.users || []);
         setUserTotal(data.total || 0);
       })
-      .catch(console.error)
+      .catch((err) => {
+        const msg = err.response?.data?.error || err.message || "Erreur réseau";
+        setUserError(msg);
+        console.error(err);
+      })
       .finally(() => setLoading(false));
   }, [search, roleFilter, userPage]);
 
@@ -753,7 +759,15 @@ export default function AdminPage() {
                     </div>
                   )}
 
-                  {users.length === 0 && (
+                  {userError && (
+                    <div className="text-center py-8">
+                      <p className="text-red-400 text-sm bg-red-50 rounded-xl px-4 py-3 inline-block">
+                        {userError}
+                      </p>
+                    </div>
+                  )}
+
+                  {!userError && users.length === 0 && (
                     <div className="text-center py-16">
                       <p className="text-gray-400 text-sm">
                         Aucun utilisateur trouvé.
