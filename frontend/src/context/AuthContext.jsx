@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import api from "../api/axios";
-import { refreshSocket, disconnectSocket } from "../socket";
-import { isSubscribedToPush, subscribeToPush, unsubscribeFromPush } from "../push";
 
 const AuthContext = createContext(null);
 
@@ -41,7 +39,9 @@ export function AuthProvider({ children }) {
         localStorage.setItem("hei_user", JSON.stringify(data));
         if (!subscribeAttempted.current) {
           subscribeAttempted.current = true;
-          subscribeToPush().then(() => isSubscribedToPush().then(setPushSubscribed));
+          import("../push").then(({ subscribeToPush, isSubscribedToPush }) => {
+            subscribeToPush().then(() => isSubscribedToPush().then(setPushSubscribed));
+          });
         }
       })
       .catch((err) => {
@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
-    refreshSocket().catch(() => {});
+    import("../socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
     return data.user;
   };
 
@@ -74,15 +74,17 @@ export function AuthProvider({ children }) {
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
-    refreshSocket().catch(() => {});
+    import("../socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
     return data.user;
   };
 
   const dismissOnboarding = () => setFirstLogin(false);
 
   const logout = () => {
-    disconnectSocket();
-    unsubscribeFromPush().then(() => setPushSubscribed(false));
+    import("../socket").then(({ disconnectSocket }) => disconnectSocket());
+    import("../push").then(({ unsubscribeFromPush }) =>
+      unsubscribeFromPush().then(() => setPushSubscribed(false)),
+    );
     localStorage.removeItem("hei_token");
     localStorage.removeItem("hei_user");
     setUser(null);

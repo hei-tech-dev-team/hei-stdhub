@@ -42,6 +42,7 @@ export default function LoginPage() {
             } catch (err) {
                   setError(
                         err.response?.data?.error ||
+                              err.userMessage ||
                               "Erreur de connexion, reessayez.",
                   );
             } finally {
@@ -80,6 +81,7 @@ export default function LoginPage() {
                                                       src={HEI_WHITE_LOGO}
                                                       alt="HEI"
                                                       className="w-8 h-8 object-contain"
+                                                      onError={(e) => { e.target.style.display = "none"; }}
                                                 />
                                           </div>
                                           <div>
