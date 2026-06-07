@@ -37,6 +37,8 @@ const ALUMNI_NAV_LINKS = [
       { to: "/chat", label: "Chat", icon: faComments, end: false },
 ];
 
+let notificationPermissionRequested = false;
+
 export default function Sidebar() {
       const { user, logout } = useAuth();
       const navigate = useNavigate();
@@ -45,23 +47,30 @@ export default function Sidebar() {
       const [pendingCount, setPendingCount] = useState(0);
       const [unreadCount, setUnreadCount] = useState(0);
       const prevUnreadRef = useRef(0);
+      const intervalRef = useRef(null);
+      const mountedRef = useRef(true);
+
+      useEffect(() => {
+        return () => { mountedRef.current = false; };
+      }, []);
 
       const playNotificationSound = () => {
             const audio = new Audio(
                   "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3",
             );
             audio.volume = 0.4;
-            audio.play().catch(() => {}); // Évite l'erreur si le navigateur bloque l'autoplay
+            audio.play().catch(() => {});
       };
 
       useEffect(() => {
             if (!user) return;
 
-            // Demander la permission pour les notifications système dès que possible
             if (
+                  !notificationPermissionRequested &&
                   "Notification" in window &&
                   Notification.permission === "default"
             ) {
+                  notificationPermissionRequested = true;
                   Notification.requestPermission();
             }
 
@@ -93,7 +102,6 @@ export default function Sidebar() {
                                     unreadRes.data.contacts || {},
                               ).reduce((acc, c) => acc + (c.unread || 0), 0);
 
-                        // Jouer un son si un nouveau message arrive et qu'on n'est pas déjà dans le chat
                         if (
                               totalUnread > prevUnreadRef.current &&
                               location.pathname !== "/chat"
@@ -106,13 +114,14 @@ export default function Sidebar() {
                         );
                         prevUnreadRef.current = totalUnread;
                   } catch (_) {
-                        // Backend indisponible — les badges seront mis à jour au prochain cycle
                   }
             };
 
             updateCounts();
-            const interval = setInterval(updateCounts, 10000); // Vérification toutes les 10 secondes
-            return () => clearInterval(interval);
+            intervalRef.current = setInterval(updateCounts, 15000);
+            return () => {
+              if (intervalRef.current) clearInterval(intervalRef.current);
+            };
       }, [user, location.pathname]);
 
       const handleLogout = () => {
@@ -125,7 +134,7 @@ export default function Sidebar() {
             <>
                   <button
                         onClick={() => setOpen(true)}
-                        className="lg:hidden fixed top-3 left-3 z-50 touch-target rounded-xl
+                        className="lg:hidden fixed top-3 left-3 z-40 touch-target rounded-xl
                    bg-navy text-white shadow-lg"
                   >
                         <FontAwesomeIcon icon={faBars} className="text-base" />
@@ -140,7 +149,7 @@ export default function Sidebar() {
 
                   <aside
                         className={`
-        fixed lg:static inset-y-0 left-0 z-50
+        fixed lg:static inset-y-0 left-0 z-40
         w-60 h-screen bg-navy flex flex-col py-6 px-4 shrink-0
         transform transition-transform duration-300
         ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
@@ -169,7 +178,6 @@ export default function Sidebar() {
                         </div>
 
                         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
-                              {/* Alumni: accès limité */}
                               {(user?.role === "alumni"
                                     ? ALUMNI_NAV_LINKS
                                     : NAV_LINKS
@@ -194,7 +202,7 @@ export default function Sidebar() {
                                           </span>
                                           {to === "/chat" &&
                                                 unreadCount > 0 && (
-                                                      <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5 shadow-lg animate-pulse">
+                                                      <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5 shadow-lg">
                                                             {unreadCount > 99
                                                                   ? "99+"
                                                                   : unreadCount}
@@ -211,7 +219,6 @@ export default function Sidebar() {
                                     </NavLink>
                               ))}
 
-                              {/* Suggestions — visible par étudiants, profs et alumni */}
                               {["student", "teacher", "alumni"].includes(
                                     user?.role,
                               ) && (
@@ -235,7 +242,6 @@ export default function Sidebar() {
                                     </NavLink>
                               )}
 
-                              {/* Interface BDE — visible par les membres BDE uniquement */}
                               {user?.role === "bde" && (
                                     <NavLink
                                           to="/bde"
@@ -258,7 +264,6 @@ export default function Sidebar() {
                                     </NavLink>
                               )}
 
-                              {/* Admin */}
                               {user?.role === "admin" && (
                                     <NavLink
                                           to="/admin"
