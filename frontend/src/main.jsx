@@ -8,7 +8,8 @@ import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
 
-// Global error handler — prevents white screen on unhandled runtime errors
+let swRegistration = null;
+
 window.addEventListener("error", (e) => {
   console.error("Global error caught:", e.error || e.message);
 });
@@ -16,7 +17,6 @@ window.addEventListener("unhandledrejection", (e) => {
   console.error("Unhandled promise rejection:", e.reason);
 });
 
-// Prevent double-tap zoom only (accessibility: preserve pinch-zoom and Ctrl+scroll)
 let lastTouchEnd = 0;
 document.addEventListener("touchend", (e) => {
   const now = Date.now();
@@ -42,15 +42,25 @@ async function fetchMissedNotifications() {
   }
 }
 
+function refreshSocketConnection() {
+  import("./socket").then(({ refreshSocket }) => refreshSocket().catch(() => {})).catch(() => {});
+}
+
+function renewPushSubscription() {
+  import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {})).catch(() => {});
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((reg) => {
+      swRegistration = reg;
+
       reg.addEventListener("updatefound", () => {
         const newSW = reg.installing;
         if (newSW) {
           newSW.addEventListener("statechange", () => {
             if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-              console.log("New SW version available — reload to update");
+              navigator.serviceWorker.controller.postMessage({ type: "skip-waiting" });
             }
           });
         }
@@ -58,7 +68,7 @@ if ("serviceWorker" in navigator) {
 
       reg.pushManager.getSubscription().then((sub) => {
         if (sub) {
-          import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {}));
+          renewPushSubscription();
         }
       }).catch(() => {});
     }).catch((err) => {
@@ -68,10 +78,10 @@ if ("serviceWorker" in navigator) {
 
   navigator.serviceWorker.addEventListener("message", (e) => {
     if (e.data?.type === "socket-sync-request") {
-      import("./socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
+      refreshSocketConnection();
     }
     if (e.data?.type === "push-subscription-change") {
-      import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {}));
+      renewPushSubscription();
     }
   });
 
@@ -80,9 +90,8 @@ if ("serviceWorker" in navigator) {
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-      fetchMissedNotifications();
       if (localStorage.getItem("hei_token")) {
-        import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {}));
+        renewPushSubscription();
       }
     }
   });

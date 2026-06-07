@@ -1,39 +1,42 @@
+import { lazy, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import HomePage from "./pages/HomePage";
-import ArchivesPage from "./pages/ArchivesPage";
-import TDPage from "./pages/TDPage";
-import ChatPage from "./pages/ChatPage";
-import AdminPage from "./pages/AdminPage";
-import ProfilePage from "./pages/ProfilePage";
-import SuggestionPage from "./pages/SuggestionPage";
-import BDEPage from "./pages/BDEPage";
-import UserProfilePage from "./pages/UserProfilePage";
-import PingBoxPage from "./pages/PingBoxPage";
-import STDnewsPage from "./pages/STDnewsPage";
-import AlumniSpotlightPage from "./pages/AlumniSpotlightPage";
 import OnboardingModal from "./components/ui/OnboardingModal";
+
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const ArchivesPage = lazy(() => import("./pages/ArchivesPage"));
+const TDPage = lazy(() => import("./pages/TDPage"));
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const SuggestionPage = lazy(() => import("./pages/SuggestionPage"));
+const BDEPage = lazy(() => import("./pages/BDEPage"));
+const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
+const PingBoxPage = lazy(() => import("./pages/PingBoxPage"));
+const STDnewsPage = lazy(() => import("./pages/STDnewsPage"));
+const AlumniSpotlightPage = lazy(() => import("./pages/AlumniSpotlightPage"));
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
+        <p className="text-navy font-semibold text-sm">Chargement...</p>
+      </div>
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-10 h-10 border-4 border-navy border-t-gold
-                          rounded-full animate-spin"
-          />
-          <p className="text-navy font-semibold text-sm">Chargement...</p>
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
 
   if (!user) return <Navigate to="/login" replace />;
@@ -42,32 +45,14 @@ function ProtectedRoute({ children }) {
 
 function AdminRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
-          <p className="text-navy font-semibold text-sm">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingFallback />;
   if (!user || user.role !== "admin") return <Navigate to="/" replace />;
   return children;
 }
 
 function BDERoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
-          <p className="text-navy font-semibold text-sm">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingFallback />;
   if (!user || user.role !== "bde") return <Navigate to="/" replace />;
   return children;
 }
@@ -85,110 +70,26 @@ export default function App() {
         <meta name="google-site-verification" content="0aPPiamPtnQc4mFJun2ATrN1P8--rtRj2aaan-nNM3Q" />
         <link rel="canonical" href="https://hei-stdhub.vercel.app" />
       </Helmet>
-      <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/archives"
-        element={
-          <ProtectedRoute>
-            <ArchivesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/td"
-        element={
-          <ProtectedRoute>
-            <TDPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <ProtectedRoute>
-            <ChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        // Open to both students and teachers
-        path="/suggestions"
-        element={
-          <ProtectedRoute>
-            <SuggestionPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/bde"
-        element={
-          <BDERoute>
-            <BDEPage />
-          </BDERoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <AdminPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/user/:ref"
-        element={
-          <ProtectedRoute>
-            <UserProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pings"
-        element={
-          <ProtectedRoute>
-            <PingBoxPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/stdnews"
-        element={
-          <ProtectedRoute>
-            <STDnewsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/alumni-spotlight"
-                element={
-                  <ProtectedRoute>
-            <AlumniSpotlightPage />
-          </ProtectedRoute>
-        }
-      />
-
-      </Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path="/archives" element={<ProtectedRoute><ArchivesPage /></ProtectedRoute>} />
+          <Route path="/td" element={<ProtectedRoute><TDPage /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+          <Route path="/suggestions" element={<ProtectedRoute><SuggestionPage /></ProtectedRoute>} />
+          <Route path="/bde" element={<BDERoute><BDEPage /></BDERoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/user/:ref" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+          <Route path="/pings" element={<ProtectedRoute><PingBoxPage /></ProtectedRoute>} />
+          <Route path="/stdnews" element={<ProtectedRoute><STDnewsPage /></ProtectedRoute>} />
+          <Route path="/alumni-spotlight" element={<ProtectedRoute><AlumniSpotlightPage /></ProtectedRoute>} />
+        </Routes>
+      </Suspense>
       {user && firstLogin && <OnboardingModal />}
     </>
   );
