@@ -5,6 +5,7 @@ import api from "../api/axios";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 import WaveAnimation from "../components/ui/WaveAnimation";
+import { subscribeToPush, unsubscribeFromPush, isSubscribedToPush } from "../push";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCamera,
@@ -24,6 +25,8 @@ import {
   faIdCard,
   faPen,
   faTimes,
+  faBell,
+  faBellSlash,
 } from "@fortawesome/free-solid-svg-icons";
 
 const ROLE_LABEL = {
@@ -51,7 +54,7 @@ const ROLE_LABEL = {
 };
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, pushSubscribed, setPushSubscribed } = useAuth();
   const fileRef = useRef(null);
 
   const [pseudo, setPseudo] = useState(user?.pseudo || "");
@@ -77,10 +80,28 @@ export default function ProfilePage() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const [visible, setVisible] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
   }, []);
+
+  useEffect(() => {
+    isSubscribedToPush().then(setPushSubscribed);
+  }, [setPushSubscribed]);
+
+  const handleToggleNotifications = async () => {
+    setNotifLoading(true);
+    if (pushSubscribed) {
+      await unsubscribeFromPush();
+      setPushSubscribed(false);
+    } else {
+      await subscribeToPush();
+      const subscribed = await isSubscribedToPush();
+      setPushSubscribed(subscribed);
+    }
+    setNotifLoading(false);
+  };
 
   const roleCfg = ROLE_LABEL[user?.role] || ROLE_LABEL.student;
   const avatarUrl = user?.avatar || null;
@@ -521,6 +542,48 @@ export default function ProfilePage() {
                       </button>
                     </form>
                   </>
+                ),
+              },
+              {
+                key: "notifications",
+                title: "Notifications",
+                icon: faBell,
+                content: (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                        style={{ background: pushSubscribed ? "rgba(34,197,94,0.15)" : "rgba(100,116,139,0.15)" }}
+                      >
+                        <FontAwesomeIcon
+                          icon={pushSubscribed ? faBell : faBellSlash}
+                          className={pushSubscribed ? "text-green-400 text-sm" : "text-gray-400 text-sm"}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-gray-800 font-semibold text-sm">
+                          {pushSubscribed ? "Notifications activées" : "Notifications désactivées"}
+                        </p>
+                        <p className="text-gray-400 text-xs mt-0.5">
+                          {pushSubscribed
+                            ? "Vous recevrez des alertes même hors de l'application."
+                            : "Activez pour être informé en temps réel."}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleToggleNotifications}
+                      disabled={notifLoading}
+                      className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+                        pushSubscribed ? "bg-green-500" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-300 ${
+                          pushSubscribed ? "translate-x-6" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 ),
               },
             ].map((section, i) => (

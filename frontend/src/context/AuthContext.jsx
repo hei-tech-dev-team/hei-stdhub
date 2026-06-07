@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import api from "../api/axios";
 import { refreshSocket, disconnectSocket } from "../socket";
-import { subscribeToPush, unsubscribeFromPush } from "../push";
+import { isSubscribedToPush, subscribeToPush, unsubscribeFromPush } from "../push";
 
 const AuthContext = createContext(null);
 
@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(() =>
     Boolean(localStorage.getItem("hei_token")),
   );
+  const [pushSubscribed, setPushSubscribed] = useState(false);
   const subscribeAttempted = useRef(false);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem("hei_user", JSON.stringify(data));
         if (!subscribeAttempted.current) {
           subscribeAttempted.current = true;
-          subscribeToPush();
+          subscribeToPush().then(() => isSubscribedToPush().then(setPushSubscribed));
         }
       })
       .catch((err) => {
@@ -64,7 +65,6 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
     refreshSocket().catch(() => {});
-    subscribeToPush();
     return data.user;
   };
 
@@ -75,7 +75,6 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
     refreshSocket().catch(() => {});
-    subscribeToPush();
     return data.user;
   };
 
@@ -83,7 +82,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     disconnectSocket();
-    unsubscribeFromPush();
+    unsubscribeFromPush().then(() => setPushSubscribed(false));
     localStorage.removeItem("hei_token");
     localStorage.removeItem("hei_user");
     setUser(null);
@@ -97,7 +96,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser: setUserAndSync, login, register, logout, loading, firstLogin, dismissOnboarding }}
+      value={{ user, setUser: setUserAndSync, login, register, logout, loading, firstLogin, dismissOnboarding, pushSubscribed, setPushSubscribed }}
     >
       {children}
     </AuthContext.Provider>
