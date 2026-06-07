@@ -45,12 +45,11 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
     expect(buf.slice(0, 5).toString()).to.equal("%PDF-");
   });
 
-  it("contient le titre HEI STDhub dans le PDF", () => {
+  it("contient le logo HEI dans le PDF", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
     const text = buf.toString("latin1");
     expect(text).to.include("HEI");
-    expect(text).to.include("STDhub");
   });
 
   it("contient les titres des suggestions", () => {
