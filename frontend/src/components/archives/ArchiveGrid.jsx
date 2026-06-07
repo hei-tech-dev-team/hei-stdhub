@@ -259,9 +259,9 @@ export default function ArchiveGrid() {
         </div>
 
         {isAdmin && (
-          <div className="relative">
+          <div className="flex flex-col gap-5">
             {showAddUE && (
-              <div className="mb-6 p-4 bg-gradient-to-br from-navy/5 to-transparent rounded-2xl border border-navy/10 flex flex-col gap-3 animate-slide-up">
+              <div className="p-5 bg-gradient-to-br from-navy/5 to-transparent rounded-2xl border border-navy/10 flex flex-col gap-3 animate-slide-up">
                 <p className="text-xs font-bold text-navy/60 uppercase tracking-wide">
                   Nouvelle UE
                 </p>
@@ -315,17 +315,48 @@ export default function ArchiveGrid() {
                 </div>
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => setShowAddUE((p) => !p)}
-              className="w-12 h-12 rounded-2xl bg-navy text-white shadow-lg shadow-navy/30
-                flex items-center justify-center hover:bg-navy/90
-                transition-all duration-200 active:scale-90
-                border-2 border-gold/30 hover:border-gold/60"
-              title="Ajouter une UE"
-            >
-              <FontAwesomeIcon icon={faPlus} className="text-lg" />
-            </button>
+            <div className="relative overflow-hidden rounded-2xl group">
+              <div className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white shadow-card">
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1.5"
+                  style={{ background: `linear-gradient(to bottom, rgba(${GOLD},0.6), rgba(${GOLD},0.3))` }}
+                />
+                <div
+                  className="flex items-center gap-4 sm:gap-6 px-6 py-5 w-full"
+                  style={{
+                    background: `linear-gradient(135deg, rgba(${NAVY_RGB},0.03), transparent)`,
+                  }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                    style={{
+                      background: `linear-gradient(135deg, ${NAVY_HEX}, ${NAVY_DARK})`,
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="text-gold text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-navy text-base tracking-wide">
+                      AJOUTER UNE UE
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-0.5 font-medium">
+                      Nouveau code UE
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddUE((p) => !p)}
+                    className="bg-navy-dark text-white font-bold text-xs
+                      px-4 sm:px-6 py-2 rounded-full uppercase tracking-widest
+                      hover:bg-navy transition-all duration-200 active:scale-95
+                      shrink-0"
+                  >
+                    <FontAwesomeIcon icon={showAddUE ? faTimes : faPlus} className="text-xs sm:mr-2" />
+                    <span className="hidden sm:inline">{showAddUE ? "FERMER" : "AJOUTER"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
