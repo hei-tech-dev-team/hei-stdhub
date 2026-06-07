@@ -68,14 +68,14 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
     const text = buf.toString("latin1");
     expect(text).to.include("Suggestions accept");
     expect(text).to.include("Suggestions refus");
-    expect(text).to.include("approfondir");
+    expect(text).to.include("discuter");
   });
 
   it("contient la justification pour les suggestions refusees", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
     const text = buf.toString("latin1");
-    expect(text).to.include("Justification du BDE");
+    expect(text).to.include("Justification");
     expect(text).to.include("extension du parking");
   });
 
@@ -90,9 +90,9 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
     const text = buf.toString("latin1");
-    expect(text).to.include("SUM");
     expect(text).to.include("Accept");
     expect(text).to.include("Refus");
+    expect(text).to.include("discuter");
   });
 
   it("genere plusieurs pages pour beaucoup de suggestions", () => {

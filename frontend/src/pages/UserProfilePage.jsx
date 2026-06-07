@@ -235,7 +235,7 @@ export default function UserProfilePage() {
                                                                   </p>
                                                                   <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start flex-wrap">
                                                                         <span
-                                                                              className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-[9999] ${roleCfg.cls}`}
+                                                                              className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-10 ${roleCfg.cls}`}
                                                                         >
                                                                               <FontAwesomeIcon
                                                                                     icon={

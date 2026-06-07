@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import api from "../api/axios";
 import { refreshSocket, disconnectSocket } from "../socket";
 import { subscribeToPush, unsubscribeFromPush } from "../push";
@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(() =>
     Boolean(localStorage.getItem("hei_token")),
   );
+  const subscribeAttempted = useRef(false);
 
   useEffect(() => {
     const token = localStorage.getItem("hei_token");
@@ -37,7 +38,10 @@ export function AuthProvider({ children }) {
       .then(({ data }) => {
         setUser(data);
         localStorage.setItem("hei_user", JSON.stringify(data));
-        subscribeToPush();
+        if (!subscribeAttempted.current) {
+          subscribeAttempted.current = true;
+          subscribeToPush();
+        }
       })
       .catch((err) => {
         if (err.response?.status === 401) {
@@ -48,6 +52,10 @@ export function AuthProvider({ children }) {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    subscribeAttempted.current = false;
+  }, [user?.id]);
 
   const login = async (ref, password) => {
     const { data } = await api.post("/auth/login", { ref, password });

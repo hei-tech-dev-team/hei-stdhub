@@ -123,7 +123,7 @@ function ImageMessage({ parsed, onImageClick, onDelete, onDownload, isOwn }) {
   );
 
   return (
-    <div className="relative" {...handlers}>
+    <div className="relative z-[45]" {...handlers}>
       <img
         src={parsed.url}
         alt={parsed.filename}
@@ -363,13 +363,15 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
                       onTouchEnd={(e) => { e.stopPropagation(); setShowDeleteFileId(null); }}
                       onClick={() => setShowDeleteFileId(null)}
                     />
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setShowDeleteFileId(null); handleDelete(msg); }}
-                      className="z-50 w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow-lg shrink-0"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
+                    <div className="relative z-50">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setShowDeleteFileId(null); handleDelete(msg); }}
+                        className="w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow-lg shrink-0"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
                   </>
                 )}
 
