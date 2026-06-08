@@ -106,9 +106,10 @@ export default function AdminPage() {
 
   // Nouveaux étudiants
   const [newL1, setNewL1] = useState({
-    nom: "", prenom: "", email: "", groupChar: "",
+    nom: "", prenom: "", groupLetter: "", selectedGroup: "",
   });
   const [generatedRef, setGeneratedRef] = useState("");
+  const [nextPseudoNum, setNextPseudoNum] = useState(null);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerDone, setRegisterDone] = useState(false);
 
@@ -361,34 +362,49 @@ export default function AdminPage() {
   };
 
   // Nouveaux L1
-  const getGroupFromChar = (char) => {
-    const c = char.toUpperCase();
-    if (!c) return "";
-    const groups = ["X1", "X2", "X3", "X4"];
-    const index = c.charCodeAt(0) - 65;
-    return groups[index % groups.length];
+  const getGroupsFromLetter = (letter) => {
+    const c = (letter || "").toUpperCase();
+    if (!c || c < "A" || c > "Z") return [];
+    return [`${c}1`, `${c}2`, `${c}3`, `${c}4`];
   };
+
+  const fetchNextPseudo = useCallback(async () => {
+    try {
+      const { data } = await api.get("/admin/next-pseudo");
+      setNextPseudoNum(data.next);
+    } catch {
+      setNextPseudoNum(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "new-l1") fetchNextPseudo();
+  }, [tab, fetchNextPseudo]);
 
   const handleRegisterL1 = async (e) => {
     e.preventDefault();
-    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupChar.trim() || !generatedRef.trim()) return;
+    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.selectedGroup.trim() || !generatedRef.trim()) return;
     setRegisterLoading(true);
     try {
-      const group = getGroupFromChar(newL1.groupChar);
+      const pseudo = nextPseudoNum
+        ? `new_user${String(nextPseudoNum).padStart(3, "0")}`
+        : `${newL1.prenom.trim()}.${newL1.nom.trim()}`;
+      const email = `hei.${newL1.prenom.trim().toLowerCase()}.${newL1.nom.trim().toLowerCase()}@gmail.com`;
       await api.post("/auth/register", {
         nom: newL1.nom.trim(),
         prenom: newL1.prenom.trim(),
-        email: newL1.email.trim(),
+        email,
         ref: generatedRef.trim().toUpperCase(),
-        pseudo: `${newL1.prenom.trim()}.${newL1.nom.trim()}`,
-        password: generatedRef.trim().toUpperCase(),
+        pseudo,
+        password: "STDnew_UserPass",
         role: "student",
         level: "L1",
-        groupe: group,
+        groupe: newL1.selectedGroup.trim(),
       });
       setRegisterDone(true);
-      setNewL1({ nom: "", prenom: "", email: "", groupChar: "" });
+      setNewL1({ nom: "", prenom: "", groupLetter: "", selectedGroup: "" });
       setGeneratedRef("");
+      fetchNextPseudo();
     } catch (err) {
       console.error(err);
     } finally {
@@ -1026,8 +1042,9 @@ export default function AdminPage() {
                     Nouveaux étudiants
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Inscrivez des étudiants manuellement. La
-                    référence est saisie manuellement (ex: STD26001).
+                    Remplissez les informations de l&apos;étudiant. Le mot de
+                    passe, le pseudo et l&apos;email sont générés
+                    automatiquement.
                   </p>
                 </div>
               </div>
@@ -1073,23 +1090,7 @@ export default function AdminPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Email HEI
-                  </label>
-                  <input
-                    type="email"
-                    className="input-field"
-                    placeholder="hei.jean@gmail.com"
-                    value={newL1.email}
-                    onChange={(e) =>
-                      setNewL1((prev) => ({ ...prev, email: e.target.value }))
-                    }
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Référence STD (saisie manuelle)
+                    Référence STD
                   </label>
                   <input
                     className="input-field font-mono tracking-widest uppercase"
@@ -1099,41 +1100,101 @@ export default function AdminPage() {
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Saisissez la référence selon le rang d&apos;entrée (ex: STD26001, STD26002…).
+                    Saisissez la référence (ex: STD26001, STD26002…).
                   </p>
                 </div>
 
+                {/* Informations générées automatiquement */}
+                {newL1.prenom && newL1.nom && generatedRef && (
+                  <div className="bg-navy/5 rounded-xl p-4 space-y-1.5 border border-navy/10">
+                    <p className="text-xs font-bold text-navy/60 uppercase tracking-wide mb-2">
+                      Informations générées automatiquement
+                    </p>
+                    <div className="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1.5 text-sm">
+                      <span className="text-gray-500 font-medium">Email</span>
+                      <span className="text-navy font-mono text-xs">
+                        hei.{newL1.prenom.toLowerCase()}.{newL1.nom.toLowerCase()}@gmail.com
+                      </span>
+                      <span className="text-gray-500 font-medium">Pseudo</span>
+                      <span className="text-navy font-mono text-xs">
+                        {nextPseudoNum
+                          ? `new_user${String(nextPseudoNum).padStart(3, "0")}`
+                          : `${newL1.prenom}.${newL1.nom}`}
+                      </span>
+                      <span className="text-gray-500 font-medium">Mot de passe</span>
+                      <span className="text-navy font-mono text-xs">
+                        STDnew_UserPass
+                      </span>
+                      <span className="text-gray-500 font-medium">Niveau</span>
+                      <span className="text-navy font-mono text-xs">L1</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lettre et sélection du groupe */}
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Caractère de groupe
+                    Lettre du groupe
                   </label>
                   <input
-                    className="input-field max-w-[120px] text-center text-lg font-bold tracking-widest uppercase"
-                    placeholder="A"
+                    className="input-field max-w-[100px] text-center text-lg font-bold tracking-widest uppercase"
+                    placeholder="N"
                     maxLength={1}
-                    value={newL1.groupChar}
-                    onChange={(e) =>
+                    value={newL1.groupLetter}
+                    onChange={(e) => {
+                      const letter = e.target.value.replace(/[^A-Za-z]/g, "").toUpperCase();
                       setNewL1((prev) => ({
                         ...prev,
-                        groupChar: e.target.value,
-                      }))
-                    }
+                        groupLetter: letter,
+                        selectedGroup: "",
+                      }));
+                    }}
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Saisissez une lettre (A-Z). Le groupe sera déterminé
-                    automatiquement :{" "}
-                    <strong className="text-navy">
-                      {newL1.groupChar
-                        ? `${newL1.groupChar.toUpperCase()} → ${getGroupFromChar(newL1.groupChar)}`
-                        : "ex: A → X1, B → X2, C → X3"}
-                    </strong>
+                    Saisissez une lettre (A-Z) pour générer les groupes disponibles.
                   </p>
                 </div>
 
+                {newL1.groupLetter && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
+                      Choisissez le groupe
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {getGroupsFromLetter(newL1.groupLetter).map((g) => (
+                        <label
+                          key={g}
+                          className={`px-4 py-2.5 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all duration-150 ${
+                            newL1.selectedGroup === g
+                              ? "border-navy bg-navy text-white shadow-md"
+                              : "border-gray-200 bg-white text-gray-600 hover:border-navy/30 hover:text-navy"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="group"
+                            value={g}
+                            checked={newL1.selectedGroup === g}
+                            onChange={() =>
+                              setNewL1((prev) => ({ ...prev, selectedGroup: g }))
+                            }
+                            className="sr-only"
+                          />
+                          {g}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={registerLoading || !generatedRef.trim()}
+                  disabled={
+                    registerLoading ||
+                    !generatedRef.trim() ||
+                    !newL1.selectedGroup
+                  }
                   className="btn-primary flex items-center gap-2 disabled:opacity-60 mt-2"
                 >
                   {registerLoading ? (
