@@ -35,6 +35,17 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
       }
 });
 
+router.get("/next-pseudo", auth, adminOnly, async (req, res) => {
+      try {
+            const { rows } = await db.query(
+              `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(pseudo, '^new_user0*', '') AS INTEGER)), 0) AS last_num FROM users WHERE pseudo ~ '^new_user[0-9]+$'`
+            );
+            res.json({ next: parseInt(rows[0]?.last_num || 0) + 1 });
+      } catch (err) {
+            res.status(500).json({ error: "Erreur serveur." });
+      }
+});
+
 router.get("/users", auth, adminOnly, async (req, res) => {
       try {
             const { q, role, limit = 50, offset = 0 } = req.query;
@@ -43,7 +54,7 @@ router.get("/users", auth, adminOnly, async (req, res) => {
 
             let countQuery = "SELECT COUNT(*) FROM users WHERE 1=1";
             let query = `
-      SELECT id, ref, nom, prenom, email, pseudo, role, level, created_at
+      SELECT id, ref, nom, prenom, email, pseudo, role, level, groupe, created_at
       FROM users WHERE 1=1
     `;
             const params = [];
