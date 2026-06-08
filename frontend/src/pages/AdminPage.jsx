@@ -146,7 +146,7 @@ export default function AdminPage() {
         .catch(() => {});
     };
     fetchStats();
-    const interval = setInterval(fetchStats, 15000);
+    const interval = setInterval(fetchStats, 60000);
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
   // Modal invitation
