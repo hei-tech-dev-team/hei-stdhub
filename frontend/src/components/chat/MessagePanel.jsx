@@ -32,50 +32,6 @@ import { useLongPress } from "./useLongPress";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
-const PROFANITY_WORDS = new Set([
-  "fuck", "fucker", "fucking", "shit", "shithead", "bullshit", "bitch", "bastard",
-  "asshole", "ass", "damn", "damnit", "piss", "pissed", "crap", "dick", "dickhead",
-  "cock", "cockhead", "prick", "slut", "whore", "nigger", "nigga", "cunt", "twat",
-  "wanker", "motherfucker", "s.o.b", "son of a bitch", "sonofabitch",
-  "faggot", "fag", "dyke", "tranny", "trannie", "homo", "queer", "sissy",
-  "bender", "pansy", "fairy", "fruitcake", "fruit", "ladyboy", "shemale",
-  "he-she", "transvestite",
-  "putain", "pute", "connard", "connasse", "encule", "enculer", "enculé", "enculée",
-  "foutre", "foutu", "merde", "bordel", "salope", "salaud", "batard", "bâtard",
-  "con", "conne", "cul", "bite", "couille", "couilles", "nique", "niquer",
-  "ta gueule", "tg", "ferme ta gueule", "va te faire foutre", "va te faire enculer",
-  "fils de pute", "filsdepute", "fdp", "ntm", "nique ta mere",
-  "abruti", "abrutie", "debile", "débile", "imbecile", "imbécile", "crétin", "cretin",
-  "trou du cul", "trouduc", "trou de cul", "encule de ta race", "enculé de ta race",
-  "gros con", "grosse conne",
-  "pédé", "pede", "pédale", "pedale", "tapette", "gouine", "tarlouze",
-  "folle", "fiotte", "travelo", "pd",
-  "bougnoule", "bougoule", "renoi", "bougnoul", "raton", "bic", "bicot", "boug", "singe", "gorille",
-  "fory", "bibity", "bobota", "kimaso", "kdj", "kndj", "kindaso", "kindinalika",
-  "lln", "lelena", "lelikeee", "pory", "pr", "rp", "por", "pox", "px",
-  "masosopory", "msspr", "masspr", "lindinakika", "tay amin'amany",
-  "manemany", "mnmn", "nemany", "ninanem", "ninaneman", "lataka", "ltk",
-  "tingy", "chatte", "lely",
-  "kill yourself", "kys", "kill urself", "go die", "go kill yourself",
-  "f4ck", "fck", "fuk", "sh1t", "b1tch", "a$$", "d1ck", "c0ck",
-  "p3d3", "p3d", "t@pette", "tap3tte", "g0uine", "gouin3",
-  "ad@l@", "b@d0", "pel@k@",
-]);
-
-function containsProfanity(text) {
-  if (!text) return false;
-  const normalized = text.toLowerCase()
-    .replace(/[0-9@!$]+/g, (m) => {
-      const map = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "!": "i", "$": "s", "@": "a" };
-      return m.split("").map((c) => map[c] || c).join("");
-    })
-    .replace(/\s+/g, " ").trim();
-  for (const word of PROFANITY_WORDS) {
-    if (normalized.includes(word.toLowerCase())) return true;
-  }
-  return false;
-}
-
 const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300" },
   teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300" },
@@ -521,7 +477,6 @@ export default function MessagePanel({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingMessage, setDeletingMessage] = useState(false);
-  const [profanityModal, setProfanityModal] = useState(null);
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
@@ -646,11 +601,6 @@ export default function MessagePanel({
     const trimmed = text.trim();
     if (!trimmed && !selectedFile) return;
 
-    if (contact.isGlobal && containsProfanity(trimmed)) {
-      setProfanityModal({ type: "message" });
-      return;
-    }
-
     setSending(true);
 
     try {
@@ -699,11 +649,6 @@ export default function MessagePanel({
       return;
     }
     setSelectedFile(file);
-    if (contact.isGlobal && containsProfanity(file.name)) {
-      setProfanityModal({ type: "file", fileName: file.name });
-      e.target.value = "";
-      return;
-    }
     if (file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -1025,73 +970,6 @@ export default function MessagePanel({
         onCancel={cancelDeleteMessage}
         onConfirm={confirmDeleteMessage}
       />
-
-      {profanityModal && (
-        <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setProfanityModal(null)}
-        >
-          <div
-            className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="p-6 text-center"
-              style={{
-                background: "linear-gradient(160deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
-              }}
-            >
-              <div
-                className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                style={{ background: "rgba(239, 68, 68, 0.15)" }}
-              >
-                <FontAwesomeIcon
-                  icon={faTriangleExclamation}
-                  className="text-red-400 text-2xl"
-                />
-              </div>
-              <h3 className="text-white text-lg font-bold mb-2">
-                Contenu inapproprie detecte
-              </h3>
-              <div className="w-12 h-0.5 mx-auto rounded-full bg-red-400/50 mb-4" />
-              <p className="text-white/70 text-sm leading-relaxed">
-                {profanityModal.type === "file" ? (
-                  <>
-                    Le nom de fichier <span className="text-white font-semibold">"{profanityModal.fileName}"</span> contient des propos non autorises.
-                  </>
-                ) : (
-                  <>
-                    Votre message contient des propos non autorises. Veuillez respecter les autres membres de la communaute.
-                  </>
-                )}
-              </p>
-            </div>
-
-            <div className="px-6 pb-6 pt-4 flex flex-col gap-3">
-              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                <FontAwesomeIcon
-                  icon={faShieldHalved}
-                  className="text-amber-500 text-sm mt-0.5 shrink-0"
-                />
-                <p className="text-amber-700 text-xs leading-relaxed">
-                   Les propos injurieux, discriminatoires ou offensants sont interdits dans le chat global. Les messages prives ne sont pas concernes.
-                </p>
-              </div>
-
-              <button
-                onClick={() => setProfanityModal(null)}
-                className="w-full py-3 rounded-2xl font-bold text-sm text-white transition-all duration-200 active:scale-[0.98]"
-                style={{
-                  background: "linear-gradient(135deg, #0A1A33, #001948)",
-                  boxShadow: "0 4px 16px rgba(0,25,72,0.25)",
-                }}
-              >
-                Compris, je vais modifier
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {lightboxImg && (
         <div
