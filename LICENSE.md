@@ -42,22 +42,6 @@ Aucune licence de reproduction ou d'exploitation n'est implicitement accordée p
 
 ---
 
-### 4. Exception Concernant l'API
-
-Par dérogation aux restrictions ci-dessus, l'interface de programmation (API) de cette application est rendue disponible à des fins d'intégration et d'extension.
-
-Les conditions spécifiques d'utilisation et d'accès à cette API sont régies séparément et accessibles sur le dépôt officiel à l'adresse suivante : [github.com/hei-tech-dev-team/stdhub-api](https://github.com/hei-tech-dev-team/stdhub-api)
-
----
-
-### 5. Exclusion de Garantie
-
-> LE LOGICIEL EST FOURNI **« EN L'ÉTAT »**, SANS GARANTIE D'AUCUNE SORTE, EXPRESSE OU IMPLICITE.
->
-> EN AUCUN CAS LES AUTEURS OU TITULAIRES DU DROIT D'AUTEUR NE POURRONT ÊTRE TENUS POUR RESPONSABLES DE TOUTE RÉCLAMATION, DOMMAGES OU AUTRE RESPONSABILITÉ, QUE CE SOIT DANS LE CADRE D'UNE ACTION CONTRACTUELLE, DÉLICTUELLE OU AUTRE, DÉCOULANT DE, OU EN LIEN AVEC LE LOGICIEL OU SON UTILISATION.
-
----
----
 
 ## 🇬🇧 ENGLISH VERSION
 
@@ -98,17 +82,3 @@ Public access to this GitHub repository is provided solely for purposes of **con
 No license to reproduce or exploit the contents is implicitly granted by this public visibility.
 
 ---
-
-### 4. API Exception
-
-As an exception to the restrictions above, the application programming interface (API) of this application is made available for integration and extension purposes.
-
-The specific terms of use and access for this API are governed separately and can be found on the official repository at the following address: [github.com/hei-tech-dev-team/stdhub-api](https://github.com/hei-tech-dev-team/stdhub-api)
-
----
-
-### 5. Disclaimer of Warranty
-
-> THE SOFTWARE IS PROVIDED **"AS IS"**, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
->
-> IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
