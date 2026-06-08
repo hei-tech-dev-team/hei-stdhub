@@ -122,21 +122,25 @@ router.get("/global", auth, async (req, res) => {
   try {
     const { before, limit = 200 } = req.query;
     const msgLimit = Math.min(parseInt(limit) || 200, 500);
-    let query;
-    let params;
+    let query, params;
+
     if (before) {
       query = `
-        SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
-               u.role AS sender_role, u.avatar AS sender_avatar
-        FROM messages m
-        LEFT JOIN users u ON m.sender_id = u.id
-        WHERE m.is_global = TRUE AND m.id < $1
-        ORDER BY m.created_at DESC
-        LIMIT $2`;
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+                 u.role AS sender_role, u.avatar AS sender_avatar
+          FROM messages m
+          LEFT JOIN users u ON m.sender_id = u.id
+          WHERE m.is_global = TRUE AND m.id < $1
+          ORDER BY m.created_at DESC
+          LIMIT $2
+        ) base`;
       params = [before, msgLimit];
     } else {
       query = `
-        SELECT * FROM (
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
           SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
                  u.role AS sender_role, u.avatar AS sender_avatar
           FROM messages m
@@ -144,9 +148,11 @@ router.get("/global", auth, async (req, res) => {
           WHERE m.is_global = TRUE
           ORDER BY m.created_at DESC
           LIMIT $1
-        ) sub ORDER BY created_at ASC`;
+        ) base
+        ORDER BY base.created_at ASC`;
       params = [msgLimit];
     }
+
     const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -159,27 +165,34 @@ router.get("/private/:userId", auth, async (req, res) => {
   try {
     const { before, limit = 100 } = req.query;
     const msgLimit = Math.min(parseInt(limit) || 100, 500);
-    let query;
-    let params;
+    let query, params;
+
     if (before) {
       query = `
-        SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
-        FROM messages m
-        LEFT JOIN users u ON m.sender_id = u.id
-        WHERE m.is_global = FALSE
-          AND m.id < $1
-          AND (
-            (m.sender_id = $2 AND m.receiver_id = $3)
-            OR
-            (m.sender_id = $3 AND m.receiver_id = $2)
-          )
-        ORDER BY m.created_at DESC
-        LIMIT $4`;
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+                 u.role AS sender_role, u.avatar AS sender_avatar
+          FROM messages m
+          LEFT JOIN users u ON m.sender_id = u.id
+          WHERE m.is_global = FALSE
+            AND m.id < $1
+            AND (
+              (m.sender_id = $2 AND m.receiver_id = $3)
+              OR
+              (m.sender_id = $3 AND m.receiver_id = $2)
+            )
+          ORDER BY m.created_at DESC
+          LIMIT $4
+        ) base
+        ORDER BY base.created_at ASC`;
       params = [before, req.user.id, req.params.userId, msgLimit];
     } else {
       query = `
-        SELECT * FROM (
-          SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+                 u.role AS sender_role, u.avatar AS sender_avatar
           FROM messages m
           LEFT JOIN users u ON m.sender_id = u.id
           WHERE m.is_global = FALSE
@@ -190,9 +203,11 @@ router.get("/private/:userId", auth, async (req, res) => {
             )
           ORDER BY m.created_at DESC
           LIMIT $3
-        ) sub ORDER BY created_at ASC`;
+        ) base
+        ORDER BY base.created_at ASC`;
       params = [req.user.id, req.params.userId, msgLimit];
     }
+
     const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
