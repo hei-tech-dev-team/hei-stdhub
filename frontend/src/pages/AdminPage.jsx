@@ -869,7 +869,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <input
                       className="input-field flex-1 font-mono uppercase text-sm"
-                      placeholder="STD26001"
+                      placeholder="STD2@XXX"
                       value={failedL1Input}
                       onChange={(e) => setFailedL1Input(e.target.value)}
                       onKeyDown={(e) => {
@@ -929,7 +929,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <input
                       className="input-field flex-1 font-mono uppercase text-sm"
-                      placeholder="STD25001"
+                      placeholder="STD2@XXX"
                       value={failedL2Input}
                       onChange={(e) => setFailedL2Input(e.target.value)}
                       onKeyDown={(e) => {
@@ -1122,7 +1122,7 @@ export default function AdminPage() {
                   </label>
                   <input
                     className="input-field font-mono tracking-widest uppercase"
-                    placeholder={`STD${currentYear}001`}
+                    placeholder="STD2@XXX"
                     value={generatedRef}
                     onChange={(e) => setGeneratedRef(e.target.value)}
                     required

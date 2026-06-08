@@ -187,8 +187,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Erreur serveur." });
 });
 
-const { containsProfanity } = require("./middleware/profanity");
-
 // Socket.io event handlers — optimized for scale
 const onlineUsers = new Map();
 const MAX_ONLINE_USERS = parseInt(process.env.MAX_ONLINE_USERS || "5000", 10);
@@ -219,8 +217,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("message:global", (msg) => {
-    if (!msg || !msg.content || containsProfanity(msg.content)) {
-      socket.emit("error", { message: "Message contenant des propos inappropriés." });
+    if (!msg || !msg.content) {
+      socket.emit("error", { message: "Message vide." });
       return;
     }
     io.emit("message:global", msg);
