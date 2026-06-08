@@ -5,7 +5,6 @@ const fs = require("fs");
 const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { containsProfanity } = require("../middleware/profanity");
 const { sendPushToAll } = require("../services/notificationService");
 
 const router = express.Router();
@@ -110,9 +109,6 @@ router.post("/", auth, alumniOnly, (req, res) => {
       const { title, content } = req.body;
       if (!title?.trim() || !content?.trim()) {
         return res.status(400).json({ error: "Le titre et le contenu sont requis." });
-      }
-      if (containsProfanity(title) || containsProfanity(content)) {
-        return res.status(400).json({ error: "Contenu inapproprié détecté. Veuillez respecter les autres membres." });
       }
 
       const imageUrl = req.file
