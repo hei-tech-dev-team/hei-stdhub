@@ -89,6 +89,7 @@ export default function AdminPage() {
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
+  const now = new Date();
   const isOctober = now.getMonth() === 9;
 
   // Passage de classe
@@ -121,7 +122,6 @@ export default function AdminPage() {
   const [announcements, setAnnouncements] = useState([]);
   const [annLoading, setAnnLoading] = useState(false);
 
-  const now = new Date();
   const month = now.getMonth();
   const currentYear = now.getFullYear().toString().slice(-2);
 
