@@ -158,7 +158,7 @@ export default function ChatLayout() {
   }, [markGlobalRead]);
 
   const formatMsg = useCallback(
-    (m) => ({
+  (m) => ({
       id: m.id,
       sender: m.sender_pseudo || "Inconnu",
       senderAvatar: m.sender_avatar || null,
@@ -169,6 +169,7 @@ export default function ChatLayout() {
       own: m.sender_id === user.id,
       seen: m.seen || false,
       createdAt: m.created_at,
+      reactions: Array.isArray(m.reactions) ? m.reactions : [],
     }),
     [user],
   );
@@ -423,6 +424,18 @@ export default function ChatLayout() {
           });
         });
 
+        socket.on("message:reaction", ({ messageId, reactions }) => {
+          setMessages((prev) => {
+            const updated = { ...prev };
+            for (const key of Object.keys(updated)) {
+              updated[key] = updated[key].map((m) =>
+                m.id === messageId ? { ...m, reactions } : m
+              );
+            }
+            return updated;
+          });
+        });
+
         if (cancelled) return;
       })
       .catch(console.error);
@@ -441,6 +454,7 @@ export default function ChatLayout() {
         socket.off("unread:update");
         socket.off("typing:started");
         socket.off("typing:stopped");
+        socket.off("message:reaction"); 
       }
     };
   }, [user, formatMsg, fetchUnread, markSeen]);
@@ -472,6 +486,35 @@ export default function ChatLayout() {
       console.error(err);
     }
   };
+
+  const handleReact = useCallback(async (messageId, emoji) => {
+    setMessages((prev) => {
+      const updated = { ...prev };
+      for (const key of Object.keys(updated)) {
+        updated[key] = updated[key].map((m) => {
+          if (m.id !== messageId) return m;
+          const reactions = m.reactions || [];
+          const alreadyReacted = reactions.some(
+            (r) => r.userId === user.id && r.emoji === emoji
+          );
+          return {
+            ...m,
+            reactions: alreadyReacted
+              ? reactions.filter((r) => !(r.userId === user.id && r.emoji === emoji))
+              : [...reactions, { userId: user.id, userName: user.pseudo, emoji }],
+          };
+        });
+      }
+      return updated;
+    });
+
+    try {
+      await api.post(`/messages/${messageId}/reactions`, { emoji });
+    } catch (err) {
+      console.error("Erreur réaction:", err);
+      loadMessages(activeContactRef.current, true);
+    }
+  }, [user, loadMessages]);
 
   const handleSelectContact = (contact) => {
     setActiveContact(contact);
@@ -536,6 +579,8 @@ export default function ChatLayout() {
           typingUsers={typingList}
           socketState={socketState}
           onTypingChange={emitTypingThrottled}
+          onReact={handleReact}
+          currentUserId={user.id}  
         />
       </div>
     </div>
