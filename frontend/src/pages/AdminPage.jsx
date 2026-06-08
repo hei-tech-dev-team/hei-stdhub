@@ -93,14 +93,14 @@ export default function AdminPage() {
   const isOctober = now.getMonth() === 9;
 
   // Passage de classe
-  const [failedRefs, setFailedRefs] = useState([]);
-  const [failedInput, setFailedInput] = useState("");
+  const [failedL1Refs, setFailedL1Refs] = useState([]);
+  const [failedL1Input, setFailedL1Input] = useState("");
+  const [failedL2Refs, setFailedL2Refs] = useState([]);
+  const [failedL2Input, setFailedL2Input] = useState("");
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [upgradeDone, setUpgradeDone] = useState(false);
 
   // Passage alumni
-  const [alumniFailedRefs, setAlumniFailedRefs] = useState([]);
-  const [alumniFailedInput, setAlumniFailedInput] = useState("");
   const [alumniUpgradeLoading, setAlumniUpgradeLoading] = useState(false);
   const [alumniUpgradeDone, setAlumniUpgradeDone] = useState(false);
 
@@ -321,24 +321,40 @@ export default function AdminPage() {
   };
 
   // Passage de classe
-  const handleAddFailedRef = () => {
-    const ref = failedInput.trim().toUpperCase();
+  const handleAddFailedL1Ref = () => {
+    const ref = failedL1Input.trim().toUpperCase();
     if (!ref) return;
-    if (failedRefs.includes(ref)) return;
-    setFailedRefs((prev) => [...prev, ref]);
-    setFailedInput("");
+    if (failedL1Refs.includes(ref)) return;
+    setFailedL1Refs((prev) => [...prev, ref]);
+    setFailedL1Input("");
   };
 
-  const handleRemoveFailedRef = (ref) => {
-    setFailedRefs((prev) => prev.filter((r) => r !== ref));
+  const handleRemoveFailedL1Ref = (ref) => {
+    setFailedL1Refs((prev) => prev.filter((r) => r !== ref));
+  };
+
+  const handleAddFailedL2Ref = () => {
+    const ref = failedL2Input.trim().toUpperCase();
+    if (!ref) return;
+    if (failedL2Refs.includes(ref)) return;
+    setFailedL2Refs((prev) => [...prev, ref]);
+    setFailedL2Input("");
+  };
+
+  const handleRemoveFailedL2Ref = (ref) => {
+    setFailedL2Refs((prev) => prev.filter((r) => r !== ref));
   };
 
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
-      await api.post("/admin/class-upgrade", { failed_refs: failedRefs });
+      await api.post("/admin/class-upgrade", {
+        failed_l1_refs: failedL1Refs,
+        failed_l2_refs: failedL2Refs,
+      });
       setUpgradeDone(true);
-      setFailedRefs([]);
+      setFailedL1Refs([]);
+      setFailedL2Refs([]);
       loadUsers();
     } catch (err) {
       console.error(err);
@@ -350,9 +366,8 @@ export default function AdminPage() {
   const handleAlumniUpgrade = async () => {
     setAlumniUpgradeLoading(true);
     try {
-      await api.post("/admin/alumni-upgrade", { failed_refs: alumniFailedRefs });
+      await api.post("/admin/alumni-upgrade");
       setAlumniUpgradeDone(true);
-      setAlumniFailedRefs([]);
       loadUsers();
     } catch (err) {
       console.error(err);
@@ -831,10 +846,8 @@ export default function AdminPage() {
                     Passage de classe — {now.getFullYear()}
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Saisissez les étudiants qui{" "}
-                    <strong className="text-red-500">ne passent pas</strong>{" "}
-                    dans la classe supérieure. Tous les autres seront
-                    automatiquement promus.
+                    Ajoutez les redoublants de chaque niveau. Tous les autres
+                    seront automatiquement promus (L1→L2, L2→L3).
                   </p>
                 </div>
               </div>
@@ -846,63 +859,133 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mb-4">
-                <input
-                  className="input-field flex-1 font-mono uppercase"
-                  placeholder="Référence STD (ex: STD25001)"
-                  value={failedInput}
-                  onChange={(e) => setFailedInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddFailedRef();
-                    }
-                  }}
-                  disabled={!isOctober}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddFailedRef}
-                  className="btn-primary"
-                  disabled={!isOctober}
-                >
-                  <FontAwesomeIcon icon={faBan} className="text-sm" />
-                </button>
-              </div>
-
-              {failedRefs.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                    Étudiants en échec ({failedRefs.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {failedRefs.map((ref) => (
-                      <span
-                        key={ref}
-                        className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full"
-                      >
-                        {ref}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFailedRef(ref)}
-                          className="hover:text-red-800"
-                          disabled={!isOctober}
-                        >
-                          <FontAwesomeIcon icon={faTimes} size="xs" />
-                        </button>
-                      </span>
-                    ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Colonne L1 */}
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <h3 className="text-sm font-bold text-orange-700 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-orange-200 text-orange-700 flex items-center justify-center text-xs font-bold">L1</span>
+                    Redoublants L1 (ne passent pas en L2)
+                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      className="input-field flex-1 font-mono uppercase text-sm"
+                      placeholder="STD26001"
+                      value={failedL1Input}
+                      onChange={(e) => setFailedL1Input(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddFailedL1Ref();
+                        }
+                      }}
+                      disabled={!isOctober}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddFailedL1Ref}
+                      className="btn-primary text-xs px-3 py-2"
+                      disabled={!isOctober}
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleAddFailedL1Ref}
+                    className="text-xs text-orange-600 font-semibold hover:text-orange-800 transition disabled:opacity-40"
+                    disabled={!isOctober || !failedL1Input.trim()}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="mr-1" />
+                    Ajouter un autre redoublant
+                  </button>
+                  {failedL1Refs.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {failedL1Refs.map((ref) => (
+                        <span
+                          key={ref}
+                          className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full"
+                        >
+                          {ref}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFailedL1Ref(ref)}
+                            className="hover:text-red-900"
+                            disabled={!isOctober}
+                          >
+                            <FontAwesomeIcon icon={faTimes} size="xs" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Colonne L2 */}
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                  <h3 className="text-sm font-bold text-purple-700 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center text-xs font-bold">L2</span>
+                    Redoublants L2 (ne passent pas en L3)
+                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      className="input-field flex-1 font-mono uppercase text-sm"
+                      placeholder="STD25001"
+                      value={failedL2Input}
+                      onChange={(e) => setFailedL2Input(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddFailedL2Ref();
+                        }
+                      }}
+                      disabled={!isOctober}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddFailedL2Ref}
+                      className="btn-primary text-xs px-3 py-2"
+                      disabled={!isOctober}
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddFailedL2Ref}
+                    className="text-xs text-purple-600 font-semibold hover:text-purple-800 transition disabled:opacity-40"
+                    disabled={!isOctober || !failedL2Input.trim()}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="mr-1" />
+                    Ajouter un autre redoublant
+                  </button>
+                  {failedL2Refs.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {failedL2Refs.map((ref) => (
+                        <span
+                          key={ref}
+                          className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full"
+                        >
+                          {ref}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFailedL2Ref(ref)}
+                            className="hover:text-red-900"
+                            disabled={!isOctober}
+                          >
+                            <FontAwesomeIcon icon={faTimes} size="xs" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
                 <p className="text-xs text-blue-700">
                   <FontAwesomeIcon icon={faArrowRight} className="mr-1" />
-                  Les étudiants <strong>L3</strong> qui passent deviendront{" "}
-                  <strong>AlumniHEI</strong>.
-                  <br />
                   Les étudiants <strong>L1</strong> passeront en <strong>L2</strong>, les <strong>L2</strong> en <strong>L3</strong>.
+                  Les redoublants listés ci-dessus seront exclus.
                 </p>
               </div>
 
@@ -917,7 +1000,7 @@ export default function AdminPage() {
                 ) : (
                   <FontAwesomeIcon icon={faArrowRight} />
                 )}
-                Valider le passage de classe
+                Confirmer les redoublements
               </button>
             </div>
           )}
@@ -940,9 +1023,8 @@ export default function AdminPage() {
                     Passage en section Alumni
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Promouvoir les étudiants <strong>L3</strong> en{" "}
-                    <strong>AlumniHEI</strong>. Saisissez ceux qui{" "}
-                    <strong className="text-red-500">ne passent pas</strong>.
+                    Promouvoir <strong>tous</strong> les étudiants{" "}
+                    <strong>L3</strong> en <strong>AlumniHEI</strong>.
                   </p>
                 </div>
               </div>
@@ -954,65 +1036,11 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mb-4">
-                <input
-                  className="input-field flex-1 font-mono uppercase"
-                  placeholder="Référence STD (ex: STD23001)"
-                  value={alumniFailedInput}
-                  onChange={(e) => setAlumniFailedInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const ref = alumniFailedInput.trim().toUpperCase();
-                      if (ref && !alumniFailedRefs.includes(ref)) {
-                        setAlumniFailedRefs((prev) => [...prev, ref]);
-                        setAlumniFailedInput("");
-                      }
-                    }
-                  }}
-                  disabled={!isOctober}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const ref = alumniFailedInput.trim().toUpperCase();
-                    if (ref && !alumniFailedRefs.includes(ref)) {
-                      setAlumniFailedRefs((prev) => [...prev, ref]);
-                      setAlumniFailedInput("");
-                    }
-                  }}
-                  className="btn-primary"
-                  disabled={!isOctober}
-                >
-                  <FontAwesomeIcon icon={faBan} className="text-sm" />
-                </button>
-              </div>
-
-              {alumniFailedRefs.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                    Étudiants exclus ({alumniFailedRefs.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {alumniFailedRefs.map((ref) => (
-                      <span
-                        key={ref}
-                        className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full"
-                      >
-                        {ref}
-                        <button
-                          type="button"
-                          onClick={() => setAlumniFailedRefs((prev) => prev.filter((r) => r !== ref))}
-                          className="hover:text-red-800"
-                          disabled={!isOctober}
-                        >
-                          <FontAwesomeIcon icon={faTimes} size="xs" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="text-sm text-gray-500 mb-6">
+                Cette action fera passer <strong>tous</strong> les étudiants
+                actuellement en L3 vers le statut Alumni. Cette opération
+                est irréversible.
+              </p>
 
               <button
                 type="button"
@@ -1023,9 +1051,9 @@ export default function AdminPage() {
                 {alumniUpgradeLoading ? (
                   <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
                 ) : (
-                  <FontAwesomeIcon icon={faArrowRight} />
+                  <FontAwesomeIcon icon={faGraduationCap} />
                 )}
-                Promouvoir en Alumni
+                Faire passer les L3 en compte Alumni
               </button>
             </div>
           )}
