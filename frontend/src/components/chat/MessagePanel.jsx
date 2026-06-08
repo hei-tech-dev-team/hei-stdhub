@@ -166,103 +166,201 @@ function DateSeparator({ date }) {
   );
 }
 
-function ImageMessage({ parsed, onImageClick, onDelete, onDownload, isOwn }) {
-  const [showActions, setShowActions] = useState(false);
-  const isMobile = window.matchMedia("(max-width: 1023px)").matches;
-
-   const handlers = useLongPress(
-    () => setShowActions(true),
-    () => onImageClick?.({ url: parsed.url, filename: parsed.filename }),
-  );
-
+function MessageActionSheet({ msg, isOwn, currentUserId, onReact, onClose, children }) {
   return (
-    <div className="relative" {...handlers}>
-      <img
-        src={parsed.url}
-        alt={parsed.filename}
-        className="max-w-[200px] sm:max-w-[320px] max-h-[300px] w-auto h-auto object-contain rounded-lg block bg-black/20 select-none"
-        loading="lazy"
-        draggable={false}
-        onContextMenu={(e) => e.preventDefault()}
-        style={{ WebkitTouchCallout: "none" }}
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/50"
+        onClick={onClose}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
       />
 
-       {showActions && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} onTouchStart={(e) => e.stopPropagation()}
-                  onTouchEnd={(e) => e.stopPropagation()} />
+      <div
+        className="fixed bottom-0 inset-x-0 z-50 bg-navy-dark border-t border-white/10
+                   rounded-t-2xl shadow-2xl animate-fade-in pb-safe"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-5" />
 
-          {isMobile ? (
-            <div className="fixed bottom-0 inset-x-0 z-50 bg-navy-dark border-t border-white/10 rounded-t-2xl shadow-2xl animate-fade-in pb-safe"
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onTouchEnd={(e) => e.stopPropagation()}
-            >
-              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-4" />
-              <button type="button"
-                onClick={(e) => { e.stopPropagation(); setShowActions(false); onImageClick?.({ url: parsed.url, filename: parsed.filename }); }}
-                className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-                <FontAwesomeIcon icon={faEye} /> Visionner
+        <div className="flex justify-around items-center px-6 pb-5">
+          {QUICK_REACTIONS.map((emoji) => {
+            const hasOwn = msg.reactions?.some(
+              (r) => r.userId === currentUserId && r.emoji === emoji
+            );
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => { onReact(emoji); onClose(); }}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl
+                            transition-all active:scale-90
+                            ${hasOwn ? "bg-gold/20" : "active:bg-white/10"}`}
+              >
+                <span className="text-3xl leading-none">{emoji}</span>
+                {hasOwn && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+                )}
               </button>
-              <button type="button"
-                onClick={(e) => { e.stopPropagation(); setShowActions(false); onDownload?.(parsed.url, parsed.filename); }}
-                className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-                <FontAwesomeIcon icon={faDownload} /> Télécharger
-              </button>
-              {isOwn && (
-                <button type="button"
-                  onClick={(e) => { e.stopPropagation(); setShowActions(false); onDelete?.(); }}
-                  className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
-                  <FontAwesomeIcon icon={faTrash} /> Supprimer
-                </button>
-              )}
-              <div className="h-4" />
-            </div>
-          ) : (
-            <div className="absolute bottom-full left-0 mb-2 z-50 bg-navy-dark border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fade-in">
-              <button type="button"
-                onClick={() => { setShowActions(false); onDelete?.(); }}
-                className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition w-full whitespace-nowrap">
-                <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                Supprimer le message
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+            );
+          })}
+        </div>
+
+        <div className="h-px bg-white/10 mx-5 mb-2" />
+
+        <div className="flex flex-col pb-6">
+          {children}
+        </div>
+      </div>
+    </>
   );
 }
 
-function FileMessage({ parsed, onShowDeleteChange }) {
-  const handleDownload = useCallback(async () => {
-    try {
-      const response = await fetch(parsed.url);
-      const blob = await response.blob();
-      const localUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = localUrl;
-      a.download = parsed.filename || "fichier";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(localUrl);
-    } catch {
-      window.open(parsed.url, "_blank");
-    }
-  }, [parsed.url, parsed.filename]);
+function TextMessage({
+  msg, isOwn, currentUserId,
+  isFirst,
+  onReact, onDelete, onImageClick, onDownload,
+  pickerMsgId, setPickerMsgId,
+}) {
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
 
-  const handlers = useLongPress(
-    () => onShowDeleteChange?.(true),
-    handleDownload,
+  const isMobile = useRef(
+    typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches
+  ).current;
+
+  const timeStr = formatTime(new Date(msg.createdAt));
+
+  const longPressHandlers = useLongPress(
+    () => { if (isMobile) setActionSheetOpen(true); },
+    null,
   );
 
   return (
-    <div
-      className="relative flex items-center gap-2 py-3 px-2 bg-blue-900/90 hover:bg-blue-900 cursor-pointer transition-all max-w-full"
-      {...handlers}
+    <>
+      <div
+        className={`group relative flex items-end gap-2 mb-2
+                    max-w-[95%] sm:max-w-[75%] min-w-0
+                    ${isOwn ? "flex-row-reverse" : "flex-row"}
+                    animate-message-in`}
+        {...longPressHandlers}
+      >
+        {!isOwn && isFirst && (
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
+            <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
+          </div>
+        )}
+        {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
+
+        <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
+          {isFirst && (
+            <span className={`text-[11px] font-semibold mb-1 ml-1 flex items-center
+                              ${isOwn ? "text-navy-dark" : "text-gold"}`}>
+              {isOwn ? "Vous" : msg.senderRef
+                ? <Link to={`/user/${msg.senderRef}`} className="hover:underline">{msg.sender}</Link>
+                : msg.sender}
+              {!isOwn && <RoleBadge role={msg.senderRole} />}
+            </span>
+          )}
+
+          <div className="relative">
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                className={`absolute top-1/2 -translate-y-1/2 z-10
+                            opacity-0 group-hover:opacity-100 transition-all
+                            w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-sm
+                            hover:scale-110 active:scale-95
+                            ${isOwn ? "-left-9" : "-right-9"}`}
+                title="Réagir"
+              >
+                <FontAwesomeIcon icon={faSmile} className="text-gray-400"/>
+              </button>
+            )}
+
+            {!isMobile && pickerMsgId === msg.id && (
+              <div className={`absolute bottom-full mb-1 z-50 ${isOwn ? "right-0" : "left-0"}`}>
+                <ReactionPicker
+                  onReact={(emoji) => onReact?.(msg.id, emoji)}
+                  onClose={() => setPickerMsgId(null)}
+                />
+              </div>
+            )}
+
+            <div className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full
+                             select-none
+                             ${isOwn
+                               ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
+                               : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
+                             }`}>
+              {renderContent(msg.content, onImageClick, () => onDelete?.(msg), isOwn, onDownload)}
+            </div>
+          </div>
+
+          <ReactionList
+            reactions={msg.reactions}
+            currentUserId={currentUserId}
+            onReact={(emoji) => onReact?.(msg.id, emoji)}
+          />
+
+          <div className={`flex items-center gap-1.5 mt-0.5 px-1
+                           ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+            <span className="text-[10px] text-white/30">{timeStr}</span>
+            {isOwn && (
+              <>
+                <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                  {msg.seen ? "✓✓" : "✓"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDelete?.(msg)}
+                  className="opacity-0 group-hover:opacity-100 text-white/30
+                             hover:text-red-400 transition-all text-[10px] ml-1"
+                  title="Supprimer"
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {actionSheetOpen && (
+        <MessageActionSheet
+          msg={msg}
+          isOwn={isOwn}
+          currentUserId={currentUserId}
+          onReact={(emoji) => onReact?.(msg.id, emoji)}
+          onClose={() => setActionSheetOpen(false)}
+        >
+        </MessageActionSheet>
+      )}
+    </>
+  );
+}
+
+function ImageMessage({ parsed }) {
+  return (
+    <img
+      src={parsed.url}
+      alt={parsed.filename}
+      className="max-w-[200px] sm:max-w-[320px] max-h-[300px] w-auto h-auto
+                 object-contain rounded-lg block bg-black/20 select-none"
+      loading="lazy"
+      draggable={false}
       onContextMenu={(e) => e.preventDefault()}
       style={{ WebkitTouchCallout: "none" }}
-    >
+    />
+  );
+}
+
+
+function FileMessage({ parsed }) {
+  return (
+    <div className="flex items-center gap-2 py-3 px-2 bg-blue-900/90 max-w-full">
       <div className="flex flex-col items-center bg-gold-700/10 border-2 border-gold rounded-lg shrink-0 py-2 px-3">
         <FontAwesomeIcon className="text-sm text-gold" icon={faFile} />
         <span className="text-[9px] font-bold text-gold uppercase">
@@ -274,6 +372,159 @@ function FileMessage({ parsed, onShowDeleteChange }) {
         <span>{parsed.size && `(${(parsed.size / 1024).toFixed(1)} KB)`}</span>
       </div>
     </div>
+  );
+}
+
+function MediaMessage({
+  msg, isOwn, isFirst, currentUserId,
+  onReact, onDelete, onImageClick, onDownload,
+  pickerMsgId, setPickerMsgId,
+}) {
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+
+  const parsed  = parseFileContent(msg.content);
+  const isImage = parsed?.type === "img";
+  const isMobile = useRef(window.matchMedia("(max-width: 1023px)").matches).current;
+  const timeStr = formatTime(new Date(msg.createdAt));
+
+  const handleDownload = useCallback(async () => {
+    try {
+      const res  = await fetch(parsed.url);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url;
+      a.download = parsed.filename || "fichier";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(parsed.url, "_blank");
+    }
+  }, [parsed.url, parsed.filename]);
+
+  const longPressHandlers = useLongPress(
+    () => setActionSheetOpen(true),
+    () => isImage
+      ? onImageClick?.({ url: parsed.url, filename: parsed.filename })
+      : handleDownload(),
+  );
+
+  return (
+    <>
+      <div
+        className={`group relative flex items-end gap-2 mb-2
+                    max-w-[95%] sm:max-w-[75%] min-w-0
+                    ${isOwn ? "flex-row-reverse" : "flex-row"}`}
+      >
+        {!isOwn && isFirst && (
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
+            <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
+          </div>
+        )}
+        {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
+
+        <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
+          {isFirst && (
+            <span className={`text-[11px] font-semibold mb-1 ml-1 flex items-center
+                              ${isOwn ? "text-navy-dark" : "text-gold"}`}>
+              {isOwn ? "Vous" : msg.senderRef
+                ? <Link to={`/user/${msg.senderRef}`} className="hover:underline">{msg.sender}</Link>
+                : msg.sender}
+              {!isOwn && <RoleBadge role={msg.senderRole} />}
+            </span>
+          )}
+
+          <div className="relative">
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                className={`absolute top-1/2 -translate-y-1/2 z-10
+                            opacity-0 group-hover:opacity-100 transition-all
+                            w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center
+                            hover:scale-110 active:scale-95
+                            ${isOwn ? "-left-9" : "-right-9"}`}
+              >
+                <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
+              </button>
+            )}
+
+            {!isMobile && pickerMsgId === msg.id && (
+              <div className={`absolute bottom-full mb-1 z-50 ${isOwn ? "right-0" : "left-0"}`}>
+                <ReactionPicker
+                  onReact={(emoji) => onReact?.(msg.id, emoji)}
+                  onClose={() => setPickerMsgId(null)}
+                />
+              </div>
+            )}
+
+            <div
+              className={`rounded-xl overflow-hidden cursor-pointer
+                          ${isOwn
+                            ? "bg-gold/95"
+                            : "bg-white/[0.08] border border-white/10"}`}
+              {...longPressHandlers}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ WebkitTouchCallout: "none" }}
+            >
+              {isImage
+                ? <ImageMessage parsed={parsed} />
+                : <FileMessage  parsed={parsed} />
+              }
+            </div>
+          </div>
+
+          <ReactionList
+            reactions={msg.reactions}
+            currentUserId={currentUserId}
+            onReact={(emoji) => onReact?.(msg.id, emoji)}
+          />
+
+          <div className={`flex items-center gap-1.5 mt-0.5 px-1
+                           ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+            <span className="text-[10px] text-white/30">{timeStr}</span>
+            {isOwn && (
+              <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                {msg.seen ? "✓✓" : "✓"}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {actionSheetOpen && (
+        <MessageActionSheet
+          msg={msg}
+          isOwn={isOwn}
+          currentUserId={currentUserId}
+          onReact={(emoji) => onReact?.(msg.id, emoji)}
+          onClose={() => setActionSheetOpen(false)}
+        >
+          {isImage && (
+            <button type="button"
+              onClick={() => { setActionSheetOpen(false); onImageClick?.({ url: parsed.url, filename: parsed.filename }); }}
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+              <FontAwesomeIcon icon={faEye} /> Visionner
+            </button>
+          )}
+          <button type="button"
+            onClick={() => { setActionSheetOpen(false); handleDownload(); }}
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+            <FontAwesomeIcon icon={faDownload} /> Télécharger
+          </button>
+          {isOwn && (
+            <button type="button"
+              onClick={() => { setActionSheetOpen(false); onDelete?.(msg); }}
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
+              <FontAwesomeIcon icon={faTrash} /> Supprimer
+            </button>
+          )}
+        </MessageActionSheet>
+      )}
+    </>
   );
 }
 
@@ -389,163 +640,23 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
 }
 
 function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload, onReact, currentUserId }) {
-  const [showDeleteFileId, setShowDeleteFileId] = useState(null);
-  const [pickerMsgId, setPickerMsgId] = useState(null);
-
-  const handleDelete = (msg) => {
-    onDelete?.(msg);
-  };
+  const [pickerMsgId, setPickerMsgId] = useState(null); // partagé entre tous les messages du groupe
 
   return (
     <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
       {messages.map((msg, idx) => {
         const isFirst = idx === 0;
-        const date = new Date(msg.createdAt);
-        const timeStr = formatTime(date);
+        const sharedProps = {
+          msg, isOwn, isFirst, currentUserId,
+          onReact, onDelete, onImageClick, onDownload,
+          pickerMsgId, setPickerMsgId,
+        };
 
         if (isFileMessage(msg.content)) {
-          return (
-            <div
-              key={msg.id}
-              className="group flex flex-col items-end mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0"
-            >
-              <div className="flex  items-center gap-2">
-                {isOwn && showDeleteFileId === msg.id && (
-                  <>
-                    <div className="fixed inset-0 z-40"
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => { e.stopPropagation(); setShowDeleteFileId(null); }}
-                      onClick={() => setShowDeleteFileId(null)}
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setShowDeleteFileId(null); handleDelete(msg); }}
-                      className="z-50 w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow-lg shrink-0"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </>
-                )}
-
-                <div className={`rounded-xl overflow-hidden ${isOwn ? "bg-gold/95 text-navy-dark" : "bg-white/[0.08] border border-white/10 text-white"}`}>
-                  {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload, msg.id, showDeleteFileId === msg.id, (v) => setShowDeleteFileId(v ? msg.id : null))}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 mt-0.5 px-1 flex-row-reverse">
-                <span className="text-[10px] text-white/30">{timeStr}</span>
-                {isOwn && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(msg)}
-                    className="hidden sm:block opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
-                    title="Supprimer"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                )}
-              </div>
-                
-            </div>
-          );
+          return <MediaMessage key={msg.id} {...sharedProps} />;
         }
 
-        return (
-          <div
-            key={msg.id}
-            className={`group relative flex items-end gap-2 mb-2 max-w-[95%] sm:max-w-[75%] min-w-0 ${
-              isOwn ? "flex-row-reverse" : "flex-row"
-            } animate-message-in`}
-            style={{ animationDelay: `${idx * 0.03}s` }}
-          >
-            {!isOwn && isFirst && (
-              <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
-                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
-              </div>
-            )}
-            {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
-
-            <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
-              {isFirst && (
-                <span
-                  className={`text-[11px] font-semibold mb-1 ml-1 flex items-center ${
-                    isOwn ? "text-navy-dark" : "text-gold"
-                  }`}
-                >
-                  {isOwn ? "Vous" : msg.senderRef ? (
-                    <Link to={`/user/${msg.senderRef}`} className="hover:underline">
-                      {msg.sender}
-                    </Link>
-                  ) : (
-                    msg.sender
-                  )}
-                  {!isOwn && <RoleBadge role={msg.senderRole} />}
-                </span>
-              )}
-
-              <div className="relative">
-
-                <button
-                  type="button"
-                  onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
-                  className={`absolute top-1/2 -translate-y-1/2 z-10
-                    opacity-0 group-hover:opacity-100 transition-all
-                    w-7 h-7 rounded-full bg-navy-dark border border-white/15
-                    flex items-center justify-center text-sm
-                    hover:scale-110 active:scale-95
-                    ${isOwn ? "-left-9" : "-right-9"}`}
-                  title="Réagir"
-                >
-                  <FontAwesomeIcon icon={faSmile} className="text-gray-400"/>
-                </button>
-
-                {pickerMsgId === msg.id && (
-                  <div className={`absolute bottom-full mb-1 z-50 ${isOwn ? "right-0" : "left-0"}`}>
-                    <ReactionPicker
-                      onReact={(emoji) => onReact?.(msg.id, emoji)}
-                      onClose={() => setPickerMsgId(null)}
-                    />
-                  </div>
-                )}
-
-                <div
-                  className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
-                    isOwn
-                      ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
-                      : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
-                  }`}
-                >
-                  {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload)}
-                </div>
-              </div>
-
-              <ReactionList
-                reactions={msg.reactions}
-                currentUserId={currentUserId}
-                onReact={(emoji) => onReact?.(msg.id, emoji)}
-              />
-
-              <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-                <span className="text-[10px] text-white/30">{timeStr}</span>
-                {isOwn && (
-                  <>
-                    <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
-                      {msg.seen ? "✓✓" : "✓"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(msg)}
-                      className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
-                      title="Supprimer"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        );
+        return <TextMessage key={msg.id} {...sharedProps} />;
       })}
     </div>
   );
