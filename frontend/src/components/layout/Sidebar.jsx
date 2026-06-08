@@ -118,7 +118,11 @@ export default function Sidebar() {
             };
 
             updateCounts();
-            intervalRef.current = setInterval(updateCounts, 15000);
+            const poll = () => {
+              if (document.hidden) return;
+              updateCounts();
+            };
+            intervalRef.current = setInterval(poll, 60000);
             return () => {
               if (intervalRef.current) clearInterval(intervalRef.current);
             };
