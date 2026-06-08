@@ -31,6 +31,59 @@ import {
 import { useLongPress } from "./useLongPress";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+
+function ReactionPicker({ onReact, onClose }) {
+  return (
+    <div
+      className="flex items-center gap-0.5 bg-navy-dark border border-white/15 rounded-full px-2 py-1.5 shadow-xl z-50 animate-fade-in"
+      onMouseLeave={onClose}
+    >
+      {QUICK_REACTIONS.map((emoji) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onReact(emoji); onClose(); }}
+          className="w-8 h-8 flex items-center justify-center text-lg hover:scale-125 active:scale-110 transition-transform rounded-full hover:bg-white/10"
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReactionList({ reactions, currentUserId, onReact }) {
+  if (!reactions?.length) return null;
+
+  const grouped = reactions.reduce((acc, r) => {
+    if (!acc[r.emoji]) acc[r.emoji] = { count: 0, hasOwn: false };
+    acc[r.emoji].count++;
+    if (r.userId === currentUserId) acc[r.emoji].hasOwn = true;
+    return acc;
+  }, {});
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-1 px-1">
+      {Object.entries(grouped).map(([emoji, { count, hasOwn }]) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={() => onReact(emoji)}
+          title={hasOwn ? "Retirer ma réaction" : "Réagir"}
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-all active:scale-95 ${
+            hasOwn
+              ? "bg-gold/20 border-gold/50 text-gold"
+              : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
+          }`}
+        >
+          <span>{emoji}</span>
+          <span className="font-semibold tabular-nums">{count}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const PROFANITY_WORDS = new Set([
   "fuck", "fucker", "fucking", "shit", "shithead", "bullshit", "bitch", "bastard",
@@ -335,8 +388,9 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
   );
 }
 
-function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
+function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload, onReact, currentUserId }) {
   const [showDeleteFileId, setShowDeleteFileId] = useState(null);
+  const [pickerMsgId, setPickerMsgId] = useState(null);
 
   const handleDelete = (msg) => {
     onDelete?.(msg);
@@ -428,15 +482,49 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
                   {!isOwn && <RoleBadge role={msg.senderRole} />}
                 </span>
               )}
-              <div
-                className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
-                  isOwn
-                    ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
-                    : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
-                }`}
-              >
-                {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload)}
+
+              <div className="relative">
+
+                <button
+                  type="button"
+                  onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                  className={`absolute top-1/2 -translate-y-1/2 z-10
+                    opacity-0 group-hover:opacity-100 transition-all
+                    w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                    flex items-center justify-center text-sm
+                    hover:scale-110 active:scale-95
+                    ${isOwn ? "-left-9" : "-right-9"}`}
+                  title="Réagir"
+                >
+                  <FontAwesomeIcon icon={faSmile} className="text-gray-400"/>
+                </button>
+
+                {pickerMsgId === msg.id && (
+                  <div className={`absolute bottom-full mb-1 z-50 ${isOwn ? "right-0" : "left-0"}`}>
+                    <ReactionPicker
+                      onReact={(emoji) => onReact?.(msg.id, emoji)}
+                      onClose={() => setPickerMsgId(null)}
+                    />
+                  </div>
+                )}
+
+                <div
+                  className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
+                    isOwn
+                      ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
+                      : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
+                  }`}
+                >
+                  {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload)}
+                </div>
               </div>
+
+              <ReactionList
+                reactions={msg.reactions}
+                currentUserId={currentUserId}
+                onReact={(emoji) => onReact?.(msg.id, emoji)}
+              />
+
               <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
                 <span className="text-[10px] text-white/30">{timeStr}</span>
                 {isOwn && (
@@ -509,6 +597,8 @@ export default function MessagePanel({
   typingUsers,
   socketState,
   onTypingChange,
+  onReact,
+  currentUserId,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -528,6 +618,14 @@ export default function MessagePanel({
   const scrollRef = useRef(null);
   const prevScrollHeight = useRef(0);
   const prevMsgCount = useRef(messages.length);
+
+  const handleReact = useCallback(async (messageId, emoji) => {
+    try {
+      await onReact?.(messageId, emoji);
+    } catch(err) {
+      alert("Failed to react:", err);
+    }
+  }, [onReact]);
 
   useEffect(() => {
     return () => {
@@ -864,6 +962,8 @@ export default function MessagePanel({
                   onDelete={requestDeleteMessage}
                   onImageClick={setLightboxImg}
                   onDownload={(url, filename) => handleDownloadImg(url, filename)}
+                  onReact={handleReact}
+                  currentUserId={currentUserId} 
                 />
               </div>
             );
