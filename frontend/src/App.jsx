@@ -32,7 +32,7 @@ function LoadingFallback() {
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
         <p className="text-navy font-semibold text-sm">
-          {slow ? "Le serveur démarre, veuillez patienter..." : "Chargement..."}
+          {slow ? "Le chargement peut varier selon la connexion, merci de patienter..." : "Chargement..."}
         </p>
       </div>
     </div>
