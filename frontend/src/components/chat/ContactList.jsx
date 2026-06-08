@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -40,6 +40,42 @@ function StatusDot({ online }) {
     />
   );
 }
+
+function ContactAvatar ({ contact, isActive, onlineUsers }) {
+  if (!contact || contact.isGlobal) {
+    if (!contact) return null;
+    return (
+      <div
+        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
+          ${isActive ? "bg-gold" : "bg-white/10"}`}
+      >
+        <FontAwesomeIcon
+          icon={faComments}
+          className={`text-sm ${isActive ? "text-white" : "text-white/60"}`}
+        />
+      </div>
+    );
+  }
+  const online = onlineUsers.has(contact.id);
+  const avatarInner = (
+    <>
+
+      <UserAvatar
+        avatar={contact.avatar}
+        name={contact.name}
+        size="md"
+        color={isActive ? "bg-gold" : "bg-white/10"}
+      />
+      <span className="absolute -bottom-0.5 -right-0.5">
+        <StatusDot online={online} />
+      </span>
+    </>
+  );
+  if (contact.ref) {
+    return <Link to={`/user/${contact.ref}`} onClick={(e) => e.stopPropagation()} className="relative shrink-0 block hover:opacity-80 transition-opacity">{avatarInner}</Link>;
+  }
+  return <div className="relative shrink-0 block">{avatarInner}</div>;
+};
 
 export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread, favorites, onToggleFavorite }) {
   const { user } = useAuth();
@@ -89,21 +125,25 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     return c?.unread || 0;
   };
 
+  const searchTimeout = useRef(null);
+
   const handleSearch = async (q) => {
     setSearchQuery(q);
-    if (!q.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    setSearching(true);
-    try {
-      const { data } = await api.get(`/messages/search?q=${encodeURIComponent(q)}`);
-      setSearchResults(Array.isArray(data) ? data.filter((u) => u.id !== user.id) : []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSearching(false);
-    }
+    if (!q.trim()) { setSearchResults([]); return; }
+
+    clearTimeout(searchTimeout.current);
+
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data } = await api.get(`/messages/search?q=${encodeURIComponent(q)}`);
+        setSearchResults(Array.isArray(data) ? data.filter((u) => u.id !== user.id) : []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
   };
 
   const handleStartConversation = (u) => {
@@ -117,42 +157,6 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
     setShowSearch(false);
     setSearchQuery("");
     setSearchResults([]);
-  };
-
-  const ContactAvatar = ({ contact, isActive }) => {
-    if (!contact || contact.isGlobal) {
-      if (!contact) return null;
-      return (
-        <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
-            ${isActive ? "bg-gold" : "bg-white/10"}`}
-        >
-          <FontAwesomeIcon
-            icon={faComments}
-            className={`text-sm ${isActive ? "text-white" : "text-white/60"}`}
-          />
-        </div>
-      );
-    }
-    const online = onlineUsers.has(contact.id);
-    const avatarInner = (
-      <>
-
-        <UserAvatar
-          avatar={contact.avatar}
-          name={contact.name}
-          size="md"
-          color={isActive ? "bg-gold" : "bg-white/10"}
-        />
-        <span className="absolute -bottom-0.5 -right-0.5">
-          <StatusDot online={online} />
-        </span>
-      </>
-    );
-    if (contact.ref) {
-      return <Link to={`/user/${contact.ref}`} onClick={(e) => e.stopPropagation()} className="relative shrink-0 block hover:opacity-80 transition-opacity">{avatarInner}</Link>;
-    }
-    return <div className="relative shrink-0 block">{avatarInner}</div>;
   };
 
   return (
@@ -196,6 +200,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
         {filtered.filter(Boolean).map((contact) => {
           const isActive = contact.id === activeId;
+          const count = getUnreadCount(contact);
           const handleKey = (e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
@@ -215,7 +220,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                   : "border border-transparent hover:bg-white/10"
               }`}
             >
-              <ContactAvatar contact={contact} isActive={isActive} />
+              <ContactAvatar contact={contact} isActive={isActive} onlineUsers={onlineUsers} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span
@@ -252,9 +257,9 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                   </span>
                 )}
               </div>
-              {getUnreadCount(contact) > 0 && (
-                <span className="min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5 shrink-0 self-center">
-                  {getUnreadCount(contact) > 99 ? "99+" : getUnreadCount(contact)}
+              {count > 0 && (
+                <span>
+                  {count > 99 ? "99+" : count}
                 </span>
               )}
             </div>
