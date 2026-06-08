@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { containsProfanity } = require("../middleware/profanity");
+
 
 router.post("/", auth, async (req, res) => {
   if (!["student", "teacher", "alumni", "admin"].includes(req.user.role))

@@ -20,11 +20,6 @@ export default function SuggestionPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  const validateContent = (content) => {
-    if (!content) return "Le contenu est requis.";
-    return null;
-  };
-
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
@@ -32,23 +27,14 @@ export default function SuggestionPage() {
     const titre = form.titre.trim();
     const contenu = form.contenu.trim();
     if (!titre) return setError("Le titre est requis.");
-    const contentError = validateContent(contenu);
-    if (contentError) return setError(contentError);
-
-    // 4. Rate Limiting local (Cooldown de 60 secondes)
-    const lastSent = localStorage.getItem("last_suggestion_at");
-    if (lastSent && Date.now() - parseInt(lastSent) < 60000) {
-      const wait = Math.ceil((60000 - (Date.now() - parseInt(lastSent))) / 1000);
-      return setError(`Veuillez attendre ${wait}s avant d'envoyer une nouvelle suggestion.`);
-    }
+    if (!contenu) return setError("Le contenu est requis.");
 
     setLoading(true);
     setError("");
     try {
-      await api.post("/suggestions", { titre: form.titre.trim(), contenu: form.contenu.trim(), anonyme: form.anonyme });
+      await api.post("/suggestions", { titre, contenu, anonyme: form.anonyme });
       setSubmitted(true);
       setForm({ titre: "", contenu: "", anonyme: false });
-      localStorage.setItem("last_suggestion_at", Date.now().toString());
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'envoi.");
@@ -125,16 +111,11 @@ export default function SuggestionPage() {
                     className="input-field"
                     placeholder="Résumez votre idée en quelques mots..."
                     value={form.titre}
-                    maxLength={120}
                     onChange={(e) => {
                       set("titre", e.target.value);
-                      // Clear content error when title changes, as it's a separate field
                       setError("");
                     }}
                   />
-                  <p className="text-xs text-gray-400 mt-1 text-right">
-                    {form.titre.length}/120
-                  </p>
                 </div>
 
                 <div>
@@ -145,17 +126,11 @@ export default function SuggestionPage() {
                     className="input-field resize-none h-40"
                     placeholder="Décrivez votre suggestion en détail. Quel est le problème ? Quelle est votre solution proposée ?"
                     value={form.contenu}
-                    maxLength={500} // Réduit la longueur max pour encourager la concision
                     onChange={(e) => {
-                      const val = e.target.value;
-                      set("contenu", val);
-                      const msg = validateContent(val);
-                      setError(msg || "");
+                      set("contenu", e.target.value);
+                      setError("");
                     }}
                   />
-                  <p className="text-xs text-gray-400 mt-1 text-right">
-                    {form.contenu.length}/500
-                  </p>
                 </div>
 
                 {/* Toggle anonyme */}
