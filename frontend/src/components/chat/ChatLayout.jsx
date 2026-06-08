@@ -170,6 +170,9 @@ export default function ChatLayout() {
       seen: m.seen || false,
       createdAt: m.created_at,
       reactions: Array.isArray(m.reactions) ? m.reactions : [],
+      replyToId:      m.reply_to_id     ?? null,
+      replyToContent: m.reply_to_content ?? null,
+      replyToSender:  m.reply_to_sender  ?? null,
     }),
     [user],
   );
@@ -474,11 +477,11 @@ export default function ChatLayout() {
     }
   };
 
-  const sendMessage = async (content) => {
+  const sendMessage = async (content, replyToId = null) => {
     try {
       const payload = activeContact.isGlobal
-        ? { content, is_global: true }
-        : { content, receiver_id: activeContact.id, is_global: false };
+        ? { content, is_global: true, reply_to_id: replyToId }
+        : { content, receiver_id: activeContact.id, is_global: false, reply_to_id: replyToId };
       await api.post("/messages", payload);
       setReplyTo(null);
       emitTyping(false);
@@ -494,15 +497,19 @@ export default function ChatLayout() {
         updated[key] = updated[key].map((m) => {
           if (m.id !== messageId) return m;
           const reactions = m.reactions || [];
-          const alreadyReacted = reactions.some(
-            (r) => r.userId === user.id && r.emoji === emoji
-          );
-          return {
-            ...m,
-            reactions: alreadyReacted
-              ? reactions.filter((r) => !(r.userId === user.id && r.emoji === emoji))
-              : [...reactions, { userId: user.id, userName: user.pseudo, emoji }],
-          };
+          const mine = reactions.find((r) => r.userId === user.id);
+
+          let newReactions;
+          if (!mine) {
+            newReactions = [...reactions, { userId: user.id, userName: user.pseudo, emoji }];
+          } else if (mine.emoji === emoji) {
+            newReactions = reactions.filter((r) => r.userId !== user.id);
+          } else {
+            newReactions = reactions.map((r) =>
+              r.userId === user.id ? { ...r, emoji } : r
+            );
+          }
+          return { ...m, reactions: newReactions };
         });
       }
       return updated;

@@ -15,6 +15,8 @@ import {
   faEye,
   faShieldHalved,
   faTriangleExclamation,
+  faReply,
+  faCamera
 } from "@fortawesome/free-solid-svg-icons";
 import UserAvatar from "../ui/UserAvatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -166,6 +168,76 @@ function DateSeparator({ date }) {
   );
 }
 
+function ReplyQuote({ replyToContent, replyToSender, isOwn }) {
+  if (!replyToContent) return null;
+
+  const parsed  = parseFileContent(replyToContent);
+  const isImage = parsed?.type === "img";
+  const isFile  = parsed && !isImage;
+
+  return (
+    <div className={`flex items-stretch mb-1 rounded-xl overflow-hidden
+                     max-w-full text-xs
+                     bg-white/[0.06] border border-white/10
+                     ${isOwn ? "self-end" : "self-start"}`}>
+      
+      <div className={`w-[3px] shrink-0 ${isOwn ? "bg-gold/60" : "bg-gold"}`} />
+
+      <div className="flex items-center gap-2 flex-1 min-w-0 px-2.5 py-1.5">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-gold/80 mb-0.5 truncate">
+            ↩ {replyToSender}
+          </p>
+          {isFile ? (
+            <div className="flex items-center gap-1 text-[10px] text-white/40">
+              <FontAwesomeIcon icon={faFile} className="text-[9px] shrink-0" />
+              <span className="truncate">{parsed.filename}</span>
+            </div>
+          ) : (
+            <p className="text-[10px] text-white/40 truncate leading-snug">
+              {isImage ? <FontAwesomeIcon icon={faCamera}/> : getMessagePreview(replyToContent)}
+            </p>
+          )}
+        </div>
+
+        {isImage && (
+          <img src={parsed.url} alt=""
+            className="w-8 h-8 rounded-md object-cover shrink-0 opacity-70" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReplyBar({ replyingTo, onCancel }) {
+  if (!replyingTo) return null;
+  return (
+    <div className="absolute bottom-[calc(100%+0.5rem)] left-4 sm:left-6 right-4 sm:right-6
+                    flex items-center gap-3 px-4 py-3 z-20
+                    bg-navy-dark/95 border border-white/15 rounded-xl
+                    backdrop-blur-md shadow-xl animate-fade-in">
+      <div className="w-0.5 self-stretch bg-gold rounded-full shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-gold text-xs font-bold mb-0.5 truncate">
+          ↩ {replyingTo.sender}
+        </p>
+        <p className="text-white/50 text-xs truncate leading-snug">
+          {getMessagePreview(replyingTo.content)}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="w-7 h-7 rounded-full text-white/40 hover:text-white hover:bg-white/10
+                   flex items-center justify-center transition-all shrink-0"
+        title="Annuler la réponse"
+      >
+        <FontAwesomeIcon icon={faXmark} className="text-sm" />
+      </button>
+    </div>
+  );
+}
+
 function MessageActionSheet({ msg, isOwn, currentUserId, onReact, onClose, children }) {
   return (
     <>
@@ -221,7 +293,7 @@ function TextMessage({
   msg, isOwn, currentUserId,
   isFirst,
   onReact, onDelete, onImageClick, onDownload,
-  pickerMsgId, setPickerMsgId,
+  pickerMsgId, setPickerMsgId, onReply
 }) {
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
 
@@ -244,6 +316,7 @@ function TextMessage({
                     ${isOwn ? "flex-row-reverse" : "flex-row"}
                     animate-message-in`}
         {...longPressHandlers}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {!isOwn && isFirst && (
           <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
@@ -263,21 +336,35 @@ function TextMessage({
             </span>
           )}
 
+          <ReplyQuote
+            replyToContent={msg.replyToContent}
+            replyToSender={msg.replyToSender}
+            isOwn={isOwn}
+          />
+
           <div className="relative">
             {!isMobile && (
-              <button
-                type="button"
-                onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
-                className={`absolute top-1/2 -translate-y-1/2 z-10
-                            opacity-0 group-hover:opacity-100 transition-all
-                            w-7 h-7 rounded-full bg-navy-dark border border-white/15
+              <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-10
+                              opacity-0 group-hover:opacity-100 transition-all
+                              ${isOwn ? "-left-[4.5rem]" : "-right-[4.5rem]"}`}>
+                <button type="button"
+                  onClick={() => onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content })}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-xs
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Répondre">
+                  <FontAwesomeIcon icon={faReply} className="text-gray-400" />
+                </button>
+                
+                <button type="button"
+                  onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
                             flex items-center justify-center text-sm
-                            hover:scale-110 active:scale-95
-                            ${isOwn ? "-left-9" : "-right-9"}`}
-                title="Réagir"
-              >
-                <FontAwesomeIcon icon={faSmile} className="text-gray-400"/>
-              </button>
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Réagir">
+                  <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
+                </button>
+              </div>
             )}
 
             {!isMobile && pickerMsgId === msg.id && (
@@ -330,12 +417,25 @@ function TextMessage({
 
       {actionSheetOpen && (
         <MessageActionSheet
-          msg={msg}
-          isOwn={isOwn}
-          currentUserId={currentUserId}
+          msg={msg} isOwn={isOwn} currentUserId={currentUserId}
           onReact={(emoji) => onReact?.(msg.id, emoji)}
           onClose={() => setActionSheetOpen(false)}
         >
+          <button type="button"
+            onClick={() => {
+              setActionSheetOpen(false);
+              onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content });
+            }}
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+            <FontAwesomeIcon icon={faReply} /> Répondre
+          </button>
+          {isOwn && (
+            <button type="button"
+              onClick={() => { setActionSheetOpen(false); onDelete?.(msg); }}
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
+              <FontAwesomeIcon icon={faTrash} /> Supprimer
+            </button>
+          )}
         </MessageActionSheet>
       )}
     </>
@@ -378,7 +478,7 @@ function FileMessage({ parsed }) {
 function MediaMessage({
   msg, isOwn, isFirst, currentUserId,
   onReact, onDelete, onImageClick, onDownload,
-  pickerMsgId, setPickerMsgId,
+  pickerMsgId, setPickerMsgId, onReply
 }) {
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
 
@@ -438,18 +538,27 @@ function MediaMessage({
 
           <div className="relative">
             {!isMobile && (
-              <button
-                type="button"
-                onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
-                className={`absolute top-1/2 -translate-y-1/2 z-10
-                            opacity-0 group-hover:opacity-100 transition-all
-                            w-7 h-7 rounded-full bg-navy-dark border border-white/15
-                            flex items-center justify-center
-                            hover:scale-110 active:scale-95
-                            ${isOwn ? "-left-9" : "-right-9"}`}
-              >
-                <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
-              </button>
+              <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-10
+                              opacity-0 group-hover:opacity-100 transition-all
+                              ${isOwn ? "-left-[4.5rem]" : "-right-[4.5rem]"}`}>
+                <button type="button"
+                  onClick={() => onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content })}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-xs
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Répondre">
+                  <FontAwesomeIcon icon={faReply} className="text-gray-400" />
+                </button>
+                
+                <button type="button"
+                  onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-sm
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Réagir">
+                  <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
+                </button>
+              </div>
             )}
 
             {!isMobile && pickerMsgId === msg.id && (
@@ -460,6 +569,16 @@ function MediaMessage({
                 />
               </div>
             )}
+
+            {(msg.replyToContent) && (
+                <div className="px-3 pt-2">
+                  <ReplyQuote
+                    replyToContent={msg.replyToContent}
+                    replyToSender={msg.replyToSender}
+                    isOwn={isOwn}
+                  />
+                </div>
+              )}
 
             <div
               className={`rounded-xl overflow-hidden cursor-pointer
@@ -510,11 +629,22 @@ function MediaMessage({
               <FontAwesomeIcon icon={faEye} /> Visionner
             </button>
           )}
+
+          <button type="button"
+            onClick={() => {
+              setActionSheetOpen(false);
+              onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content });
+            }}
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+            <FontAwesomeIcon icon={faReply} /> Répondre
+          </button>
+
           <button type="button"
             onClick={() => { setActionSheetOpen(false); handleDownload(); }}
             className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
             <FontAwesomeIcon icon={faDownload} /> Télécharger
           </button>
+
           {isOwn && (
             <button type="button"
               onClick={() => { setActionSheetOpen(false); onDelete?.(msg); }}
@@ -639,8 +769,8 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
   );
 }
 
-function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload, onReact, currentUserId }) {
-  const [pickerMsgId, setPickerMsgId] = useState(null); // partagé entre tous les messages du groupe
+function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload, onReact, onReply, currentUserId }) {
+  const [pickerMsgId, setPickerMsgId] = useState(null);
 
   return (
     <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
@@ -649,6 +779,7 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload, onR
         const sharedProps = {
           msg, isOwn, isFirst, currentUserId,
           onReact, onDelete, onImageClick, onDownload,
+          onReply,
           pickerMsgId, setPickerMsgId,
         };
 
@@ -710,6 +841,7 @@ export default function MessagePanel({
   onTypingChange,
   onReact,
   currentUserId,
+  onReply,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -729,6 +861,7 @@ export default function MessagePanel({
   const scrollRef = useRef(null);
   const prevScrollHeight = useRef(0);
   const prevMsgCount = useRef(messages.length);
+  const [replyingTo, setReplyingTo] = useState(null); 
 
   const handleReact = useCallback(async (messageId, emoji) => {
     try {
@@ -783,7 +916,14 @@ export default function MessagePanel({
 
   useEffect(() => {
     setShowEmojiPicker(false);
+    setReplyingTo(null);
   }, [contact.id]);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") setReplyingTo(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (!showEmojiPicker) return;
@@ -865,16 +1005,18 @@ export default function MessagePanel({
         const { data } = await api.post("/messages/upload", fd);
         await onSend(
           `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}:${selectedFile.size}]`,
+          replyingTo?.id ?? null,
         );
         setSelectedFile(null);
         setPreviewUrl(null);
       }
 
       if (trimmed && !selectedFile) {
-        await onSend(trimmed);
+        await onSend(trimmed, replyingTo?.id ?? null);
       }
 
       setText("");
+      setReplyingTo(null);   
       setShowEmojiPicker(false);
     } catch (_err) {
       alert("Erreur lors de l'envoi du message.");
@@ -1074,6 +1216,7 @@ export default function MessagePanel({
                   onImageClick={setLightboxImg}
                   onDownload={(url, filename) => handleDownloadImg(url, filename)}
                   onReact={handleReact}
+                  onReply={setReplyingTo} 
                   currentUserId={currentUserId} 
                 />
               </div>
@@ -1131,6 +1274,11 @@ export default function MessagePanel({
             </div>
           </div>
         )}
+
+        <ReplyBar
+          replyingTo={replyingTo}
+          onCancel={() => setReplyingTo(null)}
+        />
 
         <div className="relative flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
           {showEmojiPicker && (

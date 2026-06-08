@@ -15,5 +15,10 @@ CREATE TABLE message_reactions (
   UNIQUE (message_id, user_id, emoji)
 );
 
+ALTER TABLE message_reactions
+  DROP CONSTRAINT message_reactions_message_id_user_id_emoji_key,
+  ADD  CONSTRAINT message_reactions_message_id_user_id_key
+       UNIQUE (message_id, user_id);
+
 CREATE INDEX idx_reactions_message ON message_reactions(message_id);
 CREATE INDEX idx_reactions_user    ON message_reactions(user_id);
