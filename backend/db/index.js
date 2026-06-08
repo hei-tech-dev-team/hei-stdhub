@@ -61,6 +61,7 @@ pool.on("error", (err) => {
 const ensureIndexes = async () => {
   try {
     await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS groupe VARCHAR(10) NULL`);
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_global_chat_read_user ON global_chat_read(user_id);
       CREATE INDEX IF NOT EXISTS idx_invitations_code ON invitations(code);
