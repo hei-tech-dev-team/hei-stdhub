@@ -7,7 +7,7 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
-const { sendPushToUser } = require("../services/notificationService");
+const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
 const router = express.Router();
 
 const REACTIONS_SUBQUERY = `
