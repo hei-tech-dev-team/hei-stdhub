@@ -490,7 +490,6 @@ export default function ChatLayout() {
     }
   };
 
-<<<<<<< HEAD
   const handleReact = useCallback(async (messageId, emoji) => {
     setMessages((prev) => {
       const updated = { ...prev };
@@ -524,10 +523,8 @@ export default function ChatLayout() {
     }
   }, [user, loadMessages]);
 
-  const handleSelectContact = (contact) => {
-=======
+
   const handleSelectContact = useCallback((contact) => {
->>>>>>> main
     setActiveContact(contact);
     setShowContactList(false);
     setReplyTo(null);
