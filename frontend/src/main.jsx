@@ -1,31 +1,30 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./context/AuthContext";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
 
-// Block pinch-zoom and gesture zoom on mobile
-document.addEventListener("gesturestart", (e) => e.preventDefault());
-document.addEventListener("gesturechange", (e) => e.preventDefault());
-document.addEventListener("gestureend", (e) => e.preventDefault());
-document.addEventListener("touchstart", (e) => {
-  if (e.touches.length > 1) e.preventDefault();
-}, { passive: false });
+let swRegistration = null;
+
+window.addEventListener("error", (e) => {
+  console.error("Global error caught:", e.error || e.message);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("Unhandled promise rejection:", e.reason);
+});
 
 let lastTouchEnd = 0;
 document.addEventListener("touchend", (e) => {
   const now = Date.now();
-  if (now - lastTouchEnd <= 300) {
+  if (now - lastTouchEnd <= 300 && e.target?.closest?.(".input-field, button, a")) {
     e.preventDefault();
   }
   lastTouchEnd = now;
 }, false);
-
-document.addEventListener("wheel", (e) => {
-  if (e.ctrlKey) e.preventDefault();
-}, { passive: false });
 
 async function fetchMissedNotifications() {
   if (!localStorage.getItem("hei_token")) return;
@@ -43,19 +42,35 @@ async function fetchMissedNotifications() {
   }
 }
 
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+function refreshSocketConnection() {
+  import("./socket").then(({ refreshSocket }) => refreshSocket().catch(() => {})).catch(() => {});
+}
+
+function renewPushSubscription() {
+  import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {})).catch(() => {});
+}
+
+if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").then((reg) => {
+    navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((reg) => {
+      swRegistration = reg;
+
       reg.addEventListener("updatefound", () => {
         const newSW = reg.installing;
         if (newSW) {
           newSW.addEventListener("statechange", () => {
             if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-              console.log("New SW version available — reload to update");
+              navigator.serviceWorker.controller.postMessage({ type: "skip-waiting" });
             }
           });
         }
       });
+
+      reg.pushManager.getSubscription().then((sub) => {
+        if (sub) {
+          renewPushSubscription();
+        }
+      }).catch(() => {});
     }).catch((err) => {
       console.error("SW registration failed:", err);
     });
@@ -63,24 +78,36 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
 
   navigator.serviceWorker.addEventListener("message", (e) => {
     if (e.data?.type === "socket-sync-request") {
-      import("./socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
+      refreshSocketConnection();
     }
     if (e.data?.type === "push-subscription-change") {
-      import("./push").then(({ subscribeToPush }) => subscribeToPush().catch(() => {}));
+      renewPushSubscription();
     }
   });
 
   fetchMissedNotifications();
   window.addEventListener("online", fetchMissedNotifications);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      if (localStorage.getItem("hei_token")) {
+        renewPushSubscription();
+      }
+    }
+  });
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-        <Analytics />
-      </AuthProvider>
+      <HelmetProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <App />
+            <Analytics />
+          </AuthProvider>
+        </ErrorBoundary>
+      </HelmetProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );
