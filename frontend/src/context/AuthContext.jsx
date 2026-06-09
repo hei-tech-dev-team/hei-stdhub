@@ -1,7 +1,5 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import api from "../api/axios";
-import { refreshSocket, disconnectSocket } from "../socket";
-import { subscribeToPush } from "../push";
 
 const AuthContext = createContext(null);
 
@@ -23,6 +21,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(() =>
     Boolean(localStorage.getItem("hei_token")),
   );
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const subscribeAttempted = useRef(false);
 
   useEffect(() => {
     const token = localStorage.getItem("hei_token");
@@ -37,7 +37,12 @@ export function AuthProvider({ children }) {
       .then(({ data }) => {
         setUser(data);
         localStorage.setItem("hei_user", JSON.stringify(data));
-        subscribeToPush();
+        if (!subscribeAttempted.current) {
+          subscribeAttempted.current = true;
+          import("../push").then(({ subscribeToPush, isSubscribedToPush }) => {
+            subscribeToPush().then(() => isSubscribedToPush().then(setPushSubscribed));
+          });
+        }
       })
       .catch((err) => {
         if (err.response?.status === 401) {
@@ -49,13 +54,17 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    subscribeAttempted.current = false;
+  }, [user?.id]);
+
   const login = async (ref, password) => {
     const { data } = await api.post("/auth/login", { ref, password });
     localStorage.setItem("hei_token", data.token);
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
-    refreshSocket().catch(() => {});
+    import("../socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
     return data.user;
   };
 
@@ -65,14 +74,17 @@ export function AuthProvider({ children }) {
     localStorage.setItem("hei_user", JSON.stringify(data.user));
     setUser(data.user);
     if (data.first_login) setFirstLogin(true);
-    refreshSocket().catch(() => {});
+    import("../socket").then(({ refreshSocket }) => refreshSocket().catch(() => {}));
     return data.user;
   };
 
   const dismissOnboarding = () => setFirstLogin(false);
 
   const logout = () => {
-    disconnectSocket();
+    import("../socket").then(({ disconnectSocket }) => disconnectSocket());
+    import("../push").then(({ unsubscribeFromPush }) =>
+      unsubscribeFromPush().then(() => setPushSubscribed(false)),
+    );
     localStorage.removeItem("hei_token");
     localStorage.removeItem("hei_user");
     setUser(null);
@@ -86,7 +98,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser: setUserAndSync, login, register, logout, loading, firstLogin, dismissOnboarding }}
+      value={{ user, setUser: setUserAndSync, login, register, logout, loading, firstLogin, dismissOnboarding, pushSubscribed, setPushSubscribed }}
     >
       {children}
     </AuthContext.Provider>

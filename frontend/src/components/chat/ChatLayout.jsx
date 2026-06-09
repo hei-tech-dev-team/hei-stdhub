@@ -108,7 +108,7 @@ export default function ChatLayout() {
 
   useEffect(() => {
     api
-      .get("/messages/contacts", { params: { limit: 500 } })
+      .get("/messages/contacts", { params: { limit: 200 } })
       .then(({ data }) => {
         const usersList = Array.isArray(data) ? data : data?.users;
         if (!Array.isArray(usersList)) return;
@@ -490,6 +490,7 @@ export default function ChatLayout() {
     }
   };
 
+<<<<<<< HEAD
   const handleReact = useCallback(async (messageId, emoji) => {
     setMessages((prev) => {
       const updated = { ...prev };
@@ -524,12 +525,15 @@ export default function ChatLayout() {
   }, [user, loadMessages]);
 
   const handleSelectContact = (contact) => {
+=======
+  const handleSelectContact = useCallback((contact) => {
+>>>>>>> main
     setActiveContact(contact);
     setShowContactList(false);
     setReplyTo(null);
     setIsAtBottom(true);
     setTypingUsers({});
-  };
+  }, []);
 
   const handleScrollToBottom = () => {
     setIsAtBottom(true);

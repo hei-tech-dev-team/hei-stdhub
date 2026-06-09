@@ -42,6 +42,7 @@ export default function LoginPage() {
             } catch (err) {
                   setError(
                         err.response?.data?.error ||
+                              err.userMessage ||
                               "Erreur de connexion, reessayez.",
                   );
             } finally {
@@ -80,6 +81,7 @@ export default function LoginPage() {
                                                       src={HEI_WHITE_LOGO}
                                                       alt="HEI"
                                                       className="w-8 h-8 object-contain"
+                                                      onError={(e) => { e.target.style.display = "none"; }}
                                                 />
                                           </div>
                                           <div>
@@ -152,7 +154,7 @@ export default function LoginPage() {
                                       ].map((r) => (
                                         <div
                                           key={r.key}
-                                          onClick={() => { setLoginRole(r.key); setError(""); setForm({ ref: "", password: "" }); }}
+                                          onClick={() => { setLoginRole(r.key); setError(""); }}
                                           className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
                                             loginRole === r.key
                                               ? r.key === "alumni"

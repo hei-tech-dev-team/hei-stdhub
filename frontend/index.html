@@ -1,29 +1,89 @@
 <!doctype html>
 <html lang="fr">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
 
-        <!-- PWA manifest -->
-        <link rel="manifest" href="/manifest.json" />
+    <!-- Preconnect + Font loading (non-blocking) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preconnect" href="https://hei-stdhub-api.vercel.app" />
+    <link rel="dns-prefetch" href="https://hei-stdhub-api.vercel.app" />
 
-        <!-- iOS support -->
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-            name="apple-mobile-web-app-status-bar-style"
-            content="black-translucent"
-        />
-        <meta name="apple-mobile-web-app-title" content="STDhub" />
-        <link rel="apple-touch-icon" href="/logo-browser.png" />
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
 
-        <!-- Theme color -->
-        <meta name="theme-color" content="#0F1E33" />
+    <!-- iOS support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="STDhub" />
+    <link rel="apple-touch-icon" href="/logo-browser.png" />
 
-        <link rel="shortcut icon" href="/logo-browser.png" type="image/png" />
-        <title>HEI STDhub</title>
-    </head>
-    <body>
-        <div id="root"></div>
-        <script type="module" src="/src/main.jsx"></script>
-    </body>
+    <!-- Theme color -->
+    <meta name="theme-color" content="#0F1E33" />
+
+    <!-- SEO meta tags -->
+    <meta
+      name="description"
+      content="HEI STDhub est la plateforme officielle de la Haute Ecole d'Informatique HEI. Chat, rendus de devoirs, supports de cours et suggestions BDE."
+    />
+    <meta
+      name="keywords"
+      content="HEI, STDhub, Haute Ecole Informatique, Madagascar, plateforme etudiante,STDhub,stdhub,hei stdhub,STShub,hubstd,STDHUB,HEI STDHUB,hei stdhub"
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://hei-stdhub.vercel.app" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://hei-stdhub.vercel.app" />
+    <meta
+      property="og:title"
+      content="HEI STDhub — Plateforme collaborative HEI"
+    />
+    <meta
+      property="og:description"
+      content="La plateforme officielle de la Haute Ecole d'Informatique HEI."
+    />
+    <meta
+      property="og:image"
+      content="https://hei-stdhub.vercel.app/logo-browser.png"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "HEI STDhub",
+        "url": "https://hei-stdhub.vercel.app",
+        "logo": "https://hei-stdhub.vercel.app/logo-browser.png",
+        "image": "https://hei-stdhub.vercel.app/logo-browser.png",
+        "description": "La plateforme officielle de la Haute Ecole d'Informatique HEI. Chat, rendus de devoirs, supports de cours et suggestions BDE.",
+        "applicationCategory": "EducationApplication",
+        "operatingSystem": "Web",
+        "offers": { "@type": "Offer", "price": "0" },
+        "author": {
+          "@type": "Organization",
+          "name": "HEI Tech",
+          "url": "https://hei-stdhub.vercel.app"
+        }
+      }
+    </script>
+
+    <link
+      rel="shortcut icon"
+      href="/logo-browser.png"
+      type="image/png"
+    />
+    <title>HEI STDhub</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
