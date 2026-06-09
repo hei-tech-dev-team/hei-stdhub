@@ -5,7 +5,6 @@ const fs = require("fs");
 const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { containsProfanity } = require("../middleware/profanity");
 const { sendPushToAll } = require("../services/notificationService");
 
 const router = express.Router();
@@ -111,9 +110,6 @@ router.post("/", auth, alumniOnly, (req, res) => {
       if (!title?.trim() || !content?.trim()) {
         return res.status(400).json({ error: "Le titre et le contenu sont requis." });
       }
-      if (containsProfanity(title) || containsProfanity(content)) {
-        return res.status(400).json({ error: "Contenu inapproprié détecté. Veuillez respecter les autres membres." });
-      }
 
       const imageUrl = req.file
         ? req.file.secure_url || `${req.protocol}://${req.get("host")}/uploads/alumni-spotlight/${req.file.filename}`
@@ -133,7 +129,7 @@ router.post("/", auth, alumniOnly, (req, res) => {
         tag: `alumni-tip-${result.rows[0].id}`,
         url: "/alumni-spotlight",
         type: "alumni_tip",
-      }).catch(() => {});
+      }).catch((err) => console.error("sendPushToAll error (alumniSpotlight):", err?.message));
     } catch (err) {
       console.error("Error creating alumni tip:", err);
       res.status(500).json({ error: "Erreur serveur." });

@@ -60,7 +60,7 @@ const router = express.Router();
 
 const makeToken = (user) =>
   jwt.sign(
-    { id: user.id, ref: user.ref, role: user.role, ues: user.ues || [], level: user.level || null },
+    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [], level: user.level || null },
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
@@ -69,12 +69,11 @@ const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
 const resetPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 0 : 10,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 6,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
 });
 
 const tryGetAdminFromToken = (req) => {
@@ -98,6 +97,7 @@ router.post("/register", async (req, res) => {
     password,
     role,
     level,
+    groupe,
     inviteCode,
     ues,
   } = req.body;
@@ -152,9 +152,9 @@ router.post("/register", async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await db.query(
-      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues)
- VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
- RETURNING id, ref, nom, prenom, email, pseudo, role, level, ues, first_login`,
+      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues, groupe)
+ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+ RETURNING id, ref, nom, prenom, email, pseudo, role, level, groupe, ues, first_login`,
       [
         ref.toUpperCase(),
         capitalize(nom),
@@ -165,6 +165,7 @@ router.post("/register", async (req, res) => {
         role,
         level || null,
         ues || [],
+        groupe || null,
       ],
     );
 
@@ -175,8 +176,6 @@ router.post("/register", async (req, res) => {
         [newUser.id, inviteCode.toUpperCase()],
       );
     }
-
-    await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [newUser.id]);
 
     try {
       const io = req.app.get("io");
@@ -240,12 +239,11 @@ router.get("/user/:ref", auth, async (req, res) => {
 });
 
 const forgotPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 4,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
 });
 
 // Generate a 6-character alphanumeric reset code
@@ -288,9 +286,9 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
       sendPushToUser(user.id, {
         title: "Code de reinitialisation",
         body: `Votre code: ${code}`,
-        tag: "reset-code",
+        tag: `reset-${user.id}`,
         type: "reset-code",
-      }).catch(() => {});
+      }).catch((err) => console.error("sendPushToUser error (auth):", err?.message));
     } catch (_) {}
 
     res.json({ message: "Code de verification envoye." });
@@ -302,9 +300,9 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
 
 // Forgot password — step 2: verify the 6-character code
 const verifyCodeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { error: "Trop de tentatives. Reessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 6,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.body.email?.trim().toLowerCase() || ipKeyGenerator(req),
