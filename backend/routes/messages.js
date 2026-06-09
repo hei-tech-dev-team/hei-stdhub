@@ -4,11 +4,10 @@ const fs = require("fs");
 const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { containsProfanity } = require("../middleware/profanity");
 const multer = require("multer");
 const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
-const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
+const { sendPushToUser } = require("../services/notificationService");
 const router = express.Router();
 
 const REACTIONS_SUBQUERY = `
@@ -236,8 +235,6 @@ router.post("/", auth, async (req, res) => {
   const { receiver_id, is_global, reply_to_id = null } = req.body;
   const content = typeof req.body.content === "string" ? req.body.content : "";
   if (!content.trim()) return res.status(400).json({ error: "Message vide." });
-  if (is_global && containsProfanity(content))
-    return res.status(400).json({ error: "Message contenant des propos inappropriés détecté. Veuillez respecter les autres membres." });
   if (!is_global && !receiver_id)
     return res.status(400).json({ error: "Destinataire requis." });
 
@@ -302,8 +299,10 @@ router.post("/", auth, async (req, res) => {
       sendPushToUser(receiver_id, {
         title: senderName || "Message",
         body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
-        tag: `private-${req.user.id}`, url: "/chat", type: "private_message",
-      }).catch(() => {});
+        tag: `private-${req.user.id}`,
+        url: "/chat",
+        type: "private_message",
+      }).catch((err) => console.error("sendPushToUser error (messages):", err?.message));
     }
 
     res.status(201).json(fullMsg);

@@ -46,7 +46,7 @@ export default function AdminHome() {
   const fetchAnnouncements = async () => {
     try {
       const { data } = await api.get("/announcements");
-      setAnnouncements(data);
+      setAnnouncements(data.announcements || []);
     } catch (err) {
       console.error(err);
     } finally {

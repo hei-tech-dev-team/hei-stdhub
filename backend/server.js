@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const compression = require("compression");
 const path = require("path");
+const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
 
@@ -18,13 +19,38 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-// VAPID keys — auto-generated if missing
-if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+// VAPID keys — auto-generated if missing, persisted to disk across restarts
+const VAPID_KEYS_FILE = process.env.VAPID_KEYS_FILE || path.join(__dirname, ".vapid-keys.json");
+
+function loadOrGenerateVapidKeys() {
+  // 1. Environment variables (production best practice)
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    console.info("VAPID keys loaded from environment variables.");
+    return;
+  }
+  // 2. Persistent file from a previous run
+  try {
+    const saved = JSON.parse(fs.readFileSync(VAPID_KEYS_FILE, "utf8"));
+    if (saved.publicKey && saved.privateKey) {
+      process.env.VAPID_PUBLIC_KEY = saved.publicKey;
+      process.env.VAPID_PRIVATE_KEY = saved.privateKey;
+      console.info("VAPID keys loaded from persistent file.");
+      return;
+    }
+  } catch {}
+  // 3. Generate and persist so they survive restarts
   const vapidKeys = webpush.generateVAPIDKeys();
-  process.env.VAPID_PUBLIC_KEY ||= vapidKeys.publicKey;
-  process.env.VAPID_PRIVATE_KEY ||= vapidKeys.privateKey;
-  console.info("VAPID keys generated for this runtime. Configure persistent keys in production env.");
+  process.env.VAPID_PUBLIC_KEY = vapidKeys.publicKey;
+  process.env.VAPID_PRIVATE_KEY = vapidKeys.privateKey;
+  try {
+    fs.writeFileSync(VAPID_KEYS_FILE, JSON.stringify(vapidKeys, null, 2));
+    console.info(`VAPID keys generated and persisted to ${VAPID_KEYS_FILE}.`);
+  } catch (err) {
+    console.warn("VAPID keys generated for this runtime but could not persist:", err.message);
+  }
 }
+
+loadOrGenerateVapidKeys();
 
 webpush.setVapidDetails(
   "mailto:hei@stdhub.app",
@@ -51,12 +77,11 @@ app.use((req, res, next) => {
 
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 0 : 10,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 20,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
 });
 
 // Socket.io setup — optimized for 1000+ concurrent connections
@@ -120,25 +145,11 @@ app.use(
   }),
 );
 
-// Keep the Render instance awake — ping health endpoint every 14 minutes
-if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
-  const https = require("https");
-  setInterval(
-    () => {
-      https
-        .get(process.env.BACKEND_URL + "/api/health", (res) => {
-          console.log("Keep-alive ping:", res.statusCode);
-        })
-        .on("error", (e) => console.error("Keep-alive error:", e.message));
-    },
-    14 * 60 * 1000,
-  );
-}
-
 // Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
 app.use("/api/auth/reset-password", loginLimiter);
+
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
@@ -176,8 +187,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Erreur serveur." });
 });
 
-const { containsProfanity } = require("./middleware/profanity");
-
 // Socket.io event handlers — optimized for scale
 const onlineUsers = new Map();
 const MAX_ONLINE_USERS = parseInt(process.env.MAX_ONLINE_USERS || "5000", 10);
@@ -208,8 +217,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("message:global", (msg) => {
-    if (!msg || !msg.content || containsProfanity(msg.content)) {
-      socket.emit("error", { message: "Message contenant des propos inappropriés." });
+    if (!msg || !msg.content) {
+      socket.emit("error", { message: "Message vide." });
       return;
     }
     io.emit("message:global", msg);
@@ -409,9 +418,9 @@ const { pool } = require("./db");
 
   try {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS alumni_spotlight_reactions (
+      CREATE TABLE IF NOT EXISTS alumni_tip_reactions (
         id               SERIAL      PRIMARY KEY,
-        spotlight_id     INTEGER     NOT NULL REFERENCES alumni_spotlight(id) ON DELETE CASCADE,
+        tip_id           INTEGER     NOT NULL REFERENCES alumni_spotlight(id) ON DELETE CASCADE,
         user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         reaction_type    VARCHAR(20) NOT NULL,
         created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
