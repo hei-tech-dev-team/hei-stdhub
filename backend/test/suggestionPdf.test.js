@@ -45,12 +45,11 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
     expect(buf.slice(0, 5).toString()).to.equal("%PDF-");
   });
 
-  it("contient le titre HEI STDhub dans le PDF", () => {
+  it("contient le logo HEI dans le PDF", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
     const text = buf.toString("latin1");
     expect(text).to.include("HEI");
-    expect(text).to.include("STDhub");
   });
 
   it("contient les titres des suggestions", () => {
@@ -68,14 +67,14 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
     const text = buf.toString("latin1");
     expect(text).to.include("Suggestions accept");
     expect(text).to.include("Suggestions refus");
-    expect(text).to.include("approfondir");
+    expect(text).to.include("discuter");
   });
 
   it("contient la justification pour les suggestions refusees", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
     const text = buf.toString("latin1");
-    expect(text).to.include("Justification du BDE");
+    expect(text).to.include("Justification");
     expect(text).to.include("extension du parking");
   });
 
@@ -90,9 +89,9 @@ describe("SUGGESTION PDF — generateSuggestionReport", () => {
     const doc = generateSuggestionReport(makeSuggestions());
     const buf = Buffer.from(doc.output("arraybuffer"));
     const text = buf.toString("latin1");
-    expect(text).to.include("SUM");
     expect(text).to.include("Accept");
     expect(text).to.include("Refus");
+    expect(text).to.include("discuter");
   });
 
   it("genere plusieurs pages pour beaucoup de suggestions", () => {

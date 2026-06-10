@@ -5,7 +5,7 @@ const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 let socket = null;
 let connectionPromise = null;
 let listeners = new Set();
-const MAX_RECONNECT_ATTEMPTS = 12;
+const MAX_RECONNECT_ATTEMPTS = 15;
 const BASE_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 30000;
 
@@ -101,3 +101,12 @@ export const refreshSocket = async () => {
   disconnectSocket();
   return getSocket();
 };
+
+// Try reconnecting when browser comes back online
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    if (!socket?.connected) {
+      refreshSocket().catch(() => {});
+    }
+  });
+}
