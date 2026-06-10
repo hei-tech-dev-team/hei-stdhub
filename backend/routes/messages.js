@@ -9,6 +9,14 @@ const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
 const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
+
+const reactionsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,             // 30 reactions/minute
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const REACTIONS_SUBQUERY = `
   (
@@ -432,7 +440,7 @@ router.post("/global/read", auth, async (req, res) => {
 });
 
 // add reaction to a message (toggle)
-router.post("/:id/reactions", auth, async (req, res) => {
+router.post("/:id/reactions", reactionsLimiter, auth, async (req, res) => {
   const messageId = parseInt(req.params.id);
   const { emoji } = req.body;
   const userId = req.user.id;
