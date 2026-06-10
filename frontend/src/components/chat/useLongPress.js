@@ -7,6 +7,7 @@ export function useLongPress(onLongPress, onTap, delay = 500) {
   const moved = useRef(false);
 
   const touchStart = useCallback((e) => {
+    e.preventDefault();
     touched.current = true;
     fired.current = false;
     moved.current = false;

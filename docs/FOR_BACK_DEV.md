@@ -4,27 +4,30 @@
 
 ```
 backend/
-├── server.js                 # Express entry, Socket.io, rate limiting, VAPID
+├── server.js                 # Express entry, Socket.IO, rate limiting, VAPID, schema migrations
+├── start.sh                  # Production startup (keep-alive ping)
 ├── db/
-│   ├── index.js              # PostgreSQL pool
-│   └── schema.sql            # Full schema (tables, enums, constraints, seed)
+│   ├── index.js              # PostgreSQL pool (max: 25)
+│   └── schema.sql            # Full schema + seed data
 ├── middleware/
 │   └── auth.js               # JWT verification
 ├── routes/
-│   ├── auth.js               # Auth & profile routes
-│   ├── admin.js              # Admin-only routes
-│   ├── posts.js              # Course materials
-│   ├── submissions.js        # Homework submissions
-│   ├── supports.js           # Support links
-│   ├── messages.js           # Chat messages + push notifications
-│   ├── suggestions.js        # BDE suggestions
-│   └── push.js               # Push notification subscriptions
+│   ├── auth.js               # 12 endpoints — register, login, forgot-password, verify-code, reset-password, me, profile, password, avatar, verify-invite, user/:ref
+│   ├── admin.js              # 10 endpoints — stats, users (CRUD + role/email), invitations (CRUD + bulk), class-upgrade
+│   ├── posts.js              # 3 endpoints — list, create (teacher/admin), delete
+│   ├── submissions.js        # 2 endpoints — submit (any), list (teacher/admin, filtered by UEs)
+│   ├── supports.js           # 3 endpoints — list by UE, create, delete (teacher/admin)
+│   ├── messages.js           # 14 endpoints — search, contacts, global, private, send, seen, upload, unread, global/read, delete, favorites (list/add/remove)
+│   ├── suggestions.js        # 5 endpoints — submit, list (BDE), patch status, confirm (post to chat), report (PDF)
+│   ├── announcements.js      # 5 endpoints — list with reactions, create (admin), delete (admin), upsert/remove reaction
+│   ├── alumniSpotlight.js    # 5 endpoints — list with reactions, create (alumni), delete (owner), upsert/remove reaction
+│   ├── push.js               # 5 endpoints — subscribe, unsubscribe, list notifications, mark read, unread count
+│   └── pings.js              # 4 endpoints — send, list, accept, refuse
 ├── services/
-│   ├── mailer.js             # Email (SMTP + Resend)
-│   └── suggestionPdf.js      # PDF reports for BDE
-├── test/                     # 13 test files (200 passing)
-├── scripts/                  # Utilities
-└── uploads/                  # Local file storage
+│   ├── notificationService.js # Web Push sender (batched concurrency, cleanup invalid subs)
+│   └── suggestionPdf.js      # PDF report (jsPDF, navy/gold branding, summary cards)
+├── test/                     # Backend test files
+└── uploads/                  # Local file storage (avatars, chat, submissions, announcements, alumni-spotlight, posts)
 ```
 
 ---
@@ -32,25 +35,23 @@ backend/
 ## `server.js` — Entry Point
 
 ### VAPID Key Setup
-
 ```js
 @function VAPID Key Setup
 @description Auto-generates VAPID keys if not in env, configures web-push
-@side-effects Sets process.env.VAPID_PUBLIC_KEY/_PRIVATE_KEY if missing
+@side-effects Sets process.env.VAPID_PUBLIC_KEY/PRIVATE_KEY if missing
 ```
 
-### `loginLimiter`
+### Rate Limiters
+| Limiter | windowMs | max (prod) | Applied to |
+|---------|----------|-----------|------------|
+| `loginLimiter` | 15 min | 3 | `/api/auth/login`, `/api/auth/register`, `/api/auth/reset-password` |
+| `generalLimiter` | 15 min | 50 | All `/api/*` GET requests |
+| `writeLimiter` | 15 min | 15 | All `/api/*` POST/PUT/PATCH/DELETE |
+| `forgotPasswordLimiter` | 15 min | 2 | `POST /auth/forgot-password` |
+| `verifyCodeLimiter` | 15 min | 2 | `POST /auth/forgot-password/verify-code` |
+| `resetPasswordLimiter` | 15 min | 3 | `POST /auth/reset-password` |
 
-```js
-@type RateLimitRequestHandler
-@description Rate limiter for auth routes
-  windowMs: 15min, max: 10 (0 in test mode)
-  message: "Trop de tentatives. Réessayez dans 15 minutes."
-@applied-to /api/auth/login, /api/auth/forgot-password, /api/auth/reset-password
-```
-
-### Socket.io Configuration — Optimized
-
+### Socket.IO Configuration
 ```js
 @config pingTimeout: 20000ms (env SOCKET_PING_TIMEOUT)
 @config pingInterval: 25000ms (env SOCKET_PING_INTERVAL)
@@ -59,107 +60,13 @@ backend/
 @config connectionStateRecovery: 2min window
 ```
 
-### Socket.io Auth Middleware
-
+### Socket.IO Event Handlers
 ```js
-@function io.use
-@description JWT verification on socket handshake.
-  Reads token from handshake.auth.token or handshake.query.token.
-  401 if missing or invalid.
-  Attaches decoded JWT payload to socket.user.
+@event connection → user:join → message:global/private → message:seen → typing:started/stopped → bde:join, drag-*, update → ping:new (emitted from pings route) → disconnect
 ```
 
-### Socket.io Event Handlers
-
-```js
-@event connection
-@description Creates socket connection, tracks online users. Max 5000 entries.
-
-@event user:join
-@param {string} userId
-@description Stores userId→socketId mapping, leaves previous room (handles reconnect),
-  joins user room, broadcasts online status via socket.broadcast.emit (not io.emit).
-  Rejects if onlineUsers.size >= MAX_ONLINE_USERS.
-
-@event message:global
-@param {Object} msg
-@description Re-broadcasts message to all connected clients
-
-@event message:private
-@param {Object} payload { receiverId, msg }
-@description Validates receiverId and msg. Sends to receiver's room AND sender's room.
-
-@event message:seen
-@param {Object} payload { messageId, senderId }
-@description Validates fields. Forwards seen status to sender's room.
-
-@event bde:join
-@description Joins the "bde" room for real-time Kanban sync
-
-@event bde:drag-start
-@param {Object} payload { suggestionId }
-@description Broadcasts drag start to other BDE members (not to sender)
-
-@event bde:drag-over
-@param {Object} payload { columnId }
-@description Broadcasts drag-over to other BDE members
-
-@event bde:drag-end
-@description Broadcasts drag-end to other BDE members
-
-@event bde:update
-@param {Object} payload { id, statut, justification }
-@description Broadcasts suggestion status update to BDE room
-
-@event disconnect
-@description Removes user from onlineUsers, broadcasts offline status via socket.broadcast.emit
-```
-
-### Health & VAPID Endpoints
-
-```js
-@route GET /api/health
-@returns {JSON} { status: "ok", time: Date }
-@status 200
-
-@route GET /api/push/vapid-key
-@returns {JSON} { publicKey: string }
-@status 200
-
-@route ALL 404 catch-all
-@returns {JSON} { error: "Route introuvable." }
-@status 404
-```
-
----
-
-## `db/index.js` — Database Connection
-
-```js
-@type Pool
-@description PostgreSQL connection pool using DATABASE_URL env var
-  max: 25 (configurable via DB_POOL_MAX)
-  idleTimeoutMillis: 30000 (configurable via DB_IDLE_TIMEOUT)
-  connectionTimeoutMillis: 5000 (configurable via DB_CONNECT_TIMEOUT)
-@exports { query: (text, params) => pool.query(text, params), pool }
-
-@event pool:connect
-@description Suppressed (noisy in production)
-
-@event pool:error
-@description Logs error message only (no longer calls process.exit)
-
-@function ensureIndexes
-@description Runs on startup to create missing indexes:
-  - idx_global_chat_read_user ON global_chat_read(user_id)
-  - idx_invitations_code ON invitations(code)
-  - idx_invitations_expires ON invitations(expires_at) WHERE use_count < max_uses
-  - idx_suggestions_statut ON suggestions(statut)
-  - idx_suggestions_student ON suggestions(student_id)
-  - idx_push_subscriptions_user ON push_subscriptions(user_id)
-  - idx_messages_receiver_seen ON messages(receiver_id, seen) WHERE is_global = FALSE
-  - idx_messages_sender_receiver ON messages(sender_id, receiver_id) WHERE is_global = FALSE
-```
+### Schema Migrations (auto-run on startup)
+Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `announcements`, `announcement_reactions`, `chat_favorites`, `alumni_spotlight`, `alumni_spotlight_reactions`. Also adds `target_level` column to announcements if missing.
 
 ---
 
@@ -167,732 +74,252 @@ backend/
 
 ```js
 @function auth
-@param {Request} req - Express request object
-@param {Response} res - Express response object
-@param {Function} next - Express next middleware
 @description Reads Bearer token from Authorization header, verifies with JWT_SECRET, attaches decoded payload to req.user
-@returns {void} Calls next() on success
-@throws {void} Returns 401 JSON on failure
 @status 401 - Token manquant / Token invalide
 ```
 
 ---
 
-## `routes/auth.js` — Authentication Routes
-
-### Helpers
+## `middleware/profanity.js` — Profanity Filter
 
 ```js
-@function capitalize
-@param {string} str
-@returns {string} Each word capitalized, rest lowercased, trimmed
-
-@function makeToken
-@param {Object} user - Must have { id, ref, role }
-@returns {string} JWT signed with { id, ref, role }, expiresIn: "7d"
-
-@function hashResetToken
-@param {string} token
-@returns {string} SHA-256 hex digest of token
-```
-
-### Routes
-
-```js
-@route POST /register
-@param {body} { ref, nom, prenom, email, pseudo, password, role, level?, inviteCode, ues? }
-@description
-  1. Validates required fields
-  2. Checks teacher has UEs
-  3. Verifies invitation code (use_count < max_uses, not expired)
-  4. Checks ref/email uniqueness
-  5. bcrypt hashes password (salt: 10)
-  6. INSERT user with capitalize() on name fields
-  7. Increments invitation use_count
-  8. Sets first_login = FALSE
-@returns {JSON} { token, user, first_login: true }
-@status 201 - Created
-@status 400 - Validation error or invalid invite
-@status 409 - Duplicate ref/email
-@status 500 - Server error
-
-@route POST /login
-@param {body} { ref, password }
-@description
-  1. Validates fields
-  2. SELECT user by ref
-  3. bcrypt.compare password
-  4. If first_login, sets FALSE
-  5. Returns safeUser (no password, no first_login)
-@returns {JSON} { token, user, first_login }
-@status 200 - Success
-@status 400 - Missing fields
-@status 401 - Invalid ref or password
-@status 500 - Server error
-
-@route POST /forgot-password
-@param {body} { email }
-@description
-  1. Validates email (required, max 254 chars)
-  2. Looks up user by email
-  3. Always returns generic response (prevent enumeration)
-  4. Invalidates existing unused tokens
-  5. Inserts new token (1 hour expiry)
-  6. Asynchronous sendPasswordResetEmail()
-@returns {JSON} { message: "Si un compte..." }
-@status 200 - Always (even if email not found)
-@status 400 - Missing/too-long email
-@status 500 - Server error
-
-@route GET /reset-password/:token
-@param {params} { token }
-@description Verifies token validity (hash match, not used, not expired)
-@returns {JSON} { valid: true }
-@status 200 - Valid token
-@status 400 - Missing or invalid/expired token
-@status 500 - Server error
-
-@route POST /reset-password
-@param {body} { token, newPassword }
-@description
-  1. Validates fields, password min 6 chars
-  2. Verifies token
-  3. Transaction: UPDATE password + invalidate token
-@returns {JSON} { message: "Mot de passe réinitialisé." }
-@status 200 - Success
-@status 400 - Validation error or invalid/expired token
-@status 500 - Server error
-
-@route GET /me
-@middleware auth
-@description Fetches current user by req.user.id
-@returns {JSON} User object (id, ref, nom, prenom, email, pseudo, role, level, avatar)
-@status 200 - Success
-@status 404 - Not found
-@status 500 - Server error
-
-@route POST /verify-invite
-@param {body} { code }
-@description Validates invitation code (use_count < max_uses, not expired)
-@returns {JSON} { role: string }
-@status 200 - Valid code
-@status 400 - Invalid/expired code
-@status 500 - Server error
-
-@route PATCH /profile
-@middleware auth
-@param {body} { pseudo }
-@description Updates user pseudo
-@returns {JSON} Updated user object
-@status 200 - Success
-@status 400 - Missing pseudo
-@status 500 - Server error
-
-@route PATCH /avatar
-@middleware auth, multer(avatarUpload)
-@description Uploads avatar to Cloudinary (hei-stdhub/avatars, 200x200 cropped)
-  with local disk fallback. Updates user record with URL.
-@returns {JSON} Updated user object with new avatar URL
-@status 200 - Success
-@status 400 - Upload error or missing file
-@status 500 - Server error
-
-@route PATCH /password
-@middleware auth
-@param {body} { current, newPassword }
-@description Verifies current password, updates to new password
-@returns {JSON} { message: "Mot de passe mis à jour." }
-@status 200 - Success
-@status 400 - Missing fields or too short
-@status 401 - Current password incorrect
-@status 500 - Server error
-
-@route PATCH /avatar
-@middleware auth, multer(avatarUpload)
-@description Uploads avatar to Cloudinary (200x200 cropped), updates user record
-@returns {JSON} Updated user object with new avatar URL
-@status 200 - Success
-@status 400 - Upload error or missing file
-@status 500 - Server error
+@function containsProfanity
+@param {string} text - Text to check
+@returns {boolean} true if text contains profanity (EN, FR, MG, leetspeak + regex patterns)
+@applied-to Global messages, suggestion titles/content, announcement content
 ```
 
 ---
 
-## `routes/admin.js` — Admin Routes
+## `routes/auth.js` — Authentication Routes (12 endpoints)
 
-### Middleware
-
+### Helpers
 ```js
-@function adminOnly
-@param {Request} req
-@param {Response} res
-@param {Function} next
-@description Checks req.user.role === "admin"
-@returns {void} Calls next() or 403
-@status 403 - "Accès réservé à l'admin."
+@function capitalize(str) - Capitalizes each word, rest lowercased
+@function makeToken(user) - JWT { id, ref, role, ues, level }, expiresIn: "7d"
+@function hashResetToken(token) - SHA-256 hex digest
+@function generateResetCode() - 6-char alphanumeric (A-Z, 2-9, no 0/O/1/I)
+@function tryGetAdminFromToken(req) - Tries to extract admin from JWT (for admin-registered users)
 ```
+
+### Routes
+| Route | Auth | Input | Description |
+|-------|------|-------|-------------|
+| POST `/register` | No | `{ ref, nom, prenom, email, pseudo, password, role, level?, inviteCode?, ues? }` | Validates fields, checks invite/admin, checks uniqueness (ref/email/pseudo), bcrypt hash, INSERT, increment invite use_count, emit `user:registered` |
+| POST `/login` | No | `{ ref, password }` | bcrypt.compare, check first_login, return JWT + user |
+| GET `/user/:ref` | Yes | — | Public profile by ref |
+| POST `/forgot-password` | No | `{ email }` | Lookup user, invalidate old tokens, INSERT new 10min token, send 6-char code via push notification, always return generic response |
+| POST `/forgot-password/verify-code` | No | `{ email, code }` | Verify 6-char code, mark used, issue reset token (1h) |
+| GET `/reset-password/:token` | No | — | Verify token validity |
+| POST `/reset-password` | No | `{ token, newPassword }` | Transaction: UPDATE password + mark token used |
+| GET `/me` | Yes | — | Current user profile |
+| POST `/verify-invite` | No | `{ code }` | Validate invitation code, return role |
+| PATCH `/profile` | Yes | `{ pseudo }` | Check uniqueness, update |
+| PATCH `/password` | Yes | `{ current, newPassword }` | Verify current, hash new, update |
+| PATCH `/avatar` | Yes | `FormData{ avatar }` | Upload to Cloudinary (200x200 crop) or local disk, update URL |
+
+---
+
+## `routes/admin.js` — Admin Routes (10 endpoints)
 
 ### Helper
-
 ```js
-@function generateInviteCode
-@param {string} role - "student", "teacher", or "alumni"
-@returns {string} Format: "HEI-STD/PROF/ALUM-XXXXXX" (6 random alphanumeric chars)
+@function generateInviteCode(role) - Returns "HEI-STD/PROF/ALUM-XXXXXX"
 ```
 
 ### Routes
-
-```js
-@route GET /stats
-@middleware auth, adminOnly
-@description Runs 4 COUNT queries + GROUP BY role in parallel
-@returns {JSON} { total_users, total_posts, total_submissions, total_messages, by_role }
-@status 200 - Success
-@status 500 - Server error
-
-@route GET /users
-@middleware auth, adminOnly
-@param {query} q? - ILIKE search on ref/pseudo/email
-@param {query} role? - comma-separated role filter
-@param {query} limit? - page size (default 50, max 200)
-@param {query} offset? - page offset (default 0)
-@description Builds dynamic SQL with optional filters, paginated
-@returns {JSON} { users: Array, total: number, limit: number, offset: number }
-@status 200 - Success
-@status 500 - Server error
-
-@route PATCH /users/:id/role
-@middleware auth, adminOnly
-@param {params} id
-@param {body} { role }
-@description Changes user role (validates against whitelist)
-@returns {JSON} { id, ref, pseudo, role }
-@status 200 - Success
-@status 400 - Invalid role
-@status 404 - User not found
-@status 500 - Server error
-
-@route DELETE /users/:id
-@middleware auth, adminOnly
-@param {params} id
-@description Deletes user, prevents self-deletion
-@returns {JSON} { success: true }
-@status 200 - Success
-@status 400 - Cannot delete self
-@status 500 - Server error
-
-@route POST /invitations
-@middleware auth, adminOnly
-@param {body} { role, max_uses? }
-@description Generates single invitation code (14 day expiry)
-@returns {JSON} Invitation object
-@status 201 - Created
-@status 400 - Invalid role
-@status 500 - Server error
-
-@route POST /invitations/bulk
-@middleware auth, adminOnly
-@param {body} { role, count?, max_uses? }
-
-@description Generates up to 1000 invitation codes in batches of 100 (batch INSERT)
-@description Generates up to 1000 invitation codes in a single batch INSERT
-  (was previously a sequential loop — now uses one parameterized multi-row INSERT)
-(perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
-@returns {JSON} { count, codes: Array }
-@status 201 - Created
-@status 400 - Invalid role
-@status 500 - Server error
-
-@route GET /invitations
-@middleware auth, adminOnly
-@param {query} limit? - page size (default 50, max 200)
-@param {query} offset? - page offset (default 0)
-@returns {JSON} { invitations: Array, total: number, limit: number, offset: number }
-@status 200 - Success
-@status 500 - Server error
-
-@route DELETE /invitations/:id
-@middleware auth, adminOnly
-@param {params} id
-@returns {JSON} { success: true }
-@status 200 - Success
-@status 500 - Server error
-```
+| Route | Input | Description |
+|-------|-------|-------------|
+| GET `/stats` | — | Parallel COUNT queries + GROUP BY role |
+| GET `/users` | `?q=&role=&limit=&offset=` | Dynamic SQL with ILIKE + role filter, paginated (max 200) |
+| PATCH `/users/:id/role` | `{ role }` | Validates against whitelist (student/teacher/admin/bde/alumni) |
+| PATCH `/users/:id/email` | `{ email }` | Validate email, update |
+| DELETE `/users/:id` | — | Cannot delete self |
+| POST `/class-upgrade` | `{ failed_refs }` | L1→L2, L2→L3, L3→alumni, skip failed refs |
+| POST `/invitations` | `{ role, max_uses? }` | Single code, 14d expiry |
+| POST `/invitations/bulk` | `{ role, count?, max_uses? }` | Up to 1000 codes, batch INSERT (100/batch) |
+| GET `/invitations` | `?limit=&offset=` | Paginated list (max 200) |
+| DELETE `/invitations/:id` | — | Hard delete |
 
 ---
 
-## `routes/posts.js` — Course Posts
+## `routes/posts.js` — Course Posts (3 endpoints)
 
-```js
-@route GET /
-@param {query} ue? - filter by UE code
-@param {query} type? - filter by post type (cours/td/examen)
-@param {query} level? - expands to all UEs for that level
-@param {query} limit? - page size (default 50, max 200)
-@param {query} offset? - page offset (default 0)
-@description Fetches posts with LEFT JOIN on users for author info, paginated
-@returns {JSON} { posts: Array, total: number, limit: number, offset: number }
-@status 200
+| Route | Auth | Role | Input | Description |
+|-------|------|------|-------|-------------|
+| GET `/` | No | Any | `?ue=&type=&level=&limit=&offset=` | Filters by level (expands to UEs), UE code, type |
+| POST `/` | Yes | teacher/admin | `FormData{ title, description, ue, type, file?, link? }` | File max 20MB, requires file OR link, push to all |
+| DELETE `/:id` | Yes | teacher/admin | — | Hard delete |
 
-@route POST /
-@middleware auth, multer(upload)
-@param {body} { title, description?, ue, type, link? }
-@param {file} file? (optional, 20MB max)
-@description Creates a new post (teacher/admin only). Requires file_path OR link.
-  Uploads file to local uploads/ directory with timestamp prefix.
-@returns {JSON} Created post object
-@status 201
-@status 400 - Missing fields or file/link
-@status 403 - Forbidden role
-
-@route DELETE /:id
-@middleware auth
-@description Deletes a post (teacher/admin only)
-@returns {JSON} { message: "Post supprimé." }
-@status 200
-@status 403 - Forbidden role
-```
+### UE by Level
+- L1: 13 UEs (WEB1, PROG1, SYS1, DONNEES1, THEORIE1-P1, THEORIE1-P2, WEB2, PROG2-POO, PROG2-API, SYS2, MGT1, DONNEES2, IA1)
+- L2: 5 UEs (WEB3, PROG3, MGT2, PROG4, SYS3)
+- L3: 4 UEs (MOB1, PROG5, SECU1, SECU2)
 
 ---
 
-## `routes/submissions.js` — Homework Submissions
+## `routes/submissions.js` — Homework Submissions (2 endpoints)
 
-```js
-@route POST /
-@middleware auth, multer(upload)
-@param {body} { nom, prenom, email, ref, level, groupe, ue, type, link? }
-@param {file} file? (optional, 10MB max)
-@description Submits homework. Uploads file to Cloudinary (hei-stdhub/submissions).
-  Requires file or link. Stores all student info denormalized.
-@returns {JSON} Created submission object
-@status 201
-@status 400 - Missing fields or file/link
-
-@route GET /
-@middleware auth
-@param {query} type?, groupe?, ue?, search?
-@param {query} limit? - page size (default 50, max 200)
-@param {query} offset? - page offset (default 0)
-@description Lists submissions with pagination and server-side search.
-  Teachers see only their assigned UEs submissions.
-  Search matches ref, nom, prenom, email, groupe (ILIKE).
-@returns {JSON} { submissions: Array, total: number, limit: number, offset: number }
-@status 200
-@status 403 - Forbidden role (student/bde)
-```
+| Route | Auth | Role | Input | Description |
+|-------|------|------|-------|-------------|
+| POST `/` | Yes | Any | `FormData{ nom, prenom, email, ref, level, groupe, ue, type, file?, link? }` | Cloudinary or local, push to all |
+| GET `/` | Yes | teacher/admin | `?type=&groupe=&ue=&search=&limit=&offset=` | Teachers see only their UEs, ILIKE search on ref/nom/prenom/email/groupe |
 
 ---
 
-## `routes/supports.js` — Support Links
+## `routes/supports.js` — Support Links (3 endpoints)
 
-```js
-@route GET /:ue
-@description Lists support links for a given UE (public)
-@returns {JSON} Array of support objects with author_pseudo
-
-@route POST /
-@middleware auth
-@param {body} { ue, label, url }
-@description Creates a support link (teacher/admin only)
-@returns {JSON} Created support object
-@status 201
-@status 400 - Missing fields
-@status 403 - Forbidden role
-
-@route DELETE /:id
-@middleware auth
-@description Deletes support link (teacher/admin only)
-@returns {JSON} { message: "Support supprimé." }
-```
+| Route | Auth | Role | Description |
+|-------|------|------|-------------|
+| GET `/:ue` | No | Any | List with author_pseudo |
+| POST `/` | Yes | teacher/admin | `{ ue, label, url }` — URL must be http(s):// |
+| DELETE `/:id` | Yes | teacher/admin | Hard delete |
 
 ---
 
-## `routes/messages.js` — Chat Messages
+## `routes/messages.js` — Chat Messages (14 endpoints)
 
-### File Upload Setup
+| Route | Auth | Input/Params | Description |
+|-------|------|--------------|-------------|
+| GET `/search?q=` | Yes | — | ILIKE on pseudo/ref, exclude self, limit 10 |
+| GET `/contacts?q=&limit=&offset=` | Yes | — | All users, sorted: teachers→admins→others, ILIKE filter, paginated |
+| GET `/global?before=&limit=` | Yes | — | Cursor pagination (max 500), DESC then ASC |
+| GET `/private/:userId?before=&limit=` | Yes | — | Cursor pagination (max 500), both directions |
+| POST `/` | Yes | `{ content, receiver_id?, is_global? }` | Profanity filter on global, push notif for private, Socket emit |
+| PATCH `/seen` | Yes | `{ ids: number[] }` | Batch mark, emit message:seen to senders |
+| PATCH `/:id/seen` | Yes | — | Legacy single mark |
+| POST `/upload` | Yes | `FormData{ file }` | Max 10MB, Cloudinary or local, returns `{ filename, url, isImage }` |
+| GET `/unread` | Yes | — | Global count + per-contact { unread, pending } |
+| POST `/global/read` | Yes | `{ messageId }` | UPSERT with GREATEST |
+| DELETE `/:id` | Yes | — | Sender only, Cloudinary cleanup if file, Socket emit |
+| GET `/favorites` | Yes | — | Array of contact IDs |
+| POST `/favorites` | Yes | `{ contact_id }` | ON CONFLICT DO NOTHING |
+| DELETE `/favorites/:contactId` | Yes | — | Hard delete |
 
+---
+
+## `routes/suggestions.js` — BDE Suggestions (5 endpoints)
+
+| Route | Auth | Role | Input | Description |
+|-------|------|------|-------|-------------|
+| POST `/` | Yes | student/teacher/alumni/admin | `{ titre, contenu, anonyme }` | Profanity filter |
+| GET `/` | Yes | bde | `?limit=&offset=` | Anonymizes nom/prenom/email/ref |
+| PATCH `/:id` | Yes | bde | `{ statut, justification? }` | statut: recu/accepte/a_discuter/refuse, refuse requires justification |
+| POST `/confirm` | Yes | bde | — | Fetch processed, build chat msg, INSERT global message, DELETE all suggestions |
+| POST `/report` | Yes | bde/admin | `{ suggestions }` | Generate PDF via jsPDF |
+
+---
+
+## `routes/announcements.js` — Announcements (5 endpoints)
+
+| Route | Auth | Role | Input | Description |
+|-------|------|------|-------|-------------|
+| GET `/` | Yes | Any | `?level=&limit=&offset=` | With reactions map + user_reaction |
+| POST `/` | Yes | admin | `FormData{ title, content, target_level?, image? }` | Max 10MB, push to all |
+| DELETE `/:id` | Yes | admin | — | Hard delete |
+| POST `/:id/react` | Yes | Any | `{ reaction_type }` | like/haha/dont_like/sad, UPSERT |
+| DELETE `/:id/react` | Yes | Any | — | Remove reaction |
+
+---
+
+## `routes/alumniSpotlight.js` — Alumni Tips (5 endpoints)
+
+| Route | Auth | Role | Input | Description |
+|-------|------|------|-------|-------------|
+| GET `/` | Yes | Any | — | With reactions map + user_reaction |
+| POST `/` | Yes | alumni | `FormData{ title, content, image? }` | Max 10MB, push to all |
+| DELETE `/:id` | Yes | owner | — | Author only |
+| POST `/:id/react` | Yes | Any | `{ reaction_type }` | like/haha/dont_like/sad, UPSERT |
+| DELETE `/:id/react` | Yes | Any | — | Remove reaction |
+
+---
+
+## `routes/push.js` — Push Notifications (5 endpoints)
+
+| Route | Auth | Input | Description |
+|-------|------|-------|-------------|
+| POST `/subscribe` | Yes | `{ subscription: { endpoint, keys: { auth, p256dh } } }` | UPSERT |
+| DELETE `/subscribe` | Yes | `{ endpoint }` | Hard delete |
+| GET `/notifications` | Yes | — | Last 50, ORDER BY created_at DESC |
+| PATCH `/notifications/read` | Yes | `{ ids: number[] }` | Mark is_read = TRUE |
+| GET `/notifications/unread-count` | Yes | — | `{ count }` |
+
+---
+
+## `routes/pings.js` — Pings (4 endpoints)
+
+| Route | Auth | Input | Description |
+|-------|------|-------|-------------|
+| POST `/` | Yes | `{ receiver_id }` | Cannot ping self, check existing (delete if accepted/refused, reject if pending), Socket emit `ping:new` |
+| GET `/` | Yes | — | All pings (sent + received) with sender/receiver details |
+| PATCH `/:id/accept` | Yes | — | Receiver only, Socket emit `ping:accepted` |
+| PATCH `/:id/refuse` | Yes | — | Receiver only, Socket emit `ping:refused` |
+
+---
+
+## `services/notificationService.js` — Web Push
+
+### Functions
 ```js
-@description Configures Cloudinary storage (hei-stdhub/chat) if env vars set,
-  otherwise uses local disk storage (backend/uploads/chat/) with random hex filenames.
-  File size limit: 10MB.
-```
-
-### Helpers
-
-```js
-@function sendPushWithConcurrency
-@param {Array} subscriptions
-@param {string} payload
-@description Sends push notifications in batches of CONCURRENCY_LIMIT (10)
-  using Promise.allSettled. On 410/404 error, deletes invalid subscription.
-@returns {Promise<Array>} Results
-
-@async
-@function sendPushNotifications
-@param {Array} rows - Push subscription rows
-@param {string} payload - JSON stringified notification
-@description Sends notifications in parallel batches (default: 10 concurrent).
-  Uses Promise.allSettled so individual failures don't block the batch.
-  On 410/404 error, deletes invalid subscription from DB.
-@returns {Promise<Array>} settled results
-
-(perf: optimize backend for 1000+ users (pool, socket.io, pagination, push, indexes))
-@function sendPushNotification
-@param {number} userId
-@param {Object} options { title, body, tag, url }
-@description
-  1. Fetches push subscriptions for userId
-  2. Sends Web Push notification with concurrency limit of 10
-  3. On 410/404 error, deletes invalid subscription
+@async @function sendPushToUser(userId, { title, body, tag, url?, type? })
+@description Fetches push subscriptions for userId, sends in parallel batches (concurrency: 10), saves notification to push_notifications table, cleans up 410/404 subscriptions
 @returns {Promise<void>}
 
-@function sendPushToAll
-@param {Object} options { title, body, tag, url }
-@description
-  1. Fetches ALL push subscriptions (DISTINCT on endpoint)
-  2. Sends Web Push notification with concurrency limit of 10
-  3. On 410/404 error, deletes invalid subscription
+@async @function sendPushToAll({ title, body, tag, url?, type? })
+@description Fetches ALL subscriptions (DISTINCT endpoint), sends in parallel batches, saves notifications, cleans up invalid subscriptions
 @returns {Promise<void>}
 ```
 
-### Routes
+---
+
+## `services/suggestionPdf.js` — PDF Report
 
 ```js
-@route GET /search
-@middleware auth
-@param {query} q
-@description Searches users by pseudo or ref (ILIKE), excludes current user, limit 10
-@returns {JSON} Array of user objects
-@status 200 - (empty array if no query)
-
-@route GET /contacts
-@middleware auth
-@param {query} q? - ILIKE search on pseudo/ref
-@param {query} limit? - page size (default 200)
-@param {query} offset? - page offset (default 0)
-@description Lists users with optional server-side search and pagination,
-  sorted: teachers first, then admins, then others
-@returns {JSON} { users: Array, total: number }
-
-@route GET /global
-@middleware auth
-@param {query} before? - cursor: load messages older than this id
-@param {query} limit? - page size (default 200, max 500)
-@description Returns global messages with optional cursor pagination.
-  Without before: returns the last N messages (ASC order).
-  With before: returns N messages older than the given id (DESC then reversed).
-@returns {JSON} Array of message objects
-
-@route GET /private/:userId
-@middleware auth
-@param {params} userId
-@param {query} before? - cursor: load messages older than this id
-@param {query} limit? - page size (default 100, max 500)
-@description Returns private message history with optional cursor pagination.
-  Without before: returns the last N messages (ASC order).
-  With before: returns N messages older than the given id (DESC then reversed).
-@returns {JSON} Array of message objects
-
-@route POST /
-@middleware auth
-@param {body} { content, receiver_id?, is_global? }
-@description
-  1. Validates content non-empty
-  2. INSERT message
-  3. If global: io.emit("message:global")
-  4. If private: io.to("user:{id}").emit("message:private") for both sender & receiver
-  5. If private: sends push notification to receiver
-@returns {JSON} Full message object with sender_pseudo/sender_avatar
-@status 201
-@status 400 - Empty message or missing receiver for private
-
-@route PATCH /seen
-@middleware auth
-@param {body} { ids: number[] }
-@description Batch marks multiple messages as seen in one query.
-  Emits "message:seen" to each sender's room.
-  Replaces N+1 individual PATCH calls with a single query.
-@returns {JSON} { updated: number }
-@status 200
-@status 400 - Missing or empty ids array
-
-@route PATCH /:id/seen
-@middleware auth
-@param {params} id
-@description Marks a single message as seen (only if receiver matches current user),
-  emits "message:seen" to sender's room. Legacy endpoint.
-@returns {JSON} Updated message
-@status 200
-@status 404 - Message not found
-
-@route POST /upload
-@middleware auth, multer(chatUpload)
-@description Uploads file for chat sharing, returns filename, url, isImage
-@returns {JSON} { filename, url, isImage }
-@status 200
-@status 400 - Upload error
-
-@route GET /unread
-@middleware auth
-@description
-  1. Reads global_chat_read.last_read_msg_id for current user
-  2. Counts global messages after that id
-  3. Groups private messages by contact, counts unread (received, not seen)
-     and pending (sent, not seen by receiver)
-@returns {JSON} { global: number, contacts: { [contactId]: { unread, pending } } }
-@status 200
-
-@route POST /global/read
-@middleware auth
-@param {body} { messageId }
-@description Upserts global_chat_read to mark last read message id.
-  Uses ON CONFLICT with GREATEST() to never regress.
-@returns {JSON} { success: true }
-@status 200
-@status 400 - Missing messageId
-
-@route DELETE /:id
-@middleware auth
-@description Hard-deletes message only if sender_id matches current user.
-  If the message content indicates an uploaded file, attempts to delete the corresponding file from Cloudinary (if configured).
-  Emits "message:deleted" socket event with message metadata.
-@returns {JSON} { message: "Message supprimé." }
-@status 200
-@status 404 - Message introuvable ou non autorisé
+@function generateSuggestionReport(suggestions)
+@description Generates styled PDF: navy header + gold accents, summary cards, category sections with colored accent bars, justification boxes, footer per page
+@returns {jsPDF} document
 ```
 
 ---
 
-## `routes/suggestions.js` — BDE Suggestions
-
-```js
-@route POST /
-@middleware auth
-@param {body} { titre, contenu, anonyme? }
-@description Submits a suggestion (student/teacher/alumni/admin only)
-@returns {JSON} Created suggestion
-@status 201
-@status 400 - Missing titre/contenu
-@status 403 - Forbidden role (bde cannot submit)
-
-@route GET /
-@middleware auth
-@param {query} limit? - page size (default 50, max 200)
-@param {query} offset? - page offset (default 0)
-@description Lists suggestions with pagination (BDE only).
-  Anonymizes nom/prenom/email/ref when anonyme=true using CASE statements.
-@returns {JSON} { suggestions: Array, total: number, limit: number, offset: number }
-@status 200
-@status 403 - Forbidden role
-
-@route PATCH /:id
-@middleware auth
-@param {params} id
-@param {body} { statut, justification? }
-@description Updates suggestion status (BDE only).
-  Refuse requires justification.
-  Valid statuts: recu, accepte, a_discuter, refuse
-@returns {JSON} Updated suggestion
-@status 200
-@status 400 - Invalid status or missing justification
-@status 403 - Forbidden role
-@status 404 - Not found
-
-@route POST /confirm
-@middleware auth
-@description
-  1. Fetches all processed suggestions (statut != 'recu')
-  2. Builds chat summary message with French date and categorised results
-  3. INSERTS as global chat message
-  4. DELETEs all suggestions
-@returns {JSON} { suggestions, message }
-@status 200
-@status 400 - No processed suggestions
-@status 403 - Forbidden role
-
-@route POST /report
-@middleware auth
-@param {body} { suggestions: Array }
-@description Generates PDF report from suggestion data (BDE/admin only).
-  Uses jsPDF via suggestionPdf service.
-@returns {PDF} Binary PDF attachment
-@status 200
-@status 400 - Missing/invalid suggestions
-@status 403 - Forbidden role
-```
-
----
-
-## `routes/push.js` — Push Notifications
-
-```js
-@route POST /subscribe
-@middleware auth
-@param {body} { subscription: { endpoint, keys: { auth, p256dh } } }
-@description Stores push subscription (UPSERT via ON CONFLICT DO NOTHING)
-@returns {JSON} { subscribed: true }
-@status 201
-@status 400 - Missing subscription
-
-@route DELETE /subscribe
-@middleware auth
-@param {body} { endpoint }
-@description Removes push subscription
-@returns {JSON} { unsubscribed: true }
-@status 200
-@status 400 - Missing endpoint
-```
-
----
-
-## `services/mailer.js` — Email Service
-
-### Helpers
-
-```js
-@function getFrontendUrl
-@returns {string} CLIENT_URL or FRONTEND_URL or "http://localhost:5173" (trailing slash removed)
-
-@function getFromAddress
-@returns {string} SMTP_FROM | EMAIL_FROM | MAIL_FROM | SMTP_USER | "HEI STDhub <no-reply@hei-stdhub.local>"
-
-@function createTransport
-@returns {Object|null} Nodemailer transporter or null if no SMTP host configured
-
-@function buildResetUrl
-@param {string} token
-@returns {string} Full reset URL with encoded token
-
-@function escapeHtml
-@param {string} value
-@returns {string} HTML-safe string (&, <, >, ", ' escaped)
-
-@function getEmailTimeoutMs
-@returns {number} EMAIL_TIMEOUT_MS | RESEND_TIMEOUT_MS | 10000
-
-@async
-@function readResponseBody
-@param {Response} response - fetch Response
-@returns {string} Parsed JSON string or raw text
-
-@async
-@function sendWithResend
-@param {Object} params - { user, subject, text, html }
-@description POSTs to Resend API with Bearer auth and timeout
-@returns {Object|null} API response JSON or null if no API key
-@throws {Error} On non-ok response with status and body
-
-@async
-@function sendPasswordResetEmail
-@param {Object} params - { user, token }
-@description
-  1. Validates user.email
-  2. Builds reset URL, email content (plain text + HTML)
-  3. Tries Resend first, then SMTP, then falls back to logging
-@returns {Object} { skipped: boolean, resetUrl, provider?, result? }
-@throws {Error} If user.email missing
-
-@async
-@function sendEmail
-@param {Object} params - { user, subject, text, html }
-@description Generic email sender. Tries Resend, then SMTP, then logs.
-@returns {Object} { skipped: boolean, provider?, result? }
-@throws {Error} If user.email missing
-```
-
----
-
-## `services/suggestionPdf.js` — PDF Report Generator
-
-```js
-@function generateSuggestionReport
-@param {Array<Object>} suggestions - Array with { statut, titre, contenu, anonyme, prenom, nom, justification }
-@description Generates a styled PDF report using jsPDF:
-  1. Navy header with gold accents, title, date, reference
-  2. Summary section (4 cards: Acceptees, A approfondir, Refusees, Total)
-  3. 3 category sections with colored accent bars and suggestion cards
-  4. Footer on each page
-  Categories suggestions into acceptes / aDiscuter / refuses
-  Truncates long content to 150 chars
-  Shows "Anonyme" for anonymous suggestions
-  Shows justification box for refused suggestions
-@returns {jsPDF} PDF document object
-```
-
----
-
-## Database Schema (`db/schema.sql`)
-
-### Enums
-- `user_role`: student, teacher, admin, bde, alumni
-- `user_level`: L1, L2, L3
-- `post_type`: cours, td, examen
-- `submit_type`: TD, Examen
+## Database Schema (full in `db/schema.sql`)
 
 ### Tables
+- `users` — id, ref (UNIQUE), nom, prenom, email (UNIQUE), pseudo (UNIQUE), password, role (ENUM), level, avatar, ues (TEXT[]), first_login (DEFAULT TRUE), created_at, updated_at (auto-trigger)
+- `password_reset_tokens` — id, user_id (FK), token_hash (SHA-256, UNIQUE), expires_at, used_at
+- `posts` — id, title, description, ue (CHECK valid), type (cours/td/examen), file_name, file_path, link, author_id, created_at, updated_at
+- `supports` — id, ue (CHECK valid), label, url (https://), author_id
+- `submissions` — id, student_id, nom, prenom, email, ref, level, groupe (CHECK by level), ue, type (TD/Examen), file_name, file_path, link
+- `messages` — id, sender_id, receiver_id (NULL for global), content (NOT NULL), is_global, seen, seen_at, created_at, indexes on sender/receiver/created
+- `global_chat_read` — user_id (PK, FK), last_read_msg_id, updated_at
+- `suggestions` — id, student_id, titre, contenu, anonyme, statut (recu/accepte/a_discuter/refuse), justification, created_at, updated_at
+- `invitations` — id, code (UNIQUE), role, max_uses, use_count, used_by, created_by, expires_at
+- `push_subscriptions` — id, user_id (FK), endpoint, auth_key, p256dh_key, UNIQUE(user_id, endpoint)
+- `push_notifications` — id, user_id (FK), type, title, body, data (JSONB), is_read, created_at
+- `pings` — id, sender_id (FK), receiver_id (FK), status (pending/accepted/refused), created_at, responded_at, UNIQUE(sender_id, receiver_id)
+- `announcements` — id, title, content, image_url, author_id, target_level, created_at
+- `announcement_reactions` — id, announcement_id (FK), user_id (FK), reaction_type, UNIQUE(announcement_id, user_id)
+- `alumni_spotlight` — id, title, content, image_url, author_id, created_at
+- `alumni_spotlight_reactions` — id, tip_id (FK), user_id (FK), reaction_type, UNIQUE(tip_id, user_id)
+- `chat_favorites` — user_id, contact_id, PRIMARY KEY(user_id, contact_id)
 
-**users** — Core user accounts
-- ref: UNIQUE, format by role (STD\d{5,}/PROF\d{3,}/ADMIN\d{3,})
-- email: UNIQUE, students must match hei.xxx@gmail.com
-- pseudo: UNIQUE, checked on register and profile update
-- avatar: VARCHAR (Cloudinary URL or local path)
-- ues: TEXT[] (teacher UE assignments)
-- first_login: BOOLEAN DEFAULT TRUE
-- level: NULL for teacher/admin/alumni, required for student/bde
-
-**password_reset_tokens** — Password reset flow
-- token_hash: SHA-256, UNIQUE
-- expires_at: 1 hour
-- used_at: single-use
-
-**invitations** — Registration codes (via migration)
-- code: HEI-STD/PROF/ALUM-XXXXXX
-- max_uses, use_count
-- expires_at: 14 days
-
-**posts** — Course materials
-- ue: CHECK valid UE code
-- type: cours/td/examen
-- file_path OR link required
-
-**supports** — External resource links
-- ue: CHECK valid UE code
-- url: CHECK http:// or https://
-
-**submissions** — Homework submissions
-- groupe: CHECK by level (L1:N1-N4, L2:K1-K3, L3:J1-J2)
-- file_path OR link required
-
-**messages** — Chat messages
-- is_global: TRUE = no receiver, FALSE = has receiver
-- sender_id != receiver_id
-
-**push_subscriptions** — Web Push endpoints
-- UNIQUE(user_id, endpoint)
-
-**global_chat_read** — Per-user global chat read tracking
-- user_id: PK, FK users ON DELETE CASCADE
-- last_read_msg_id: INTEGER DEFAULT 0
-- updated_at: TIMESTAMP
-
-### Valid UE Codes
-WEB1, WEB2, WEB3, PROG1, PROG2, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1, DONNEES2, THEORIE1-P1, THEORIE1-P2, MGT2, IA1, MOB1, SECU1, SECU2
+### Indexes
+- GIN on `users.ues`
+- Composite on `messages(is_global, created_at ASC)`, `messages(sender_id, receiver_id)`, `messages(receiver_id, sender_id)`
+- Indexes on `invitations(expires_at, use_count)`, `push_subscriptions(endpoint)`
+- Indexes on `suggestions(statut, student_id)`, `global_chat_read(user_id)`
 
 ### Seed Data
-- ADMIN001 / stdhub.admin@gmail.com / admin
-- STD25001 / hei.fatratra@gmail.com / student L1
-- PROF001 / tester@gmail.com / teacher
+- Admin: `ADMIN001` / `password` (admin, no level)
+- Student: `STD25001` / `password` (student, L1)
+- Teacher: `PROF001` / `password` (teacher, no level)
+- All passwords hash: `$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji`
 
 ### Migrations (apply in order)
 1. `migration_invitations.sql` — invitations table
 2. `migration_first_login.sql` — first_login column
 3. `migration_student_email_suffix.sql` — email constraint update
-4. `migration_multi_use_invitations.sql` — max_uses/use_count
+4. `migration_multi_use_invitations.sql` — max_uses/use_count/used_by
 5. `migration_alumni_support.sql` — alumni/bde roles
-6. `migration_chat_seen_pseudo_unique.sql` — avatar/ues columns, unique pseudo,
-   seen/seen_at columns, global_chat_read table
-7. `migration_scale_500.sql` — performance indexes for 500+ users:
-   GIN on users.ues, composite on messages(sender_id, receiver_id),
-   composite on messages(is_global, created_at), indexes on
-   suggestions(student_id, statut, created_at),
-   invitations(expires_at, use_count), push_subscriptions(endpoint)
+6. `migration_chat_seen_pseudo_unique.sql` — avatar, ues, unique pseudo, seen/seen_at, global_chat_read
+7. `migration_scale_500.sql` — performance indexes
