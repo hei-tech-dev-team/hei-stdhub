@@ -7,6 +7,14 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const webpush = require("web-push");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
+
+const reactionsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,             // 30 reactions/minute
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -373,6 +381,60 @@ router.post("/global/read", auth, async (req, res) => {
       [req.user.id, messageId],
     );
     res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// add reaction to a message (toggle)
+router.post("/:id/reactions", reactionsLimiter, auth, async (req, res) => {
+  const messageId = parseInt(req.params.id);
+  const { emoji } = req.body;
+  const userId = req.user.id;
+
+  if (!emoji?.trim()) return res.status(400).json({ error: "emoji requis." });
+  if (isNaN(messageId)) return res.status(400).json({ error: "messageId invalide." });
+
+  try {
+    const { rows: existing } = await db.query(
+      `SELECT id, emoji FROM message_reactions
+       WHERE message_id = $1 AND user_id = $2`,
+      [messageId, userId],
+    );
+
+    let action;
+    if (existing.length) {
+      if (existing[0].emoji === emoji) {
+        await db.query("DELETE FROM message_reactions WHERE id = $1", [existing[0].id]);
+        action = "removed";
+      } else {
+        await db.query(
+          "UPDATE message_reactions SET emoji = $1 WHERE id = $2",
+          [emoji, existing[0].id],
+        );
+        action = "updated";
+      }
+    } else {
+      await db.query(
+        `INSERT INTO message_reactions (message_id, user_id, emoji) VALUES ($1, $2, $3)`,
+        [messageId, userId, emoji],
+      );
+      action = "added";
+    }
+
+    const { rows: reactions } = await db.query(
+      `SELECT mr.user_id AS "userId", u.pseudo AS "userName", mr.emoji
+       FROM message_reactions mr
+       LEFT JOIN users u ON u.id = mr.user_id
+       WHERE mr.message_id = $1`,
+      [messageId],
+    );
+
+    const io = req.app.get("io");
+    if (io) io.emit("message:reaction", { messageId, reactions });
+
+    res.json({ action, messageId, reactions });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
