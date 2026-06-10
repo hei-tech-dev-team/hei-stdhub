@@ -7,7 +7,7 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
-const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
+const { sendPushToUser } = require("../services/notificationService");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
 
@@ -240,7 +240,7 @@ router.get("/private/:userId", auth, async (req, res) => {
 
 // Send a message (global or private)
 router.post("/", auth, async (req, res) => {
-  const { receiver_id, is_global, reply_to_id = null } = req.body;
+  const { receiver_id, is_global } = req.body;
   const content = typeof req.body.content === "string" ? req.body.content : "";
   if (!content.trim()) return res.status(400).json({ error: "Message vide." });
   if (!is_global && !receiver_id)
@@ -248,65 +248,44 @@ router.post("/", auth, async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO messages (sender_id, receiver_id, content, is_global, reply_to_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [req.user.id, is_global ? null : receiver_id, content, !!is_global, reply_to_id],
+      `INSERT INTO messages (sender_id, receiver_id, content, is_global)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [req.user.id, is_global ? null : receiver_id, content, !!is_global],
     );
+
     const msg = rows[0];
 
     const { rows: userRows } = await db.query(
-      "SELECT pseudo, avatar, ref, role FROM users WHERE id = $1",
+      "SELECT pseudo, avatar FROM users WHERE id=$1",
       [req.user.id],
     );
-    const sender = userRows[0] || {};
-
-    let replyToContent = null;
-    let replyToSender  = null;
-    if (reply_to_id) {
-      const { rows: replyRows } = await db.query(
-        `SELECT rm.content, u.pseudo AS sender_pseudo
-         FROM messages rm LEFT JOIN users u ON u.id = rm.sender_id
-         WHERE rm.id = $1`,
-        [reply_to_id],
-      );
-      if (replyRows.length) {
-        replyToContent = replyRows[0].content;
-        replyToSender  = replyRows[0].sender_pseudo;
-      }
-    }
 
     const fullMsg = {
       ...msg,
-      sender_pseudo:    sender.pseudo || "Inconnu",
-      sender_avatar:    sender.avatar || null,
-      sender_ref:       sender.ref    || null,
-      sender_role:      sender.role   || null,
-      reply_to_content: replyToContent,
-      reply_to_sender:  replyToSender,
-      reactions:        [],
+      sender_pseudo: userRows[0]?.pseudo || "Inconnu",
+      sender_avatar: userRows[0]?.avatar || null,
     };
 
     const io = req.app.get("io");
-    const senderName = sender.pseudo || "Inconnu";
+    const senderName = userRows[0]?.pseudo || "Inconnu";
 
     if (is_global) {
       if (io) io.emit("message:global", fullMsg);
-      sendPushToAll({
-        title: "HEI STDhub – Chat global",
-        body: `${senderName}: ${content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200)}`,
-        tag: "global-chat", url: "/chat", type: "global_chat",
-      }).catch(() => {});
     } else {
       if (io) {
         io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
         io.to(`user:${req.user.id}`).emit("message:private", fullMsg);
+
         io.to(`user:${req.user.id}`).emit("unread:update", {
-          contactId: receiver_id, unread: 0, pending: 1,
+          contactId: receiver_id,
+          unread: 0,
+          pending: 1,
         });
       }
+
       sendPushToUser(receiver_id, {
         title: senderName || "Message",
-        body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
+        body: content.replace(/\[FILE:[^\]]+\]/g, "[Fichier]").slice(0, 200),
         tag: `private-${req.user.id}`,
         url: "/chat",
         type: "private_message",
