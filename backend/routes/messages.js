@@ -6,6 +6,9 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
 const webpush = require("web-push");
+const cloudinary = require("cloudinary");
+const CloudinaryStorage = require("multer-storage-cloudinary");
+const { sendPushToUser } = require("../services/notificationService");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
 
@@ -236,13 +239,6 @@ router.post("/", auth, async (req, res) => {
 
     if (is_global) {
       if (io) io.emit("message:global", fullMsg);
-
-      sendPushToAll({
-        title: "HEI STDhub – Chat global",
-        body: `${senderName}: ${content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200)}`,
-        tag: "global-chat",
-        url: "/chat",
-      }).catch(() => {});
     } else {
       if (io) {
         io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
@@ -254,10 +250,9 @@ router.post("/", auth, async (req, res) => {
           pending: 1,
         });
       }
-
-      sendPushNotification(receiver_id, {
+      sendPushToUser(receiver_id, {
         title: senderName || "Message",
-        body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
+        body: content.replace(/\[FILE:[^\]]+\]/g, "[Fichier]").slice(0, 200),
         tag: `private-${req.user.id}`,
         url: "/chat",
       }).catch(() => {});
