@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { containsProfanity } = require("../middleware/profanity");
+
 
 router.post("/", auth, async (req, res) => {
   if (!["student", "teacher", "alumni", "admin"].includes(req.user.role))
@@ -13,8 +13,6 @@ router.post("/", auth, async (req, res) => {
   const { titre, contenu, anonyme } = req.body;
   if (!titre?.trim() || !contenu?.trim())
     return res.status(400).json({ error: "Titre et contenu requis." });
-  if (containsProfanity(titre) || containsProfanity(contenu))
-    return res.status(400).json({ error: "Contenu inapproprié détecté. Veuillez respecter les règles de la communauté." });
 
   try {
     const { rows } = await db.query(
@@ -151,7 +149,7 @@ router.post("/confirm", auth, async (req, res) => {
       [req.user.id, chatMsg],
     );
 
-    await db.query("DELETE FROM suggestions");
+    await db.query("DELETE FROM suggestions WHERE statut != 'recu'");
 
     res.json({
       suggestions,
