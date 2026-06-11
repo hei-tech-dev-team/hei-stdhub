@@ -15,6 +15,8 @@ import {
   faEye,
   faShieldHalved,
   faTriangleExclamation,
+  faReply,
+  faCamera
 } from "@fortawesome/free-solid-svg-icons";
 import UserAvatar from "../ui/UserAvatar";
 import { HEI_WHITE_LOGO } from "../../assets/logos";
@@ -31,6 +33,59 @@ import {
 import { useLongPress } from "./useLongPress";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+
+function ReactionPicker({ onReact, onClose }) {
+  return (
+    <div
+      className="flex items-center gap-0.5 bg-navy-dark border border-white/15 rounded-full px-2 py-1.5 shadow-xl z-50 animate-fade-in"
+      onMouseLeave={onClose}
+    >
+      {QUICK_REACTIONS.map((emoji) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onReact(emoji); onClose(); }}
+          className="w-8 h-8 flex items-center justify-center text-lg hover:scale-125 active:scale-110 transition-transform rounded-full hover:bg-white/10"
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReactionList({ reactions, currentUserId, onReact }) {
+  if (!reactions?.length) return null;
+
+  const grouped = reactions.reduce((acc, r) => {
+    if (!acc[r.emoji]) acc[r.emoji] = { count: 0, hasOwn: false };
+    acc[r.emoji].count++;
+    if (r.userId === currentUserId) acc[r.emoji].hasOwn = true;
+    return acc;
+  }, {});
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-1 px-1">
+      {Object.entries(grouped).map(([emoji, { count, hasOwn }]) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={() => onReact(emoji)}
+          title={hasOwn ? "Retirer ma réaction" : "Réagir"}
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-all active:scale-95 ${
+            hasOwn
+              ? "bg-gold/20 border-gold/50 text-gold"
+              : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
+          }`}
+        >
+          <span>{emoji}</span>
+          <span className="font-semibold tabular-nums">{count}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300" },
@@ -69,103 +124,299 @@ function DateSeparator({ date }) {
   );
 }
 
-function ImageMessage({ parsed, onImageClick, onDelete, onDownload, isOwn }) {
-  const [showActions, setShowActions] = useState(false);
-  const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+function ReplyQuote({ replyToContent, replyToSender, isOwn }) {
+  if (!replyToContent) return null;
 
-   const handlers = useLongPress(
-    () => setShowActions(true),
-    () => onImageClick?.({ url: parsed.url, filename: parsed.filename }),
-  );
+  const parsed  = parseFileContent(replyToContent);
+  const isImage = parsed?.type === "img";
+  const isFile  = parsed && !isImage;
 
   return (
-    <div className="relative z-[45]" {...handlers}>
-      <img
-        src={parsed.url}
-        alt={parsed.filename}
-        className="max-w-[200px] sm:max-w-[320px] max-h-[300px] w-auto h-auto object-contain rounded-lg block bg-black/20 select-none"
-        loading="lazy"
-        draggable={false}
-        onContextMenu={(e) => e.preventDefault()}
-        style={{ WebkitTouchCallout: "none" }}
-      />
+    <div className={`flex items-stretch mb-1 rounded-xl overflow-hidden
+                     max-w-full text-xs
+                     bg-white/[0.06] border border-white/10
+                     ${isOwn ? "self-end" : "self-start"}`}>
+      
+      <div className={`w-[3px] shrink-0 ${isOwn ? "bg-gold/60" : "bg-gold"}`} />
 
-       {showActions && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} onTouchStart={(e) => e.stopPropagation()}
-                  onTouchEnd={(e) => e.stopPropagation()} />
-
-          {isMobile ? (
-            <div className="fixed bottom-0 inset-x-0 z-50 bg-navy-dark border-t border-white/10 rounded-t-2xl shadow-2xl animate-fade-in pb-safe"
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onTouchEnd={(e) => e.stopPropagation()}
-            >
-              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-4" />
-              <button type="button"
-                onClick={(e) => { e.stopPropagation(); setShowActions(false); onImageClick?.({ url: parsed.url, filename: parsed.filename }); }}
-                className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-                <FontAwesomeIcon icon={faEye} /> Visionner
-              </button>
-              <button type="button"
-                onClick={(e) => { e.stopPropagation(); setShowActions(false); onDownload?.(parsed.url, parsed.filename); }}
-                className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-                <FontAwesomeIcon icon={faDownload} /> Télécharger
-              </button>
-              {isOwn && (
-                <button type="button"
-                  onClick={(e) => { e.stopPropagation(); setShowActions(false); onDelete?.(); }}
-                  className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
-                  <FontAwesomeIcon icon={faTrash} /> Supprimer
-                </button>
-              )}
-              <div className="h-4" />
+      <div className="flex items-center gap-2 flex-1 min-w-0 px-2.5 py-1.5">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-gold/80 mb-0.5 truncate">
+            ↩ {replyToSender}
+          </p>
+          {isFile ? (
+            <div className="flex items-center gap-1 text-[10px] text-white/40">
+              <FontAwesomeIcon icon={faFile} className="text-[9px] shrink-0" />
+              <span className="truncate">{parsed.filename}</span>
             </div>
           ) : (
-            <div className="absolute bottom-full left-0 mb-2 z-50 bg-navy-dark border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fade-in">
-              <button type="button"
-                onClick={() => { setShowActions(false); onDelete?.(); }}
-                className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition w-full whitespace-nowrap">
-                <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                Supprimer le message
-              </button>
-            </div>
+            <p className="text-[10px] text-white/40 truncate leading-snug">
+              {isImage ? <FontAwesomeIcon icon={faCamera}/> : getMessagePreview(replyToContent)}
+            </p>
           )}
-        </>
-      )}
+        </div>
+
+        {isImage && (
+          <img src={parsed.url} alt=""
+            className="w-8 h-8 rounded-md object-cover shrink-0 opacity-70" />
+        )}
+      </div>
     </div>
   );
 }
 
-function FileMessage({ parsed, onShowDeleteChange }) {
-  const handleDownload = useCallback(async () => {
-    try {
-      const response = await fetch(parsed.url);
-      const blob = await response.blob();
-      const localUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = localUrl;
-      a.download = parsed.filename || "fichier";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(localUrl);
-    } catch {
-      window.open(parsed.url, "_blank");
-    }
-  }, [parsed.url, parsed.filename]);
+function ReplyBar({ replyingTo, onCancel }) {
+  if (!replyingTo) return null;
+  return (
+    <div className="absolute bottom-[calc(100%+0.5rem)] left-4 sm:left-6 right-4 sm:right-6
+                    flex items-center gap-3 px-4 py-3 z-20
+                    bg-navy-dark/95 border border-white/15 rounded-xl
+                    backdrop-blur-md shadow-xl animate-fade-in">
+      <div className="w-0.5 self-stretch bg-gold rounded-full shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-gold text-xs font-bold mb-0.5 truncate">
+          ↩ {replyingTo.sender}
+        </p>
+        <p className="text-white/50 text-xs truncate leading-snug">
+          {getMessagePreview(replyingTo.content)}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="w-7 h-7 rounded-full text-white/40 hover:text-white hover:bg-white/10
+                   flex items-center justify-center transition-all shrink-0"
+        title="Annuler la réponse"
+      >
+        <FontAwesomeIcon icon={faXmark} className="text-sm" />
+      </button>
+    </div>
+  );
+}
 
-  const handlers = useLongPress(
-    () => onShowDeleteChange?.(true),
-    handleDownload,
+function MessageActionSheet({ msg, isOwn, currentUserId, onReact, onClose, children }) {
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/50"
+        onClick={onClose}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      />
+
+      <div
+        className="fixed bottom-0 inset-x-0 z-50 bg-navy-dark border-t border-white/10
+                   rounded-t-2xl shadow-2xl animate-fade-in pb-safe"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-5" />
+
+        <div className="flex justify-around items-center px-6 pb-5">
+          {QUICK_REACTIONS.map((emoji) => {
+            const hasOwn = msg.reactions?.some(
+              (r) => r.userId === currentUserId && r.emoji === emoji
+            );
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => { onReact(emoji); onClose(); }}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl
+                            transition-all active:scale-90
+                            ${hasOwn ? "bg-gold/20" : "active:bg-white/10"}`}
+              >
+                <span className="text-3xl leading-none">{emoji}</span>
+                {hasOwn && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="h-px bg-white/10 mx-5 mb-2" />
+
+        <div className="flex flex-col pb-6">
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function TextMessage({
+  msg, isOwn, currentUserId,
+  isFirst,
+  onReact, onDelete, onImageClick, onDownload,
+  pickerMsgId, setPickerMsgId, onReply
+}) {
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+
+  const isMobile = useRef(
+    typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches
+  ).current;
+
+  const timeStr = formatTime(new Date(msg.createdAt));
+
+  const longPressHandlers = useLongPress(
+    () => { if (isMobile) setActionSheetOpen(true); },
+    null,
   );
 
   return (
-    <div
-      className="relative flex items-center gap-2 py-3 px-2 bg-blue-900/90 hover:bg-blue-900 cursor-pointer transition-all max-w-full"
-      {...handlers}
+    <>
+      <div
+        className={`group relative flex items-end gap-2 mb-2
+                    max-w-[95%] sm:max-w-[75%] min-w-0
+                    ${isOwn ? "flex-row-reverse" : "flex-row"}
+                    animate-message-in`}
+        {...longPressHandlers}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {!isOwn && isFirst && (
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
+            <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
+          </div>
+        )}
+        {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
+
+        <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
+          {isFirst && (
+            <span className={`text-[11px] font-semibold mb-1 ml-1 flex items-center
+                              ${isOwn ? "text-navy-dark" : "text-gold"}`}>
+              {isOwn ? "Vous" : msg.senderRef
+                ? <Link to={`/user/${msg.senderRef}`} className="hover:underline">{msg.sender}</Link>
+                : msg.sender}
+              {!isOwn && <RoleBadge role={msg.senderRole} />}
+            </span>
+          )}
+
+          <ReplyQuote
+            replyToContent={msg.replyToContent}
+            replyToSender={msg.replyToSender}
+            isOwn={isOwn}
+          />
+
+          <div className="relative">
+            {!isMobile && (
+              <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-10
+                              opacity-0 group-hover:opacity-100 transition-all
+                              ${isOwn ? "-left-[4.5rem]" : "-right-[4.5rem]"}`}>
+                <button type="button"
+                  onClick={() => onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content })}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-xs
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Répondre">
+                  <FontAwesomeIcon icon={faReply} className="text-gray-400" />
+                </button>
+                
+                <button type="button"
+                  onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-sm
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Réagir">
+                  <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
+                </button>
+              </div>
+            )}
+
+            {!isMobile && pickerMsgId === msg.id && (
+              <div className={`absolute bottom-full mb-1 z-50 ${isOwn ? "right-0" : "left-0"}`}>
+                <ReactionPicker
+                  onReact={(emoji) => onReact?.(msg.id, emoji)}
+                  onClose={() => setPickerMsgId(null)}
+                />
+              </div>
+            )}
+
+            <div className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full
+                             select-none
+                             ${isOwn
+                               ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
+                               : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
+                             }`}>
+              {renderContent(msg.content, onImageClick, () => onDelete?.(msg), isOwn, onDownload)}
+            </div>
+          </div>
+
+          <ReactionList
+            reactions={msg.reactions}
+            currentUserId={currentUserId}
+            onReact={(emoji) => onReact?.(msg.id, emoji)}
+          />
+
+          <div className={`flex items-center gap-1.5 mt-0.5 px-1
+                           ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+            <span className="text-[10px] text-white/30">{timeStr}</span>
+            {isOwn && (
+              <>
+                <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                  {msg.seen ? "✓✓" : "✓"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDelete?.(msg)}
+                  className="opacity-0 group-hover:opacity-100 text-white/30
+                             hover:text-red-400 transition-all text-[10px] ml-1"
+                  title="Supprimer"
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {actionSheetOpen && (
+        <MessageActionSheet
+          msg={msg} isOwn={isOwn} currentUserId={currentUserId}
+          onReact={(emoji) => onReact?.(msg.id, emoji)}
+          onClose={() => setActionSheetOpen(false)}
+        >
+          <button type="button"
+            onClick={() => {
+              setActionSheetOpen(false);
+              onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content });
+            }}
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+            <FontAwesomeIcon icon={faReply} /> Répondre
+          </button>
+          {isOwn && (
+            <button type="button"
+              onClick={() => { setActionSheetOpen(false); onDelete?.(msg); }}
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
+              <FontAwesomeIcon icon={faTrash} /> Supprimer
+            </button>
+          )}
+        </MessageActionSheet>
+      )}
+    </>
+  );
+}
+
+function ImageMessage({ parsed }) {
+  return (
+    <img
+      src={parsed.url}
+      alt={parsed.filename}
+      className="max-w-[200px] sm:max-w-[320px] max-h-[300px] w-auto h-auto
+                 object-contain rounded-lg block bg-black/20 select-none"
+      loading="lazy"
+      draggable={false}
       onContextMenu={(e) => e.preventDefault()}
       style={{ WebkitTouchCallout: "none" }}
-    >
+    />
+  );
+}
+
+
+function FileMessage({ parsed }) {
+  return (
+    <div className="flex items-center gap-2 py-3 px-2 bg-blue-900/90 max-w-full">
       <div className="flex flex-col items-center bg-gold-700/10 border-2 border-gold rounded-lg shrink-0 py-2 px-3">
         <FontAwesomeIcon className="text-sm text-gold" icon={faFile} />
         <span className="text-[9px] font-bold text-gold uppercase">
@@ -177,6 +428,189 @@ function FileMessage({ parsed, onShowDeleteChange }) {
         <span>{parsed.size && `(${(parsed.size / 1024).toFixed(1)} KB)`}</span>
       </div>
     </div>
+  );
+}
+
+function MediaMessage({
+  msg, isOwn, isFirst, currentUserId,
+  onReact, onDelete, onImageClick, onDownload,
+  pickerMsgId, setPickerMsgId, onReply
+}) {
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+
+  const parsed  = parseFileContent(msg.content);
+  const isImage = parsed?.type === "img";
+  const isMobile = useRef(window.matchMedia("(max-width: 1023px)").matches).current;
+  const timeStr = formatTime(new Date(msg.createdAt));
+
+  const handleDownload = useCallback(async () => {
+    try {
+      const res  = await fetch(parsed.url);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url;
+      a.download = parsed.filename || "fichier";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(parsed.url, "_blank");
+    }
+  }, [parsed.url, parsed.filename]);
+
+  const longPressHandlers = useLongPress(
+    () => setActionSheetOpen(true),
+    () => isImage
+      ? onImageClick?.({ url: parsed.url, filename: parsed.filename })
+      : handleDownload(),
+  );
+
+  return (
+    <>
+      <div
+        className={`group relative flex items-end gap-2 mb-2
+                    max-w-[95%] sm:max-w-[75%] min-w-0
+                    ${isOwn ? "flex-row-reverse" : "flex-row"}`}
+      >
+        {!isOwn && isFirst && (
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
+            <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
+          </div>
+        )}
+        {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
+
+        <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
+          {isFirst && (
+            <span className={`text-[11px] font-semibold mb-1 ml-1 flex items-center
+                              ${isOwn ? "text-navy-dark" : "text-gold"}`}>
+              {isOwn ? "Vous" : msg.senderRef
+                ? <Link to={`/user/${msg.senderRef}`} className="hover:underline">{msg.sender}</Link>
+                : msg.sender}
+              {!isOwn && <RoleBadge role={msg.senderRole} />}
+            </span>
+          )}
+
+          <div className="relative">
+            {!isMobile && (
+              <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-10
+                              opacity-0 group-hover:opacity-100 transition-all
+                              ${isOwn ? "-left-[4.5rem]" : "-right-[4.5rem]"}`}>
+                <button type="button"
+                  onClick={() => onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content })}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-xs
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Répondre">
+                  <FontAwesomeIcon icon={faReply} className="text-gray-400" />
+                </button>
+                
+                <button type="button"
+                  onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
+                            flex items-center justify-center text-sm
+                            hover:scale-110 active:scale-95 transition-transform"
+                  title="Réagir">
+                  <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
+                </button>
+              </div>
+            )}
+
+            {!isMobile && pickerMsgId === msg.id && (
+              <div className={`absolute bottom-full mb-1 z-50 ${isOwn ? "right-0" : "left-0"}`}>
+                <ReactionPicker
+                  onReact={(emoji) => onReact?.(msg.id, emoji)}
+                  onClose={() => setPickerMsgId(null)}
+                />
+              </div>
+            )}
+
+            {(msg.replyToContent) && (
+                <div className="px-3 pt-2">
+                  <ReplyQuote
+                    replyToContent={msg.replyToContent}
+                    replyToSender={msg.replyToSender}
+                    isOwn={isOwn}
+                  />
+                </div>
+              )}
+
+            <div
+              className={`rounded-xl overflow-hidden cursor-pointer
+                          ${isOwn
+                            ? "bg-gold/95"
+                            : "bg-white/[0.08] border border-white/10"}`}
+              {...longPressHandlers}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ WebkitTouchCallout: "none" }}
+            >
+              {isImage
+                ? <ImageMessage parsed={parsed} />
+                : <FileMessage  parsed={parsed} />
+              }
+            </div>
+          </div>
+
+          <ReactionList
+            reactions={msg.reactions}
+            currentUserId={currentUserId}
+            onReact={(emoji) => onReact?.(msg.id, emoji)}
+          />
+
+          <div className={`flex items-center gap-1.5 mt-0.5 px-1
+                           ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+            <span className="text-[10px] text-white/30">{timeStr}</span>
+            {isOwn && (
+              <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                {msg.seen ? "✓✓" : "✓"}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {actionSheetOpen && (
+        <MessageActionSheet
+          msg={msg}
+          isOwn={isOwn}
+          currentUserId={currentUserId}
+          onReact={(emoji) => onReact?.(msg.id, emoji)}
+          onClose={() => setActionSheetOpen(false)}
+        >
+          {isImage && (
+            <button type="button"
+              onClick={() => { setActionSheetOpen(false); onImageClick?.({ url: parsed.url, filename: parsed.filename }); }}
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+              <FontAwesomeIcon icon={faEye} /> Visionner
+            </button>
+          )}
+
+          <button type="button"
+            onClick={() => {
+              setActionSheetOpen(false);
+              onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content });
+            }}
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+            <FontAwesomeIcon icon={faReply} /> Répondre
+          </button>
+
+          <button type="button"
+            onClick={() => { setActionSheetOpen(false); handleDownload(); }}
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
+            <FontAwesomeIcon icon={faDownload} /> Télécharger
+          </button>
+
+          {isOwn && (
+            <button type="button"
+              onClick={() => { setActionSheetOpen(false); onDelete?.(msg); }}
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
+              <FontAwesomeIcon icon={faTrash} /> Supprimer
+            </button>
+          )}
+        </MessageActionSheet>
+      )}
+    </>
   );
 }
 
@@ -291,131 +725,25 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
   );
 }
 
-function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload }) {
-  const [showDeleteFileId, setShowDeleteFileId] = useState(null);
-
-  const handleDelete = (msg) => {
-    onDelete?.(msg);
-  };
+function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload, onReact, onReply, currentUserId }) {
+  const [pickerMsgId, setPickerMsgId] = useState(null);
 
   return (
     <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
       {messages.map((msg, idx) => {
         const isFirst = idx === 0;
-        const date = new Date(msg.createdAt);
-        const timeStr = formatTime(date);
+        const sharedProps = {
+          msg, isOwn, isFirst, currentUserId,
+          onReact, onDelete, onImageClick, onDownload,
+          onReply,
+          pickerMsgId, setPickerMsgId,
+        };
 
         if (isFileMessage(msg.content)) {
-          return (
-            <div
-              key={msg.id}
-              className="group flex flex-col items-end mb-1.5 max-w-[95%] sm:max-w-[75%] min-w-0"
-            >
-              <div className="flex  items-center gap-2">
-                {isOwn && showDeleteFileId === msg.id && (
-                  <>
-                    <div className="fixed inset-0 z-40"
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => { e.stopPropagation(); setShowDeleteFileId(null); }}
-                      onClick={() => setShowDeleteFileId(null)}
-                    />
-                    <div className="relative z-50">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setShowDeleteFileId(null); handleDelete(msg); }}
-                        className="w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow-lg shrink-0"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                <div className={`rounded-xl overflow-hidden ${isOwn ? "bg-gold/95 text-navy-dark" : "bg-white/[0.08] border border-white/10 text-white"}`}>
-                  {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload, msg.id, showDeleteFileId === msg.id, (v) => setShowDeleteFileId(v ? msg.id : null))}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 mt-0.5 px-1 flex-row-reverse">
-                <span className="text-[10px] text-white/30">{timeStr}</span>
-                {isOwn && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(msg)}
-                    className="hidden sm:block opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
-                    title="Supprimer"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                )}
-              </div>
-                
-            </div>
-          );
+          return <MediaMessage key={msg.id} {...sharedProps} />;
         }
 
-        return (
-          <div
-            key={msg.id}
-            className={`group relative flex items-end gap-2 mb-2 max-w-[95%] sm:max-w-[75%] min-w-0 ${
-              isOwn ? "flex-row-reverse" : "flex-row"
-            } animate-message-in`}
-            style={{ animationDelay: `${idx * 0.03}s` }}
-          >
-            {!isOwn && isFirst && (
-              <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
-                <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
-              </div>
-            )}
-            {!isOwn && !isFirst && <div className="w-7 shrink-0" />}
-
-            <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
-              {isFirst && (
-                <span
-                  className={`text-[11px] font-semibold mb-1 ml-1 flex items-center ${
-                    isOwn ? "text-navy-dark" : "text-gold"
-                  }`}
-                >
-                  {isOwn ? "Vous" : msg.senderRef ? (
-                    <Link to={`/user/${msg.senderRef}`} className="hover:underline">
-                      {msg.sender}
-                    </Link>
-                  ) : (
-                    msg.sender
-                  )}
-                  {!isOwn && <RoleBadge role={msg.senderRole} />}
-                </span>
-              )}
-              <div
-                className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full ${
-                  isOwn
-                    ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
-                    : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
-                }`}
-              >
-                {renderContent(msg.content, onImageClick, () => handleDelete(msg), isOwn, onDownload)}
-              </div>
-              <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-                <span className="text-[10px] text-white/30">{timeStr}</span>
-                {isOwn && (
-                  <>
-                    <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
-                      {msg.seen ? "✓✓" : "✓"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(msg)}
-                      className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-[10px] ml-1"
-                      title="Supprimer"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        );
+        return <TextMessage key={msg.id} {...sharedProps} />;
       })}
     </div>
   );
@@ -467,6 +795,9 @@ export default function MessagePanel({
   typingUsers,
   socketState,
   onTypingChange,
+  onReact,
+  currentUserId,
+  onReply,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -486,6 +817,15 @@ export default function MessagePanel({
   const scrollRef = useRef(null);
   const prevScrollHeight = useRef(0);
   const prevMsgCount = useRef(messages.length);
+  const [replyingTo, setReplyingTo] = useState(null); 
+
+  const handleReact = useCallback(async (messageId, emoji) => {
+    try {
+      await onReact?.(messageId, emoji);
+    } catch(err) {
+      alert("Failed to react:", err);
+    }
+  }, [onReact]);
 
   useEffect(() => {
     return () => {
@@ -532,7 +872,14 @@ export default function MessagePanel({
 
   useEffect(() => {
     setShowEmojiPicker(false);
+    setReplyingTo(null);
   }, [contact.id]);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") setReplyingTo(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (!showEmojiPicker) return;
@@ -610,16 +957,18 @@ export default function MessagePanel({
         const { data } = await api.post("/messages/upload", fd);
         await onSend(
           `[FILE:${data.filename}:${data.url}:${data.isImage ? "img" : "file"}:${selectedFile.size}]`,
+          replyingTo?.id ?? null,
         );
         setSelectedFile(null);
         setPreviewUrl(null);
       }
 
       if (trimmed && !selectedFile) {
-        await onSend(trimmed);
+        await onSend(trimmed, replyingTo?.id ?? null);
       }
 
       setText("");
+      setReplyingTo(null);   
       setShowEmojiPicker(false);
     } catch (_err) {
       setError("Erreur lors de l'envoi du message.");
@@ -814,6 +1163,9 @@ export default function MessagePanel({
                   onDelete={requestDeleteMessage}
                   onImageClick={setLightboxImg}
                   onDownload={(url, filename) => handleDownloadImg(url, filename)}
+                  onReact={handleReact}
+                  onReply={setReplyingTo} 
+                  currentUserId={currentUserId} 
                 />
               </div>
             );
@@ -879,6 +1231,11 @@ export default function MessagePanel({
             </div>
           </div>
         )}
+
+        <ReplyBar
+          replyingTo={replyingTo}
+          onCancel={() => setReplyingTo(null)}
+        />
 
         <div className="relative flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
           {showEmojiPicker && (

@@ -27,3 +27,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Clinic
+.clinic/
