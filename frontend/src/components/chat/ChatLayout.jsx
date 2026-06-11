@@ -158,7 +158,7 @@ export default function ChatLayout() {
   }, [markGlobalRead]);
 
   const formatMsg = useCallback(
-    (m) => ({
+  (m) => ({
       id: m.id,
       sender: m.sender_pseudo || "Inconnu",
       senderAvatar: m.sender_avatar || null,
@@ -169,6 +169,10 @@ export default function ChatLayout() {
       own: m.sender_id === user.id,
       seen: m.seen || false,
       createdAt: m.created_at,
+      reactions: Array.isArray(m.reactions) ? m.reactions : [],
+      replyToId:      m.reply_to_id     ?? null,
+      replyToContent: m.reply_to_content ?? null,
+      replyToSender:  m.reply_to_sender  ?? null,
     }),
     [user],
   );
@@ -423,6 +427,18 @@ export default function ChatLayout() {
           });
         });
 
+        socket.on("message:reaction", ({ messageId, reactions }) => {
+          setMessages((prev) => {
+            const updated = { ...prev };
+            for (const key of Object.keys(updated)) {
+              updated[key] = updated[key].map((m) =>
+                m.id === messageId ? { ...m, reactions } : m
+              );
+            }
+            return updated;
+          });
+        });
+
         if (cancelled) return;
       })
       .catch(console.error);
@@ -441,6 +457,7 @@ export default function ChatLayout() {
         socket.off("unread:update");
         socket.off("typing:started");
         socket.off("typing:stopped");
+        socket.off("message:reaction"); 
       }
     };
   }, [user, formatMsg, fetchUnread, markSeen]);
@@ -460,11 +477,11 @@ export default function ChatLayout() {
     }
   };
 
-  const sendMessage = async (content) => {
+  const sendMessage = async (content, replyToId = null) => {
     try {
       const payload = activeContact.isGlobal
-        ? { content, is_global: true }
-        : { content, receiver_id: activeContact.id, is_global: false };
+        ? { content, is_global: true, reply_to_id: replyToId }
+        : { content, receiver_id: activeContact.id, is_global: false, reply_to_id: replyToId };
       await api.post("/messages", payload);
       setReplyTo(null);
       emitTyping(false);
@@ -472,6 +489,40 @@ export default function ChatLayout() {
       console.error(err);
     }
   };
+
+  const handleReact = useCallback(async (messageId, emoji) => {
+    setMessages((prev) => {
+      const updated = { ...prev };
+      for (const key of Object.keys(updated)) {
+        updated[key] = updated[key].map((m) => {
+          if (m.id !== messageId) return m;
+          const reactions = m.reactions || [];
+          const mine = reactions.find((r) => r.userId === user.id);
+
+          let newReactions;
+          if (!mine) {
+            newReactions = [...reactions, { userId: user.id, userName: user.pseudo, emoji }];
+          } else if (mine.emoji === emoji) {
+            newReactions = reactions.filter((r) => r.userId !== user.id);
+          } else {
+            newReactions = reactions.map((r) =>
+              r.userId === user.id ? { ...r, emoji } : r
+            );
+          }
+          return { ...m, reactions: newReactions };
+        });
+      }
+      return updated;
+    });
+
+    try {
+      await api.post(`/messages/${messageId}/reactions`, { emoji });
+    } catch (err) {
+      console.error("Erreur réaction:", err);
+      loadMessages(activeContactRef.current, true);
+    }
+  }, [user, loadMessages]);
+
 
   const handleSelectContact = useCallback((contact) => {
     setActiveContact(contact);
@@ -536,6 +587,8 @@ export default function ChatLayout() {
           typingUsers={typingList}
           socketState={socketState}
           onTypingChange={emitTypingThrottled}
+          onReact={handleReact}
+          currentUserId={user.id}  
         />
       </div>
     </div>
