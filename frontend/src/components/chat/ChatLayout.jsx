@@ -35,7 +35,6 @@ export default function ChatLayout() {
   const [activeContact, setActiveContact] = useState(GLOBAL_CONTACT);
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
-  const [replyTo, setReplyTo] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -582,8 +581,6 @@ export default function ChatLayout() {
           onScrollToBottom={handleScrollToBottom}
           onlineUsers={onlineUsers}
           onLoadOlder={() => loadOlderMessages(activeContact)}
-          replyTo={replyTo}
-          onReply={setReplyTo}
           typingUsers={typingList}
           socketState={socketState}
           onTypingChange={emitTypingThrottled}
