@@ -1,27 +1,22 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../api/axios";
-import cloudinaryApi from "../api/cloudinary";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
-import WelcomeMessageBubble from "../components/ui/WelcomeMessageBubble";
-import { mockupWelcomeMessages } from "../utils/welcomeMessages";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Tilt from "react-parallax-tilt";
 import {
   faUser,
   faUserGraduate,
   faChalkboardTeacher,
   faUserShield,
-  faBell,
   faUsers,
   faGraduationCap,
   faIdCard,
   faCommentDots,
   faSpinner,
   faArrowLeft,
-  faCamera,
+  faBell,
   faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -42,15 +37,6 @@ export default function UserProfilePage() {
   const [pingState, setPingState] = useState("idle"); // idle | sending | sent | error | self | exists
   const [pingMsg, setPingMsg] = useState("");
   const [visible, setVisible] = useState(false);
-  // UI state for Cloudinary picker (declared early to preserve Hooks order)
-  const [showPicker, setShowPicker] = useState(false);
-  const [bgImages, setBgImages] = useState([]);
-  const [loadingBgImages, setLoadingBgImages] = useState(false);
-  const [savingBg, setSavingBg] = useState(false);
-
-  // Welcome message UI state (keep hooks unconditionally at top to preserve hook order)
-  const [showWelcomeBubble, setShowWelcomeBubble] = useState(false);
-  const [welcomeBubbleMessage, setWelcomeBubbleMessage] = useState("");
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -70,21 +56,6 @@ export default function UserProfilePage() {
       })
       .finally(() => setLoading(false));
   }, [ref]);
-
-  // Welcome message logic for visitors on public profile
-  useEffect(() => {
-    if (!profile) return;
-    if (!profile.welcome_message_enabled) return;
-    // Show for visitors (non-owner) each time
-    if (String(user?.id) !== String(profile.id)) {
-      const messages = mockupWelcomeMessages[profile.welcome_message_theme] || mockupWelcomeMessages.simple;
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      setWelcomeBubbleMessage(randomMessage);
-      setShowWelcomeBubble(true);
-      const t = setTimeout(() => setShowWelcomeBubble(false), 2500);
-      return () => clearTimeout(t);
-    }
-  }, [profile?.id, profile?.welcome_message_enabled, profile?.welcome_message_theme, user?.id]);
 
   if (loading) {
     return (
@@ -121,8 +92,7 @@ export default function UserProfilePage() {
     );
   }
 
-  // compare as strings to avoid type mismatch between number/string ids
-  const isOwnProfile = String(user.id) === String(profile.id);
+  const isOwnProfile = user.id === profile.id;
 
   const handlePing = async () => {
     if (isOwnProfile) {
@@ -145,20 +115,6 @@ export default function UserProfilePage() {
 
   const roleCfg = ROLE_CFG[profile.role] || ROLE_CFG.student;
   const avatarUrl = profile.avatar || null;
-  const profileBg = profile.profile_background || null;
-  // coerce persisted cover_parallax to boolean (handles true/false, 'true'/'false', 1/0)
-  const coverParallax = (() => {
-    const v = profile.cover_parallax;
-    if (v === undefined || v === null) return false;
-    if (typeof v === "boolean") return v;
-    if (typeof v === "number") return v !== 0;
-    if (typeof v === "string") return v === "true" || v === "1";
-    return !!v;
-  })();
-
-  const coverBorderColor = profile.cover_border_color ?? 'rgba(255,255,255,0.08)';
-  const avatarBorderColor = profile.avatar_border_color ?? 'rgba(212,175,55,0.6)';
-
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -173,82 +129,77 @@ export default function UserProfilePage() {
                 visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
-              {coverParallax ? (
-                <Tilt tiltMaxAngleX={6} tiltMaxAngleY={6} glareEnable={false} scale={1.02} className="rounded-2xl overflow-hidden mb-6">
-                  <HeaderContent
-                    profileBg={profileBg}
-                    avatarUrl={avatarUrl}
-                    profile={profile}
-                    isOwnProfile={isOwnProfile}
-                    setShowPicker={setShowPicker}
-                    setLoadingBgImages={setLoadingBgImages}
-                    setBgImages={setBgImages}
-                    coverBorderColor={coverBorderColor}
-                    avatarBorderColor={avatarBorderColor}
-                  />
-                </Tilt>
-              ) : (
-                <div className="rounded-2xl overflow-hidden mb-6" style={{
-                  background: profileBg
-                    ? `linear-gradient(rgba(10,26,51,0.35), rgba(0,25,72,0.35)), url(${profileBg})`
-                    : "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
-                  backgroundSize: profileBg ? "cover" : undefined,
-                  backgroundPosition: profileBg ? "right top" : undefined,
-                  backgroundRepeat: profileBg ? "no-repeat" : undefined,
-                  border: `1px solid ${coverBorderColor}`,
+              <div
+                className="rounded-2xl overflow-hidden mb-6"
+                style={{
+                  background: "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
+                  border: "1px solid rgba(255,255,255,0.08)",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                }}>
-                  <HeaderContent
-                    profileBg={profileBg}
-                    avatarUrl={avatarUrl}
-                    profile={profile}
-                    isOwnProfile={isOwnProfile}
-                    setShowPicker={setShowPicker}
-                    setLoadingBgImages={setLoadingBgImages}
-                    setBgImages={setBgImages}
-                    coverBorderColor={coverBorderColor}
-                    avatarBorderColor={avatarBorderColor}
+                }}
+              >
+                {/* Cover accent */}
+                <div className="h-24 sm:h-28 relative overflow-hidden">
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
+                    }}
                   />
-                </div>
-              )}
-            </div>
-
-            {/* Cloudinary picker modal */}
-            {showPicker && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center">
-                <div className="absolute inset-0 bg-black/50" onClick={() => setShowPicker(false)} />
-                <div className="relative bg-white rounded-xl p-4 max-w-3xl w-full max-h-[80vh] overflow-auto">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold">Choisissez une image de profil</h3>
-                    <button className="text-sm text-gray-500" onClick={() => setShowPicker(false)}>Fermer</button>
+                  <div className="absolute inset-0 opacity-30">
+                    <div
+                      className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent)" }}
+                    />
+                    <div
+                      className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1), transparent)" }}
+                    />
                   </div>
-                  {loadingBgImages ? (
-                    <div className="flex items-center justify-center py-8">Chargement...</div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-3">
-                      {bgImages.length === 0 && <div className="text-sm text-gray-400">Aucune image trouvée.</div>}
-                      {bgImages.map((img) => (
-                        <div key={img.public_id} className="cursor-pointer" onClick={async () => {
-                          // save selection
-                          setSavingBg(true);
-                          try {
-                            const { data } = await api.patch('/auth/profile-background', { url: img.url });
-                            setProfile(data);
-                            setShowPicker(false);
-                          } catch (err) {
-                            // ignore for now
-                          } finally {
-                            setSavingBg(false);
-                          }
-                        }}>
-                          <img src={img.url} alt="bg" className="w-full h-28 object-cover rounded-lg" />
-                        </div>
-                      ))}
+                </div>
+
+                {/* Avatar + info */}
+                <div className="px-6 pb-6 -mt-12 relative">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
+                    <div className="relative shrink-0">
+                      <div
+                        className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden"
+                        style={{
+                          border: "3px solid rgba(212,175,55,0.6)",
+                          boxShadow: "0 0 20px rgba(212,175,55,0.15)",
+                          background: avatarUrl
+                            ? "transparent"
+                            : "linear-gradient(135deg, rgba(10,26,51,0.9), rgba(0,25,72,0.9))",
+                        }}
+                      >
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <FontAwesomeIcon icon={faUser} className="text-gold text-3xl" />
+                        )}
+                      </div>
                     </div>
-                  )}
+
+                    <div className="flex-1 text-center sm:text-left min-w-0">
+                      <h1 className="text-gold-light font-bold text-xl truncate">
+                        {profile.pseudo}
+                      </h1>
+                      <p className="text-gray-500 text-sm mt-0.5">{profile.ref}</p>
+                      <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start flex-wrap">
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}>
+                          <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
+                          {roleCfg.label}
+                        </span>
+                        {profile.level && (
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                            {profile.level}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Info card */}
             <div
@@ -325,6 +276,9 @@ export default function UserProfilePage() {
                         Discuter avec {profile.pseudo}
                       </p>
                     </div>
+                    <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </Link>
               </div>
@@ -411,121 +365,7 @@ export default function UserProfilePage() {
             </div>
           </div>
         </main>
-        {showWelcomeBubble && (
-          <WelcomeMessageBubble message={welcomeBubbleMessage} bubbleUrl={profile.welcome_bubble_url} />
-        )}
       </div>
     </div>
   );
 }
-
-function HeaderContent({ profileBg, avatarUrl, profile, isOwnProfile, setShowPicker, setLoadingBgImages, setBgImages }) {
-  return (
-    <div>
-      <div
-        style={{
-          background: profileBg
-            ? `linear-gradient(rgba(10,26,51,0.35), rgba(0,25,72,0.35)), url(${profileBg})`
-            : "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
-          backgroundSize: profileBg ? "cover" : undefined,
-          backgroundPosition: profileBg ? "right top" : undefined,
-          backgroundRepeat: profileBg ? "no-repeat" : undefined,
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-        }}
-      >
-        {/* Cover accent */}
-        <div className="h-24 sm:h-28 relative overflow-hidden">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05) 50%, transparent 80%)",
-            }}
-          />
-          <div className="absolute inset-0 opacity-30">
-            <div
-              className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
-              style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent)" }}
-            />
-            <div
-              className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full"
-              style={{ background: "radial-gradient(circle, rgba(255,255,255,0.1), transparent)" }}
-            />
-          </div>
-        </div>
-
-        {/* Avatar + info */}
-        <div className="px-6 pb-6 -mt-12 relative">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
-            <div className="relative shrink-0">
-              <div className="w-24 h-24 rounded-full relative flex items-center justify-center overflow-hidden" style={{border: "3px solid rgba(212,175,55,0.6)", boxShadow: "0 0 20px rgba(212,175,55,0.15)"}}>
-                {/* profile background sits behind avatar */}
-                {profileBg && (
-                  <img src={profileBg} alt="profile background" className="absolute inset-0 w-full h-full object-cover opacity-90" style={{filter: 'blur(0px)'}} />
-                )}
-                <div className="relative w-full h-full flex items-center justify-center" style={{background: avatarUrl ? 'transparent' : (!profileBg ? 'linear-gradient(135deg, rgba(10,26,51,0.9), rgba(0,25,72,0.9))' : 'transparent')}}>
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <FontAwesomeIcon icon={faUser} className="text-gold text-3xl" />
-                  )}
-                </div>
-              </div>
-
-              {isOwnProfile && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setShowPicker(true);
-                                      setLoadingBgImages(true);
-                                      try {
-                                        const cached = cloudinaryApi.getCachedFolderImages?.("hei_STDhub");
-                                        if (cached) {
-                                          setBgImages(cached || []);
-                                        } else {
-                                          const imgs = await cloudinaryApi.getFolderImages("hei_STDhub");
-                                          setBgImages(imgs || []);
-                                        }
-                                      } catch (err) {
-                                        setBgImages([]);
-                                      } finally {
-                                        setLoadingBgImages(false);
-                                      }
-                  }}
-                  title="Personnaliser le fond de profil"
-                  className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-                  style={{
-                    background: "linear-gradient(135deg, #D4AF37, #B8860B)",
-                    boxShadow: "0 2px 12px rgba(212,175,55,0.4)",
-                    color: "white",
-                  }}
-                >
-                  <FontAwesomeIcon icon={faCamera} className="text-sm" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex-1 text-center sm:text-left min-w-0">
-              <h1 className="text-gold-light font-bold text-xl truncate">
-                {profile.pseudo}
-              </h1>
-              <p className="text-gray-500 text-sm mt-0.5">{profile.ref}</p>
-              <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start flex-wrap">
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${ROLE_CFG[profile.role]?.cls || ROLE_CFG.student.cls}`}>
-                  <FontAwesomeIcon icon={ROLE_CFG[profile.role]?.icon || faUserGraduate} className="mr-1.5" />
-                  {ROLE_CFG[profile.role]?.label || "Étudiant"}
-                </span>
-                {profile.level && (
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                    {profile.level}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-

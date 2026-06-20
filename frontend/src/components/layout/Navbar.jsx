@@ -53,6 +53,10 @@ export default function Navbar({ title }) {
           size="sm"
           color="bg-navy"
         />
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className="hidden sm:block text-[10px] text-navy/30 group-hover:text-navy transition"
+        />
       </div>
     </header>
   );
