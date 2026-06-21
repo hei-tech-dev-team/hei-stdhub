@@ -7,3 +7,4 @@ scripts/__pycache__/
 .vercel
 .vapid-keys.json
 .idea/
+AI_context.md
