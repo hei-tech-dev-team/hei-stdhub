@@ -238,6 +238,21 @@ router.get("/private/:userId", auth, async (req, res) => {
   }
 });
 
+// POST /purge-test —  (admin only, debug)
+router.post("/purge-test", auth, async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Réservé aux administrateurs." });
+  }
+  try {
+    const { purgeGlobalMessages } = require("../services/messagePurgeJob");
+    await purgeGlobalMessages(req.app.get("io"));
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la purge." });
+  }
+});
+
 // Send a message (global or private)
 router.post("/", auth, async (req, res) => {
   const { receiver_id, is_global } = req.body;

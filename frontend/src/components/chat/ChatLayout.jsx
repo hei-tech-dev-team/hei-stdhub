@@ -341,6 +341,16 @@ export default function ChatLayout() {
           }
         });
 
+        socket.on("messages:purged", ({ ids}) => {
+          setMessages((prev) => {
+            const updated = { ...prev };
+            for (const key of Object.keys(updated)) {
+              updated[key] = updated[key].filter((m) => !ids.includes(m.id));
+            }
+            return updated;
+          });
+        });
+
         socket.on("user:online", (userId) => {
           setOnlineUsers((prev) => new Set(prev).add(userId));
         });
@@ -450,6 +460,7 @@ export default function ChatLayout() {
       if (socket) {
         socket.off("message:global");
         socket.off("message:private");
+        socket.off("messages:purged");
         socket.off("user:online");
         socket.off("user:offline");
         socket.off("message:seen");
