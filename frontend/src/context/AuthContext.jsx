@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/axios";
 import { refreshSocket, disconnectSocket } from "../socket";
-import { subscribeToPush } from "../push";
+import { subscribeToPush, unsubscribeFromPush } from "../push";
 
 const AuthContext = createContext(null);
 
@@ -72,6 +72,7 @@ export function AuthProvider({ children }) {
   const dismissOnboarding = () => setFirstLogin(false);
 
   const logout = () => {
+    unsubscribeFromPush();
     disconnectSocket();
     localStorage.removeItem("hei_token");
     localStorage.removeItem("hei_user");

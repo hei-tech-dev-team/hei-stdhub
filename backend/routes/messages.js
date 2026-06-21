@@ -7,9 +7,6 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const CloudinaryStorage = require("multer-storage-cloudinary");
-const webpush = require("web-push");
-const cloudinary = require("cloudinary");
-const CloudinaryStorage = require("multer-storage-cloudinary");
 const { sendPushToUser } = require("../services/notificationService");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
@@ -57,42 +54,7 @@ if (useCloudinary) {
   }).single("file");
 }
 
-const CONCURRENCY_LIMIT = 10;
 
-async function* batch(arr, size) {
-  for (let i = 0; i < arr.length; i += size) {
-    yield arr.slice(i, i + size);
-  }
-}
-
-async function sendPushWithConcurrency(subscriptions, payload) {
-  const results = [];
-  for (const batch of await iteratorToArray(batch(subscriptions, CONCURRENCY_LIMIT))) {
-    const batchResults = await Promise.allSettled(
-      batch.map((sub) =>
-        webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
-          payload,
-        ).catch(async (err) => {
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            await db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]);
-          }
-          throw err;
-        })
-      ),
-    );
-    results.push(...batchResults);
-  }
-  return results;
-}
-
-async function iteratorToArray(iter) {
-  const arr = [];
-  for await (const item of iter) {
-    arr.push(item);
-  }
-  return arr;
-}
 
 // Search users by ref or pseudo
 router.get("/search", auth, async (req, res) => {
@@ -499,28 +461,5 @@ router.post("/upload", auth, (req, res) => {
     });
   });
 });
-
-async function sendPushToAll({ title, body, tag, url }) {
-  const { rows } = await db.query(
-    `SELECT DISTINCT ON (endpoint) endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
-     FROM push_subscriptions`,
-  );
-  if (!rows.length) return;
-
-  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  await sendPushWithConcurrency(rows, payload);
-}
-
-async function sendPushNotification(userId, { title, body, tag, url }) {
-  const { rows } = await db.query(
-    `SELECT endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
-     FROM push_subscriptions WHERE user_id=$1`,
-    [userId],
-  );
-  if (!rows.length) return;
-
-  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  await sendPushWithConcurrency(rows, payload);
-}
 
 module.exports = router;

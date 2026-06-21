@@ -5,3 +5,5 @@ vercel.json
 scripts/venv/
 scripts/__pycache__/
 .vercel
+.vapid-keys.json
+.idea/
