@@ -55,7 +55,8 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "Tous les champs sont requis." });
 
   const file_name = req.file?.originalname || null;
-  const file_path = req.file?.path ? `${req.protocol}://${req.get("host")}/uploads/submissions/${req.file.filename}` : null;
+  const file_path = req.file?.secure_url
+    || (req.file?.path ? `${req.protocol}://${req.get("host")}/uploads/submissions/${req.file.filename}` : null);
 
   if (!file_path && !link)
     return res.status(400).json({ error: "Fichier ou lien requis." });

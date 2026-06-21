@@ -105,15 +105,6 @@ export default function Sidebar() {
                    bg-navy text-white shadow-lg"
       >
         <FontAwesomeIcon icon={faBars} className="text-base" />
-        {/* Badge sur le bouton Burger (mobile) */}
-        {(unreadCount > 0 || pendingCount > 0) && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-gold text-navy text-[9px] font-bold items-center justify-center border border-navy">
-              {(unreadCount + pendingCount) > 9 ? "!" : (unreadCount + pendingCount)}
-            </span>
-          </span>
-        )}
       </button>
 
       {open && (

@@ -302,6 +302,21 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create global_chat_read table:", err); }
 
+  // Ensure push_subscriptions table exists
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id         SERIAL       PRIMARY KEY,
+        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        endpoint   TEXT         NOT NULL,
+        auth_key   TEXT         NOT NULL,
+        p256dh_key TEXT         NOT NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+        UNIQUE (user_id, endpoint)
+    )
+  `);
+  } catch (err) { console.error("Failed to create push_subscriptions table:", err)};
+
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS pings (

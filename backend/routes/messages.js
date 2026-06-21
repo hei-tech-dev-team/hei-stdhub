@@ -5,23 +5,57 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
+const CloudinaryStorage = require("multer-storage-cloudinary");
 const webpush = require("web-push");
+const cloudinary = require("cloudinary");
+const CloudinaryStorage = require("multer-storage-cloudinary");
+const { sendPushToUser } = require("../services/notificationService");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
+
+const reactionsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,             // 30 reactions/minute
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-const chatUpload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname) || "";
-      const name = crypto.randomBytes(16).toString("hex") + ext;
-      cb(null, name);
-    },
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).single("file");
+const useCloudinary =
+  process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+  process.env.CLOUDINARY_API_KEY?.trim() &&
+  process.env.CLOUDINARY_API_SECRET?.trim();
+
+let chatUpload;
+if (useCloudinary) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  chatUpload = multer({
+    storage: new CloudinaryStorage({
+      cloudinary,
+      params: { folder: "hei-stdhub/chat", resource_type: "auto" },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }).single("file");
+} else {
+  chatUpload = multer({
+    storage: multer.diskStorage({
+      destination: UPLOAD_DIR,
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || "";
+        const name = crypto.randomBytes(16).toString("hex") + ext;
+        cb(null, name);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }).single("file");
+}
 
 const CONCURRENCY_LIMIT = 10;
 
@@ -228,13 +262,6 @@ router.post("/", auth, async (req, res) => {
 
     if (is_global) {
       if (io) io.emit("message:global", fullMsg);
-
-      sendPushToAll({
-        title: "HEI STDhub – Chat global",
-        body: `${senderName}: ${content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200)}`,
-        tag: "global-chat",
-        url: "/chat",
-      }).catch(() => {});
     } else {
       if (io) {
         io.to(`user:${receiver_id}`).emit("message:private", fullMsg);
@@ -246,10 +273,9 @@ router.post("/", auth, async (req, res) => {
           pending: 1,
         });
       }
-
-      sendPushNotification(receiver_id, {
+      sendPushToUser(receiver_id, {
         title: senderName || "Message",
-        body: content.replace(/\[FILE:.+\]/, "[Fichier]").slice(0, 200),
+        body: content.replace(/\[FILE:[^\]]+\]/g, "[Fichier]").slice(0, 200),
         tag: `private-${req.user.id}`,
         url: "/chat",
       }).catch(() => {});
@@ -379,6 +405,60 @@ router.post("/global/read", auth, async (req, res) => {
   }
 });
 
+// add reaction to a message (toggle)
+router.post("/:id/reactions", reactionsLimiter, auth, async (req, res) => {
+  const messageId = parseInt(req.params.id);
+  const { emoji } = req.body;
+  const userId = req.user.id;
+
+  if (!emoji?.trim()) return res.status(400).json({ error: "emoji requis." });
+  if (isNaN(messageId)) return res.status(400).json({ error: "messageId invalide." });
+
+  try {
+    const { rows: existing } = await db.query(
+      `SELECT id, emoji FROM message_reactions
+       WHERE message_id = $1 AND user_id = $2`,
+      [messageId, userId],
+    );
+
+    let action;
+    if (existing.length) {
+      if (existing[0].emoji === emoji) {
+        await db.query("DELETE FROM message_reactions WHERE id = $1", [existing[0].id]);
+        action = "removed";
+      } else {
+        await db.query(
+          "UPDATE message_reactions SET emoji = $1 WHERE id = $2",
+          [emoji, existing[0].id],
+        );
+        action = "updated";
+      }
+    } else {
+      await db.query(
+        `INSERT INTO message_reactions (message_id, user_id, emoji) VALUES ($1, $2, $3)`,
+        [messageId, userId, emoji],
+      );
+      action = "added";
+    }
+
+    const { rows: reactions } = await db.query(
+      `SELECT mr.user_id AS "userId", u.pseudo AS "userName", mr.emoji
+       FROM message_reactions mr
+       LEFT JOIN users u ON u.id = mr.user_id
+       WHERE mr.message_id = $1`,
+      [messageId],
+    );
+
+    const io = req.app.get("io");
+    if (io) io.emit("message:reaction", { messageId, reactions });
+
+    res.json({ action, messageId, reactions });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 // Delete a message (only the sender can delete their own message)
 router.delete("/:id", auth, async (req, res) => {
   try {
@@ -408,7 +488,8 @@ router.post("/upload", auth, (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
 
     const isImage = req.file.mimetype?.startsWith("image/");
-    const url = req.file.path ? `${req.protocol}://${req.get("host")}/uploads/chat/${req.file.filename}` : null;
+    const url = req.file.secure_url
+      || (req.file.path ? `${req.protocol}://${req.get("host")}/uploads/chat/${req.file.filename}` : null);
     if (!url) return res.status(500).json({ error: "Upload échoué." });
 
     res.json({
