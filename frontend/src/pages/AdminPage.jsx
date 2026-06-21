@@ -94,11 +94,20 @@ export default function AdminPage() {
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [upgradeDone, setUpgradeDone] = useState(false);
 
-  // Nouveaux L1 (Novembre)
+  // Nouveaux L1
   const [newL1, setNewL1] = useState({
-    nom: "", prenom: "", email: "", groupChar: "",
+    nom: "", prenom: "", email: "", groupLetter: "",
   });
-  const [generatedRef, setGeneratedRef] = useState("");
+  const [generatedRef, setGeneratedRef] = useState("STD2");
+  const [letterError, setLetterError] = useState("");
+  const [emailError, setEmailError] = useState("");
+
+  useEffect(() => {
+    if (newL1.prenom.trim() && newL1.nom.trim()) {
+      const autoEmail = `hei.${newL1.prenom.trim().toLowerCase()}.${newL1.nom.trim().toLowerCase()}@gmail.com`;
+      setNewL1((prev) => ({ ...prev, email: autoEmail }));
+    }
+  }, [newL1.prenom, newL1.nom]);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerDone, setRegisterDone] = useState(false);
 
@@ -330,35 +339,44 @@ export default function AdminPage() {
     }
   };
 
-  // Nouveaux L1
-  const getGroupFromChar = (char) => {
-    const c = char.toUpperCase();
-    if (!c) return "";
-    const groups = ["X1", "X2", "X3", "X4"];
-    const index = c.charCodeAt(0) - 65;
-    return groups[index % groups.length];
+  // Lettres de groupe interdites
+  const FORBIDDEN_LETTERS = ["G", "H", "J", "K", "N", "L", "M"];
+  const isLetterForbidden = (letter) => {
+    const c = (letter || "").toUpperCase();
+    if (!c) return false;
+    if (c < "A" || c > "Z") return true;
+    return FORBIDDEN_LETTERS.includes(c);
   };
+
+  const STUDENT_EMAIL_REGEX = /^hei\.[a-zA-Z0-9._%+-]+(\.\d+)?@gmail\.com$/;
 
   const handleRegisterL1 = async (e) => {
     e.preventDefault();
-    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupChar.trim() || !generatedRef.trim()) return;
+    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupLetter.trim() || !generatedRef.trim()) return;
+    const letter = newL1.groupLetter.toUpperCase();
+    if (isLetterForbidden(letter)) return;
+    if (!STUDENT_EMAIL_REGEX.test(newL1.email.trim())) {
+      setEmailError("L'email doit suivre le format hei.prenom.nom@gmail.com");
+      return;
+    }
     setRegisterLoading(true);
     try {
-      const group = getGroupFromChar(newL1.groupChar);
       await api.post("/auth/register", {
         nom: newL1.nom.trim(),
         prenom: newL1.prenom.trim(),
-        email: newL1.email.trim(),
+        email: newL1.email.trim().toLowerCase(),
         ref: generatedRef.trim().toUpperCase(),
         pseudo: `${newL1.prenom.trim()}.${newL1.nom.trim()}`,
-        password: generatedRef.trim().toUpperCase(),
+        password: "STDnew_UserPass",
         role: "student",
         level: "L1",
-        groupe: group,
+        groupe: letter,
       });
       setRegisterDone(true);
-      setNewL1({ nom: "", prenom: "", email: "", groupChar: "" });
-      setGeneratedRef("");
+      setNewL1({ nom: "", prenom: "", email: "", groupLetter: "" });
+      setGeneratedRef("STD2");
+      setEmailError("");
+      setLetterError("");
     } catch (err) {
       console.error(err);
     } finally {
@@ -860,7 +878,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Tab: Nouveaux L1 (Novembre) */}
+          {/* Tab: Nouveaux L1 */}
           {tab === "new-l1" && (
             <div className="bg-white rounded-2xl shadow-card p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -869,11 +887,11 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <h2 className="font-bold text-navy text-base">
-                    Nouveaux étudiants L1 — STD{currentYear}XXX
+                    Nouveaux étudiants L1
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Inscrivez les nouveaux étudiants de première année. La
-                    référence est saisie manuellement (ex: STD26001).
+                    Remplissez les informations de l&apos;étudiant. L&apos;email, le
+                    pseudo et le mot de passe sont générés automatiquement.
                   </p>
                 </div>
               </div>
@@ -919,67 +937,111 @@ export default function AdminPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Email HEI
-                  </label>
-                  <input
-                    type="email"
-                    className="input-field"
-                    placeholder="hei.jean@gmail.com"
-                    value={newL1.email}
-                    onChange={(e) =>
-                      setNewL1((prev) => ({ ...prev, email: e.target.value }))
-                    }
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Référence STD (saisie manuelle)
+                    Référence STD
                   </label>
                   <input
                     className="input-field font-mono tracking-widest uppercase"
                     placeholder={`STD${currentYear}001`}
                     value={generatedRef}
-                    onChange={(e) => setGeneratedRef(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      if (val.startsWith("STD2")) setGeneratedRef(val);
+                    }}
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Saisissez la référence selon le rang d&apos;entrée (ex: STD26001, STD26002…).
+                    Le préfixe <strong>STD2</strong> est déjà saisi. Ajoutez le
+                    chiffre de l&apos;année (6 pour 2026, 7 pour 2027…) puis
+                    le numéro à 3 chiffres (ex: STD26001).
                   </p>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Caractère de groupe
+                    Email HEI
+                  </label>
+                  <input
+                    type="email"
+                    className="input-field"
+                    placeholder="hei.prenom.nom@gmail.com"
+                    value={newL1.email}
+                    onChange={(e) => {
+                      setNewL1((prev) => ({ ...prev, email: e.target.value }));
+                      if (emailError) setEmailError("");
+                    }}
+                    required
+                  />
+                  {emailError && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">
+                      {emailError}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Format obligatoire : <strong>hei.prenom.nom@gmail.com</strong>
+                  </p>
+                </div>
+
+                {newL1.prenom && newL1.nom && generatedRef.length > 4 && (
+                  <div className="bg-navy/5 rounded-xl p-4 space-y-1.5 border border-navy/10">
+                    <p className="text-xs font-bold text-navy/60 uppercase tracking-wide mb-2">
+                      Informations générées automatiquement
+                    </p>
+                    <div className="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1.5 text-sm">
+                      <span className="text-gray-500 font-medium">Pseudo</span>
+                      <span className="text-navy font-mono text-xs">
+                        {newL1.prenom}.{newL1.nom}
+                      </span>
+                      <span className="text-gray-500 font-medium">Mot de passe</span>
+                      <span className="text-navy font-mono text-xs">
+                        STDnew_UserPass
+                      </span>
+                      <span className="text-gray-500 font-medium">Niveau</span>
+                      <span className="text-navy font-mono text-xs">L1</span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
+                    Lettre du groupe
                   </label>
                   <input
                     className="input-field max-w-[120px] text-center text-lg font-bold tracking-widest uppercase"
-                    placeholder="A"
+                    placeholder="N"
                     maxLength={1}
-                    value={newL1.groupChar}
-                    onChange={(e) =>
-                      setNewL1((prev) => ({
-                        ...prev,
-                        groupChar: e.target.value,
-                      }))
-                    }
+                    value={newL1.groupLetter}
+                    onChange={(e) => {
+                      const letter = e.target.value.replace(/[^A-Za-z]/g, "").toUpperCase();
+                      setNewL1((prev) => ({ ...prev, groupLetter: letter }));
+                      if (letter && isLetterForbidden(letter)) {
+                        setLetterError(
+                          "Lettre interdite — groupes déjà existants : G, H, J, K, N (et L, M exclues pour confusion)."
+                        );
+                      } else {
+                        setLetterError("");
+                      }
+                    }}
                     required
                   />
+                  {letterError && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">
+                      {letterError}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-400 mt-1">
-                    Saisissez une lettre (A-Z). Le groupe sera déterminé
-                    automatiquement :{" "}
-                    <strong className="text-navy">
-                      {newL1.groupChar
-                        ? `${newL1.groupChar.toUpperCase()} → ${getGroupFromChar(newL1.groupChar)}`
-                        : "ex: A → X1, B → X2, C → X3"}
-                    </strong>
+                    Lettres interdites : G, H, J, K, N (déjà existantes), L, M
+                    (confusion). Exemples valides : A, B, C, D, E, F, I, O…
                   </p>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={registerLoading || !generatedRef.trim()}
+                  disabled={
+                    registerLoading ||
+                    !generatedRef.trim() ||
+                    !newL1.groupLetter ||
+                    !!letterError
+                  }
                   className="btn-primary flex items-center gap-2 disabled:opacity-60 mt-2"
                 >
                   {registerLoading ? (
