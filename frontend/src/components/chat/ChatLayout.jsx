@@ -35,7 +35,6 @@ export default function ChatLayout() {
   const [activeContact, setActiveContact] = useState(GLOBAL_CONTACT);
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
-  const [replyTo, setReplyTo] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -494,7 +493,6 @@ export default function ChatLayout() {
         ? { content, is_global: true, reply_to_id: replyToId }
         : { content, receiver_id: activeContact.id, is_global: false, reply_to_id: replyToId };
       await api.post("/messages", payload);
-      setReplyTo(null);
       emitTyping(false);
     } catch (err) {
       console.error(err);
@@ -538,7 +536,6 @@ export default function ChatLayout() {
   const handleSelectContact = useCallback((contact) => {
     setActiveContact(contact);
     setShowContactList(false);
-    setReplyTo(null);
     setIsAtBottom(true);
     setTypingUsers({});
   }, []);
@@ -593,8 +590,6 @@ export default function ChatLayout() {
           onScrollToBottom={handleScrollToBottom}
           onlineUsers={onlineUsers}
           onLoadOlder={() => loadOlderMessages(activeContact)}
-          replyTo={replyTo}
-          onReply={setReplyTo}
           typingUsers={typingList}
           socketState={socketState}
           onTypingChange={emitTypingThrottled}
