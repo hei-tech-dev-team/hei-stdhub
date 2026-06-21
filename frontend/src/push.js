@@ -42,8 +42,8 @@ export async function subscribeToPush() {
     });
 
     await api.post("/push/subscribe", { subscription: sub.toJSON() });
-  } catch {
-    // Push not supported or user denied
+  } catch (err) {
+    console.error("subscribeToPush failed:", err);
   }
 }
 
@@ -65,8 +65,8 @@ export async function unsubscribeFromPush() {
 
     await api.delete("/push/subscribe", { data: { endpoint: sub.endpoint } });
     await sub.unsubscribe();
-  } catch {
-    // Ignore errors on unsubscribe
+  } catch (err) {
+    console.error("unsubscribeFromPush failed:", err);
   }
 }
 
