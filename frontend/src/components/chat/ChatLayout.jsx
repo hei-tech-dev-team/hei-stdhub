@@ -35,7 +35,6 @@ export default function ChatLayout() {
   const [activeContact, setActiveContact] = useState(GLOBAL_CONTACT);
   const [messages, setMessages] = useState({});
   const [showContactList, setShowContactList] = useState(false);
-  const [replyTo, setReplyTo] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -341,6 +340,16 @@ export default function ChatLayout() {
           }
         });
 
+        socket.on("messages:purged", ({ ids}) => {
+          setMessages((prev) => {
+            const updated = { ...prev };
+            for (const key of Object.keys(updated)) {
+              updated[key] = updated[key].filter((m) => !ids.includes(m.id));
+            }
+            return updated;
+          });
+        });
+
         socket.on("user:online", (userId) => {
           setOnlineUsers((prev) => new Set(prev).add(userId));
         });
@@ -450,6 +459,7 @@ export default function ChatLayout() {
       if (socket) {
         socket.off("message:global");
         socket.off("message:private");
+        socket.off("messages:purged");
         socket.off("user:online");
         socket.off("user:offline");
         socket.off("message:seen");
@@ -483,7 +493,6 @@ export default function ChatLayout() {
         ? { content, is_global: true, reply_to_id: replyToId }
         : { content, receiver_id: activeContact.id, is_global: false, reply_to_id: replyToId };
       await api.post("/messages", payload);
-      setReplyTo(null);
       emitTyping(false);
     } catch (err) {
       console.error(err);
@@ -527,7 +536,6 @@ export default function ChatLayout() {
   const handleSelectContact = useCallback((contact) => {
     setActiveContact(contact);
     setShowContactList(false);
-    setReplyTo(null);
     setIsAtBottom(true);
     setTypingUsers({});
   }, []);
@@ -582,8 +590,6 @@ export default function ChatLayout() {
           onScrollToBottom={handleScrollToBottom}
           onlineUsers={onlineUsers}
           onLoadOlder={() => loadOlderMessages(activeContact)}
-          replyTo={replyTo}
-          onReply={setReplyTo}
           typingUsers={typingList}
           socketState={socketState}
           onTypingChange={emitTypingThrottled}
