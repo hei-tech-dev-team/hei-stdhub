@@ -1,6 +1,10 @@
 cloudinary
 .env
 .env.vercel
+.env.local
+.env.production
+.vapid-keys.json
+*.pem
 scripts/venv/
 scripts/__pycache__/
 .vercel
