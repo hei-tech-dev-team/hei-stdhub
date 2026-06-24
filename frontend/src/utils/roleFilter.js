@@ -5,8 +5,7 @@ export function expandRoleFilter(role) {
 
 export function determineRegisterRole(inviteRole, selectedRole) {
   if (inviteRole === "teacher") return "teacher";
-  if (selectedRole === "alumni") return "alumni";
-  return inviteRole === "alumni" ? "alumni" : "student";
+  return selectedRole === true || selectedRole === "alumni" ? "alumni" : "student";
 }
 
 export function validateRegisterEmail(email, role) {

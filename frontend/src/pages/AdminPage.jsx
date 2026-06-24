@@ -85,20 +85,31 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [userError, setUserError] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
-  // Passage de classe (Septembre)
-  const [failedRefs, setFailedRefs] = useState([]);
-  const [failedInput, setFailedInput] = useState("");
+  const now = new Date();
+  const isOctober = now.getMonth() === 9;
+
+  // Passage de classe
+  const [failedL1Refs, setFailedL1Refs] = useState([]);
+  const [failedL1Input, setFailedL1Input] = useState("");
+  const [failedL2Refs, setFailedL2Refs] = useState([]);
+  const [failedL2Input, setFailedL2Input] = useState("");
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [upgradeDone, setUpgradeDone] = useState(false);
 
-  // Nouveaux L1 (Novembre)
+  // Passage alumni
+  const [alumniUpgradeLoading, setAlumniUpgradeLoading] = useState(false);
+  const [alumniUpgradeDone, setAlumniUpgradeDone] = useState(false);
+
+  // Nouveaux étudiants
   const [newL1, setNewL1] = useState({
-    nom: "", prenom: "", email: "", groupChar: "",
+    nom: "", prenom: "", groupLetter: "", selectedGroup: "",
   });
   const [generatedRef, setGeneratedRef] = useState("");
+  const [nextPseudoNum, setNextPseudoNum] = useState(null);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerDone, setRegisterDone] = useState(false);
 
@@ -112,11 +123,8 @@ export default function AdminPage() {
   const [announcements, setAnnouncements] = useState([]);
   const [annLoading, setAnnLoading] = useState(false);
 
-  const now = new Date();
   const month = now.getMonth();
   const currentYear = now.getFullYear().toString().slice(-2);
-  const isSeptember = month === 8;
-  const isNovember = month === 10;
 
   const mainRef = useRef();
   // Afficher bouton "remonter en haut"
@@ -129,17 +137,18 @@ export default function AdminPage() {
     return () => mainEl.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Charger stats avec polling 3 secondes
+  // Charger stats avec polling 15 secondes
   useEffect(() => {
+    let cancelled = false;
     const fetchStats = () => {
       api
         .get("/admin/stats")
-        .then(({ data }) => setStats(data))
+        .then(({ data }) => { if (!cancelled) setStats(data); })
         .catch(() => {});
     };
     fetchStats();
-    const interval = setInterval(fetchStats, 3000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchStats, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
   // Modal invitation
   const [showInvModal, setShowInvModal] = useState(false);
@@ -170,16 +179,21 @@ export default function AdminPage() {
   // Charger utilisateurs avec pagination
   const loadUsers = useCallback(() => {
     setLoading(true);
+    setUserError("");
     const params = { limit: PAGE_SIZE, offset: userPage * PAGE_SIZE };
     if (search) params.q = search;
     if (roleFilter) params.role = expandRoleFilter(roleFilter);
     api
       .get("/admin/users", { params })
       .then(({ data }) => {
-        setUsers(data.users || data);
+        setUsers(data.users || []);
         setUserTotal(data.total || 0);
       })
-      .catch(console.error)
+      .catch((err) => {
+        const msg = err.response?.data?.error || err.message || "Erreur réseau";
+        setUserError(msg);
+        console.error(err);
+      })
       .finally(() => setLoading(false));
   }, [search, roleFilter, userPage]);
 
@@ -189,14 +203,17 @@ export default function AdminPage() {
 
   // Real-time new user registration
   useEffect(() => {
+    let socket;
     getSocket()
-      .then((socket) => {
+      .then((s) => {
+        socket = s;
         socket.on("user:registered", (newUser) => {
-          const { first_login, ...safeUser } = newUser;
+          const { first_login: _firstLogin, ...safeUser } = newUser;
           setUsers((prev) => [safeUser, ...prev]);
         });
       })
       .catch(console.error);
+    return () => { if (socket) socket.off("user:registered"); };
   }, []);
 
   // Charger invitations
@@ -204,7 +221,7 @@ export default function AdminPage() {
     api
       .get("/admin/invitations", { params: { limit: PAGE_SIZE, offset: invPage * PAGE_SIZE } })
       .then(({ data }) => {
-        setInvitations(data.invitations || data);
+        setInvitations(data.invitations || []);
         setInvTotal(data.total || 0);
       })
       .catch(console.error);
@@ -219,7 +236,7 @@ export default function AdminPage() {
     setAnnLoading(true);
     try {
       const { data } = await api.get("/announcements");
-      setAnnouncements(data);
+      setAnnouncements(data.announcements || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -304,24 +321,40 @@ export default function AdminPage() {
   };
 
   // Passage de classe
-  const handleAddFailedRef = () => {
-    const ref = failedInput.trim().toUpperCase();
+  const handleAddFailedL1Ref = () => {
+    const ref = failedL1Input.trim().toUpperCase();
     if (!ref) return;
-    if (failedRefs.includes(ref)) return;
-    setFailedRefs((prev) => [...prev, ref]);
-    setFailedInput("");
+    if (failedL1Refs.includes(ref)) return;
+    setFailedL1Refs((prev) => [...prev, ref]);
+    setFailedL1Input("");
   };
 
-  const handleRemoveFailedRef = (ref) => {
-    setFailedRefs((prev) => prev.filter((r) => r !== ref));
+  const handleRemoveFailedL1Ref = (ref) => {
+    setFailedL1Refs((prev) => prev.filter((r) => r !== ref));
+  };
+
+  const handleAddFailedL2Ref = () => {
+    const ref = failedL2Input.trim().toUpperCase();
+    if (!ref) return;
+    if (failedL2Refs.includes(ref)) return;
+    setFailedL2Refs((prev) => [...prev, ref]);
+    setFailedL2Input("");
+  };
+
+  const handleRemoveFailedL2Ref = (ref) => {
+    setFailedL2Refs((prev) => prev.filter((r) => r !== ref));
   };
 
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
-      await api.post("/admin/class-upgrade", { failed_refs: failedRefs });
+      await api.post("/admin/class-upgrade", {
+        failed_l1_refs: failedL1Refs,
+        failed_l2_refs: failedL2Refs,
+      });
       setUpgradeDone(true);
-      setFailedRefs([]);
+      setFailedL1Refs([]);
+      setFailedL2Refs([]);
       loadUsers();
     } catch (err) {
       console.error(err);
@@ -330,35 +363,63 @@ export default function AdminPage() {
     }
   };
 
-  // Nouveaux L1
-  const getGroupFromChar = (char) => {
-    const c = char.toUpperCase();
-    if (!c) return "";
-    const groups = ["X1", "X2", "X3", "X4"];
-    const index = c.charCodeAt(0) - 65;
-    return groups[index % groups.length];
+  const handleAlumniUpgrade = async () => {
+    setAlumniUpgradeLoading(true);
+    try {
+      await api.post("/admin/alumni-upgrade");
+      setAlumniUpgradeDone(true);
+      loadUsers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAlumniUpgradeLoading(false);
+    }
   };
+
+  // Nouveaux L1
+  const getGroupsFromLetter = (letter) => {
+    const c = (letter || "").toUpperCase();
+    if (!c || c < "A" || c > "Z") return [];
+    return [`${c}1`, `${c}2`, `${c}3`, `${c}4`];
+  };
+
+  const fetchNextPseudo = useCallback(async () => {
+    try {
+      const { data } = await api.get("/admin/next-pseudo");
+      setNextPseudoNum(data.next);
+    } catch {
+      setNextPseudoNum(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "new-l1") fetchNextPseudo();
+  }, [tab, fetchNextPseudo]);
 
   const handleRegisterL1 = async (e) => {
     e.preventDefault();
-    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupChar.trim() || !generatedRef.trim()) return;
+    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.selectedGroup.trim() || !generatedRef.trim()) return;
     setRegisterLoading(true);
     try {
-      const group = getGroupFromChar(newL1.groupChar);
+      const pseudo = nextPseudoNum
+        ? `new_user${String(nextPseudoNum).padStart(3, "0")}`
+        : `${newL1.prenom.trim()}.${newL1.nom.trim()}`;
+      const email = `hei.${newL1.prenom.trim().toLowerCase()}.${newL1.nom.trim().toLowerCase()}@gmail.com`;
       await api.post("/auth/register", {
         nom: newL1.nom.trim(),
         prenom: newL1.prenom.trim(),
-        email: newL1.email.trim(),
+        email,
         ref: generatedRef.trim().toUpperCase(),
-        pseudo: `${newL1.prenom.trim()}.${newL1.nom.trim()}`,
-        password: generatedRef.trim().toUpperCase(),
+        pseudo,
+        password: "STDnew_UserPass",
         role: "student",
         level: "L1",
-        groupe: group,
+        groupe: newL1.selectedGroup.trim(),
       });
       setRegisterDone(true);
-      setNewL1({ nom: "", prenom: "", email: "", groupChar: "" });
+      setNewL1({ nom: "", prenom: "", groupLetter: "", selectedGroup: "" });
       setGeneratedRef("");
+      fetchNextPseudo();
     } catch (err) {
       console.error(err);
     } finally {
@@ -424,10 +485,9 @@ export default function AdminPage() {
                 { key: "users", label: "Utilisateurs" },
                 { key: "invitations", label: "Invitations" },
                 { key: "annonces", label: "Annonces" },
-                ...(isSeptember
-                  ? [{ key: "upgrade", label: "Passage de classe" }]
-                  : []),
-                ...(isNovember ? [{ key: "new-l1", label: "Nouveaux L1" }] : []),
+                { key: "upgrade", label: "Passage de classe" },
+                { key: "alumni-upgrade", label: "Section Alumni" },
+                { key: "new-l1", label: "Nouveaux étudiants" },
               ].map((t) => (
                 <button
                   key={t.key}
@@ -749,7 +809,15 @@ export default function AdminPage() {
                     </div>
                   )}
 
-                  {users.length === 0 && (
+                  {userError && (
+                    <div className="text-center py-8">
+                      <p className="text-red-400 text-sm bg-red-50 rounded-xl px-4 py-3 inline-block">
+                        {userError}
+                      </p>
+                    </div>
+                  )}
+
+                  {!userError && users.length === 0 && (
                     <div className="text-center py-16">
                       <p className="text-gray-400 text-sm">
                         Aucun utilisateur trouvé.
@@ -760,22 +828,26 @@ export default function AdminPage() {
               )}
             </>
           )}
-          {/* Tab: Passage de classe (Septembre) */}
+          {/* Tab: Passage de classe */}
           {tab === "upgrade" && (
-            <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className={`bg-white rounded-2xl shadow-card p-6 ${!isOctober ? "opacity-70" : ""}`}>
+              {!isOctober && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faGraduationCap} />
+                  Disponible uniquement en octobre.
+                </div>
+              )}
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
                   <FontAwesomeIcon icon={faGraduationCap} className="text-lg" />
                 </div>
                 <div>
                   <h2 className="font-bold text-navy text-base">
-                    Passage de classe — Septembre {now.getFullYear()}
+                    Passage de classe — {now.getFullYear()}
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Saisissez les étudiants qui{" "}
-                    <strong className="text-red-500">ne passent pas</strong>{" "}
-                    dans la classe supérieure. Tous les autres seront
-                    automatiquement promus.
+                    Ajoutez les redoublants de chaque niveau. Tous les autres
+                    seront automatiquement promus (L1→L2, L2→L3).
                   </p>
                 </div>
               </div>
@@ -787,80 +859,206 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mb-4">
-                <input
-                  className="input-field flex-1 font-mono uppercase"
-                  placeholder="Référence STD (ex: STD25001)"
-                  value={failedInput}
-                  onChange={(e) => setFailedInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddFailedRef();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddFailedRef}
-                  className="btn-primary"
-                >
-                  <FontAwesomeIcon icon={faBan} className="text-sm" />
-                </button>
-              </div>
-
-              {failedRefs.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                    Étudiants en échec ({failedRefs.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {failedRefs.map((ref) => (
-                      <span
-                        key={ref}
-                        className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full"
-                      >
-                        {ref}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFailedRef(ref)}
-                          className="hover:text-red-800"
-                        >
-                          <FontAwesomeIcon icon={faTimes} size="xs" />
-                        </button>
-                      </span>
-                    ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Colonne L1 */}
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <h3 className="text-sm font-bold text-orange-700 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-orange-200 text-orange-700 flex items-center justify-center text-xs font-bold">L1</span>
+                    Redoublants L1 (ne passent pas en L2)
+                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      className="input-field flex-1 font-mono uppercase text-sm"
+                      placeholder="STD2@XXX"
+                      value={failedL1Input}
+                      onChange={(e) => setFailedL1Input(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddFailedL1Ref();
+                        }
+                      }}
+                      disabled={!isOctober}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddFailedL1Ref}
+                      className="btn-primary text-xs px-3 py-2"
+                      disabled={!isOctober}
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleAddFailedL1Ref}
+                    className="text-xs text-orange-600 font-semibold hover:text-orange-800 transition disabled:opacity-40"
+                    disabled={!isOctober || !failedL1Input.trim()}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="mr-1" />
+                    Ajouter un autre redoublant
+                  </button>
+                  {failedL1Refs.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {failedL1Refs.map((ref) => (
+                        <span
+                          key={ref}
+                          className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full"
+                        >
+                          {ref}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFailedL1Ref(ref)}
+                            className="hover:text-red-900"
+                            disabled={!isOctober}
+                          >
+                            <FontAwesomeIcon icon={faTimes} size="xs" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Colonne L2 */}
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                  <h3 className="text-sm font-bold text-purple-700 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center text-xs font-bold">L2</span>
+                    Redoublants L2 (ne passent pas en L3)
+                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      className="input-field flex-1 font-mono uppercase text-sm"
+                      placeholder="STD2@XXX"
+                      value={failedL2Input}
+                      onChange={(e) => setFailedL2Input(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddFailedL2Ref();
+                        }
+                      }}
+                      disabled={!isOctober}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddFailedL2Ref}
+                      className="btn-primary text-xs px-3 py-2"
+                      disabled={!isOctober}
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddFailedL2Ref}
+                    className="text-xs text-purple-600 font-semibold hover:text-purple-800 transition disabled:opacity-40"
+                    disabled={!isOctober || !failedL2Input.trim()}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="mr-1" />
+                    Ajouter un autre redoublant
+                  </button>
+                  {failedL2Refs.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {failedL2Refs.map((ref) => (
+                        <span
+                          key={ref}
+                          className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full"
+                        >
+                          {ref}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFailedL2Ref(ref)}
+                            className="hover:text-red-900"
+                            disabled={!isOctober}
+                          >
+                            <FontAwesomeIcon icon={faTimes} size="xs" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
                 <p className="text-xs text-blue-700">
                   <FontAwesomeIcon icon={faArrowRight} className="mr-1" />
-                  Les étudiants <strong>L3</strong> qui passent deviendront{" "}
-                  <strong>AlumniHEI</strong>.
-                  <br />
                   Les étudiants <strong>L1</strong> passeront en <strong>L2</strong>, les <strong>L2</strong> en <strong>L3</strong>.
+                  Les redoublants listés ci-dessus seront exclus.
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleUpgrade}
-                disabled={upgradeLoading}
-                className="btn-primary flex items-center gap-2 disabled:opacity-60"
+                disabled={upgradeLoading || !isOctober}
+                className="btn-primary flex items-center gap-2 disabled:opacity-40"
               >
                 {upgradeLoading ? (
                   <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
                 ) : (
                   <FontAwesomeIcon icon={faArrowRight} />
                 )}
-                Valider le passage de classe
+                Confirmer les redoublements
               </button>
             </div>
           )}
 
-          {/* Tab: Nouveaux L1 (Novembre) */}
+          {/* Tab: Section Alumni */}
+          {tab === "alumni-upgrade" && (
+            <div className={`bg-white rounded-2xl shadow-card p-6 ${!isOctober ? "opacity-70" : ""}`}>
+              {!isOctober && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faGraduationCap} />
+                  Disponible uniquement en octobre.
+                </div>
+              )}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faGraduationCap} className="text-lg" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-navy text-base">
+                    Passage en section Alumni
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Promouvoir <strong>tous</strong> les étudiants{" "}
+                    <strong>L3</strong> en <strong>AlumniHEI</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {alumniUpgradeDone && (
+                <div className="bg-green-50 border border-green-200 text-green-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCheck} />
+                  Passage en Alumni effectué avec succès !
+                </div>
+              )}
+
+              <p className="text-sm text-gray-500 mb-6">
+                Cette action fera passer <strong>tous</strong> les étudiants
+                actuellement en L3 vers le statut Alumni. Cette opération
+                est irréversible.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleAlumniUpgrade}
+                disabled={alumniUpgradeLoading || !isOctober}
+                className="btn-primary flex items-center gap-2 disabled:opacity-40"
+              >
+                {alumniUpgradeLoading ? (
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                ) : (
+                  <FontAwesomeIcon icon={faGraduationCap} />
+                )}
+                Faire passer les L3 en compte Alumni
+              </button>
+            </div>
+          )}
+
+          {/* Tab: Nouveaux étudiants */}
           {tab === "new-l1" && (
             <div className="bg-white rounded-2xl shadow-card p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -869,11 +1067,12 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <h2 className="font-bold text-navy text-base">
-                    Nouveaux étudiants L1 — STD{currentYear}XXX
+                    Nouveaux étudiants
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Inscrivez les nouveaux étudiants de première année. La
-                    référence est saisie manuellement (ex: STD26001).
+                    Remplissez les informations de l&apos;étudiant. Le mot de
+                    passe, le pseudo et l&apos;email sont générés
+                    automatiquement.
                   </p>
                 </div>
               </div>
@@ -919,67 +1118,111 @@ export default function AdminPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Email HEI
-                  </label>
-                  <input
-                    type="email"
-                    className="input-field"
-                    placeholder="hei.jean@gmail.com"
-                    value={newL1.email}
-                    onChange={(e) =>
-                      setNewL1((prev) => ({ ...prev, email: e.target.value }))
-                    }
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Référence STD (saisie manuelle)
+                    Référence STD
                   </label>
                   <input
                     className="input-field font-mono tracking-widest uppercase"
-                    placeholder={`STD${currentYear}001`}
+                    placeholder="STD2@XXX"
                     value={generatedRef}
                     onChange={(e) => setGeneratedRef(e.target.value)}
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Saisissez la référence selon le rang d&apos;entrée (ex: STD26001, STD26002…).
+                    Saisissez la référence (ex: STD26001, STD26002…).
                   </p>
                 </div>
 
+                {/* Informations générées automatiquement */}
+                {newL1.prenom && newL1.nom && generatedRef && (
+                  <div className="bg-navy/5 rounded-xl p-4 space-y-1.5 border border-navy/10">
+                    <p className="text-xs font-bold text-navy/60 uppercase tracking-wide mb-2">
+                      Informations générées automatiquement
+                    </p>
+                    <div className="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1.5 text-sm">
+                      <span className="text-gray-500 font-medium">Email</span>
+                      <span className="text-navy font-mono text-xs">
+                        hei.{newL1.prenom.toLowerCase()}.{newL1.nom.toLowerCase()}@gmail.com
+                      </span>
+                      <span className="text-gray-500 font-medium">Pseudo</span>
+                      <span className="text-navy font-mono text-xs">
+                        {nextPseudoNum
+                          ? `new_user${String(nextPseudoNum).padStart(3, "0")}`
+                          : `${newL1.prenom}.${newL1.nom}`}
+                      </span>
+                      <span className="text-gray-500 font-medium">Mot de passe</span>
+                      <span className="text-navy font-mono text-xs">
+                        STDnew_UserPass
+                      </span>
+                      <span className="text-gray-500 font-medium">Niveau</span>
+                      <span className="text-navy font-mono text-xs">L1</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lettre et sélection du groupe */}
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block uppercase tracking-wide">
-                    Caractère de groupe
+                    Lettre du groupe
                   </label>
                   <input
-                    className="input-field max-w-[120px] text-center text-lg font-bold tracking-widest uppercase"
-                    placeholder="A"
+                    className="input-field max-w-[100px] text-center text-lg font-bold tracking-widest uppercase"
+                    placeholder="N"
                     maxLength={1}
-                    value={newL1.groupChar}
-                    onChange={(e) =>
+                    value={newL1.groupLetter}
+                    onChange={(e) => {
+                      const letter = e.target.value.replace(/[^A-Za-z]/g, "").toUpperCase();
                       setNewL1((prev) => ({
                         ...prev,
-                        groupChar: e.target.value,
-                      }))
-                    }
+                        groupLetter: letter,
+                        selectedGroup: "",
+                      }));
+                    }}
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Saisissez une lettre (A-Z). Le groupe sera déterminé
-                    automatiquement :{" "}
-                    <strong className="text-navy">
-                      {newL1.groupChar
-                        ? `${newL1.groupChar.toUpperCase()} → ${getGroupFromChar(newL1.groupChar)}`
-                        : "ex: A → X1, B → X2, C → X3"}
-                    </strong>
+                    Saisissez une lettre (A-Z) pour générer les groupes disponibles.
                   </p>
                 </div>
 
+                {newL1.groupLetter && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
+                      Choisissez le groupe
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {getGroupsFromLetter(newL1.groupLetter).map((g) => (
+                        <label
+                          key={g}
+                          className={`px-4 py-2.5 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all duration-150 ${
+                            newL1.selectedGroup === g
+                              ? "border-navy bg-navy text-white shadow-md"
+                              : "border-gray-200 bg-white text-gray-600 hover:border-navy/30 hover:text-navy"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="group"
+                            value={g}
+                            checked={newL1.selectedGroup === g}
+                            onChange={() =>
+                              setNewL1((prev) => ({ ...prev, selectedGroup: g }))
+                            }
+                            className="sr-only"
+                          />
+                          {g}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={registerLoading || !generatedRef.trim()}
+                  disabled={
+                    registerLoading ||
+                    !generatedRef.trim() ||
+                    !newL1.selectedGroup
+                  }
                   className="btn-primary flex items-center gap-2 disabled:opacity-60 mt-2"
                 >
                   {registerLoading ? (

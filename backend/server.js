@@ -2,8 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const compression = require("compression");
 const path = require("path");
+const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
+
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
@@ -17,13 +19,38 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-// VAPID keys — auto-generated if missing
-if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+// VAPID keys — auto-generated if missing, persisted to disk across restarts
+const VAPID_KEYS_FILE = process.env.VAPID_KEYS_FILE || path.join(__dirname, ".vapid-keys.json");
+
+function loadOrGenerateVapidKeys() {
+  // 1. Environment variables (production best practice)
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    console.info("VAPID keys loaded from environment variables.");
+    return;
+  }
+  // 2. Persistent file from a previous run
+  try {
+    const saved = JSON.parse(fs.readFileSync(VAPID_KEYS_FILE, "utf8"));
+    if (saved.publicKey && saved.privateKey) {
+      process.env.VAPID_PUBLIC_KEY = saved.publicKey;
+      process.env.VAPID_PRIVATE_KEY = saved.privateKey;
+      console.info("VAPID keys loaded from persistent file.");
+      return;
+    }
+  } catch {}
+  // 3. Generate and persist so they survive restarts
   const vapidKeys = webpush.generateVAPIDKeys();
-  process.env.VAPID_PUBLIC_KEY ||= vapidKeys.publicKey;
-  process.env.VAPID_PRIVATE_KEY ||= vapidKeys.privateKey;
-  console.info("VAPID keys generated for this runtime. Configure persistent keys in production env.");
+  process.env.VAPID_PUBLIC_KEY = vapidKeys.publicKey;
+  process.env.VAPID_PRIVATE_KEY = vapidKeys.privateKey;
+  try {
+    fs.writeFileSync(VAPID_KEYS_FILE, JSON.stringify(vapidKeys, null, 2));
+    console.info(`VAPID keys generated and persisted to ${VAPID_KEYS_FILE}.`);
+  } catch (err) {
+    console.warn("VAPID keys generated for this runtime but could not persist:", err.message);
+  }
 }
+
+loadOrGenerateVapidKeys();
 
 webpush.setVapidDetails(
   "mailto:hei@stdhub.app",
@@ -32,19 +59,30 @@ webpush.setVapidDetails(
 );
 
 const app = express();
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
 
+app.use((req, res, next) => {
+  req.socket.setTimeout(REQUEST_TIMEOUT);
+  if (req.socket.listenerCount("timeout") === 0) {
+    req.socket.on("timeout", () => {
+      if (!res.headersSent) res.status(503).json({ error: "Requête expirée." });
+    });
+  }
+  next();
+});
+
 // Rate limiting — disabled during tests
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 0 : 10,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 20,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
 });
 
 // Socket.io setup — optimized for 1000+ concurrent connections
@@ -108,24 +146,10 @@ app.use(
   }),
 );
 
-// Keep the Render instance awake — ping health endpoint every 14 minutes
-if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
-  const https = require("https");
-  setInterval(
-    () => {
-      https
-        .get(process.env.BACKEND_URL + "/api/health", (res) => {
-          console.log("Keep-alive ping:", res.statusCode);
-        })
-        .on("error", (e) => console.error("Keep-alive error:", e.message));
-    },
-    14 * 60 * 1000,
-  );
-}
-
 // Route registration
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
+app.use("/api/auth/reset-password", loginLimiter);
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
@@ -136,6 +160,7 @@ app.use("/api/push", require("./routes/push"));
 app.use("/api/pings", require("./routes/pings"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/announcements", require("./routes/announcements"));
+app.use("/api/alumni-spotlight", require("./routes/alumniSpotlight"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) =>
@@ -185,12 +210,17 @@ io.on("connection", (socket) => {
     onlineUsers.set(userId, socket.id);
     socket.userId = userId;
     socket.join(`user:${userId}`);
+    socket.join("global-chat");
 
     // Broadcast to others only (not to self)
     socket.broadcast.emit("user:online", userId);
   });
 
   socket.on("message:global", (msg) => {
+    if (!msg || !msg.content) {
+      socket.emit("error", { message: "Message vide." });
+      return;
+    }
     io.emit("message:global", msg);
   });
 
@@ -202,7 +232,25 @@ io.on("connection", (socket) => {
 
   socket.on("message:seen", ({ messageId, senderId }) => {
     if (!messageId || !senderId) return;
-    io.to(`user:${senderId}`).emit("message:seen", { messageId });
+    io.to(`user:${senderId}`).emit("message:seen", { messageId, readerId: socket.userId });
+  });
+
+  socket.on("typing:started", ({ contactId, isGlobal }) => {
+    if (!contactId) return;
+    if (isGlobal) {
+      socket.to("global-chat").emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
+    } else {
+      io.to(`user:${contactId}`).emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
+    }
+  });
+
+  socket.on("typing:stopped", ({ contactId, isGlobal }) => {
+    if (!contactId) return;
+    if (isGlobal) {
+      socket.to("global-chat").emit("typing:stopped", { userId: socket.userId });
+    } else {
+      io.to(`user:${contactId}`).emit("typing:stopped", { userId: socket.userId });
+    }
   });
 
   socket.on("bde:join", () => {
@@ -265,12 +313,6 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create user_security_questions table:", err); }
 
-  try {
-    await pool.query(`ALTER TABLE user_security_questions ADD COLUMN IF NOT EXISTS question_text TEXT NULL`);
-  } catch (_) {}
-  try {
-    await pool.query(`ALTER TABLE user_security_questions ALTER COLUMN question_key TYPE VARCHAR(255)`);
-  } catch (_) {}
 
   try {
     await pool.query(`ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check`);
@@ -290,6 +332,21 @@ const { pool } = require("./db");
       )
     `);
   } catch (err) { console.error("Failed to create push_subscriptions table:", err); }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_notifications (
+        id         SERIAL       PRIMARY KEY,
+        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type       VARCHAR(50)  NOT NULL,
+        title      VARCHAR(255) NOT NULL,
+        body       TEXT         NOT NULL DEFAULT '',
+        data       JSONB        NULL,
+        is_read    BOOLEAN      NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (err) { console.error("Failed to create push_notifications table:", err); }
 
   try {
     await pool.query(`
@@ -362,6 +419,43 @@ const { pool } = require("./db");
       )
     `);
   } catch (err) { console.error("Failed to create announcement_reactions table:", err); }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_favorites (
+        user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        contact_id INTEGER   NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, contact_id)
+      )
+    `);
+  } catch (err) { console.error("Failed to create chat_favorites table:", err); }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alumni_spotlight (
+        id            SERIAL       PRIMARY KEY,
+        title         VARCHAR(255) NOT NULL,
+        content       TEXT         NOT NULL,
+        image_url     TEXT         NULL,
+        author_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at    TIMESTAMP    NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (err) { console.error("Failed to create alumni_spotlight table:", err); }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alumni_tip_reactions (
+        id               SERIAL      PRIMARY KEY,
+        tip_id           INTEGER     NOT NULL REFERENCES alumni_spotlight(id) ON DELETE CASCADE,
+        user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reaction_type    VARCHAR(20) NOT NULL,
+        created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+        UNIQUE (tip_id, user_id)
+      )
+    `);
+  } catch (err) { console.error("Failed to create alumni_tip_reactions table:", err); }
 })();
 
 const PORT = process.env.PORT || 3001;

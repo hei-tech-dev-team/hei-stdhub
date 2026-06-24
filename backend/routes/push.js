@@ -46,4 +46,56 @@ router.delete("/subscribe", auth, async (req, res) => {
   }
 });
 
+// Get missed push notifications for the current user
+router.get("/notifications", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, type, title, body, data, is_read, created_at
+       FROM push_notifications
+       WHERE user_id=$1
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [req.user.id],
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching notifications:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Mark notifications as read
+router.patch("/notifications/read", auth, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "IDs requis." });
+  }
+  try {
+    await db.query(
+      `UPDATE push_notifications SET is_read=TRUE
+       WHERE id = ANY($1::int[]) AND user_id=$2`,
+      [ids, req.user.id],
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error marking notifications as read:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Get unread notification count
+router.get("/notifications/unread-count", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT COUNT(*)::int AS count FROM push_notifications
+       WHERE user_id=$1 AND is_read=FALSE`,
+      [req.user.id],
+    );
+    res.json({ count: rows[0]?.count || 0 });
+  } catch (err) {
+    console.error("Error counting unread notifications:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 module.exports = router;

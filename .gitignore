@@ -1,5 +1,4 @@
 cloudinary
-vercel.json
 .env
 .env.vercel
 scripts/venv/
