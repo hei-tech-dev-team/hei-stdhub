@@ -6,8 +6,14 @@ node_modules/
 .env.local
 .env.production
 
+# VAPID keys persisted on first run (fallback when env vars are not set)
+.vapid-keys.json
+
 # Fichiers uploadés par les utilisateurs
 uploads/
+
+# Flask-Mail virtual environment
+flaskmail/venv/
 
 # Logs
 npm-debug.log*
@@ -22,5 +28,5 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Clinic.
+# Clinic
 .clinic/

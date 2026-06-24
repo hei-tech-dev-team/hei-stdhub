@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -35,13 +35,13 @@ function RoleBadge({ role, level }) {
 
 function StatusDot({ online }) {
   return (
-    <span
-      className={`status-dot ${online ? "status-online" : "status-offline"}`}
-    />
+            <span
+              className={`status-dot ${online ? "status-online" : "status-offline"}`}
+            />
   );
 }
 
-export default function ContactList({ contacts, activeId, onSelect, onlineUsers, unread, favorites, onToggleFavorite }) {
+const ContactList = memo(function ContactList({ contacts, activeId, onSelect, onlineUsers, unread, favorites, onToggleFavorite }) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("Tous");
@@ -332,7 +332,7 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm text-white truncate block flex items-center gap-1">
+                    <span className="font-semibold text-sm text-white truncate flex items-center gap-1">
                       {u.pseudo}
                       <RoleBadge role={u.role} />
                     </span>
@@ -366,4 +366,6 @@ export default function ContactList({ contacts, activeId, onSelect, onlineUsers,
       </div>
     </div>
   );
-}
+});
+
+export default ContactList;

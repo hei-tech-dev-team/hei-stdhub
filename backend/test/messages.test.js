@@ -127,6 +127,62 @@ describe("MESSAGES — Auth & validation", () => {
       const res = await agent.post("/api/messages/upload");
       expect(res.status).to.equal(401);
     });
+
+    const itUploadToken = adminToken ? it : it.skip;
+
+    itUploadToken("retourne 400 sans fichier", async () => {
+      const res = await agent
+        .post("/api/messages/upload")
+        .set("Authorization", `Bearer ${adminToken}`);
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property("error");
+    });
+
+    itUploadToken("upload une image et retourne filename, url, isImage", async () => {
+      const res = await agent
+        .post("/api/messages/upload")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .attach("file", Buffer.from("fake image content"), "test.png");
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property("filename");
+      expect(res.body).to.have.property("url");
+      expect(res.body).to.have.property("isImage", true);
+    });
+
+    itUploadToken("upload un fichier non-image et retourne isImage=false", async () => {
+      const res = await agent
+        .post("/api/messages/upload")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .attach("file", Buffer.from("fake pdf content"), "test.pdf");
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property("filename");
+      expect(res.body).to.have.property("url");
+      expect(res.body).to.have.property("isImage", false);
+    });
+  });
+
+  describe("POST /messages avec contenu FILE", () => {
+    const itWithToken = adminToken ? it : it.skip;
+
+    itWithToken("envoie un message global avec un tag FILE", async () => {
+      const res = await agent
+        .post("/api/messages")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ content: "[FILE:test.png:http://example.com/test.png:img:1234]", is_global: true });
+      expect(res.status).to.equal(201);
+      expect(res.body).to.have.property("id");
+      expect(res.body.content).to.include("[FILE:");
+    });
+
+    itWithToken("envoie un message privé avec un tag FILE", async () => {
+      const res = await agent
+        .post("/api/messages")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ content: "[FILE:doc.pdf:http://example.com/doc.pdf:file:5678]", is_global: false, receiver_id: 1 });
+      expect(res.status).to.equal(201);
+      expect(res.body).to.have.property("id");
+      expect(res.body.content).to.include("[FILE:");
+    });
   });
 
   describe("DELETE /messages/:id", () => {

@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const { sendPushToAll } = require("../services/notificationService");
 
 
 const router = express.Router();
@@ -32,10 +33,9 @@ const UES_BY_LEVEL = {
     "PROG2-API",
     "SYS2",
     "MGT1",
-    "DONNEES2",
-    "IA1",
+    "LV1",
   ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3"],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4-SYS3", "DONNEES2", "IA1"],
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
 };
 
@@ -126,6 +126,14 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
       ],
     );
     res.status(201).json(rows[0]);
+
+    sendPushToAll({
+      title: `Nouveau cours – ${ue}`,
+      body: `${title} (${type})`,
+      tag: `post-${rows[0].id}`,
+      url: "/posts",
+      type: "new_post",
+    }).catch((err) => console.error("sendPushToAll error (posts):", err?.message));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });

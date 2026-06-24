@@ -5,8 +5,6 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
-const CloudinaryStorage = require("multer-storage-cloudinary");
 const webpush = require("web-push");
 const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
@@ -20,6 +18,22 @@ const reactionsLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const REACTIONS_SUBQUERY = `
+  (
+    SELECT COALESCE(
+      json_agg(json_build_object(
+        'userId',   mr.user_id,
+        'userName', ru.pseudo,
+        'emoji',    mr.emoji
+      )),
+      '[]'
+    )
+    FROM message_reactions mr
+    LEFT JOIN users ru ON ru.id = mr.user_id
+    WHERE mr.message_id = base.id
+  ) AS reactions
+`;
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -38,11 +52,13 @@ if (useCloudinary) {
   });
   chatUpload = multer({
     storage: new CloudinaryStorage({
-      cloudinary,
-      params: { folder: "hei-stdhub/chat", resource_type: "auto" },
-    }),
-    limits: { fileSize: 10 * 1024 * 1024 },
-  }).single("file");
+    cloudinary,
+    folder: "hei-stdhub/chat",
+    allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "html", "css", "js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "cs", "php", "rb", "go", "rs", "json", "xml", "yaml", "yml", "csv", "txt", "md", "sh", "bat", "zip", "rar", "7z"],
+    resource_type: "raw",
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).single("file");
 } else {
   chatUpload = multer({
     storage: multer.diskStorage({
@@ -55,43 +71,6 @@ if (useCloudinary) {
     }),
     limits: { fileSize: 10 * 1024 * 1024 },
   }).single("file");
-}
-
-const CONCURRENCY_LIMIT = 10;
-
-async function* batch(arr, size) {
-  for (let i = 0; i < arr.length; i += size) {
-    yield arr.slice(i, i + size);
-  }
-}
-
-async function sendPushWithConcurrency(subscriptions, payload) {
-  const results = [];
-  for (const batch of await iteratorToArray(batch(subscriptions, CONCURRENCY_LIMIT))) {
-    const batchResults = await Promise.allSettled(
-      batch.map((sub) =>
-        webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
-          payload,
-        ).catch(async (err) => {
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            await db.query(`DELETE FROM push_subscriptions WHERE endpoint=$1`, [sub.endpoint]);
-          }
-          throw err;
-        })
-      ),
-    );
-    results.push(...batchResults);
-  }
-  return results;
-}
-
-async function iteratorToArray(iter) {
-  const arr = [];
-  for await (const item of iter) {
-    arr.push(item);
-  }
-  return arr;
 }
 
 // Search users by ref or pseudo
@@ -151,31 +130,45 @@ router.get("/global", auth, async (req, res) => {
   try {
     const { before, limit = 200 } = req.query;
     const msgLimit = Math.min(parseInt(limit) || 200, 500);
-    let query;
-    let params;
+    let query, params;
+
     if (before) {
       query = `
-        SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
-               u.role AS sender_role, u.avatar AS sender_avatar
-        FROM messages m
-        LEFT JOIN users u ON m.sender_id = u.id
-        WHERE m.is_global = TRUE AND m.id < $1
-        ORDER BY m.created_at DESC
-        LIMIT $2`;
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+                 u.role AS sender_role, u.avatar AS sender_avatar,
+                 rm.content AS reply_to_content,
+                  rs.pseudo  AS reply_to_sender
+          FROM messages m
+          LEFT JOIN users u ON m.sender_id = u.id
+          LEFT JOIN messages rm ON rm.id = m.reply_to_id
+          LEFT JOIN users    rs ON rs.id = rm.sender_id
+          WHERE m.is_global = TRUE AND m.id < $1
+          ORDER BY m.created_at DESC
+          LIMIT $2
+        ) base`;
       params = [before, msgLimit];
     } else {
       query = `
-        SELECT * FROM (
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
           SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
-                 u.role AS sender_role, u.avatar AS sender_avatar
+                 u.role AS sender_role, u.avatar AS sender_avatar,
+                 rm.content AS reply_to_content,
+                  rs.pseudo  AS reply_to_sender
           FROM messages m
           LEFT JOIN users u ON m.sender_id = u.id
+          LEFT JOIN messages rm ON rm.id = m.reply_to_id
+          LEFT JOIN users    rs ON rs.id = rm.sender_id
           WHERE m.is_global = TRUE
           ORDER BY m.created_at DESC
           LIMIT $1
-        ) sub ORDER BY created_at ASC`;
+        ) base
+        ORDER BY base.created_at ASC`;
       params = [msgLimit];
     }
+
     const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -188,29 +181,44 @@ router.get("/private/:userId", auth, async (req, res) => {
   try {
     const { before, limit = 100 } = req.query;
     const msgLimit = Math.min(parseInt(limit) || 100, 500);
-    let query;
-    let params;
+    let query, params;
+
     if (before) {
       query = `
-        SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
-        FROM messages m
-        LEFT JOIN users u ON m.sender_id = u.id
-        WHERE m.is_global = FALSE
-          AND m.id < $1
-          AND (
-            (m.sender_id = $2 AND m.receiver_id = $3)
-            OR
-            (m.sender_id = $3 AND m.receiver_id = $2)
-          )
-        ORDER BY m.created_at DESC
-        LIMIT $4`;
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+                 u.role AS sender_role, u.avatar AS sender_avatar,
+                 rm.content AS reply_to_content,
+                  rs.pseudo  AS reply_to_sender
+          FROM messages m
+          LEFT JOIN users u ON m.sender_id = u.id
+          LEFT JOIN messages rm ON rm.id = m.reply_to_id
+          LEFT JOIN users    rs ON rs.id = rm.sender_id
+          WHERE m.is_global = FALSE
+            AND m.id < $1
+            AND (
+              (m.sender_id = $2 AND m.receiver_id = $3)
+              OR
+              (m.sender_id = $3 AND m.receiver_id = $2)
+            )
+          ORDER BY m.created_at DESC
+          LIMIT $4
+        ) base
+        ORDER BY base.created_at ASC`;
       params = [before, req.user.id, req.params.userId, msgLimit];
     } else {
       query = `
-        SELECT * FROM (
-          SELECT m.*, u.pseudo AS sender_pseudo, u.avatar AS sender_avatar
+        SELECT base.*, ${REACTIONS_SUBQUERY}
+        FROM (
+          SELECT m.*, u.pseudo AS sender_pseudo, u.ref AS sender_ref,
+                 u.role AS sender_role, u.avatar AS sender_avatar,
+                  rm.content AS reply_to_content,
+                  rs.pseudo  AS reply_to_sender
           FROM messages m
           LEFT JOIN users u ON m.sender_id = u.id
+          LEFT JOIN messages rm ON rm.id = m.reply_to_id
+          LEFT JOIN users    rs ON rs.id = rm.sender_id
           WHERE m.is_global = FALSE
             AND (
               (m.sender_id = $1 AND m.receiver_id = $2)
@@ -219,9 +227,11 @@ router.get("/private/:userId", auth, async (req, res) => {
             )
           ORDER BY m.created_at DESC
           LIMIT $3
-        ) sub ORDER BY created_at ASC`;
+        ) base
+        ORDER BY base.created_at ASC`;
       params = [req.user.id, req.params.userId, msgLimit];
     }
+
     const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -273,12 +283,14 @@ router.post("/", auth, async (req, res) => {
           pending: 1,
         });
       }
+
       sendPushToUser(receiver_id, {
         title: senderName || "Message",
         body: content.replace(/\[FILE:[^\]]+\]/g, "[Fichier]").slice(0, 200),
         tag: `private-${req.user.id}`,
         url: "/chat",
-      }).catch(() => {});
+        type: "private_message",
+      }).catch((err) => console.error("sendPushToUser error (messages):", err?.message));
     }
 
     res.status(201).json(fullMsg);
@@ -305,6 +317,7 @@ router.patch("/seen", auth, async (req, res) => {
       for (const row of rows) {
         io.to(`user:${row.sender_id}`).emit("message:seen", {
           messageId: row.id,
+          readerId: req.user.id,
         });
       }
     }
@@ -330,6 +343,7 @@ router.patch("/:id/seen", auth, async (req, res) => {
     if (io) {
       io.to(`user:${rows[0].sender_id}`).emit("message:seen", {
         messageId: rows[0].id,
+        readerId: req.user.id,
       });
     }
 
@@ -464,15 +478,38 @@ router.delete("/:id", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
       `DELETE FROM messages WHERE id=$1 AND sender_id=$2
-       RETURNING id, is_global, receiver_id, sender_id`,
+       RETURNING id, is_global, receiver_id, sender_id, content`,
       [req.params.id, req.user.id],
     );
     if (!rows.length)
       return res.status(404).json({ error: "Message introuvable ou non autorisé." });
 
     const msg = rows[0];
+
+    if (useCloudinary && msg.content) {
+      const match = msg.content.match(/\[FILE:[^:]+:([^:]+):/);
+      if (match) {
+        try {
+          const fileUrl = match[1];
+          const urlParts = fileUrl.split("/upload/");
+          if (urlParts.length === 2) {
+            const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+            const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+            await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
+          }
+        } catch (e) {
+          console.warn("Cloudinary delete warning:", e.message);
+        }
+      }
+    }
+
     const io = req.app.get("io");
-    if (io) io.emit("message:deleted", { messageId: msg.id, isGlobal: msg.is_global, receiverId: msg.receiver_id, senderId: msg.sender_id });
+    if (io) io.emit("message:deleted", {
+      messageId: msg.id,
+      isGlobal: msg.is_global,
+      receiverId: msg.receiver_id,
+      senderId: msg.sender_id,
+    });
 
     res.json({ message: "Message supprimé." });
   } catch (err) {
@@ -500,27 +537,44 @@ router.post("/upload", auth, (req, res) => {
   });
 });
 
-async function sendPushToAll({ title, body, tag, url }) {
-  const { rows } = await db.query(
-    `SELECT DISTINCT ON (endpoint) endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
-     FROM push_subscriptions`,
-  );
-  if (!rows.length) return;
+router.get("/favorites", auth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT contact_id FROM chat_favorites WHERE user_id=$1 ORDER BY created_at ASC`,
+      [req.user.id],
+    );
+    res.json(rows.map((r) => r.contact_id));
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
 
-  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  await sendPushWithConcurrency(rows, payload);
-}
+router.post("/favorites", auth, async (req, res) => {
+  const { contact_id } = req.body;
+  if (!contact_id) return res.status(400).json({ error: "contact_id requis." });
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO chat_favorites (user_id, contact_id) VALUES ($1, $2)
+       ON CONFLICT DO NOTHING
+       RETURNING contact_id`,
+      [req.user.id, contact_id],
+    );
+    res.json(rows.map((r) => r.contact_id));
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
 
-async function sendPushNotification(userId, { title, body, tag, url }) {
-  const { rows } = await db.query(
-    `SELECT endpoint, auth_key AS "auth", p256dh_key AS "p256dh"
-     FROM push_subscriptions WHERE user_id=$1`,
-    [userId],
-  );
-  if (!rows.length) return;
-
-  const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
-  await sendPushWithConcurrency(rows, payload);
-}
+router.delete("/favorites/:contactId", auth, async (req, res) => {
+  try {
+    await db.query(
+      `DELETE FROM chat_favorites WHERE user_id=$1 AND contact_id=$2`,
+      [req.user.id, req.params.contactId],
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
 
 module.exports = router;
