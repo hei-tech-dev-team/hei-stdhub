@@ -9,6 +9,7 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
+const { sendPushToUser } = require("../services/notificationService");
 
 const SECURITY_QUESTIONS = [
   { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
@@ -522,6 +523,13 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     } finally {
       client.release();
     }
+
+    sendPushToUser(resetToken.user_id, {
+      title: "Mot de passe modifié",
+      body: "Votre mot de passe HEI STDhub a été réinitialisé avec succès.",
+      tag: "password-reset",
+      url: "/login",
+    }).catch(() => {});
 
     res.json({ message: "Mot de passe réinitialisé." });
   } catch (err) {
