@@ -17,19 +17,38 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-// VAPID keys — auto-generated if missing
-if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-  const vapidKeys = webpush.generateVAPIDKeys();
-  process.env.VAPID_PUBLIC_KEY ||= vapidKeys.publicKey;
-  process.env.VAPID_PRIVATE_KEY ||= vapidKeys.privateKey;
-  console.info("VAPID keys generated for this runtime. Configure persistent keys in production env.");
+// VAPID keys — persist to .vapid-keys.json so they survive restarts
+function loadOrGenerateVapidKeys() {
+  const VAPID_KEYS_PATH = path.join(__dirname, "..", ".vapid-keys.json");
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    return {
+      publicKey: process.env.VAPID_PUBLIC_KEY,
+      privateKey: process.env.VAPID_PRIVATE_KEY,
+    };
+  }
+  try {
+    if (require("fs").existsSync(VAPID_KEYS_PATH)) {
+      const saved = JSON.parse(require("fs").readFileSync(VAPID_KEYS_PATH, "utf8"));
+      if (saved.publicKey && saved.privateKey) {
+        console.info("VAPID keys loaded from .vapid-keys.json");
+        return saved;
+      }
+    }
+  } catch {}
+  const keys = webpush.generateVAPIDKeys();
+  try {
+    require("fs").writeFileSync(VAPID_KEYS_PATH, JSON.stringify(keys, null, 2));
+    console.info("VAPID keys generated and saved to .vapid-keys.json");
+  } catch (err) {
+    console.warn("Could not persist VAPID keys:", err.message);
+  }
+  return keys;
 }
 
-webpush.setVapidDetails(
-  "mailto:hei@stdhub.app",
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY,
-);
+const vapidKeys = loadOrGenerateVapidKeys();
+process.env.VAPID_PUBLIC_KEY = vapidKeys.publicKey;
+process.env.VAPID_PRIVATE_KEY = vapidKeys.privateKey;
+webpush.setVapidDetails("mailto:hei@stdhub.app", vapidKeys.publicKey, vapidKeys.privateKey);
 
 const app = express();
 const server = http.createServer(app);
@@ -302,20 +321,7 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create global_chat_read table:", err); }
 
-  // Ensure push_subscriptions table exists
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id         SERIAL       PRIMARY KEY,
-        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        endpoint   TEXT         NOT NULL,
-        auth_key   TEXT         NOT NULL,
-        p256dh_key TEXT         NOT NULL,
-        created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-        UNIQUE (user_id, endpoint)
-    )
-  `);
-  } catch (err) { console.error("Failed to create push_subscriptions table:", err)};
+
 
   try {
     await pool.query(`
