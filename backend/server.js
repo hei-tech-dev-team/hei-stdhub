@@ -11,6 +11,8 @@ const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
 
+const { startMessagePurgeJob } = require("./services/messagePurgeJob");
+
 // Validate critical env vars at startup
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"];
 const missingEnv = REQUIRED_ENV.filter((v) => !process.env[v]);
@@ -457,6 +459,8 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create alumni_tip_reactions table:", err); }
 })();
+
+startMessagePurgeJob(io);
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
