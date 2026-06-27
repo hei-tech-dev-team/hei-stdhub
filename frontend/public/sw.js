@@ -1,23 +1,88 @@
-const CACHE = "hei-stdhub-v1";
+const CACHE = "hei-stdhub-v3";
+const STATIC_CACHE = "hei-stdhub-static-v3";
 
-self.addEventListener("install", (e) => {
+const STATIC_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|eot|mp3|wav)$/;
+
+self.addEventListener("install", () => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then((cache) =>
-      cache.addAll(["/", "/logo.png", "/manifest.json"]),
-    ),
-  );
 });
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     Promise.all([
       clients.claim(),
-      // Clean old caches
       caches.keys().then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
+        Promise.all(
+          keys
+            .filter((k) => k !== CACHE && k !== STATIC_CACHE)
+            .map((k) => caches.delete(k)),
+        ),
       ),
     ]),
+  );
+});
+
+self.addEventListener("fetch", (e) => {
+  const { request } = e;
+  const url = new URL(request.url);
+
+  // Skip non-GET, non-HTTP(S), and Vite HMR
+  if (
+    request.method !== "GET" ||
+    !url.protocol.startsWith("http") ||
+    url.hostname === "localhost" ||
+    url.pathname.includes("__vite_ping")
+  ) {
+    return;
+  }
+
+  // Navigation requests: network-first with offline fallback
+  if (request.mode === "navigate") {
+    e.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put("/", clone));
+          return response;
+        })
+        .catch(() =>
+          caches.match("/").then((r) => r || new Response("", { status: 503 })),
+        ),
+    );
+    return;
+  }
+
+  // Static assets (images, fonts): cache-first
+  if (STATIC_EXTENSIONS.test(url.pathname)) {
+    e.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        });
+      }),
+    );
+    return;
+  }
+
+  // JS/CSS and other assets: network-first, cache as fallback
+  // This prevents serving stale JS that causes hash mismatches -> white screen
+  e.respondWith(
+    fetch(request)
+      .then((response) => {
+        if (response.ok && response.type === "basic") {
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(request).then((cached) => cached || new Response("", { status: 503 })),
+      ),
   );
 });
 
@@ -53,16 +118,35 @@ self.addEventListener("notificationclick", (e) => {
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ("focus" in client) return client.focus();
+        if (client.url.includes(url) && "focus" in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(url);
     }),
   );
 });
 
-// Keep SW alive on mobile for push delivery
+self.addEventListener("pushsubscriptionchange", (e) => {
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: "push-subscription-change" });
+      });
+    }),
+  );
+});
+
 self.addEventListener("message", (e) => {
   if (e.data === "ping") {
     e.source?.postMessage("pong");
+  }
+  if (e.data?.type === "sync-socket") {
+    clients.matchAll({ type: "window" }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: "socket-sync-request" });
+      });
+    });
+  }
+  if (e.data?.type === "skip-waiting") {
+    self.skipWaiting();
   }
 });

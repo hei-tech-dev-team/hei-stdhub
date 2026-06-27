@@ -20,24 +20,6 @@ export default function SuggestionPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  const validateContent = (content) => {
-    if (!content) return "Le contenu est requis.";
-    if (content.length < 20)
-      return `La suggestion doit faire au moins 20 caractères. (${content.length}/20)`;
-
-    const words = content.toLowerCase().split(/\s+/).filter(Boolean);
-    const hasUnusual = words.some(w => !/^[a-zàâéèêëîïôûùüÿ0-9.,!?;:'"()]+$/.test(w));
-    if (hasUnusual) return "Le contenu contient des caractères inhabituels ou des mots mal formés.";
-    const hasRepetitions = words.some((w, i) => w.length > 3 && words.slice(i + 1, i + 3).includes(w));
-    if (hasRepetitions) return "Le contenu contient trop de répétitions.";
-    const hasCharabia = /[bcdfghjklmnpqrstvwxz]{6,}/i.test(content) || words.some(w => w.length > 20);
-    if (hasCharabia) return "Le contenu semble être incohérent ou mal formé.";
-    const common = ["le", "la", "un", "une", "de", "et", "que", "est", "pour", "dans", "des", "les", "je", "sur", "avec", "en", "au", "aux"];
-    if (!words.some(w => common.includes(w))) return "La suggestion doit être écrite en français lisible (mots courants manquants).";
-    
-    return null; // Pas d'erreur
-  };
-
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
@@ -45,23 +27,14 @@ export default function SuggestionPage() {
     const titre = form.titre.trim();
     const contenu = form.contenu.trim();
     if (!titre) return setError("Le titre est requis.");
-    const contentError = validateContent(contenu);
-    if (contentError) return setError(contentError);
-
-    // 4. Rate Limiting local (Cooldown de 60 secondes)
-    const lastSent = localStorage.getItem("last_suggestion_at");
-    if (lastSent && Date.now() - parseInt(lastSent) < 60000) {
-      const wait = Math.ceil((60000 - (Date.now() - parseInt(lastSent))) / 1000);
-      return setError(`Veuillez attendre ${wait}s avant d'envoyer une nouvelle suggestion.`);
-    }
+    if (!contenu) return setError("Le contenu est requis.");
 
     setLoading(true);
     setError("");
     try {
-      await api.post("/suggestions", form);
+      await api.post("/suggestions", { titre, contenu, anonyme: form.anonyme });
       setSubmitted(true);
       setForm({ titre: "", contenu: "", anonyme: false });
-      localStorage.setItem("last_suggestion_at", Date.now().toString());
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'envoi.");
@@ -138,16 +111,11 @@ export default function SuggestionPage() {
                     className="input-field"
                     placeholder="Résumez votre idée en quelques mots..."
                     value={form.titre}
-                    maxLength={120}
                     onChange={(e) => {
                       set("titre", e.target.value);
-                      // Clear content error when title changes, as it's a separate field
                       setError("");
                     }}
                   />
-                  <p className="text-xs text-gray-400 mt-1 text-right">
-                    {form.titre.length}/120
-                  </p>
                 </div>
 
                 <div>
@@ -158,17 +126,11 @@ export default function SuggestionPage() {
                     className="input-field resize-none h-40"
                     placeholder="Décrivez votre suggestion en détail. Quel est le problème ? Quelle est votre solution proposée ?"
                     value={form.contenu}
-                    maxLength={500} // Réduit la longueur max pour encourager la concision
                     onChange={(e) => {
-                      const val = e.target.value;
-                      set("contenu", val);
-                      const msg = validateContent(val);
-                      setError(msg || "");
+                      set("contenu", e.target.value);
+                      setError("");
                     }}
                   />
-                  <p className="text-xs text-gray-400 mt-1 text-right">
-                    {form.contenu.length}/500
-                  </p>
                 </div>
 
                 {/* Toggle anonyme */}
@@ -227,7 +189,7 @@ export default function SuggestionPage() {
                       setForm({ titre: "", contenu: "", anonyme: false });
                       setError("");
                     }}
-                    className="btn-danger"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
                   >
                     Effacer
                   </button>

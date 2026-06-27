@@ -32,11 +32,11 @@ const ALL_UES = [
   "PROG2-API",
   "SYS2",
   "MGT1",
+  "LV1",
   "WEB3",
   "PROG3",
   "MGT2",
-  "PROG4",
-  "SYS3",
+  "PROG4-SYS3",
   "DONNEES2",
   "IA1",
   "MOB1",
@@ -118,22 +118,27 @@ export default function RegisterPage() {
 
   const validate = () => {
     if (!form.nom.trim()) return "Le nom est requis.";
-    if (!form.prenom.trim()) return "Le prénom est requis.";
+    if (!form.prenom.trim()) return "Le prenom est requis.";
     if (!form.email.trim()) return "L'email est requis.";
-    if (!form.ref.trim()) return "La référence est requise.";
+    if (!form.ref.trim()) return "La reference est requise.";
     if (!form.pseudo.trim()) return "Le pseudo est requis.";
     if (!form.password) return "Le mot de passe est requis.";
     if (form.password.length < 6)
-      return "Le mot de passe doit faire au moins 6 caractères.";
+      return "Le mot de passe doit faire au moins 6 caracteres.";
     if (form.password !== form.confirmPassword)
       return "Les mots de passe ne correspondent pas.";
     if (!validateRegisterEmail(form.email, form.role)) {
       if (form.role === "student")
-        return "Format email étudiant : hei.prenom@gmail.com";
+        return "Format email etudiant : hei.prenom@gmail.com";
       if (form.role === "alumni") return "Email invalide.";
     }
+    if (form.role === "alumni") {
+      const refUpper = form.ref.trim().toUpperCase();
+      if (!/^STD2[12]\d{3,}$/.test(refUpper))
+        return "Les alumni doivent avoir une reference STD21xxx ou STD22xxx.";
+    }
     if (form.role === "teacher" && form.ues.length === 0)
-      return "Veuillez sélectionner au moins une UE.";
+      return "Veuillez selectionner au moins une UE.";
     return null;
   };
 

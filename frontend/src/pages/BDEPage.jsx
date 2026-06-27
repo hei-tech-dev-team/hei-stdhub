@@ -13,6 +13,7 @@ import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
 import jsPDF from "jspdf";
 import { getSocket } from "../socket";
+import { HEI_BLUE_LOGO } from "../assets/logos";
 
 const COLUMNS = [
   {
@@ -57,18 +58,20 @@ const COLUMNS = [
   },
 ];
 
-const NAVY = [10, 26, 47];
-const GOLD = [212, 175, 55];
+const NAVY = [0, 25, 72];
+const GOLD = [223, 164, 8];
+const GOLD_LIGHT = [242, 201, 76];
 const WHITE = [255, 255, 255];
 const GREEN = [16, 185, 129];
 const AMBER = [245, 158, 11];
 const RED = [239, 68, 68];
 const GRAY = [100, 116, 139];
-const LIGHT_GRAY = [148, 163, 184];
+const SURFACE = [242, 244, 248];
 
 const generatePDF = (suggestions) => {
   const doc = new jsPDF();
   const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const year = new Date().getFullYear();
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 20;
@@ -81,201 +84,200 @@ const generatePDF = (suggestions) => {
 
   const addFooter = (pageNum, totalPages) => {
     doc.setPage(pageNum);
-    doc.setFillColor(...NAVY);
-    doc.rect(0, pageH - 14, pageW, 14, "F");
-    doc.setTextColor(...LIGHT_GRAY);
+    doc.setDrawColor(210, 215, 225);
+    doc.setLineWidth(0.5);
+    doc.line(margin, pageH - 16, pageW - margin, pageH - 16);
+    doc.setTextColor(140, 150, 170);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text("HEI STDhub \u2014 Bureau Des Etudiants", margin, pageH - 5);
-    doc.text(`Page ${pageNum}/${totalPages}`, pageW - margin, pageH - 5, { align: "right" });
+    doc.text(`Haute Ecole d'Informatique-HEI hei.school, BDE Bureau Des Etudiants — ${year}`, margin, pageH - 6);
+    doc.text(`Page ${pageNum}/${totalPages}`, pageW - margin, pageH - 6, { align: "right" });
   };
 
   const checkPage = (y, needed = 30) => {
-    if (y + needed > pageH - 20) {
+    if (y + needed > pageH - 24) {
       doc.addPage();
-      return margin + 10;
+      return margin + 15;
     }
     return y;
   };
 
-  let y = margin + 5;
+  let y = margin + 15;
 
-  // ═══════════════════════════════════════════════
-  // HEADER
-  // ═══════════════════════════════════════════════
+  // ═══════════════════════════════════
+  // HEADER — clean, minimal
+  // ═══════════════════════════════════
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 46, "F");
+  doc.rect(0, 0, pageW, 50, "F");
 
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(1.2);
-  doc.line(0, 46, pageW, 46);
+  // School logo
+  try {
+    doc.addImage(HEI_BLUE_LOGO, "PNG", margin + 3, 8, 14, 14);
+  } catch (_) {
+    // fallback: simple icon
+    doc.setFillColor(...GOLD);
+    doc.circle(margin + 10, 15, 7, "F");
+    doc.setTextColor(...NAVY);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text("HEI", margin + 10, 17, { align: "center" });
+  }
 
-  doc.setTextColor(...GOLD);
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("HEI STDhub", margin, 18);
+
 
   doc.setTextColor(...WHITE);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("Rapport officiel du Bureau Des Etudiants", margin, 32);
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.text("Rapport BDE", margin, 34);
+
+  doc.setFontSize(9);
+  doc.setTextColor(...GOLD_LIGHT);
+  doc.text(String(year), margin, 44);
 
   doc.setFontSize(7);
-  doc.setTextColor(...LIGHT_GRAY);
-  doc.text(date, pageW - margin, 14, { align: "right" });
-  doc.text(`R\xe9f: BDE-RPT-${Date.now().toString(36).toUpperCase()}`, pageW - margin, 24, { align: "right" });
+  doc.setTextColor(160, 180, 210);
+  doc.text(date, pageW - margin, 13, { align: "right" });
+  doc.text(`Ref: BDE-${year}`, pageW - margin, 22, { align: "right" });
 
-  y = 56;
+  y = 62;
 
-  // ═══════════════════════════════════════════════
-  // SUMMARY SECTION
-  // ═══════════════════════════════════════════════
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  // ═══════════════════════════════════
+  // INTRO
+  // ═══════════════════════════════════
   doc.setTextColor(...NAVY);
-  doc.text("R\xc9SUM\xc9", margin, y);
-  y += 3;
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("Synthèse des suggestions", margin, y);
+  y += 2;
   doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.4);
-  doc.line(margin, y, margin + 35, y);
-  y += 10;
+  doc.setLineWidth(0.6);
+  doc.line(margin, y, margin + 45, y);
+  y += 8;
 
-  const summaryItems = [
-    { label: "Accept\xe9es", count: acceptes.length, color: GREEN },
-    { label: "\xc0 approfondir", count: aDiscuter.length, color: AMBER },
-    { label: "Refus\xe9es", count: refuses.length, color: RED },
-    { label: "Total", count: total, color: NAVY },
+  doc.setTextColor(...GRAY);
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  const introText = "Ce rapport présente les suggestions reçues par le Bureau Des Étudiants. Chaque proposition a été examinée et classée selon son statut.";
+  const introLines = doc.splitTextToSize(introText, contentW);
+  doc.text(introLines, margin, y);
+  y += introLines.length * 4.5 + 8;
+
+  // ═══════════════════════════════════
+  // STATISTIQUES
+  // ═══════════════════════════════════
+  doc.setTextColor(...NAVY);
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Statistiques", margin, y);
+  y += 2;
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, margin + 35, y);
+  y += 8;
+
+  const statLines = [
+    `Acceptées : ${acceptes.length}`,
+    `À discuter : ${aDiscuter.length}`,
+    `Refusées : ${refuses.length}`,
+    `Total : ${total}`,
   ];
 
-  const cardW = (contentW - 12) / 4;
-
-  summaryItems.forEach((item, i) => {
-    const cx = margin + i * (cardW + 4);
-
-    doc.setFillColor(...item.color);
-    doc.rect(cx, y, cardW, 2.5, "F");
-
-    doc.setFillColor(248, 249, 253);
-    doc.setDrawColor(...item.color);
-    doc.setLineWidth(0.4);
-    doc.roundedRect(cx, y + 2.5, cardW, 28, 2, 2, "FD");
-
-    doc.setTextColor(...item.color);
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text(String(item.count), cx + cardW / 2, y + 16, { align: "center" });
-
-    doc.setTextColor(...GRAY);
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.text(item.label, cx + cardW / 2, y + 26, { align: "center" });
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  statLines.forEach((line, i) => {
+    const color = i === 0 ? GREEN : i === 1 ? AMBER : i === 2 ? RED : NAVY;
+    doc.setTextColor(...color);
+    doc.text(line, margin + 2, y);
+    y += 5.5;
   });
 
-  y += 40;
+  y += 6;
 
-  // ═══════════════════════════════════════════════
-  // SECTION RENDERER
-  // ═══════════════════════════════════════════════
-  const renderSection = (items, label, accentColor, icon) => {
+  // ═══════════════════════════════════
+  // SECTIONS — simple listings
+  // ═══════════════════════════════════
+  const renderSection = (items, label, accentColor) => {
     if (items.length === 0) return;
 
-    y = checkPage(y, 50 + items.length * 28);
+    y = checkPage(y, 30 + items.length * 20);
 
-    doc.setFillColor(...accentColor);
-    doc.rect(margin, y, 3, 16, "F");
-
-    doc.setTextColor(...NAVY);
+    doc.setTextColor(...accentColor);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`${icon} ${label} (${items.length})`, margin + 10, y + 11);
-
-    doc.setDrawColor(220, 225, 235);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y + 20, pageW - margin, y + 20);
-
-    y += 27;
+    doc.text(`${label} (${items.length})`, margin, y);
+    y += 2;
+    doc.setDrawColor(...accentColor);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 8;
 
     items.forEach((s, idx) => {
-      y = checkPage(y, 36);
+      y = checkPage(y, 18);
 
-      const titleLines = doc.splitTextToSize(s.titre, contentW - 20);
-      const titleH = titleLines.length * 4.5;
-      const contentMax = s.contenu.length > 150 ? s.contenu.substring(0, 150) + "..." : s.contenu;
-      const contentLines = doc.splitTextToSize(contentMax, contentW - 20);
-      const contentH = contentLines.length * 3.8;
-      const auteur = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
-
-      let cardH = 12 + titleH + 3 + contentH + 10;
-
-      if (s.justification) {
-        const justLines = doc.splitTextToSize(s.justification, contentW - 36);
-        const justBoxH = 16 + justLines.length * 3.8;
-        cardH += justBoxH + 4;
-      }
-
-      doc.setFillColor(...WHITE);
-      doc.setDrawColor(220, 225, 235);
-      doc.setLineWidth(0.4);
-      doc.roundedRect(margin, y, contentW, cardH, 3, 3, "FD");
-
-      doc.setFillColor(...accentColor);
-      doc.roundedRect(margin + 1, y + 3, 2.5, cardH - 6, 1, 1, "F");
-
+      const author = s.anonyme ? "Anonyme" : `${s.prenom} ${s.nom}`;
+      const line = `${idx + 1}. ${s.titre}`;
       doc.setTextColor(...NAVY);
-      doc.setFontSize(9.5);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text(titleLines, margin + 10, y + 9);
+      const titleLines = doc.splitTextToSize(line, contentW - 5);
+      doc.text(titleLines, margin + 2, y);
+      y += titleLines.length * 4.5 + 1;
 
-      doc.setTextColor(90, 100, 120);
+      // Short excerpt
+      const excerpt = s.contenu.length > 80 ? s.contenu.substring(0, 80) + "..." : s.contenu;
+      doc.setTextColor(...GRAY);
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
-      doc.text(contentLines, margin + 10, y + 9 + titleH + 3);
+      const excerptLines = doc.splitTextToSize(excerpt, contentW - 10);
+      doc.text(excerptLines, margin + 4, y);
+      y += excerptLines.length * 4 + 2;
 
-      const authorY = y + 9 + titleH + 3 + contentH + 3;
-      doc.setFillColor(245, 246, 250);
-      doc.roundedRect(margin + 8, authorY, contentW - 16, 8, 2, 2, "F");
-      doc.setTextColor(...LIGHT_GRAY);
+      // Author + date
+      doc.setTextColor(170, 180, 200);
       doc.setFontSize(6.5);
       doc.setFont("helvetica", "italic");
-      doc.text(`Propos\xe9 par ${auteur}`, margin + 13, authorY + 5.5);
+      doc.text(`— ${author}, ${new Date(s.created_at).toLocaleDateString("fr-FR")}`, margin + 4, y);
+      y += 6;
 
-      y = authorY + 12;
-
+      // Justification for refused
       if (s.justification) {
-        y = checkPage(y, 28);
-        const justLines = doc.splitTextToSize(s.justification, contentW - 36);
-        const justH = 14 + justLines.length * 3.8;
-
-        doc.setFillColor(254, 245, 245);
-        doc.setDrawColor(...RED);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(margin + 8, y, contentW - 16, justH, 3, 3, "FD");
-
-        doc.setFillColor(...RED);
-        doc.rect(margin + 8, y, 2.5, justH, "F");
-
+        y = checkPage(y, 16);
         doc.setTextColor(...RED);
-        doc.setFontSize(6.5);
-        doc.setFont("helvetica", "bold");
-        doc.text("Justification du BDE :", margin + 17, y + 6);
-
-        doc.setTextColor(160, 50, 50);
         doc.setFontSize(7);
-        doc.setFont("helvetica", "normal");
-        doc.text(justLines, margin + 17, y + 12);
-
-        y += justH + 5;
+        doc.setFont("helvetica", "italic");
+        const justLines = doc.splitTextToSize(`Justification : ${s.justification}`, contentW - 10);
+        doc.text(justLines, margin + 6, y);
+        y += justLines.length * 4 + 4;
       }
 
-      y += 3;
+      y += 2;
     });
 
-    y += 5;
+    y += 4;
   };
 
-  renderSection(acceptes, "Suggestions accept\xe9es", GREEN, "1.");
-  renderSection(aDiscuter, "\xc0 approfondir", AMBER, "2.");
-  renderSection(refuses, "Suggestions refus\xe9es", RED, "3.");
+  renderSection(acceptes, "Suggestions acceptées", GREEN);
+  renderSection(aDiscuter, "Suggestions à discuter", AMBER);
+  renderSection(refuses, "Suggestions refusées", RED);
+
+  // ═══════════════════════════════════
+  // CLOSING
+  // ═══════════════════════════════════
+  y = checkPage(y, 30);
+
+  doc.setDrawColor(210, 215, 225);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageW - margin, y);
+  y += 8;
+
+  doc.setTextColor(...NAVY);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("Document généré par le Bureau Des Étudiants", margin, y);
+  y += 5;
+  doc.setTextColor(...GRAY);
+  doc.setFontSize(8);
+  doc.text(`Le ${date}`, margin, y);
 
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -293,16 +295,16 @@ export default function BDEPage() {
   const [dragId, setDragId] = useState(null);
   const [dragOver, setDragOver] = useState(null);
   const [justModal, setJustModal] = useState(null);
+  const [expandedCards, setExpandedCards] = useState(new Set());
   const [error, setError] = useState("");
   const [remoteDragId, setRemoteDragId] = useState(null);
   const [remoteDragOver, setRemoteDragOver] = useState(null);
   const boardRef = useRef(null);
-  const dragCounter = useRef(1);
 
   useEffect(() => {
     api
       .get("/suggestions")
-      .then(({ data }) => setSuggestions(data))
+      .then(({ data }) => setSuggestions(data.suggestions || []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -357,6 +359,15 @@ export default function BDEPage() {
 
   const emitDragEnd = useCallback(() => {
     getSocket().then((s) => s.emit("bde:drag-end"));
+  }, []);
+
+  const toggleExpand = useCallback((id) => {
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }, []);
 
   const emitUpdate = useCallback((id, statut, justification) => {
@@ -614,6 +625,8 @@ export default function BDEPage() {
                     {getByStatut(col.id).map((s) => {
                       const isBeingDragged =
                         dragId === s.id || remoteDragId === s.id;
+                      const isExpanded = expandedCards.has(s.id);
+                      const isLong = s.contenu && s.contenu.length > 100;
                       return (
                         <div
                           key={s.id}
@@ -629,9 +642,18 @@ export default function BDEPage() {
                           <p className="font-bold text-navy text-xs mb-1 leading-tight">
                             {s.titre}
                           </p>
-                          <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 mb-2">
+                          <p className={`text-gray-500 text-xs leading-relaxed mb-0.5 ${isExpanded || !isLong ? "" : "line-clamp-2"}`}>
                             {s.contenu}
                           </p>
+                          {isLong && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); toggleExpand(s.id); }}
+                              className="text-[10px] font-semibold text-gold hover:text-gold/80 transition-colors mb-2 block"
+                            >
+                              {isExpanded ? "Voir moins" : "Voir plus"}
+                            </button>
+                          )}
                           <div className="flex items-center gap-1.5 pt-2 border-t border-surface">
                             <div className="w-5 h-5 rounded-full bg-navy flex items-center justify-center text-white text-xs font-bold shrink-0">
                               {s.anonyme ? "?" : `${s.prenom?.[0]}${s.nom?.[0]}`}
@@ -648,9 +670,18 @@ export default function BDEPage() {
                               <p className="text-xs text-red-500 font-semibold">
                                 Justification :
                               </p>
-                              <p className="text-xs text-red-400 mt-0.5 line-clamp-2">
+                              <p className={`text-xs text-red-400 mt-0.5 ${isExpanded ? "" : "line-clamp-2"}`}>
                                 {s.justification}
                               </p>
+                              {s.justification.length > 100 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleExpand(s.id); }}
+                                  className="text-[10px] font-semibold text-red-400 hover:text-red-300 transition-colors mt-0.5 block"
+                                >
+                                  {isExpanded ? "Voir moins" : "Voir plus"}
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>

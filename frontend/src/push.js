@@ -1,18 +1,30 @@
 import api from "./api/axios";
 
+export async function isSubscribedToPush() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return !!sub;
+  } catch {
+    return false;
+  }
+}
+
 export async function subscribeToPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-
   if (Notification.permission === "denied") return;
 
   try {
-    // Ensure the SW is fully registered and activated
     const reg = await navigator.serviceWorker.ready;
 
-    // Re-subscribe if existing subscription is from a different SW scope
+    if (Notification.permission === "default") {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
+    }
+
     const existing = await reg.pushManager.getSubscription();
     if (existing) {
-      // Verify subscription is still valid by checking keys match
       const { data } = await api.get("/push/vapid-key");
       if (data.publicKey) {
         const existingKey = existing.options?.applicationServerKey;
@@ -26,13 +38,7 @@ export async function subscribeToPush() {
           if (match) return;
         }
       }
-      // Keys don't match or can't verify — unsubscribe and re-subscribe
       await existing.unsubscribe();
-    }
-
-    if (Notification.permission === "default") {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
     }
 
     const { data } = await api.get("/push/vapid-key");
@@ -43,7 +49,7 @@ export async function subscribeToPush() {
 
     await api.post("/push/subscribe", { subscription: sub.toJSON() });
   } catch (err) {
-    console.error("subscribeToPush failed:", err);
+    console.warn("Push subscription failed:", err?.message || err);
   }
 }
 

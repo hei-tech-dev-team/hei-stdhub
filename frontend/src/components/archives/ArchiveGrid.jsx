@@ -20,34 +20,52 @@ const NAVY_RGB = "0,25,72";
 const NAVY_HEX = "#001948";
 const NAVY_DARK = "#0A1A33";
 
-const YEARS = [
-  {
-    id: "L1",
-    label: "PREMIERE ANNEE",
-    subtitle: "Semestre 1 & 2",
-    ues: [
-      "WEB1", "PROG1", "SYS1", "DONNEES1",
-      "THEORIE1-P1", "THEORIE1-P2",
-      "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1",
-    ],
-  },
-  {
-    id: "L2",
-    label: "DEUXIEME ANNEE",
-    subtitle: "Semestre 3 & 4",
-    ues: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
-  },
-  {
-    id: "L3",
-    label: "TROISIEME ANNEE",
-    subtitle: "Semestre 5 & 6",
-    ues: ["MOB1", "PROG5", "SECU1", "SECU2"],
-  },
+const UES_BY_LEVEL = {
+  L1: [
+    "WEB1", "PROG1", "SYS1", "DONNEES1", "THEORIE1-P1", "THEORIE1-P2",
+    "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1", "LV1",
+  ],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4-SYS3", "DONNEES2", "IA1"],
+  L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
+};
+
+const ueToLevel = Object.entries(UES_BY_LEVEL).reduce((map, [level, ues]) => {
+  ues.forEach((ue) => { map[ue] = level; });
+  return map;
+}, {});
+
+const YEAR_CONFIG = [
+  { id: "L1", label: "PREMIERE ANNEE", subtitle: "Semestre 1 & 2" },
+  { id: "L2", label: "DEUXIEME ANNEE", subtitle: "Semestre 3 & 4" },
+  { id: "L3", label: "TROISIEME ANNEE", subtitle: "Semestre 5 & 6" },
 ];
+
+const CUSTOM_UES_KEY = "archive_custom_ues";
+
+function loadCustomUes() {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOM_UES_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCustomUes(data) {
+  localStorage.setItem(CUSTOM_UES_KEY, JSON.stringify(data));
+}
+
+function mergeUes(hardcoded, custom) {
+  const result = {};
+  for (const level of ["L1", "L2", "L3"]) {
+    result[level] = [...(hardcoded[level] || []), ...(custom[level] || [])];
+  }
+  return result;
+}
 
 export default function ArchiveGrid() {
   const { user } = useAuth();
   const isTeacher = user?.role === "teacher" || user?.role === "admin";
+  const isAdmin = user?.role === "admin";
 
   const [selectedUE, setSelectedUE] = useState(null);
   const [supports, setSupports] = useState([]);
@@ -58,11 +76,34 @@ export default function ArchiveGrid() {
   const [saving, setSaving] = useState(false);
   const [addError, setAddError] = useState("");
   const [visible, setVisible] = useState(false);
+  const [otherUes, setOtherUes] = useState([]);
+  const [customUes, setCustomUes] = useState(loadCustomUes);
+  const [showAddUE, setShowAddUE] = useState(false);
+  const [addUECode, setAddUECode] = useState("");
+  const [addUELevel, setAddUELevel] = useState("L1");
   const panelRef = useRef(null);
+
+  const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
+  const effectiveUeToLevel = Object.entries(effectiveUEs).reduce((map, [level, ues]) => {
+    ues.forEach((ue) => { map[ue] = level; });
+    return map;
+  }, {});
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
   }, []);
+
+  useEffect(() => {
+    api.get("/posts").then(({ data }) => {
+      const allPosts = data.posts || [];
+      const known = new Set(Object.keys(effectiveUeToLevel));
+      const others = new Set();
+      allPosts.forEach((p) => {
+        if (p.ue && !known.has(p.ue)) others.add(p.ue);
+      });
+      setOtherUes([...others].sort());
+    }).catch(() => {});
+  }, [customUes]);
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
@@ -76,8 +117,7 @@ export default function ArchiveGrid() {
     try {
       const { data } = await api.get(`/supports/${ue}`);
       setSupports(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setSupports([]);
     } finally {
       setLoading(false);
@@ -126,85 +166,199 @@ export default function ArchiveGrid() {
     }
   };
 
+  const allYears = [
+    ...YEAR_CONFIG,
+    ...(otherUes.length > 0 ? [{ id: "Autre", label: "AUTRES", subtitle: "UE non classées" }] : []),
+  ];
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 h-full">
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-8">
-          {YEARS.map((year, yi) => (
-            <div
-              key={year.id}
-              className={`transition-all duration-700 ease-out ${
-                visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-              style={{ transitionDelay: `${yi * 150}ms` }}
-            >
-              <div className="relative overflow-hidden rounded-2xl mb-5 group">
-                <div
-                  className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white shadow-card"
-                >
+          {allYears.map((year, yi) => {
+            const ues = year.id === "Autre"
+              ? otherUes
+              : effectiveUEs[year.id] || [];
+            if (ues.length === 0) return null;
+
+            return (
+              <div
+                key={year.id}
+                className={`transition-all duration-700 ease-out ${
+                  visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                }`}
+                style={{ transitionDelay: `${yi * 150}ms` }}
+              >
+                <div className="relative overflow-hidden rounded-2xl mb-5 group">
                   <div
-                    className="absolute left-0 top-0 bottom-0 w-1.5"
-                    style={{ background: `linear-gradient(to bottom, rgba(${GOLD},0.6), rgba(${GOLD},0.3))` }}
-                  />
-                  <div
-                    className="flex items-center gap-4 px-6 py-5 w-full"
-                    style={{
-                      background: `linear-gradient(135deg, rgba(${NAVY_RGB},0.03), transparent)`,
-                    }}
+                    className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white shadow-card"
                   >
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                      className="absolute left-0 top-0 bottom-0 w-1.5"
+                      style={{ background: `linear-gradient(to bottom, rgba(${GOLD},0.6), rgba(${GOLD},0.3))` }}
+                    />
+                    <div
+                      className="flex items-center gap-4 px-6 py-5 w-full"
                       style={{
-                        background: `linear-gradient(135deg, ${NAVY_HEX}, ${NAVY_DARK})`,
+                        background: `linear-gradient(135deg, rgba(${NAVY_RGB},0.03), transparent)`,
                       }}
                     >
-                      <FontAwesomeIcon icon={faGraduationCap} className="text-gold text-xl" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-navy text-base tracking-wide">
-                        {year.label}
-                      </h3>
-                      <p className="text-sm text-gray-400 mt-0.5 font-medium">
-                        {year.subtitle}
-                      </p>
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                        style={{
+                          background: `linear-gradient(135deg, ${NAVY_HEX}, ${NAVY_DARK})`,
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faGraduationCap} className="text-gold text-xl" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-navy text-base tracking-wide">
+                          {year.label}
+                        </h3>
+                        <p className="text-sm text-gray-400 mt-0.5 font-medium">
+                          {year.subtitle}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap gap-3 lg:gap-4">
-                {year.ues.map((ue, ui) => (
-                  <button
-                    key={ue}
-                    type="button"
-                    onClick={() => handleSelectUE(ue)}
-                    className={`group relative px-5 lg:px-7 py-3 lg:py-4 rounded-xl lg:rounded-2xl text-sm lg:text-base font-bold
-                      transition-all duration-300 active:scale-[0.95]
-                      animate-slide-up ${
-                        selectedUE === ue
-                          ? "bg-navy text-white shadow-lg shadow-navy/30 scale-105"
-                          : "bg-white/80 backdrop-blur-sm text-navy border-2 border-gold/20 hover:border-gold/50 hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1"
-                      }`}
-                    style={{ animationDelay: `${yi * 150 + ui * 60}ms`, animationFillMode: "backwards" }}
+                <div className="flex flex-wrap gap-3 lg:gap-4">
+                  {ues.map((ue, ui) => (
+                    <button
+                      key={ue}
+                      type="button"
+                      onClick={() => handleSelectUE(ue)}
+                      className={`group relative px-5 lg:px-7 py-3 lg:py-4 rounded-xl lg:rounded-2xl text-sm lg:text-base font-bold
+                        transition-all duration-300 active:scale-[0.95]
+                        animate-slide-up ${
+                          selectedUE === ue
+                            ? "bg-navy text-white shadow-lg shadow-navy/30 scale-105"
+                            : "bg-white/80 backdrop-blur-sm text-navy border-2 border-gold/20 hover:border-gold/50 hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1"
+                        }`}
+                      style={{ animationDelay: `${yi * 150 + ui * 60}ms`, animationFillMode: "backwards" }}
+                    >
+                      {selectedUE === ue && (
+                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-gold rounded-full border-[3px] border-white animate-pulse" />
+                      )}
+                      <span className="relative z-10">{ue}</span>
+                      {selectedUE !== ue && (
+                        <span
+                          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                          style={{
+                            background: `linear-gradient(135deg, rgba(${GOLD},0.08), transparent)`,
+                          }}
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {isAdmin && (
+          <div className="flex flex-col gap-5">
+            {showAddUE && (
+              <div className="p-5 bg-gradient-to-br from-navy/5 to-transparent rounded-2xl border border-navy/10 flex flex-col gap-3 animate-slide-up">
+                <p className="text-xs font-bold text-navy/60 uppercase tracking-wide">
+                  Nouvelle UE
+                </p>
+                <div className="flex gap-3">
+                  <input
+                    className="input-field flex-1"
+                    placeholder="Code UE (ex: NOUVELLE1)"
+                    value={addUECode}
+                    onChange={(e) => setAddUECode(e.target.value.toUpperCase())}
+                    autoFocus
+                  />
+                  <select
+                    className="input-field w-24"
+                    value={addUELevel}
+                    onChange={(e) => setAddUELevel(e.target.value)}
                   >
-                    {selectedUE === ue && (
-                      <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-gold rounded-full border-[3px] border-white animate-pulse" />
-                    )}
-                    <span className="relative z-10">{ue}</span>
-                    {selectedUE !== ue && (
-                      <span
-                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                        style={{
-                          background: `linear-gradient(135deg, rgba(${GOLD},0.08), transparent)`,
-                        }}
-                      />
-                    )}
+                    <option value="L1">L1</option>
+                    <option value="L2">L2</option>
+                    <option value="L3">L3</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = addUECode.trim();
+                      if (!code) return;
+                      const updated = { ...customUes };
+                      if (!updated[addUELevel]) updated[addUELevel] = [];
+                      if (updated[addUELevel].includes(code)) return;
+                      updated[addUELevel] = [...updated[addUELevel], code];
+                      saveCustomUes(updated);
+                      setCustomUes(updated);
+                      setAddUECode("");
+                      setShowAddUE(false);
+                    }}
+                    className="bg-navy text-white rounded-xl text-sm px-4 py-2 hover:bg-navy/90 transition-all duration-200 active:scale-90"
+                  >
+                    Ajouter
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddUE(false);
+                      setAddUECode("");
+                    }}
+                    className="text-sm text-gray-400 hover:text-navy px-3 py-2 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className="relative overflow-hidden rounded-2xl group">
+              <div className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white shadow-card">
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1.5"
+                  style={{ background: `linear-gradient(to bottom, rgba(${GOLD},0.6), rgba(${GOLD},0.3))` }}
+                />
+                <div
+                  className="flex items-center gap-4 sm:gap-6 px-6 py-5 w-full"
+                  style={{
+                    background: `linear-gradient(135deg, rgba(${NAVY_RGB},0.03), transparent)`,
+                  }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                    style={{
+                      background: `linear-gradient(135deg, ${NAVY_HEX}, ${NAVY_DARK})`,
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="text-gold text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-navy text-base tracking-wide">
+                      AJOUTER UNE UE
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-0.5 font-medium">
+                      Nouveau code UE
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddUE((p) => !p)}
+                    className="bg-navy-dark text-white font-bold text-xs
+                      px-4 sm:px-6 py-2 rounded-full uppercase tracking-widest
+                      hover:bg-navy transition-all duration-200 active:scale-95
+                      shrink-0"
+                  >
+                    <FontAwesomeIcon icon={showAddUE ? faTimes : faPlus} className="text-xs sm:mr-2" />
+                    <span className="hidden sm:inline">{showAddUE ? "FERMER" : "AJOUTER"}</span>
+                  </button>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {selectedUE && (

@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require("../db");
 const auth = require("../middleware/auth");
 
+
 router.post("/", auth, async (req, res) => {
   if (!["student", "teacher", "alumni", "admin"].includes(req.user.role))
     return res
@@ -148,7 +149,7 @@ router.post("/confirm", auth, async (req, res) => {
       [req.user.id, chatMsg],
     );
 
-    await db.query("DELETE FROM suggestions");
+    await db.query("DELETE FROM suggestions WHERE statut != 'recu'");
 
     res.json({
       suggestions,
