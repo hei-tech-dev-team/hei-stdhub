@@ -12,24 +12,36 @@ const adminOnly = (req, res, next) => {
 
 router.get("/stats", auth, adminOnly, async (req, res) => {
       try {
-            const [users, posts, submissions, messages] = await Promise.all([
-                  db.query("SELECT COUNT(*) FROM users"),
-                  db.query("SELECT COUNT(*) FROM posts"),
-                  db.query("SELECT COUNT(*) FROM submissions"),
-                  db.query("SELECT COUNT(*) FROM messages"),
+            const [counts, byRole] = await Promise.all([
+                  db.query(`
+                    SELECT
+                      (SELECT COUNT(*) FROM users) AS total_users,
+                      (SELECT COUNT(*) FROM posts) AS total_posts,
+                      (SELECT COUNT(*) FROM submissions) AS total_submissions,
+                      (SELECT COUNT(*) FROM messages) AS total_messages
+                  `),
+                  db.query("SELECT role, COUNT(*) FROM users GROUP BY role"),
             ]);
-            const byRole = await db.query(
-                  "SELECT role, COUNT(*) FROM users GROUP BY role",
-            );
             res.json({
-                  total_users: parseInt(users.rows[0].count),
-                  total_posts: parseInt(posts.rows[0].count),
-                  total_submissions: parseInt(submissions.rows[0].count),
-                  total_messages: parseInt(messages.rows[0].count),
+                  total_users: parseInt(counts.rows[0].total_users),
+                  total_posts: parseInt(counts.rows[0].total_posts),
+                  total_submissions: parseInt(counts.rows[0].total_submissions),
+                  total_messages: parseInt(counts.rows[0].total_messages),
                   by_role: byRole.rows,
             });
       } catch (err) {
             console.error("ERROR GET STATS:", err.message, err.stack);
+            res.status(500).json({ error: "Erreur serveur." });
+      }
+});
+
+router.get("/next-pseudo", auth, adminOnly, async (req, res) => {
+      try {
+            const { rows } = await db.query(
+              `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(pseudo, '^new_user0*', '') AS INTEGER)), 0) AS last_num FROM users WHERE pseudo ~ '^new_user[0-9]+$'`
+            );
+            res.json({ next: parseInt(rows[0]?.last_num || 0) + 1 });
+      } catch (err) {
             res.status(500).json({ error: "Erreur serveur." });
       }
 });
@@ -42,7 +54,7 @@ router.get("/users", auth, adminOnly, async (req, res) => {
 
             let countQuery = "SELECT COUNT(*) FROM users WHERE 1=1";
             let query = `
-      SELECT id, ref, nom, prenom, email, pseudo, role, level, created_at
+      SELECT id, ref, nom, prenom, email, pseudo, role, level, groupe, created_at
       FROM users WHERE 1=1
     `;
             const params = [];
@@ -150,11 +162,30 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
       }
 });
 
-// Passage de classe : L1->L2, L2->L3, L3->alumni
-router.post("/class-upgrade", auth, adminOnly, async (req, res) => {
-  const { failed_refs } = req.body;
+// Passage en alumni : L3->alumni (tous les L3)
+router.post("/alumni-upgrade", auth, adminOnly, async (req, res) => {
   try {
-    const result = await db.query("UPDATE users SET level = CASE WHEN level = 'L1' THEN 'L2' WHEN level = 'L2' THEN 'L3' WHEN level = 'L3' THEN 'alumni' ELSE level END, role = CASE WHEN level = 'L3' THEN 'alumni' ELSE role END WHERE level IN ('L1', 'L2', 'L3') AND ref != ALL($1::text[]) RETURNING id, ref, level, role", [failed_refs || []]);
+    const result = await db.query(
+      "UPDATE users SET level = 'alumni', role = 'alumni' WHERE level = 'L3' RETURNING id, ref, level, role"
+    );
+    res.json({ upgraded: result.rows.length, users: result.rows });
+  } catch (err) {
+    console.error("ERREUR alumni-upgrade:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Passage de classe : L1->L2, L2->L3 (exclut les redoublants)
+router.post("/class-upgrade", auth, adminOnly, async (req, res) => {
+  const { failed_l1_refs, failed_l2_refs } = req.body;
+  try {
+    const allFailed = [...(failed_l1_refs || []), ...(failed_l2_refs || [])];
+    const result = await db.query(
+      `UPDATE users SET level = CASE WHEN level = 'L1' THEN 'L2' WHEN level = 'L2' THEN 'L3' ELSE level END
+       WHERE level IN ('L1', 'L2') AND ref != ALL($1::text[])
+       RETURNING id, ref, level, role`,
+      [allFailed]
+    );
     res.json({ upgraded: result.rows.length, users: result.rows });
   } catch (err) {
     console.error("ERREUR class-upgrade:", err);

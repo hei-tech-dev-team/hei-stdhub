@@ -6,7 +6,6 @@ import {
   faTimes,
   faSpinner,
   faTrash,
-  faBookOpen,
   faExternalLinkAlt,
   faDownload,
 } from "@fortawesome/free-solid-svg-icons";
@@ -85,9 +84,7 @@ export default function TeacherHome() {
       if (form.file) fd.append("file", form.file);
       if (form.link) fd.append("link", form.link);
 
-      const { data } = await api.post("/posts", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data } = await api.post("/posts", fd);
       setPosts((p) => [data, ...p]);
       setForm(EMPTY_FORM);
     } catch (err) {

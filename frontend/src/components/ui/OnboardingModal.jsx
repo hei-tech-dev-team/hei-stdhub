@@ -1,11 +1,13 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { subscribeToPush, isSubscribedToPush } from "../../push";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGraduationCap,
   faUser,
   faCompass,
   faComments,
+  faBell,
   faRocket,
   faArrowRight,
   faArrowLeft,
@@ -18,6 +20,7 @@ import {
   faFileAlt,
   faLightbulb,
   faStar,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 
 const steps = [
@@ -73,6 +76,15 @@ const steps = [
     color: "from-navy to-navy-dark",
   },
   {
+    key: "notifications",
+    icon: faBell,
+    title: "Activez les notifications",
+    subtitle: "Ne manquez aucun evenement",
+    description:
+      "Soyez informe instantanement des nouveaux messages, actualites et rappels importants, meme lorsque l'application est fermee.",
+    color: "from-navy to-navy-dark",
+  },
+  {
     icon: faRocket,
     title: "Pret a demarrer !",
     subtitle: "Vous connaissez l'essentiel",
@@ -83,17 +95,11 @@ const steps = [
 ];
 
 export default function OnboardingModal() {
-  const { firstLogin, dismissOnboarding } = useAuth();
+  const { firstLogin, dismissOnboarding, setPushSubscribed } = useAuth();
   const [step, setStep] = useState(0);
   const [animDir, setAnimDir] = useState(null);
-  const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
-
-  useEffect(() => {
-    if (firstLogin) {
-      requestAnimationFrame(() => setVisible(true));
-    }
-  }, [firstLogin]);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   const total = steps.length;
   const current = steps[step];
@@ -123,10 +129,23 @@ export default function OnboardingModal() {
     }, 300);
   };
 
+  const handleEnableNotifications = async () => {
+    setNotifLoading(true);
+    await subscribeToPush();
+    const subscribed = await isSubscribedToPush();
+    setPushSubscribed(subscribed);
+    setNotifLoading(false);
+    goTo(step + 1);
+  };
+
+  const handleSkipNotifications = () => {
+    goTo(step + 1);
+  };
+
   if (!firstLogin) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <style>{`
         @keyframes onb-overlay-in {
           from { opacity: 0; }
@@ -350,7 +369,54 @@ export default function OnboardingModal() {
                 </button>
               )}
 
-              {step < total - 1 ? (
+              {current.key === "notifications" ? (
+                <>
+                  <button
+                    onClick={handleSkipNotifications}
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-sm
+                      flex items-center justify-center gap-2 transition-all duration-200
+                      active:scale-[0.98]"
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      color: "rgba(255,255,255,0.8)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                    }}
+                  >
+                    Non merci
+                  </button>
+                  <button
+                    onClick={handleEnableNotifications}
+                    disabled={notifLoading}
+                    className="flex-1 py-2.5 rounded-xl font-bold text-sm
+                      flex items-center justify-center gap-2 transition-all duration-200
+                      active:scale-[0.98] disabled:opacity-50"
+                    style={{
+                      background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                      color: "white",
+                      boxShadow: "0 4px 20px rgba(212, 175, 55, 0.3)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = "0.9";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = "1";
+                    }}
+                  >
+                    {notifLoading ? (
+                      <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                    ) : (
+                      <FontAwesomeIcon icon={faBell} />
+                    )}
+                    Activer
+                  </button>
+                </>
+              ) : step < total - 1 ? (
                 <button
                   onClick={() => goTo(step + 1)}
                   className={`flex-1 py-2.5 rounded-xl font-semibold text-sm

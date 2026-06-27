@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import { getSocket, disconnectSocket } from "../../socket";
+import { getSocket, onConnectionChange } from "../../socket";
 import ContactList from "./ContactList";
 import MessagePanel from "./MessagePanel";
 
@@ -10,13 +11,6 @@ const GLOBAL_CONTACT = {
   name: "Chat global",
   isGlobal: true,
 };
-
-function requestNotifyPermission() {
-  if (!("Notification" in window)) return;
-  if (Notification.permission === "default") {
-    Notification.requestPermission();
-  }
-}
 
 function showNotification(title, body) {
   if (!("Notification" in window)) return;
@@ -36,6 +30,7 @@ function showNotification(title, body) {
 
 export default function ChatLayout() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contacts, setContacts] = useState([GLOBAL_CONTACT]);
   const [activeContact, setActiveContact] = useState(GLOBAL_CONTACT);
   const [messages, setMessages] = useState({});
@@ -45,9 +40,39 @@ export default function ChatLayout() {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
-  const [favorites, setFavorites] = useState(() =>
-    JSON.parse(localStorage.getItem(`chat_favorites_${user.id}`) || "[]")
-  );
+  const [contactTotal, setContactTotal] = useState(0);
+  const [favorites, setFavorites] = useState([]);
+  const [typingUsers, setTypingUsers] = useState({});
+  const [socketState, setSocketState] = useState("connecting");
+
+  const typingTimeoutRef = useRef(null);
+  const lastTypingEmitRef = useRef(0);
+  const TYPING_TIMEOUT_MS = 3000;
+  const TYPING_THROTTLE_MS = 1500;
+
+  useEffect(() => {
+    api.get("/messages/favorites")
+      .then(({ data }) => setFavorites(Array.isArray(data) ? data : []))
+      .catch(() => setFavorites([]));
+  }, []);
+
+  const toggleFavorite = useCallback(async (id) => {
+    setFavorites((prev) => {
+      const isFav = prev.includes(id);
+      if (isFav) {
+        api.delete(`/messages/favorites/${id}`)
+          .catch(() => {
+            setFavorites((p) => [...p, id]);
+          });
+        return prev.filter((fid) => fid !== id);
+      }
+      api.post("/messages/favorites", { contact_id: id })
+        .catch(() => {
+          setFavorites((p) => p.filter((fid) => fid !== id));
+        });
+      return [...prev, id];
+    });
+  }, []);
   const activeContactRef = useRef(activeContact);
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
@@ -63,16 +88,6 @@ export default function ChatLayout() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
-
-  const toggleFavorite = useCallback((id) => {
-    setFavorites((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((fid) => fid !== id)
-        : [...prev, id];
-      localStorage.setItem(`chat_favorites_${user.id}`, JSON.stringify(next));
-      return next;
-    });
-  }, [user.id]);
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -93,7 +108,7 @@ export default function ChatLayout() {
 
   useEffect(() => {
     api
-      .get("/messages/contacts", { params: { limit: 500 } })
+      .get("/messages/contacts", { params: { limit: 200 } })
       .then(({ data }) => {
         const usersList = Array.isArray(data) ? data : data?.users;
         if (!Array.isArray(usersList)) return;
@@ -106,10 +121,18 @@ export default function ChatLayout() {
           avatar: c.avatar || null,
         }));
         setContacts([GLOBAL_CONTACT, ...formatted]);
+        if (data.total) setContactTotal(data.total);
+
+        const contactParam = searchParams.get("contact");
+        if (contactParam) {
+          const target = formatted.find((c) => String(c.id) === contactParam);
+          if (target) setActiveContact(target);
+          setSearchParams({}, { replace: true });
+        }
       })
       .catch(console.error);
     fetchUnread();
-  }, [fetchUnread]);
+  }, [fetchUnread, searchParams, setSearchParams]);
 
   const markSeen = useCallback(async (contact) => {
     if (contact.isGlobal) {
@@ -135,7 +158,7 @@ export default function ChatLayout() {
   }, [markGlobalRead]);
 
   const formatMsg = useCallback(
-    (m) => ({
+  (m) => ({
       id: m.id,
       sender: m.sender_pseudo || "Inconnu",
       senderAvatar: m.sender_avatar || null,
@@ -146,6 +169,10 @@ export default function ChatLayout() {
       own: m.sender_id === user.id,
       seen: m.seen || false,
       createdAt: m.created_at,
+      reactions: Array.isArray(m.reactions) ? m.reactions : [],
+      replyToId:      m.reply_to_id     ?? null,
+      replyToContent: m.reply_to_content ?? null,
+      replyToSender:  m.reply_to_sender  ?? null,
     }),
     [user.id],
   );
@@ -193,7 +220,7 @@ export default function ChatLayout() {
       const msgs = msgList.map(formatMsg);
       setMessages((prev) => ({
         ...prev,
-        [contact.id]: [...msgs.reverse(), ...(prev[contact.id] || [])],
+        [contact.id]: [[...msgs].reverse(), ...(prev[contact.id] || [])].flat(),
       }));
     } catch (err) {
       console.error(err);
@@ -209,11 +236,49 @@ export default function ChatLayout() {
     }
   }, [activeContact, loadMessages, markSeen]);
 
+  const emitTyping = useCallback(async (isTyping) => {
+    const contact = activeContactRef.current;
+    if (!contact) return;
+    const now = Date.now();
+    if (isTyping && now - lastTypingEmitRef.current < TYPING_THROTTLE_MS) return;
+    lastTypingEmitRef.current = now;
+
+    try {
+      const s = await getSocket();
+      s.emit(isTyping ? "typing:started" : "typing:stopped", {
+        contactId: contact.isGlobal ? "global" : contact.id,
+        isGlobal: contact.isGlobal,
+      });
+    } catch {}
+  }, []);
+
+  const emitTypingThrottled = useCallback((isTyping) => {
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    emitTyping(isTyping);
+    if (isTyping) {
+      typingTimeoutRef.current = setTimeout(() => {
+        emitTyping(false);
+      }, TYPING_TIMEOUT_MS);
+    }
+  }, [emitTyping]);
+
   useEffect(() => {
     let cancelled = false;
     let socket;
+    let cleanupListener;
 
-    const handlers = {};
+    cleanupListener = onConnectionChange((state) => {
+      setSocketState(state);
+      if (state === "reconnected" || state === "connected") {
+        getSocket().then((s) => {
+          s.emit("user:join", user.id);
+          fetchUnread();
+          if (activeContactRef.current) {
+            markSeen(activeContactRef.current);
+          }
+        }).catch(console.error);
+      }
+    });
 
     getSocket()
       .then((s) => {
@@ -221,7 +286,7 @@ export default function ChatLayout() {
         socket = s;
         socket.emit("user:join", user.id);
 
-        handlers["message:global"] = (data) => {
+        socket.on("message:global", (data) => {
           const msg = formatMsg(data);
           setMessages((prev) => {
             const existing = prev["global"] || [];
@@ -241,9 +306,9 @@ export default function ChatLayout() {
               setUnread((prev) => ({ ...prev, global: prev.global + 1 }));
             }
           }
-        };
+        });
 
-        handlers["message:private"] = (data) => {
+        socket.on("message:private", (data) => {
           const msg = formatMsg(data);
           const otherId = msg.senderId === user.id ? data.receiver_id : msg.senderId;
 
@@ -274,21 +339,21 @@ export default function ChatLayout() {
               }));
             }
           }
-        };
+        });
 
-        handlers["user:online"] = (userId) => {
+        socket.on("user:online", (userId) => {
           setOnlineUsers((prev) => new Set(prev).add(userId));
-        };
+        });
 
-        handlers["user:offline"] = (userId) => {
+        socket.on("user:offline", (userId) => {
           setOnlineUsers((prev) => {
             const next = new Set(prev);
             next.delete(userId);
             return next;
           });
-        };
+        });
 
-        handlers["message:seen"] = ({ messageId }) => {
+        socket.on("message:seen", ({ messageId }) => {
           let seenContactId = null;
           setMessages((prev) => {
             const updated = { ...prev };
@@ -319,9 +384,9 @@ export default function ChatLayout() {
               };
             });
           }
-        };
+        });
 
-        handlers["message:deleted"] = ({ messageId }) => {
+        socket.on("message:deleted", ({ messageId }) => {
           setMessages((prev) => {
             const updated = { ...prev };
             for (const key of Object.keys(updated)) {
@@ -329,9 +394,9 @@ export default function ChatLayout() {
             }
             return updated;
           });
-        };
+        });
 
-        handlers["unread:update"] = ({ contactId, unread: u, pending }) => {
+        socket.on("unread:update", ({ contactId, unread: u, pending }) => {
           setUnread((prev) => ({
             ...prev,
             contacts: {
@@ -342,11 +407,37 @@ export default function ChatLayout() {
               },
             },
           }));
-        };
+        });
 
-        for (const [event, handler] of Object.entries(handlers)) {
-          socket.on(event, handler);
-        }
+        socket.on("typing:started", ({ userId, pseudo }) => {
+          const active = activeContactRef.current;
+          if (!active) return;
+          if (active.isGlobal) {
+            setTypingUsers((prev) => ({ ...prev, [userId]: pseudo }));
+          } else if (String(userId) === String(active.id)) {
+            setTypingUsers((prev) => ({ ...prev, [userId]: pseudo }));
+          }
+        });
+
+        socket.on("typing:stopped", ({ userId }) => {
+          setTypingUsers((prev) => {
+            const next = { ...prev };
+            delete next[userId];
+            return next;
+          });
+        });
+
+        socket.on("message:reaction", ({ messageId, reactions }) => {
+          setMessages((prev) => {
+            const updated = { ...prev };
+            for (const key of Object.keys(updated)) {
+              updated[key] = updated[key].map((m) =>
+                m.id === messageId ? { ...m, reactions } : m
+              );
+            }
+            return updated;
+          });
+        });
 
         if (cancelled) return;
       })
@@ -354,13 +445,22 @@ export default function ChatLayout() {
 
     return () => {
       cancelled = true;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (cleanupListener) cleanupListener();
       if (socket) {
-        for (const [event, handler] of Object.entries(handlers)) {
-          socket.off(event, handler);
-        }
+        socket.off("message:global");
+        socket.off("message:private");
+        socket.off("user:online");
+        socket.off("user:offline");
+        socket.off("message:seen");
+        socket.off("message:deleted");
+        socket.off("unread:update");
+        socket.off("typing:started");
+        socket.off("typing:stopped");
+        socket.off("message:reaction");
       }
     };
-  }, [user.id, formatMsg]);
+  }, [user, formatMsg, fetchUnread, markSeen]);
 
   const deleteMessage = async (messageId) => {
     try {
@@ -377,28 +477,68 @@ export default function ChatLayout() {
     }
   };
 
-  const sendMessage = async (content) => {
+  const sendMessage = async (content, replyToId = null) => {
     try {
       const payload = activeContact.isGlobal
-        ? { content, is_global: true }
-        : { content, receiver_id: activeContact.id, is_global: false };
+        ? { content, is_global: true, reply_to_id: replyToId }
+        : { content, receiver_id: activeContact.id, is_global: false, reply_to_id: replyToId };
       await api.post("/messages", payload);
       setReplyTo(null);
+      emitTyping(false);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleSelectContact = (contact) => {
+  const handleReact = useCallback(async (messageId, emoji) => {
+    setMessages((prev) => {
+      const updated = { ...prev };
+      for (const key of Object.keys(updated)) {
+        updated[key] = updated[key].map((m) => {
+          if (m.id !== messageId) return m;
+          const reactions = m.reactions || [];
+          const mine = reactions.find((r) => r.userId === user.id);
+
+          let newReactions;
+          if (!mine) {
+            newReactions = [...reactions, { userId: user.id, userName: user.pseudo, emoji }];
+          } else if (mine.emoji === emoji) {
+            newReactions = reactions.filter((r) => r.userId !== user.id);
+          } else {
+            newReactions = reactions.map((r) =>
+              r.userId === user.id ? { ...r, emoji } : r
+            );
+          }
+          return { ...m, reactions: newReactions };
+        });
+      }
+      return updated;
+    });
+
+    try {
+      await api.post(`/messages/${messageId}/reactions`, { emoji });
+    } catch (err) {
+      console.error("Erreur réaction:", err);
+      loadMessages(activeContactRef.current, true);
+    }
+  }, [user, loadMessages]);
+
+
+  const handleSelectContact = useCallback((contact) => {
     setActiveContact(contact);
     setShowContactList(false);
     setReplyTo(null);
     setIsAtBottom(true);
-  };
+    setTypingUsers({});
+  }, []);
 
   const handleScrollToBottom = () => {
     setIsAtBottom(true);
   };
+
+  const typingList = useMemo(() => {
+    return Object.values(typingUsers).filter(Boolean);
+  }, [typingUsers]);
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
@@ -443,6 +583,11 @@ export default function ChatLayout() {
           onLoadOlder={() => loadOlderMessages(activeContact)}
           replyTo={replyTo}
           onReply={setReplyTo}
+          typingUsers={typingList}
+          socketState={socketState}
+          onTypingChange={emitTypingThrottled}
+          onReact={handleReact}
+          currentUserId={user.id}  
         />
       </div>
     </div>
