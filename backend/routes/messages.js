@@ -17,8 +17,6 @@ const reactionsLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-<<<<<<< HEAD
-=======
 
 const REACTIONS_SUBQUERY = `
   (
@@ -35,7 +33,6 @@ const REACTIONS_SUBQUERY = `
     WHERE mr.message_id = base.id
   ) AS reactions
 `;
->>>>>>> origin/main
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -75,11 +72,6 @@ if (useCloudinary) {
   }).single("file");
 }
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> origin/main
 // Search users by ref or pseudo
 router.get("/search", auth, async (req, res) => {
   const { q } = req.query;
@@ -290,10 +282,6 @@ router.post("/", auth, async (req, res) => {
           pending: 1,
         });
       }
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main
       sendPushToUser(receiver_id, {
         title: senderName || "Message",
         body: content.replace(/\[FILE:[^\]]+\]/g, "[Fichier]").slice(0, 200),
@@ -547,8 +535,6 @@ router.post("/upload", auth, (req, res) => {
   });
 });
 
-<<<<<<< HEAD
-=======
 router.get("/favorites", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -589,5 +575,4 @@ router.delete("/favorites/:contactId", auth, async (req, res) => {
   }
 });
 
->>>>>>> origin/main
 module.exports = router;
