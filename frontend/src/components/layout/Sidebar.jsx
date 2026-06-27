@@ -85,22 +85,6 @@ export default function Sidebar() {
                               api.get("/messages/unread"),
                         ]);
 
-<<<<<<< HEAD
-        const totalUnread = (unreadRes.data.global || 0) + 
-          Object.values(unreadRes.data.contacts || {}).reduce((acc, c) => acc + (c.unread || 0), 0);
-        
-        // Jouer un son si un nouveau message arrive et qu'on n'est pas déjà dans le chat
-        if (totalUnread > prevUnreadRef.current && location.pathname !== "/chat") {
-          playNotificationSound();
-        }
-        
-        setUnreadCount(location.pathname === "/chat" ? 0 : totalUnread);
-        prevUnreadRef.current = totalUnread;
-      } catch (_) {
-        // Backend indisponible — les badges seront mis à jour au prochain cycle
-      }
-    };
-=======
                         const pings = Array.isArray(pingsRes.data)
                               ? pingsRes.data
                               : [];
@@ -111,7 +95,6 @@ export default function Sidebar() {
                                           p.status === "pending",
                               ).length,
                         );
->>>>>>> origin/main
 
                         const totalUnread =
                               (unreadRes.data.global || 0) +
@@ -175,21 +158,6 @@ export default function Sidebar() {
         transform transition-transform duration-300
         ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
-<<<<<<< HEAD
-      >
-        <div className="flex items-center justify-between px-2 mb-10">
-          <div className="flex items-center gap-3">
-            <img src={HEI_BLUE_LOGO} alt="HEI" className="h-9 w-9 object-contain" />
-            <span className="text-white font-bold text-base">HEI STDhub</span>
-          </div>
-          <button
-            onClick={() => setOpen(false)}
-            className="lg:hidden touch-target text-white/50 hover:text-white transition"
-          >
-            <FontAwesomeIcon icon={faTimes} className="text-base" />
-          </button>
-        </div>
-=======
                   >
                         <div className="flex items-center justify-between px-2 mb-10 shrink-0">
                               <div className="flex items-center gap-3">
@@ -212,7 +180,6 @@ export default function Sidebar() {
                                     />
                               </button>
                         </div>
->>>>>>> origin/main
 
                         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
                               {(user?.role === "alumni"

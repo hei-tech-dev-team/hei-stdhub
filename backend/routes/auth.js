@@ -9,7 +9,6 @@ const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-<<<<<<< HEAD
 const { sendPasswordResetEmail } = require("../services/mailer");
 const { sendPushToUser } = require("../services/notificationService");
 
@@ -23,8 +22,6 @@ const SECURITY_QUESTIONS = [
   { key: "mentor_name", question: "Qui est votre modèle ou mentor professionnel ?" },
   { key: "passion_hobby", question: "Quelle est votre passion en dehors des études ?" },
 ];
-=======
->>>>>>> origin/main
 
 const capitalize = (str) =>
   str
@@ -239,7 +236,14 @@ router.post("/login", async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 4,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email)
@@ -278,8 +282,6 @@ router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, re
   }
 });
 
-=======
->>>>>>> origin/main
 // Public profile by ref
 router.get("/user/:ref", auth, async (req, res) => {
   try {
@@ -294,14 +296,6 @@ router.get("/user/:ref", auth, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
   }
-});
-
-const forgotPasswordLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 4,
-  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
 });
 
 // Generate a 6-character alphanumeric reset code
