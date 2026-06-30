@@ -13,7 +13,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
-import { useAuth } from "../../context/AuthContext";
 
 const REACTION_ICONS = {
   like: faThumbsUp,
@@ -32,7 +31,6 @@ const REACTION_LABELS = {
 const LEVELS = ["Tous", "L1", "L2", "L3"];
 
 export default function AdminHome() {
-  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [targetLevel, setTargetLevel] = useState("");
@@ -48,7 +46,7 @@ export default function AdminHome() {
   const fetchAnnouncements = async () => {
     try {
       const { data } = await api.get("/announcements");
-      setAnnouncements(data);
+      setAnnouncements(data.announcements || []);
     } catch (err) {
       console.error(err);
     } finally {

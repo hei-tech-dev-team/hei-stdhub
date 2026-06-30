@@ -72,22 +72,39 @@ describe("AUTH", () => {
     expect(res.status).to.equal(401);
   });
 
-  it("POST /auth/forgot-password/send-email sans email → 400", async () => {
-    const res = await agent.post("/api/auth/forgot-password/send-email").send({});
+  it("POST /auth/forgot-password sans email → 400", async () => {
+    const res = await agent.post("/api/auth/forgot-password").send({});
     expect(res.status).to.equal(400);
-    expect(res.body).to.have.property("error", "Adresse email requise.");
+    expect(res.body).to.have.property("error", "Email requis.");
   });
 
-  it("POST /auth/forgot-password/send-email email trop long → 400", async () => {
-    const longEmail = "a".repeat(250) + "@b.co";
+  it("POST /auth/forgot-password avec email inconnu → 200 (ne revele pas)", async () => {
     const res = await agent
-      .post("/api/auth/forgot-password/send-email")
-      .send({ email: longEmail });
-    expect(res.status).to.equal(400);
-    expect(res.body).to.have.property("error", "Adresse email trop longue.");
+      .post("/api/auth/forgot-password")
+      .send({ email: "inconnu@test.com" });
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property("message");
   });
 
+  it("POST /auth/forgot-password/verify-code sans email → 400", async () => {
+    const res = await agent.post("/api/auth/forgot-password/verify-code").send({ code: "ABC123" });
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property("error", "Email et code requis.");
+  });
 
+  it("POST /auth/forgot-password/verify-code sans code → 400", async () => {
+    const res = await agent.post("/api/auth/forgot-password/verify-code").send({ email: "test@test.com" });
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property("error", "Email et code requis.");
+  });
+
+  it("POST /auth/forgot-password/verify-code avec email inconnu → 404", async () => {
+    const res = await agent
+      .post("/api/auth/forgot-password/verify-code")
+      .send({ email: "inconnu@test.com", code: "ABC123" });
+    expect(res.status).to.equal(404);
+    expect(res.body).to.have.property("error");
+  });
 
   it("GET /auth/reset-password/:token existe → 400 pour token invalide", async () => {
     const res = await agent.get("/api/auth/reset-password/token-invalide");

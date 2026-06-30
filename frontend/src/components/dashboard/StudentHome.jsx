@@ -122,7 +122,7 @@ export default function StudentHome() {
     });
 
     return result;
-  }, [posts, search, typeFilter, ueFilter, sortOrder]);
+  }, [posts, search, typeFilter, ueFilter, sortOrder, uniqueUEs]);
 
   return (
     <div className="flex flex-col h-screen overflow-y-hidden">

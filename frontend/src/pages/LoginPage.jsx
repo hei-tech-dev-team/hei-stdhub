@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { Eye, EyeOff, User, Lock, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, User, Lock, ArrowRight, GraduationCap } from "lucide-react";
 
 export default function LoginPage() {
       const { login } = useAuth();
@@ -21,6 +21,19 @@ export default function LoginPage() {
                   setError("Veuillez remplir tous les champs.");
                   return;
             }
+            if (form.ref.includes("@")) {
+                  setError("Veuillez entrer votre reference, pas votre email.");
+                  return;
+            }
+
+            if (loginRole === "alumni") {
+                  const refUpper = form.ref.trim().toUpperCase();
+                  if (!/^STD2[12]\d{3,}$/.test(refUpper)) {
+                        setError("Les alumni doivent avoir une reference STD21xxx ou STD22xxx.");
+                        return;
+                  }
+            }
+
             setLoading(true);
             setError("");
             try {
@@ -29,16 +42,18 @@ export default function LoginPage() {
             } catch (err) {
                   setError(
                         err.response?.data?.error ||
-                              "Erreur de connexion, réessayez.",
+                              err.userMessage ||
+                              "Erreur de connexion, reessayez.",
                   );
             } finally {
                   setLoading(false);
             }
       };
 
+      const isAlumni = loginRole === "alumni";
+
       return (
             <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
-                  {/* Bubbles background */}
                   <div className="fixed inset-0 overflow-hidden pointer-events-none">
                         <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
                         <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
@@ -47,7 +62,6 @@ export default function LoginPage() {
 
                   <div className="relative w-full max-w-4xl">
                         <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex min-h-[540px]">
-                              {/* Left panel */}
                               <div
                                     className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
                                     style={{
@@ -55,20 +69,19 @@ export default function LoginPage() {
                                                 "linear-gradient(160deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
                                     }}
                               >
-                                    {/* Decorative bubbles */}
                                     <div className="absolute top-[-60px] left-[-60px] w-56 h-56 bg-white/10 rounded-full" />
                                     <div className="absolute top-[30%] right-[-80px] w-72 h-72 bg-white/8 rounded-full" />
                                     <div className="absolute bottom-[-40px] left-[20%] w-48 h-48 bg-white/10 rounded-full" />
                                     <div className="absolute bottom-[20%] left-[-30px] w-32 h-32 bg-white/12 rounded-full" />
                                     <div className="absolute top-[55%] right-[10%] w-20 h-20 bg-white/10 rounded-full" />
 
-                                    {/* Logo */}
                                     <div className="relative z-10 flex items-center gap-3">
                                           <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                                                 <img
                                                       src={HEI_WHITE_LOGO}
                                                       alt="HEI"
                                                       className="w-8 h-8 object-contain"
+                                                      onError={(e) => { e.target.style.display = "none"; }}
                                                 />
                                           </div>
                                           <div>
@@ -76,40 +89,35 @@ export default function LoginPage() {
                                                       HEI STDhub
                                                 </span>
                                                 <span className="text-white/60 text-xs">
-                                                      Plateforme étudiante
+                                                      Plateforme etudiante
                                                 </span>
                                           </div>
                                     </div>
 
-                                    {/* Welcome text */}
                                     <div className="relative z-10">
                                           <h2 className="text-white text-3xl font-bold leading-snug mb-3">
-                                                Bon retour
+                                                {isAlumni ? "Espace" : "Bon retour"}
                                                 <br />
-                                                parmi nous !
+                                                {isAlumni ? "Alumni !" : "parmi nous !"}
                                           </h2>
                                           <p className="text-white/60 text-sm leading-relaxed">
-                                                Connectez-vous pour accéder à
-                                                vos cours, archives et
-                                                discussions avec la communauté
-                                                HEI.
+                                                {isAlumni
+                                                      ? "Accedez a votre espace alumni et partagez votre experience HEI."
+                                                      : "Connectez-vous pour acceder a vos cours, archives et discussions avec la communaute HEI."}
                                           </p>
                                     </div>
 
-                                    {/* Bottom badge */}
                                     <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
                                           <p className="text-white/80 text-xs font-medium">
-                                                Communauté HEI Madagascar
+                                                {isAlumni ? "Promotions 2021 & 2022" : "Communaute HEI Madagascar"}
                                           </p>
                                           <p className="text-white/50 text-xs mt-0.5">
-                                                Étudiants · Professeurs · Admin
+                                                {isAlumni ? "STD21xxx / STD22xxx" : "Etudiants · Professeurs · Admin"}
                                           </p>
                                     </div>
                               </div>
 
-                              {/* Right panel */}
                               <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 py-10">
-                                    {/* Mobile logo */}
                                     <div className="flex lg:hidden items-center gap-2 mb-8">
                                           <img
                                                 src={HEI_BLUE_LOGO}
@@ -123,11 +131,12 @@ export default function LoginPage() {
 
                                     <div className="mb-8">
                                           <h1 className="text-2xl sm:text-3xl font-bold text-navy">
-                                                Connexion
+                                                {isAlumni ? "Connexion Alumni" : "Connexion"}
                                           </h1>
                                           <p className="text-gray-400 text-sm mt-1">
-                                                Entrez vos identifiants pour
-                                                continuer
+                                                {isAlumni
+                                                      ? "Entrez votre reference alumni STD21/STD22"
+                                                      : "Entrez vos identifiants pour continuer"}
                                           </p>
                                     </div>
 
@@ -137,19 +146,20 @@ export default function LoginPage() {
                                           </div>
                                     )}
 
-                                    {/* Role selector */}
                                     <div className="flex items-center gap-2 mb-4 p-1 bg-surface rounded-xl">
                                       {[
-                                        { key: "student", label: "Étudiant" },
+                                        { key: "student", label: "Etudiant" },
                                         { key: "teacher", label: "Professeur" },
                                         { key: "alumni", label: "Alumni" },
                                       ].map((r) => (
                                         <div
                                           key={r.key}
-                                          onClick={() => setLoginRole(r.key)}
+                                          onClick={() => { setLoginRole(r.key); setError(""); }}
                                           className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
                                             loginRole === r.key
-                                              ? "bg-navy text-white shadow-sm"
+                                              ? r.key === "alumni"
+                                                ? "bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white shadow-sm"
+                                                : "bg-navy text-white shadow-sm"
                                               : "text-gray-400 hover:text-navy"
                                           }`}
                                         >
@@ -158,13 +168,25 @@ export default function LoginPage() {
                                       ))}
                                     </div>
 
+                                    {isAlumni && (
+                                          <div className="mb-5 bg-gold/10 border border-gold/20 rounded-2xl p-3 flex items-start gap-2">
+                                                <GraduationCap size={16} className="text-gold mt-0.5 shrink-0" />
+                                                <div>
+                                                      <p className="text-gold font-semibold text-xs">Espace Alumni uniquement</p>
+                                                      <p className="text-gold/70 text-[11px] mt-0.5">
+                                                            Seules les references STD21xxx et STD22xxx sont acceptees. Les etudiants actuels ne peuvent pas se connecter ici.
+                                                      </p>
+                                                </div>
+                                          </div>
+                                    )}
+
                                     <form
                                           onSubmit={handleSubmit}
                                           className="flex flex-col gap-5"
                                     >
                                           <div>
                                                 <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
-                                                      Référence
+                                                      {isAlumni ? "Reference Alumni" : "Reference"}
                                                 </label>
                                                 <div className="relative">
                                                       <User
@@ -179,7 +201,7 @@ export default function LoginPage() {
                                                                     : loginRole === "alumni"
                                                                       ? "STD21XXX ou STD22XXX"
                                                                       : "STD25XXX"
-                                                              }
+                                                               }
                                                             value={form.ref}
                                                             onChange={(e) => {
                                                                   set(
@@ -255,7 +277,7 @@ export default function LoginPage() {
                                                       to="/forgot-password"
                                                       className="text-xs text-[#001948] hover:underline font-medium"
                                                 >
-                                                      Mot de passe oublié ?
+                                                      Mot de passe oublie ?
                                                 </Link>
                                           </div>
 
@@ -264,8 +286,9 @@ export default function LoginPage() {
                                                 disabled={loading}
                                                 className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                                 style={{
-                                                      background:
-                                                            "linear-gradient(135deg, #0A1A33, #001948)",
+                                                      background: isAlumni
+                                                            ? "linear-gradient(135deg, #D4AF37, #B8860B)"
+                                                            : "linear-gradient(135deg, #0A1A33, #001948)",
                                                 }}
                                           >
                                                 {loading ? (
@@ -273,7 +296,7 @@ export default function LoginPage() {
                                                 ) : (
                                                       <>
                                                             <span>
-                                                                  Se connecter
+                                                                  {isAlumni ? "Acceder a l'espace Alumni" : "Se connecter"}
                                                             </span>
                                                             <ArrowRight
                                                                   size={16}
@@ -289,12 +312,12 @@ export default function LoginPage() {
                                                 to="/register"
                                                 className="text-[#001948] font-bold hover:underline"
                                           >
-                                                Créer un compte
+                                                Creer un compte
                                           </Link>
                                     </p>
                               </div>
                         </div>
                   </div>
             </div>
-  );
+      );
 }
