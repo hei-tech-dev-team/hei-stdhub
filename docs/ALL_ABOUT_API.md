@@ -233,7 +233,7 @@ The configured instance (`api/axios.js`) automatically:
 | PATCH | `/users/:id/email` | Yes | admin | Change user email |
 | DELETE | `/users/:id` | Yes | admin | Delete user (cannot delete self) |
 | GET | `/next-pseudo` | Yes | admin | Get next sequential pseudo (new_userX) |
-| POST | `/class-upgrade` | Yes | admin | Upgrade L1→L2, L2→L3 (exclude failed refs) |
+| POST | `/class-upgrade` | Yes | admin | Upgrade L1→L2, L2→L3 (redoublants stay at current level) |
 | POST | `/alumni-upgrade` | Yes | admin | Promote all L3→alumni |
 | POST | `/invitations` | Yes | admin | Generate single invitation code (14d expiry) |
 | POST | `/invitations/bulk` | Yes | admin | Bulk generate up to 1000 codes (batch INSERT) |

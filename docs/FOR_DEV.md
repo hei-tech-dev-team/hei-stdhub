@@ -302,7 +302,7 @@ npm run release:major   # 1.9.0 -> 2.0.0
 - Glassmorphism on auth pages, chat, onboarding modal.
 
 ### Seasonal Admin Features
-- **September** (`month === 8`, 0-indexed): "Passage de classe" tab — promote L1→L2, L2→L3 with failed refs exclusion; "Alumni" tab — promote all L3→alumni.
+- **September** (`month === 8`, 0-indexed): "Passage de classe" tab — promote L1→L2, L2→L3 (redoublants excluded); "Alumni" tab — promote all L3→alumni.
 - **November** (`month === 10`, 0-indexed): "Nouveaux L1" tab — register new L1 students with auto-generated STD ref.
 
 ### BDE Workflow
