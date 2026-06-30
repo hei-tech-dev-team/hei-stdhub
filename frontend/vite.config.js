@@ -11,14 +11,21 @@ export default defineConfig({
     open: true,
   },
   build: {
+    target: "es2020",
+    minify: "esbuild",
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ["react", "react-dom", "react-router-dom"],
           socket: ["socket.io-client"],
-          ui: ["lucide-react"],
+          lucide: ["lucide-react"],
+          fa: ["@fortawesome/fontawesome-svg-core", "@fortawesome/free-solid-svg-icons"],
+          pdf: ["jspdf"],
+          emoji: ["emoji-picker-react"],
         },
       },
     },
+    chunkSizeWarningLimit: 500,
   },
 });

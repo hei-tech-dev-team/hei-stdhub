@@ -66,7 +66,7 @@ function MyComponent() {
 - `doc/description` — Documentation
 
 ### Commit Messages
-- French or English commits (project uses French)
+- French or English commits
 - Format: `type: brief description`
 - Examples:
   - `feat: add drag-and-drop for BDE kanban`
@@ -80,7 +80,7 @@ function MyComponent() {
 
 ---
 
-## Adding a New Route
+## Adding a New API Route
 
 1. Create route file in `backend/routes/`
 2. Import `express`, `db`, `auth`, and any other middleware
@@ -160,7 +160,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS new_column VARCHAR(100);
 - Test happy path + error cases
 - Test authorization (no token, wrong role)
 - Test input validation (empty, null, long, special chars)
-- Place test file in `backend/test/` with `.test.js` extension
+- Backend: place test file in `backend/test/` with `.test.js` extension
+- Frontend: place test file next to source with `.test.js` extension
 - Run tests: `cd backend && npm test`
 
 ---

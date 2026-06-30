@@ -6,7 +6,6 @@ import {
   faCheckCircle,
   faTrash,
   faSpinner,
-  faFile,
   faGraduationCap,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
@@ -23,9 +22,9 @@ const UES = {
   L1: [
     "WEB1", "PROG1", "SYS1", "DONNEES1",
     "THEORIE1-P1", "THEORIE1-P2",
-    "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1",
+    "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1", "LV1",
   ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4", "SYS3", "DONNEES2", "IA1"],
+  L2: ["WEB3", "PROG3", "MGT2", "PROG4-SYS3", "DONNEES2", "IA1"],
   L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
 };
 
@@ -125,9 +124,7 @@ export default function StudentUpload() {
       if (form.file) fd.append("file", form.file);
       if (form.link) fd.append("link", form.link);
 
-      await api.post("/submissions", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/submissions", fd);
 
       setSubmitted(true);
       setTimeout(() => {

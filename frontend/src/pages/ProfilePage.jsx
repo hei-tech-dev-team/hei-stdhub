@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
+import WaveAnimation from "../components/ui/WaveAnimation";
+import { subscribeToPush, unsubscribeFromPush, isSubscribedToPush } from "../push";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCamera,
@@ -22,6 +25,8 @@ import {
   faIdCard,
   faPen,
   faTimes,
+  faBell,
+  faBellSlash,
 } from "@fortawesome/free-solid-svg-icons";
 
 const ROLE_LABEL = {
@@ -49,7 +54,7 @@ const ROLE_LABEL = {
 };
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, pushSubscribed, setPushSubscribed } = useAuth();
   const fileRef = useRef(null);
 
   const [pseudo, setPseudo] = useState(user?.pseudo || "");
@@ -75,10 +80,28 @@ export default function ProfilePage() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const [visible, setVisible] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
   }, []);
+
+  useEffect(() => {
+    isSubscribedToPush().then(setPushSubscribed);
+  }, [setPushSubscribed]);
+
+  const handleToggleNotifications = async () => {
+    setNotifLoading(true);
+    if (pushSubscribed) {
+      await unsubscribeFromPush();
+      setPushSubscribed(false);
+    } else {
+      await subscribeToPush();
+      const subscribed = await isSubscribedToPush();
+      setPushSubscribed(subscribed);
+    }
+    setNotifLoading(false);
+  };
 
   const roleCfg = ROLE_LABEL[user?.role] || ROLE_LABEL.student;
   const avatarUrl = user?.avatar || null;
@@ -122,6 +145,10 @@ export default function ProfilePage() {
 
   const handlePseudo = async (e) => {
     e.preventDefault();
+    if (!pseudo.trim()) {
+      setErrorPseudo("Le pseudo ne peut pas être vide.");
+      return;
+    }
     setErrorPseudo("");
     setLoadingPseudo(true);
     try {
@@ -139,6 +166,14 @@ export default function ProfilePage() {
   const handlePassword = async (e) => {
     e.preventDefault();
     setErrorPwd("");
+    if (!currentPwd) {
+      setErrorPwd("Veuillez entrer votre mot de passe actuel.");
+      return;
+    }
+    if (newPwd.length < 6) {
+      setErrorPwd("Le nouveau mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
     if (newPwd !== confirmPwd) {
       setErrorPwd("Les mots de passe ne correspondent pas.");
       return;
@@ -167,7 +202,7 @@ export default function ProfilePage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar title="Mon Profil" />
         <main className="flex-1 overflow-y-auto relative">
-          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-0">
             {/* Animated profile header */}
             <div
               className={`transition-all duration-700 ease-out ${
@@ -177,27 +212,27 @@ export default function ProfilePage() {
               }`}
             >
               <div
-                className="rounded-xl overflow-hidden mb-6"
+                className="rounded-xl overflow-hidden mb-6 relative"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(10,26,51,0.95), rgba(0,25,72,0.98))",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                    "linear-gradient(135deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
+                  border: "1px solid rgba(212,175,55,0.15)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.05)",
                 }}
               >
-                {/* Cover accent */}
-                <div className="h-24 sm:h-28 relative overflow-hidden border-b border-white/10">
+                {/* Cover area */}
+                <div className="h-28 sm:h-36 relative overflow-hidden">
                   <div
                     className="absolute inset-0"
                     style={{
                       background:
-                        "linear-gradient(135deg, rgba(212,175,55,0.16), rgba(255,255,255,0.04))",
+                        "linear-gradient(180deg, #0A1A33 0%, #001948 60%, #0A1A33 100%)",
                     }}
                   />
                 </div>
 
                 {/* Avatar + info */}
-                <div className="px-6 pb-6 -mt-12 relative">
+                <div className="px-6 pb-6 -mt-12 relative z-10">
                   <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
                     <div className="relative group shrink-0">
                       <div
@@ -262,7 +297,7 @@ export default function ProfilePage() {
                       </p>
                       <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
                         <span
-                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleCfg.cls}`}
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full relative z-10 ${roleCfg.cls}`}
                         >
                           <FontAwesomeIcon
                             icon={roleCfg.icon}
@@ -295,6 +330,9 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+
+                {/* Premium wave animation at bottom */}
+                <WaveAnimation />
               </div>
             </div>
 
@@ -506,6 +544,48 @@ export default function ProfilePage() {
                   </>
                 ),
               },
+              {
+                key: "notifications",
+                title: "Notifications",
+                icon: faBell,
+                content: (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                        style={{ background: pushSubscribed ? "rgba(34,197,94,0.15)" : "rgba(100,116,139,0.15)" }}
+                      >
+                        <FontAwesomeIcon
+                          icon={pushSubscribed ? faBell : faBellSlash}
+                          className={pushSubscribed ? "text-green-400 text-sm" : "text-gray-400 text-sm"}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-gray-800 font-semibold text-sm">
+                          {pushSubscribed ? "Notifications activées" : "Notifications désactivées"}
+                        </p>
+                        <p className="text-gray-400 text-xs mt-0.5">
+                          {pushSubscribed
+                            ? "Vous recevrez des alertes même hors de l'application."
+                            : "Activez pour être informé en temps réel."}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleToggleNotifications}
+                      disabled={notifLoading}
+                      className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+                        pushSubscribed ? "bg-green-500" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-300 ${
+                          pushSubscribed ? "translate-x-6" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ),
+              },
             ].map((section, i) => (
               <div
                 key={section.key}
@@ -542,30 +622,7 @@ export default function ProfilePage() {
               </div>
             ))}
 
-            {/* Security questions link */}
-            <div className="animate-slide-up" style={{ animationDelay: "0.45s" }}>
-              <a href="/security-questions"
-                className="block rounded-2xl overflow-hidden p-5 sm:p-6 transition-all duration-200 hover:shadow-md"
-                style={{
-                  background: "white",
-                  border: "1px solid rgba(0,0,0,0.08)",
-                }}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(212,175,55,0.15)" }}>
-                    <FontAwesomeIcon icon={faLock} className="text-gold text-sm" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-800 text-sm">Questions de sécurité</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Configurer la récupération de compte</p>
-                  </div>
-                  <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </a>
-            </div>
+
           </div>
         </main>
       </div>
