@@ -217,8 +217,8 @@ export default function ArchiveGrid() {
   const totalSupports = supports.length;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 h-full min-h-0">
-      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="flex-1 min-w-0">
         <div className="flex flex-col gap-6">
           {/* Search and Filters */}
           <div className={`flex flex-col sm:flex-row gap-3 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
