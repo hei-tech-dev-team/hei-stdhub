@@ -15,8 +15,8 @@ export default function ArchivesPage() {
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         <Navbar title="Archives de cours" />
-        <div className="flex-1 overflow-hidden p-3 sm:p-4 lg:p-5">
-          <div className="h-full overflow-y-auto custom-scrollbar">
+        <div className="flex-1 lg:overflow-hidden overflow-y-auto p-3 sm:p-4 lg:p-5">
+          <div className="lg:h-full">
             <div className={`transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-navy/10 flex items-center justify-center shrink-0">
