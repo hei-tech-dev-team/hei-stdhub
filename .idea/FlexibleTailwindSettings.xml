@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.ilscipio.tailwind.settings.TailwindSettingsState">
+    <option name="expandedSnippetCategories">
+      <set>
+        <option value="buttons" />
+        <option value="layout" />
+        <option value="lists" />
+        <option value="modals" />
+        <option value="tables" />
+      </set>
+    </option>
+    <option name="previewDarkMode" value="true" />
+  </component>
+</project>
