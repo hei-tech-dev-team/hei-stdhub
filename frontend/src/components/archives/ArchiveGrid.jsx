@@ -390,7 +390,6 @@ export default function ArchiveGrid() {
               </div>
             );
           })}
-        </div>
 
         {!loading && supportsCount > 0 && (
           <div className="mt-3 pt-3 border-t border-gold/20 shrink-0">
@@ -652,6 +651,35 @@ export default function ArchiveGrid() {
                 onClick={() => handleDelete(confirmDelete)}
                 className="flex-1 bg-red-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm
                   hover:bg-red-600 transition-all duration-200"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Dialog */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-sm animate-slide-up">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <FontAwesomeIcon icon={faTrash} className="text-red-500 text-xl" />
+            </div>
+            <h3 className="font-bold text-navy text-center text-base mb-2">Supprimer ce support ?</h3>
+            <p className="text-gray-400 text-sm text-center mb-6">Cette action est irréversible.</p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-surface text-navy hover:bg-contact transition-all duration-200"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(confirmDelete)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
               >
                 Supprimer
               </button>

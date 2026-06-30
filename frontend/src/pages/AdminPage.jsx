@@ -580,14 +580,14 @@ export default function AdminPage() {
                 <div className="relative flex-1">
                   <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
                   <input
-                    className="input-field pl-10"
+                    className="w-full border border-contact rounded-xl pl-10 pr-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400"
                     placeholder="Rechercher réf., pseudo, email..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
                 <select
-                  className="input-field sm:w-40"
+                  className="border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 sm:w-40"
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
                 >
@@ -1193,7 +1193,7 @@ export default function AdminPage() {
           {tab === "annonces" && (
             <div className="flex flex-col gap-5">
               {/* Composer */}
-              <div className="bg-white rounded-2xl shadow-card p-5">
+              <div className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-navy/10 to-navy/5 flex items-center justify-center">
                     <FontAwesomeIcon icon={faNewspaper} className="text-navy text-lg" />
@@ -1206,7 +1206,7 @@ export default function AdminPage() {
 
                 <div className="flex flex-col gap-3">
                   <input
-                    className="input-field"
+                    className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400"
                     placeholder="Titre de l'annonce"
                     value={annTitle}
                     onChange={(e) => setAnnTitle(e.target.value)}
