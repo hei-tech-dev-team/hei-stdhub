@@ -217,8 +217,8 @@ export default function ArchiveGrid() {
   const totalSupports = supports.length;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 h-full">
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 h-full min-h-0">
+      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
         <div className="flex flex-col gap-6">
           {/* Search and Filters */}
           <div className={`flex flex-col sm:flex-row gap-3 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
@@ -433,27 +433,37 @@ export default function ArchiveGrid() {
       {/* Slide-out Panel */}
       {selectedUE && (
         <>
+          {/* Mobile backdrop */}
           <div
             className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-30 animate-fade-in"
             onClick={handleClosePanel}
           />
 
+          {/* Panel wrapper — mobile: centered overlay; desktop: static side panel */}
           <div
             ref={panelRef}
             className={
-              "fixed lg:static inset-x-0 bottom-0 lg:inset-auto z-40 " +
-              "lg:w-96 lg:shrink-0 " +
-              "max-h-[88vh] lg:max-h-none lg:h-full " +
-              "rounded-t-3xl lg:rounded-2xl " +
-              "bg-white/95 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,25,72,0.16)] lg:shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] " +
-              "flex flex-col " +
-              "transition-all duration-400 ease-out " +
+              "fixed inset-0 z-40 flex items-center justify-center p-4 " +
+              "lg:static lg:block lg:p-0 lg:w-96 lg:shrink-0 lg:h-full " +
+              "transition-all duration-300 ease-out " +
               (showPanel
-                ? "translate-y-0 opacity-100"
-                : "translate-y-full lg:translate-y-0 lg:opacity-100 opacity-0")
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none lg:pointer-events-auto lg:opacity-100")
             }
           >
-            {/* Panel Header */}
+            {/* Inner card — mobile: modal card; desktop: fills parent */}
+            <div className={
+              "w-full max-w-md max-h-[85vh] " +
+              "lg:max-w-none lg:max-h-none lg:h-full " +
+              "rounded-2xl " +
+              "bg-white/95 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,25,72,0.16)] lg:shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] " +
+              "flex flex-col " +
+              "transition-all duration-300 ease-out " +
+              (showPanel
+                ? "scale-100 translate-y-0"
+                : "scale-95 translate-y-4 lg:translate-y-0 lg:scale-100")
+            }
+            >
             <div className="p-5 sm:p-6 flex flex-col h-full">
               <div className="lg:hidden w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 shrink-0" />
 
@@ -629,7 +639,8 @@ export default function ArchiveGrid() {
               )}
             </div>
           </div>
-        </>
+        </div>
+      </>
       )}
 
       {/* Custom Confirm Dialog */}
