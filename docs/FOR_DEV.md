@@ -281,9 +281,9 @@ cd frontend && npm test   # Mocha/Chai (chat utils)
 
 ### Version Bumping
 ```bash
-npm run release:patch   # 1.5.6 -> 1.5.7
-npm run release:minor   # 1.5.6 -> 1.6.0
-npm run release:major   # 1.5.6 -> 2.0.0
+npm run release:patch   # 1.9.0 -> 1.9.1
+npm run release:minor   # 1.9.0 -> 1.10.0
+npm run release:major   # 1.9.0 -> 2.0.0
 ```
 
 ---
@@ -302,7 +302,7 @@ npm run release:major   # 1.5.6 -> 2.0.0
 - Glassmorphism on auth pages, chat, onboarding modal.
 
 ### Seasonal Admin Features
-- **September** (`month === 8`, 0-indexed): "Passage de classe" tab — promote L1→L2, L2→L3, L3→alumni with failed refs exclusion.
+- **September** (`month === 8`, 0-indexed): "Passage de classe" tab — promote L1→L2, L2→L3 with failed refs exclusion; "Alumni" tab — promote all L3→alumni.
 - **November** (`month === 10`, 0-indexed): "Nouveaux L1" tab — register new L1 students with auto-generated STD ref.
 
 ### BDE Workflow
