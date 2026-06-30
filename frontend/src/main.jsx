@@ -34,11 +34,21 @@ async function fetchMissedNotifications() {
     if (data && data.length > 0) {
       const unread = data.filter((n) => !n.is_read);
       if (unread.length > 0) {
+        for (const n of unread) {
+          if (!("Notification" in window) || Notification.permission !== "granted") break;
+          try {
+            new Notification(n.title || "HEI STDhub", {
+              body: n.body || "",
+              icon: "/logo.png",
+              tag: n.data?.tag || "hei-notification",
+              data: { url: n.data?.url || "/" },
+            });
+          } catch {}
+        }
         api.patch("/push/notifications/read", { ids: unread.map((n) => n.id) }).catch(() => {});
       }
     }
   } catch {
-    // Offline or not authenticated
   }
 }
 

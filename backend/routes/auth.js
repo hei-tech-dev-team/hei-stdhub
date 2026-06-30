@@ -333,15 +333,12 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
       [user.id, codeHash],
     );
 
-    try {
-      const { sendPushToUser } = require("../services/notificationService");
-      sendPushToUser(user.id, {
-        title: "Code de reinitialisation",
-        body: `Votre code: ${code}`,
-        tag: `reset-${user.id}`,
-        type: "reset-code",
-      }).catch((err) => console.error("sendPushToUser error (auth):", err?.message));
-    } catch (_) {}
+    sendPushToUser(user.id, {
+      title: "Code de reinitialisation",
+      body: `Votre code: ${code}`,
+      tag: `reset-${user.id}`,
+      type: "reset-code",
+    }).catch((err) => console.error("sendPushToUser error (auth):", err?.message));
 
     res.json({ message: "Code de verification envoye." });
   } catch (err) {
