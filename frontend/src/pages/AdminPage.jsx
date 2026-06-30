@@ -64,7 +64,7 @@ const TABS = [
 
 function StatCard({ icon, label, value, color, trend }) {
   return (
-    <div className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-5 flex items-center gap-4 group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+    <div className="bg-white rounded-2xl shadow-card p-5 flex items-center gap-4 group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color} transition-transform duration-300 group-hover:scale-110`}>
         <FontAwesomeIcon icon={icon} className="text-lg" />
       </div>
@@ -119,16 +119,14 @@ function ConfirmModal({ open, title, message, confirmLabel, confirmColor, icon, 
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-surface text-navy hover:bg-contact transition-all duration-200"
+            className="btn-primary flex-1"
           >
             Annuler
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 ${
-              confirmColor === "red" ? "bg-red-500 hover:bg-red-600" : "bg-navy hover:bg-navy-dark"
-            }`}
+            className={`${confirmColor === "red" ? "btn-danger" : "btn-primary"} flex-1`}
           >
             {confirmLabel || "Confirmer"}
           </button>
@@ -499,7 +497,7 @@ export default function AdminPage() {
 
           {/* Tabs */}
           <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-            <div className="flex gap-1.5 flex-wrap bg-white p-1.5 rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)]">
+            <div className="flex gap-1.5 flex-wrap bg-white p-1.5 rounded-2xl shadow-card">
               {allTabs.map((t) => {
                 const Icon = t.icon;
                 return (
@@ -509,8 +507,8 @@ export default function AdminPage() {
                     onClick={() => setTab(t.key)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                       tab === t.key
-                        ? "bg-navy text-white shadow-md shadow-navy/20"
-                        : "text-navy hover:bg-surface"
+                        ? "bg-gradient-to-r from-navy to-navy-dark text-white shadow-md shadow-navy/20"
+                        : "text-navy hover:bg-gold/10"
                     }`}
                   >
                     <FontAwesomeIcon icon={Icon} className="text-sm" />
@@ -525,7 +523,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setShowInvModal(true)}
-                  className="bg-white border border-contact hover:bg-surface hover:border-navy/30 rounded-xl px-4 py-2.5 text-sm font-semibold text-navy transition-all duration-200 flex items-center gap-2 shadow-sm"
+                  className="btn-primary"
                 >
                   <FontAwesomeIcon icon={faPlus} className="text-xs" />
                   <span className="hidden sm:inline">Invitation</span>
@@ -533,7 +531,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setShowBulkModal(true)}
-                  className="bg-white border border-contact hover:bg-surface hover:border-navy/30 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-600 transition-all duration-200 flex items-center gap-2 shadow-sm"
+                  className="btn-primary"
                 >
                   <FontAwesomeIcon icon={faMagic} className="text-xs" />
                   <span className="hidden sm:inline">Multiple</span>
@@ -549,14 +547,14 @@ export default function AdminPage() {
                 <div className="relative flex-1">
                   <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
                   <input
-                    className="w-full border border-contact rounded-xl pl-10 pr-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400"
+                    className="input-field pl-10"
                     placeholder="Rechercher réf., pseudo, email..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
                 <select
-                  className="border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 sm:w-40"
+                  className="input-field sm:w-40"
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
                 >
@@ -581,7 +579,7 @@ export default function AdminPage() {
               {!loading && (
                 <>
                   {/* Desktop Table */}
-                  <div className="hidden md:block bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] overflow-hidden">
+                  <div className="hidden md:block bg-white rounded-2xl shadow-card overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -682,7 +680,7 @@ export default function AdminPage() {
                   {/* Mobile Cards */}
                   <div className="md:hidden flex flex-col gap-3">
                     {users.map((u) => (
-                      <div key={u.id} className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-4 hover:shadow-md transition-shadow">
+                      <div key={u.id} className="bg-white rounded-2xl shadow-card p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-navy text-sm">{u.ref}</span>
@@ -770,7 +768,7 @@ export default function AdminPage() {
                         type="button"
                         disabled={userPage === 0}
                         onClick={() => setUserPage((p) => Math.max(0, p - 1))}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-white border border-contact text-navy hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm"
+                        className="btn-primary"
                       >
                         <FontAwesomeIcon icon={faAngleLeft} className="text-xs" />
                         Précédent
@@ -783,7 +781,7 @@ export default function AdminPage() {
                         type="button"
                         disabled={(userPage + 1) * PAGE_SIZE >= userTotal}
                         onClick={() => setUserPage((p) => p + 1)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-white border border-contact text-navy hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm"
+                        className="btn-primary"
                       >
                         Suivant
                         <FontAwesomeIcon icon={faAngleRight} className="text-xs" />
@@ -806,7 +804,7 @@ export default function AdminPage() {
 
           {/* Passage de classe */}
           {tab === "upgrade" && (
-            <div className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-6">
+            <div className="bg-white rounded-2xl shadow-card p-6">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 flex items-center justify-center shadow-sm">
                   <FontAwesomeIcon icon={faGraduationCap} className="text-xl" />
@@ -828,7 +826,7 @@ export default function AdminPage() {
 
               <div className="flex items-center gap-2 mb-4">
                 <input
-                  className="flex-1 border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400 font-mono uppercase"
+                  className="input-field font-mono uppercase"
                   placeholder="Référence STD (ex: STD25001)"
                   value={failedInput}
                   onChange={(e) => setFailedInput(e.target.value)}
@@ -839,7 +837,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={handleAddFailedRef}
-                  className="bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-navy-dark transition-all duration-200 cursor-pointer flex items-center gap-2 shrink-0"
+                  className="btn-primary"
                 >
                   <FontAwesomeIcon icon={faBan} className="text-sm" />
                   Bloquer
@@ -878,7 +876,7 @@ export default function AdminPage() {
                 type="button"
                 onClick={handleUpgrade}
                 disabled={upgradeLoading}
-                className="bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-navy-dark transition-all duration-200 cursor-pointer flex items-center gap-2 disabled:opacity-60"
+                className="btn-primary"
               >
                 {upgradeLoading ? (
                   <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
@@ -892,7 +890,7 @@ export default function AdminPage() {
 
           {/* Nouveaux L1 */}
           {tab === "new-l1" && (
-            <div className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-6">
+            <div className="bg-white rounded-2xl shadow-card p-6">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-100 to-green-50 text-green-600 flex items-center justify-center shadow-sm">
                   <FontAwesomeIcon icon={faUserPlus} className="text-xl" />
@@ -916,23 +914,23 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Prénom</label>
-                    <input className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400" placeholder="Jean" value={newL1.prenom} onChange={(e) => setNewL1((prev) => ({ ...prev, prenom: e.target.value }))} required />
+                    <input className="input-field" placeholder="Jean" value={newL1.prenom} onChange={(e) => setNewL1((prev) => ({ ...prev, prenom: e.target.value }))} required />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Nom</label>
-                    <input className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400" placeholder="Rakoto" value={newL1.nom} onChange={(e) => setNewL1((prev) => ({ ...prev, nom: e.target.value }))} required />
+                    <input className="input-field" placeholder="Rakoto" value={newL1.nom} onChange={(e) => setNewL1((prev) => ({ ...prev, nom: e.target.value }))} required />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Référence STD</label>
-                  <input className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400 font-mono tracking-widest uppercase" placeholder={`STD${currentYear}001`} value={generatedRef} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.startsWith("STD2")) setGeneratedRef(val); }} required />
+                  <input className="input-field font-mono tracking-widest uppercase" placeholder={`STD${currentYear}001`} value={generatedRef} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.startsWith("STD2")) setGeneratedRef(val); }} required />
                   <p className="text-xs text-gray-400 mt-1">Le préfixe <strong>STD2</strong> est déjà saisi. Ajoutez le chiffre de l'année puis le numéro à 3 chiffres (ex: STD26001).</p>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Email HEI</label>
-                  <input type="email" className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400" placeholder="hei.prenom.nom@gmail.com" value={newL1.email} onChange={(e) => { setNewL1((prev) => ({ ...prev, email: e.target.value })); if (emailError) setEmailError(""); }} required />
+                  <input type="email" className="input-field" placeholder="hei.prenom.nom@gmail.com" value={newL1.email} onChange={(e) => { setNewL1((prev) => ({ ...prev, email: e.target.value })); if (emailError) setEmailError(""); }} required />
                   {emailError && <p className="text-xs text-red-500 mt-1 font-medium">{emailError}</p>}
                   <p className="text-xs text-gray-400 mt-1">Format obligatoire : <strong>hei.prenom.nom@gmail.com</strong></p>
                 </div>
@@ -956,7 +954,7 @@ export default function AdminPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Lettre du groupe</label>
-                  <input className="w-full max-w-[120px] border border-contact rounded-xl px-4 py-2.5 bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 text-center text-lg font-bold tracking-widest uppercase" placeholder="N" maxLength={1} value={newL1.groupLetter} onChange={(e) => {
+                  <input className="input-field max-w-[120px] text-center text-lg font-bold tracking-widest uppercase" placeholder="N" maxLength={1} value={newL1.groupLetter} onChange={(e) => {
                     const letter = e.target.value.replace(/[^A-Za-z]/g, "").toUpperCase();
                     setNewL1((prev) => ({ ...prev, groupLetter: letter }));
                     if (letter && isLetterForbidden(letter)) {
@@ -970,7 +968,7 @@ export default function AdminPage() {
                 <button
                   type="submit"
                   disabled={registerLoading || !generatedRef.trim() || !newL1.groupLetter || !!letterError}
-                  className="bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-navy-dark transition-all duration-200 cursor-pointer flex items-center gap-2 disabled:opacity-60 mt-2 self-start"
+                  className="btn-gold mt-2 self-start"
                 >
                   {registerLoading ? (
                     <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
@@ -988,12 +986,12 @@ export default function AdminPage() {
             <div className="flex flex-col gap-3">
               {invTotal > PAGE_SIZE && (
                 <div className="flex items-center justify-center gap-4 py-2">
-                  <button type="button" disabled={invPage === 0} onClick={() => setInvPage((p) => Math.max(0, p - 1))} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-white border border-contact text-navy hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm">
+                  <button type="button" disabled={invPage === 0} onClick={() => setInvPage((p) => Math.max(0, p - 1))} className="btn-primary">
                     <FontAwesomeIcon icon={faAngleLeft} className="text-xs" />
                     Précédent
                   </button>
                   <span className="text-sm text-gray-500">Page {invPage + 1} / {Math.ceil(invTotal / PAGE_SIZE)} ({invTotal} total)</span>
-                  <button type="button" disabled={(invPage + 1) * PAGE_SIZE >= invTotal} onClick={() => setInvPage((p) => p + 1)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-white border border-contact text-navy hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm">
+                  <button type="button" disabled={(invPage + 1) * PAGE_SIZE >= invTotal} onClick={() => setInvPage((p) => p + 1)} className="btn-primary">
                     Suivant
                     <FontAwesomeIcon icon={faAngleRight} className="text-xs" />
                   </button>
@@ -1016,7 +1014,7 @@ export default function AdminPage() {
                   const full = inv.use_count >= inv.max_uses;
                   const isCopied = copiedId === inv.id;
                   return (
-                    <div key={inv.id} className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:shadow-md transition-shadow">
+                    <div key={inv.id} className="bg-white rounded-2xl shadow-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <span className="font-mono font-bold text-navy text-lg tracking-widest">{inv.code}</span>
@@ -1073,7 +1071,7 @@ export default function AdminPage() {
           {tab === "annonces" && (
             <div className="flex flex-col gap-5">
               {/* Composer */}
-              <div className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-5">
+              <div className="bg-white rounded-2xl shadow-card p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-navy/10 to-navy/5 flex items-center justify-center">
                     <FontAwesomeIcon icon={faNewspaper} className="text-navy text-lg" />
@@ -1086,13 +1084,13 @@ export default function AdminPage() {
 
                 <div className="flex flex-col gap-3">
                   <input
-                    className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400"
+                    className="input-field"
                     placeholder="Titre de l'annonce"
                     value={annTitle}
                     onChange={(e) => setAnnTitle(e.target.value)}
                   />
                   <textarea
-                    className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 placeholder:text-gray-400 min-h-[120px] resize-y"
+                    className="input-field min-h-[120px] resize-y"
                     placeholder="Contenu de l'annonce..."
                     value={annContent}
                     onChange={(e) => setAnnContent(e.target.value)}
@@ -1158,7 +1156,7 @@ export default function AdminPage() {
                       } finally { setAnnSubmitting(false); }
                     }}
                     disabled={annSubmitting || !annTitle.trim() || !annContent.trim()}
-                    className="bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-navy-dark transition-all duration-200 cursor-pointer flex items-center gap-2 disabled:opacity-60 self-start"
+                    className="btn-gold self-start"
                   >
                     {annSubmitting ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : <FontAwesomeIcon icon={faNewspaper} />}
                     Publier
@@ -1181,7 +1179,7 @@ export default function AdminPage() {
                   </div>
                 )}
                 {!annLoading && announcements.length === 0 && (
-                  <div className="text-center py-12 bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)]">
+                  <div className="text-center py-12 bg-white rounded-2xl shadow-card">
                     <div className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center mx-auto mb-3">
                       <FontAwesomeIcon icon={faNewspaper} className="text-navy/30 text-xl" />
                     </div>
@@ -1190,7 +1188,7 @@ export default function AdminPage() {
                 )}
                 <div className="flex flex-col gap-3">
                   {announcements.map((ann) => (
-                    <div key={ann.id} className="bg-white rounded-2xl shadow-[0_2px_12px_0_rgba(0,25,72,0.08)] p-4 flex items-start gap-4 hover:shadow-md transition-shadow group">
+                    <div key={ann.id} className="bg-white rounded-2xl shadow-card p-4 flex items-start gap-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 group">
                       {ann.image_url && (
                         <img src={ann.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
                       )}
@@ -1248,7 +1246,7 @@ export default function AdminPage() {
       {/* Invitation Modal */}
       {showInvModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-[0_8px_32px_0_rgba(0,25,72,0.16)] p-6 w-full max-w-sm animate-slide-up">
+      <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-sm animate-slide-up">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-navy/10 flex items-center justify-center">
@@ -1284,9 +1282,9 @@ export default function AdminPage() {
             </div>
 
             <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Utilisations max</label>
-            <input type="number" className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 mb-5" min={1} max={10000} value={invMaxUses} onChange={(e) => setInvMaxUses(Math.max(1, parseInt(e.target.value) || 1))} />
+            <input type="number" className="input-field mb-5" min={1} max={10000} value={invMaxUses} onChange={(e) => setInvMaxUses(Math.max(1, parseInt(e.target.value) || 1))} />
 
-            <button type="button" onClick={handleCreateInvitation} disabled={invLoading} className="bg-navy text-white w-full py-3 rounded-full font-semibold text-sm hover:bg-navy-dark transition-all duration-200 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2">
+            <button type="button" onClick={handleCreateInvitation} disabled={invLoading} className="btn-primary w-full justify-center">
               {invLoading ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : <><FontAwesomeIcon icon={faMagic} /> Générer le code</>}
             </button>
           </div>
@@ -1296,7 +1294,7 @@ export default function AdminPage() {
       {/* Bulk Invitation Modal */}
       {showBulkModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-[0_8px_32px_0_rgba(0,25,72,0.16)] p-6 w-full max-w-lg max-h-[85vh] flex flex-col animate-slide-up">
+          <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-lg max-h-[85vh] flex flex-col animate-slide-up">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-navy/10 flex items-center justify-center">
@@ -1329,10 +1327,10 @@ export default function AdminPage() {
                 </div>
 
                 <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Nombre de codes</label>
-                <input type="number" className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 mb-4" min={1} max={1000} value={bulkCount} onChange={(e) => setBulkCount(Math.min(1000, Math.max(1, parseInt(e.target.value) || 1)))} />
+                <input type="number" className="input-field mb-4" min={1} max={1000} value={bulkCount} onChange={(e) => setBulkCount(Math.min(1000, Math.max(1, parseInt(e.target.value) || 1)))} />
 
                 <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Utilisations max par code</label>
-                <input type="number" className="w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all duration-200 mb-6" min={1} max={10000} value={bulkMaxUses} onChange={(e) => setBulkMaxUses(Math.max(1, parseInt(e.target.value) || 1))} />
+                <input type="number" className="input-field mb-6" min={1} max={10000} value={bulkMaxUses} onChange={(e) => setBulkMaxUses(Math.max(1, parseInt(e.target.value) || 1))} />
 
                 <button type="button" onClick={async () => {
                   setBulkLoading(true); setBulkError("");
@@ -1341,7 +1339,7 @@ export default function AdminPage() {
                     setBulkCodes(data.codes); loadInvitations();
                   } catch (err) { setBulkError(err.response?.data?.error || "Erreur lors de la génération."); }
                   finally { setBulkLoading(false); }
-                }} disabled={bulkLoading} className="bg-navy text-white w-full py-3 rounded-full font-semibold text-sm hover:bg-navy-dark transition-all duration-200 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2">
+                }} disabled={bulkLoading} className="btn-primary w-full justify-center">
                   {bulkLoading ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : <><FontAwesomeIcon icon={faMagic} /> Générer {bulkCount} code{bulkCount > 1 ? "s" : ""}</>}
                 </button>
               </>
@@ -1367,12 +1365,12 @@ export default function AdminPage() {
                     navigator.clipboard.writeText(text); setAllCopied(true);
                     setTimeout(() => setAllCopied(false), 2000);
                   }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
-                    allCopied ? "bg-green-100 text-green-600 border border-green-200" : "bg-navy/10 text-navy hover:bg-navy/20 border border-transparent"
+                    allCopied ? "bg-green-100 text-green-600 border border-green-200" : "btn-primary justify-center"
                   }`}>
                     <FontAwesomeIcon icon={allCopied ? faCheck : faCopy} />
                     {allCopied ? "Tous copiés !" : "Copier tous les codes"}
                   </button>
-                  <button type="button" onClick={() => { setBulkCodes([]); setAllCopied(false); }} className="flex-1 py-3 rounded-xl text-sm font-bold bg-white text-navy border border-contact hover:bg-surface transition">
+                  <button type="button" onClick={() => { setBulkCodes([]); setAllCopied(false); }} className="btn-primary flex-1 justify-center">
                     Générer encore
                   </button>
                 </div>
