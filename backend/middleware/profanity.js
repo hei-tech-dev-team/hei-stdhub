@@ -1,3 +1,5 @@
+
+
 const PROFANITY_WORDS = new Set([
   // English - general insults
   "fuck", "fucker", "fucking", "shit", "shithead", "bullshit", "bitch", "bastard",

@@ -20,24 +20,25 @@ if (missingEnv.length > 0) {
 
 // VAPID keys — auto-generated if missing, persisted to disk across restarts
 const VAPID_KEYS_FILE = process.env.VAPID_KEYS_FILE || path.join(__dirname, ".vapid-keys.json");
+const VAPID_KEYS_FILE_FALLBACK = path.join(__dirname, "..", ".vapid-keys.json");
 
 function loadOrGenerateVapidKeys() {
-  // 1. Environment variables (production best practice)
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     console.info("VAPID keys loaded from environment variables.");
     return;
   }
-  // 2. Persistent file from a previous run
-  try {
-    const saved = JSON.parse(fs.readFileSync(VAPID_KEYS_FILE, "utf8"));
-    if (saved.publicKey && saved.privateKey) {
-      process.env.VAPID_PUBLIC_KEY = saved.publicKey;
-      process.env.VAPID_PRIVATE_KEY = saved.privateKey;
-      console.info("VAPID keys loaded from persistent file.");
-      return;
-    }
-  } catch {}
-  // 3. Generate and persist so they survive restarts
+  const candidates = [VAPID_KEYS_FILE, VAPID_KEYS_FILE_FALLBACK];
+  for (const file of candidates) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(file, "utf8"));
+      if (saved.publicKey && saved.privateKey) {
+        process.env.VAPID_PUBLIC_KEY = saved.publicKey;
+        process.env.VAPID_PRIVATE_KEY = saved.privateKey;
+        console.info("VAPID keys loaded from", file);
+        return;
+      }
+    } catch {}
+  }
   const vapidKeys = webpush.generateVAPIDKeys();
   process.env.VAPID_PUBLIC_KEY = vapidKeys.publicKey;
   process.env.VAPID_PRIVATE_KEY = vapidKeys.privateKey;

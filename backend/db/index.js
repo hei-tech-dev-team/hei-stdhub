@@ -35,9 +35,19 @@ const makePool = () => {
       };
       const hostParam = parsed.searchParams.get("host");
       if (hostParam) params.host = hostParam;
+      const sslmode = parsed.searchParams.get("sslmode");
+      if (sslmode || params.host.includes("supabase") || params.host.includes("pooler")) {
+        params.ssl = { rejectUnauthorized: false };
+      }
       return new Pool(params);
     } catch {
-      return new Pool({ connectionString: conn, max: POOL_MAX, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000 });
+      return new Pool({
+        connectionString: conn,
+        ssl: conn.includes("supabase") || conn.includes("pooler") ? { rejectUnauthorized: false } : false,
+        max: POOL_MAX,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      });
     }
   }
 
