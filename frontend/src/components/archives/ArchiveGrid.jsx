@@ -672,14 +672,14 @@ export default function ArchiveGrid() {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-surface text-navy hover:bg-contact transition-all duration-200"
+                className="btn-primary flex-1"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(confirmDelete)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
+                className="btn-danger flex-1"
               >
                 Supprimer
               </button>
