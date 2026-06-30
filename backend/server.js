@@ -5,7 +5,6 @@ const path = require("path");
 const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
-
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
@@ -65,6 +64,7 @@ const server = http.createServer(app);
 
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || "30000", 10);
 server.timeout = REQUEST_TIMEOUT;
+
 app.use((req, res, next) => {
   req.socket.setTimeout(REQUEST_TIMEOUT);
   if (req.socket.listenerCount("timeout") === 0) {
@@ -149,7 +149,6 @@ app.use(
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", loginLimiter);
 app.use("/api/auth/reset-password", loginLimiter);
-
 app.use("/api/suggestions", require("./routes/suggestions"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/posts", require("./routes/posts"));
@@ -299,7 +298,19 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create password_reset_tokens table:", err); }
 
-
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_security_questions (
+        id            SERIAL       PRIMARY KEY,
+        user_id       INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        question_key  VARCHAR(255) NOT NULL,
+        question_text TEXT         NULL,
+        answer_hash   VARCHAR(60)  NOT NULL,
+        created_at    TIMESTAMP    NOT NULL DEFAULT NOW(),
+        UNIQUE (user_id, question_key)
+      )
+    `);
+  } catch (err) { console.error("Failed to create user_security_questions table:", err); }
 
   try {
     await pool.query(`ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_role_check`);
@@ -345,6 +356,8 @@ const { pool } = require("./db");
       )
     `);
   } catch (err) { console.error("Failed to create global_chat_read table:", err); }
+
+
 
   try {
     await pool.query(`
@@ -432,9 +445,23 @@ const { pool } = require("./db");
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
-  server.listen(PORT, () =>
+  const httpServer = server.listen(PORT, () =>
     console.log(`HEI STDhub API → http://localhost:${PORT}`),
   );
+
+  // Graceful shutdown
+  const shutdown = (signal) => {
+    console.log(`${signal} received, shutting down gracefully...`);
+    httpServer.close(() => {
+      pool.end().then(() => {
+        console.log("DB pool closed.");
+        process.exit(0);
+      }).catch(() => process.exit(1));
+    });
+    setTimeout(() => process.exit(1), 10000);
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 module.exports = app;

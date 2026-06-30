@@ -174,7 +174,7 @@ export default function ChatLayout() {
       replyToContent: m.reply_to_content ?? null,
       replyToSender:  m.reply_to_sender  ?? null,
     }),
-    [user],
+    [user.id],
   );
 
   const loadMessages = useCallback(
@@ -457,7 +457,7 @@ export default function ChatLayout() {
         socket.off("unread:update");
         socket.off("typing:started");
         socket.off("typing:stopped");
-        socket.off("message:reaction"); 
+        socket.off("message:reaction");
       }
     };
   }, [user, formatMsg, fetchUnread, markSeen]);
@@ -556,7 +556,6 @@ export default function ChatLayout() {
           onSelect={handleSelectContact}
           onlineUsers={onlineUsers}
           unread={unread}
-          totalContacts={contactTotal}
           favorites={favorites}
           onToggleFavorite={toggleFavorite}
         />

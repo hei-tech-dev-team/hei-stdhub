@@ -30,7 +30,7 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
                   by_role: byRole.rows,
             });
       } catch (err) {
-            console.error("ERROR PATCH ROLE:", err.message, err.stack);
+            console.error("ERROR GET STATS:", err.message, err.stack);
             res.status(500).json({ error: "Erreur serveur." });
       }
 });

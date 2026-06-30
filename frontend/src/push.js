@@ -71,8 +71,8 @@ export async function unsubscribeFromPush() {
 
     await api.delete("/push/subscribe", { data: { endpoint: sub.endpoint } });
     await sub.unsubscribe();
-  } catch {
-    // Ignore errors on unsubscribe
+  } catch (err) {
+    console.error("unsubscribeFromPush failed:", err);
   }
 }
 
