@@ -9,6 +9,19 @@ const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
+const { sendPasswordResetEmail } = require("../services/mailer");
+const { sendPushToUser } = require("../services/notificationService");
+
+const SECURITY_QUESTIONS = [
+  { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
+  { key: "school_city", question: "Dans quelle ville se trouve votre école actuelle ?" },
+  { key: "fav_prof", question: "Quel est le nom de votre professeur préféré ?" },
+  { key: "fav_ue", question: "Quelle est votre matière/UE préférée ?" },
+  { key: "career_goal", question: "Quel est votre objectif de carrière ?" },
+  { key: "intern_company", question: "Dans quelle entreprise aimeriez-vous faire un stage ?" },
+  { key: "mentor_name", question: "Qui est votre modèle ou mentor professionnel ?" },
+  { key: "passion_hobby", question: "Quelle est votre passion en dehors des études ?" },
+];
 
 const capitalize = (str) =>
   str
@@ -183,6 +196,7 @@ router.post("/register", async (req, res) => {
     } catch (_) {}
 
     res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -222,6 +236,52 @@ router.post("/login", async (req, res) => {
   }
 });
 
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 4,
+  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  if (!email)
+    return res.status(400).json({ error: "Adresse email requise." });
+  if (email.length > 254)
+    return res.status(400).json({ error: "Adresse email trop longue." });
+
+  try {
+    const { rows } = await db.query(
+      "SELECT id, email, prenom, pseudo FROM users WHERE email=$1",
+      [email],
+    );
+
+    if (!rows.length) return res.json(genericForgotPasswordResponse);
+
+    const user = rows[0];
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashResetToken(token);
+
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL",
+      [user.id],
+    );
+
+    await db.query(
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
+      [user.id, tokenHash],
+    );
+
+    await sendPasswordResetEmail({ user, token });
+
+    res.json(genericForgotPasswordResponse);
+  } catch (err) {
+    console.error("ERREUR /auth/forgot-password:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 // Public profile by ref
 router.get("/user/:ref", auth, async (req, res) => {
   try {
@@ -236,14 +296,6 @@ router.get("/user/:ref", auth, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
   }
-});
-
-const forgotPasswordLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 4,
-  message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
 });
 
 // Generate a 6-character alphanumeric reset code
@@ -423,6 +475,13 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
       client.release();
     }
 
+    sendPushToUser(resetToken.user_id, {
+      title: "Mot de passe modifié",
+      body: "Votre mot de passe HEI STDhub a été réinitialisé avec succès.",
+      tag: "password-reset",
+      url: "/login",
+    }).catch(() => {});
+
     res.json({ message: "Mot de passe réinitialisé." });
   } catch (err) {
     console.error("ERREUR /auth/reset-password:", err);
@@ -525,7 +584,7 @@ router.patch("/avatar", auth, (req, res) => {
       );
       res.json(rows[0]);
   } catch (err) {
-      console.error("Avatar upload error:", err?.message || err);
+    console.error("Security questions save error:", err?.message || err);
     const detail = process.env.NODE_ENV === "development" ? err.message : "Erreur serveur.";
     res.status(500).json({ error: detail });
   }

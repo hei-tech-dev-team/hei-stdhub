@@ -137,7 +137,6 @@ const ContactList = memo(function ContactList({ contacts, activeId, onSelect, on
     const online = onlineUsers.has(contact.id);
     const avatarInner = (
       <>
-
         <UserAvatar
           avatar={contact.avatar}
           name={contact.name}
@@ -317,7 +316,6 @@ const ContactList = memo(function ContactList({ contacts, activeId, onSelect, on
                 <div
                   key={u.id}
                   onClick={() => handleStartConversation(u)}
-
                   role="button"
                   tabIndex={0}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 hover:bg-white/10 transition-all text-left cursor-pointer focus:outline-none focus:bg-white/5"

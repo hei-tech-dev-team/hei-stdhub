@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
-const cloudinary = require("cloudinary");
+const cloudinary = require("cloudinary").v2;
 const CloudinaryStorage = require("multer-storage-cloudinary");
 const { sendPushToUser } = require("../services/notificationService");
 const router = express.Router();
@@ -282,7 +282,6 @@ router.post("/", auth, async (req, res) => {
           pending: 1,
         });
       }
-
       sendPushToUser(receiver_id, {
         title: senderName || "Message",
         body: content.replace(/\[FILE:[^\]]+\]/g, "[Fichier]").slice(0, 200),
