@@ -823,7 +823,7 @@ export default function MessagePanel({
     try {
       await onReact?.(messageId, emoji);
     } catch(err) {
-      alert("Failed to react:", err);
+      console.error("Failed to react:", err);
     }
   }, [onReact]);
 
