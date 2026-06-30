@@ -394,7 +394,7 @@ export default function ProfilePage() {
 
         {/* ───────── Mobile layout (<lg) ───────── */}
         <main className="lg:hidden flex-1 overflow-y-auto relative">
-          <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 relative z-0">
+          <div className="max-w-2xl mx-auto w-full px-3 py-4 sm:py-6 relative z-0">
             {/* Profile header */}
             <div className={`transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
               <div className="rounded-xl overflow-hidden mb-6 relative"
