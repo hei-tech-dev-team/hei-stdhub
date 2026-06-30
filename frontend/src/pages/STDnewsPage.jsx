@@ -154,9 +154,9 @@ export default function STDnewsPage() {
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col lg:overflow-hidden overflow-y-auto">
         {/* Fixed header + filters */}
-        <div className="shrink-0 px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 lg:pt-5 pb-0">
+        <div className="lg:shrink-0 px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 lg:pt-5 pb-0">
           <div className="max-w-3xl mx-auto w-full">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-navy/10 text-navy flex items-center justify-center">
@@ -208,7 +208,7 @@ export default function STDnewsPage() {
         </div>
 
         {/* Scrollable list */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="lg:flex-1 lg:overflow-y-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="max-w-3xl mx-auto w-full">
             {loading && (
               <div className="flex justify-center py-16">
