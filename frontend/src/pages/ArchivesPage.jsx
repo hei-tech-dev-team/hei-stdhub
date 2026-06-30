@@ -43,6 +43,7 @@ export default function ArchivesPage() {
               <div className="px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-5 pb-6 sm:pb-8">
                 <ArchiveGrid />
               </div>
+              <ArchiveGrid />
             </div>
           </div>
         </div>

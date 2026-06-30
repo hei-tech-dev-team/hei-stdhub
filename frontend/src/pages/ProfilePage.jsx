@@ -451,6 +451,8 @@ export default function ProfilePage() {
                 </div>
                 <WaveAnimation />
               </div>
+
+              <WaveAnimation />
             </div>
 
             {/* Mobile sections */}
