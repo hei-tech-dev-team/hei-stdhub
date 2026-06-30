@@ -24,7 +24,7 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 - **Announcements** — Admin creates announcements with optional level targeting (L1/L2/L3) and images; all users can react (like/haha/dont_like/sad)
 - **Alumni Spotlight** — Alumni share tips with images; all users can react; alumni can delete their own tips
 - **STDnews** — Combined feed of announcements + alumni spotlight with reactions
-- **Admin** — User management (search, role/email change, delete), invitation management (single + bulk up to 1000), stats dashboard with live polling, class upgrade (L1→L2, L2→L3 with failed refs), alumni upgrade (L3→alumni), next-pseudo generator, L1 registration (November), real-time user updates via Socket.IO
+- **Admin** — User management (search, role/email change, delete), invitation management (single + bulk up to 1000), stats dashboard with live polling, class upgrade (L1→L2, L2→L3, redoublants stay), alumni upgrade (L3→alumni), next-pseudo generator, L1 registration (November), real-time user updates via Socket.IO
 - **Profile** — Avatar upload (Cloudinary/local fallback), unique pseudo update, password change with current password verification
 - **User profiles** — View any user's public profile from chat; send pings from profile page
 - **UI/UX** — Glassmorphism design, smooth micro-animations, responsive mobile layout, onboarding modal with 5-step wizard + floating particles, image lightbox in chat, file upload preview, scroll-to-bottom button, infinite scroll pagination
