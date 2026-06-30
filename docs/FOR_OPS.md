@@ -205,9 +205,9 @@ psql "$DATABASE_URL" < backup_20250101.sql
 
 ```bash
 # Run from root
-npm run release:patch   # 1.5.6 → 1.5.7
-npm run release:minor   # 1.5.6 → 1.6.0
-npm run release:major   # 1.5.6 → 2.0.0
+npm run release:patch   # 1.9.0 → 1.9.1
+npm run release:minor   # 1.9.0 → 1.10.0
+npm run release:major   # 1.9.0 → 2.0.0
 ```
 
 Updates both `backend/package.json` and `frontend/package.json` simultaneously.

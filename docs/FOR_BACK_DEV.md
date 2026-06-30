@@ -135,7 +135,9 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 | PATCH `/users/:id/role` | `{ role }` | Validates against whitelist (student/teacher/admin/bde/alumni) |
 | PATCH `/users/:id/email` | `{ email }` | Validate email, update |
 | DELETE `/users/:id` | — | Cannot delete self |
-| POST `/class-upgrade` | `{ failed_refs }` | L1→L2, L2→L3, L3→alumni, skip failed refs |
+| POST `/class-upgrade` | `{ failed_refs }` or `{ failed_l1_refs, failed_l2_refs }` | L1→L2, L2→L3, skip failed refs |
+| POST `/alumni-upgrade` | — | All L3→alumni in one query |
+| GET `/next-pseudo` | — | Get next sequential pseudo (new_userX) |
 | POST `/invitations` | `{ role, max_uses? }` | Single code, 14d expiry |
 | POST `/invitations/bulk` | `{ role, count?, max_uses? }` | Up to 1000 codes, batch INSERT (100/batch) |
 | GET `/invitations` | `?limit=&offset=` | Paginated list (max 200) |

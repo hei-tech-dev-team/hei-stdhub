@@ -149,7 +149,7 @@ frontend/src/
 - Users: paginated (50/page), search + role filter, role/email change, delete
 - Invitations: paginated, create (single + bulk up to 1000), delete, copy to clipboard
 - Stats: polling every 3s via `GET /admin/stats`
-- Class upgrade: L1→L2→L3→alumni with failed refs exclusion
+- Class upgrade: L1→L2, L2→L3 with failed refs exclusion; alumni upgrade: L3→alumni
 - L1 registration: auto-generate STD ref, register via `POST /auth/register`
 - Seasonal tabs: September (month 8), November (month 10)
 
