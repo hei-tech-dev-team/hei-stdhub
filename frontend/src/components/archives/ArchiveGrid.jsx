@@ -548,6 +548,12 @@ export default function ArchiveGrid() {
     </>
   );
 
+  const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
+    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden">
+      {renderPanelContent(false)}
+    </div>
+  );
+
   return (
     <div className="flex flex-col">
       <div
