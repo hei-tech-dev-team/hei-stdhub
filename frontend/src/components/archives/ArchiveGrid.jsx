@@ -374,7 +374,7 @@ export default function ArchiveGrid() {
           {!loading && supports.map((s) => {
             const icon = getFileIcon(s.url);
             return (
-              <div key={s.id} className="group flex items-center gap-3 p-3.5 bg-white rounded-xl hover:bg-gold/[0.02] border border-contact/40 hover:border-gold/20 transition-all duration-200 shadow-sm">
+              <div key={s.id} className="group flex items-center gap-3 p-3.5 bg-white rounded-xl hover:bg-gold/[0.02] border border-contact/40 hover:border-gold/20 transition-all duration-200 shadow-sm min-w-0">
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${getFileColor(s.url)} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                   <FontAwesomeIcon icon={icon} className="text-sm" />
                 </div>
