@@ -154,20 +154,7 @@ export default function ArchiveGrid() {
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
-  }, []);
-
-  useEffect(() => {
-    const scrollContainer = panelRef.current?.closest(".overflow-y-auto");
-    if (!scrollContainer) return;
-    if (showPanel) {
-      scrollContainer.style.overflow = "hidden";
-    } else {
-      scrollContainer.style.overflow = "";
-    }
-    return () => { scrollContainer.style.overflow = ""; };
-  }, [showPanel]);
-
-  useEffect(() => {
+  }, []);  useEffect(() => {
     api.get("/custom-ues").then(({ data }) => {
       if (Array.isArray(data)) {
         const grouped = { L1: [], L2: [], L3: [] };
@@ -273,7 +260,7 @@ export default function ArchiveGrid() {
   const supportsCount = supports.length;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+    <div className="flex flex-col">
       <div className="flex-1 min-w-0">
         <div className="flex flex-col gap-6">
 
@@ -469,107 +456,95 @@ export default function ArchiveGrid() {
         </div>
       </div>
 
-      {/* Slide-out Panel */}
+      {/* Supports Modal (centered, independent of grid) */}
       {selectedUE && (
         <>
           <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 animate-fade-in lg:hidden"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 animate-fade-in"
             onClick={handleClosePanel}
           />
-
           <div
-            ref={panelRef}
-            className={
-              "fixed inset-0 z-40 " +
-              "lg:static lg:w-[28rem] lg:shrink-0 lg:block " +
-              "transition-all duration-300 ease-out " +
-              (showPanel
-                ? "translate-y-0 opacity-100"
-                : "translate-y-8 opacity-0 pointer-events-none lg:pointer-events-auto lg:translate-y-0 lg:opacity-100")
-            }
+            className="fixed inset-0 z-40 flex items-center justify-center p-4"
+            onClick={handleClosePanel}
           >
-            <div className={
-              "bg-white lg:bg-white/95 lg:backdrop-blur-xl rounded-t-3xl lg:rounded-2xl " +
-              "shadow-modal lg:shadow-card flex flex-col " +
-              "h-full lg:h-full overflow-hidden " +
-              "transition-all duration-300 ease-out " +
-              (showPanel
-                ? "scale-100"
-                : "scale-95 lg:scale-100")
-            }
+            <div
+              ref={panelRef}
+              onClick={(e) => e.stopPropagation()}
+              className={
+                "bg-white rounded-2xl shadow-modal flex flex-col w-full max-w-lg max-h-[85vh] " +
+                "transition-all duration-300 ease-out " +
+                (showPanel
+                  ? "scale-100 opacity-100"
+                  : "scale-95 opacity-0")
+              }
             >
-              {/* Mobile drag handle */}
-              <div className="lg:hidden flex justify-center pt-3 pb-1 shrink-0">
-                <div className="w-10 h-1.5 bg-gray-300 rounded-full" />
-              </div>
-
-              <div ref={panelContentRef} className="p-5 sm:p-6 flex flex-col flex-1 min-h-0">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-5 shrink-0">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+              {/* Header */}
+              <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: selectedMeta
+                        ? `linear-gradient(135deg, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"}20, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.to || "#0891b2"}10)`
+                        : "linear-gradient(135deg, rgba(223,164,8,0.2), rgba(223,164,8,0.1))",
+                    }}
+                  >
+                    <FontAwesomeIcon
+                      icon={faBookOpen}
+                      className="text-lg"
                       style={{
-                        background: selectedMeta
-                          ? `linear-gradient(135deg, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"}20, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.to || "#0891b2"}10)`
-                          : "linear-gradient(135deg, rgba(223,164,8,0.2), rgba(223,164,8,0.1))",
+                        color: selectedMeta
+                          ? LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"
+                          : "#DFA408",
                       }}
-                    >
-                      <FontAwesomeIcon
-                        icon={faBookOpen}
-                        className="text-lg"
-                        style={{
-                          color: selectedMeta
-                            ? LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"
-                            : "#DFA408",
-                        }}
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-navy text-lg leading-tight truncate">
-                        {selectedUE}
-                      </h3>
-                      <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                        <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
-                        Supports pédagogiques
-                        {supportsCount > 0 && (
-                          <span className="ml-1.5 px-2 py-0.5 rounded-full bg-navy/5 text-navy/60 text-[10px] font-bold">
-                            {supportsCount}
-                          </span>
-                        )}
-                      </p>
-                    </div>
+                    />
                   </div>
-                  <div className="flex gap-2 shrink-0 ml-3">
-                    {isTeacher && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAdd((p) => !p);
-                          setAddError("");
-                        }}
-                        className="w-9 h-9 rounded-xl bg-gold text-white flex items-center justify-center hover:opacity-80 transition-all duration-200 active:scale-90 shadow-sm"
-                        title={showAdd ? "Fermer" : "Ajouter un support"}
-                      >
-                        <FontAwesomeIcon icon={showAdd ? faTimes : faPlus} className="text-sm" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleClosePanel}
-                      className="w-9 h-9 rounded-xl bg-surface text-gray-400 flex items-center justify-center hover:bg-contact hover:text-navy transition-all duration-200 active:scale-90"
-                      title="Fermer"
-                    >
-                      <FontAwesomeIcon icon={faTimes} className="text-sm" />
-                    </button>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-navy text-lg leading-tight truncate">
+                      {selectedUE}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                      <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
+                      Supports pédagogiques
+                      {supportsCount > 0 && (
+                        <span className="ml-1.5 px-2 py-0.5 rounded-full bg-navy/5 text-navy/60 text-[10px] font-bold">
+                          {supportsCount}
+                        </span>
+                      )}
+                    </p>
                   </div>
                 </div>
+                <div className="flex gap-2 shrink-0 ml-3">
+                  {isTeacher && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAdd((p) => !p);
+                        setAddError("");
+                      }}
+                      className="w-9 h-9 rounded-xl bg-gold text-white flex items-center justify-center hover:opacity-80 transition-all duration-200 active:scale-90 shadow-sm"
+                      title={showAdd ? "Fermer" : "Ajouter un support"}
+                    >
+                      <FontAwesomeIcon icon={showAdd ? faTimes : faPlus} className="text-sm" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleClosePanel}
+                    className="w-9 h-9 rounded-xl bg-surface text-gray-400 flex items-center justify-center hover:bg-contact hover:text-navy transition-all duration-200 active:scale-90"
+                    title="Fermer"
+                  >
+                    <FontAwesomeIcon icon={faTimes} className="text-sm" />
+                  </button>
+                </div>
+              </div>
 
-                {/* Add Support Form */}
-                {isTeacher && showAdd && (
+              {/* Add Support Form */}
+              {isTeacher && showAdd && (
+                <div className="px-5 sm:px-6 pt-4 shrink-0">
                   <form
                     onSubmit={handleAdd}
-                    className="mb-5 p-4 bg-gradient-to-br from-gold/10 via-amber-50 to-transparent rounded-2xl border border-gold/20 flex flex-col gap-3 shrink-0"
+                    className="p-4 bg-gradient-to-br from-gold/10 via-amber-50 to-transparent rounded-2xl border border-gold/20 flex flex-col gap-3"
                   >
                     {addError && (
                       <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
@@ -614,9 +589,11 @@ export default function ArchiveGrid() {
                       )}
                     </button>
                   </form>
-                )}
+                </div>
+              )}
 
-                {/* Supports List */}
+              {/* Supports List */}
+              <div className="flex flex-col flex-1 min-h-0 px-5 sm:px-6 pt-4 pb-5 sm:pb-6">
                 <div className="flex flex-col gap-2 flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                   {loading && (
                     <div className="flex flex-col items-center justify-center flex-1 gap-3">
@@ -641,7 +618,7 @@ export default function ArchiveGrid() {
                     </div>
                   )}
 
-                  {!loading && supports.map((s, i) => {
+                  {!loading && supports.map((s) => {
                     const icon = getFileIcon(s.url);
                     return (
                       <div
