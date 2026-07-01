@@ -144,7 +144,6 @@ export default function ArchiveGrid() {
   const [levelFilter, setLevelFilter] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [clickOrigin, setClickOrigin] = useState({ x: 0, y: 0 });
   const panelRef = useRef(null);
 
   const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
@@ -163,15 +162,6 @@ export default function ArchiveGrid() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  useEffect(() => {
-    if (!isDesktop && showPanel) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [isDesktop, showPanel]);
 
   useEffect(() => {
     api.get("/custom-ues").then(({ data }) => {
@@ -199,14 +189,7 @@ export default function ArchiveGrid() {
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
-  const handleSelectUE = async (ue, event) => {
-    if (event?.currentTarget) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      setClickOrigin({
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-      });
-    }
+  const handleSelectUE = async (ue) => {
     setSelectedUE(ue);
     setShowAdd(false);
     setAddForm({ label: "", url: "" });
@@ -426,6 +409,12 @@ export default function ArchiveGrid() {
   );
 
   const marginRight = isDesktop && showPanel ? "calc(28rem + 1.5rem)" : "0";
+
+  const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
+    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden">
+      {renderPanelContent(false)}
+    </div>
+  );
 
   const renderPanelContent = (scrollable = true) => (
     <>
@@ -880,7 +869,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
               <button
                 key={ue}
                 type="button"
-                onClick={(e) => onSelect(ue, e)}
+                onClick={() => onSelect(ue)}
                 className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
                   transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] overflow-hidden
                   ${isSelected
@@ -958,7 +947,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
             <button
               key={ue}
               type="button"
-              onClick={(e) => onSelect(ue, e)}
+              onClick={() => onSelect(ue)}
               className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
                 transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] sm:min-h-[80px] overflow-hidden
                 ${isSelected
