@@ -144,7 +144,6 @@ export default function ArchiveGrid() {
   const [levelFilter, setLevelFilter] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [clickOrigin, setClickOrigin] = useState({ x: 0, y: 0 });
   const panelRef = useRef(null);
 
   const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
@@ -163,15 +162,6 @@ export default function ArchiveGrid() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  useEffect(() => {
-    if (!isDesktop && showPanel) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [isDesktop, showPanel]);
 
   useEffect(() => {
     api.get("/custom-ues").then(({ data }) => {
@@ -199,14 +189,7 @@ export default function ArchiveGrid() {
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
-  const handleSelectUE = async (ue, event) => {
-    if (event?.currentTarget) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      setClickOrigin({
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-      });
-    }
+  const handleSelectUE = async (ue) => {
     setSelectedUE(ue);
     setShowAdd(false);
     setAddForm({ label: "", url: "" });
@@ -284,8 +267,15 @@ export default function ArchiveGrid() {
     : null;
 
   const supportsCount = supports.length;
+  const selectedLevel = selectedUE ? effectiveUeToLevel[selectedUE] || "Autre" : null;
 
   const marginRight = isDesktop && showPanel ? "calc(28rem + 1.5rem)" : "0";
+
+  const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
+    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden">
+      {renderPanelContent(false)}
+    </div>
+  );
 
   const renderPanelContent = (scrollable = true) => (
     <>
@@ -483,6 +473,7 @@ export default function ArchiveGrid() {
                   yi={yi}
                   onSelect={handleSelectUE}
                   searchTerm={searchTerm}
+                  panelContent={selectedLevel === "Autre" ? mobilePanelContent : null}
                 />
               );
             }
@@ -504,6 +495,7 @@ export default function ArchiveGrid() {
                 yi={yi}
                 onSelect={handleSelectUE}
                 searchTerm={searchTerm}
+                panelContent={levelId === selectedLevel ? mobilePanelContent : null}
               />
             );
           })}
@@ -619,33 +611,6 @@ export default function ArchiveGrid() {
         </div>
       </div>
 
-      {/* Mobile: centered modal that zooms from the tapped card */}
-      {!isDesktop && selectedUE && (
-        <>
-          <div
-            className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-              showPanel ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-            onClick={handleClosePanel}
-          />
-          <div
-            className={`fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-              showPanel ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
-            }`}
-            style={{ transformOrigin: `${clickOrigin.x}px ${clickOrigin.y}px` }}
-            onClick={handleClosePanel}
-          >
-            <div
-              ref={panelRef}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-modal flex flex-col w-full max-w-lg"
-            >
-              {renderPanelContent(false)}
-            </div>
-          </div>
-        </>
-      )}
-
       {/* Desktop: fixed right panel (independent of grid scroll) */}
       {isDesktop && selectedUE && (
         <div
@@ -698,7 +663,7 @@ export default function ArchiveGrid() {
   );
 }
 
-function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect }) {
+function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, panelContent }) {
   if (levelId === "Autre") {
     const navylessUes = ues;
     if (navylessUes.length === 0) return null;
@@ -726,6 +691,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
             </div>
           </div>
         </div>
+        {panelContent}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3">
           {navylessUes.map((ue, ui) => {
             const isSelected = selectedUE === ue;
@@ -733,7 +699,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
               <button
                 key={ue}
                 type="button"
-                onClick={(e) => onSelect(ue, e)}
+                onClick={() => onSelect(ue)}
                 className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
                   transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] overflow-hidden
                   ${isSelected
@@ -801,6 +767,8 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
         </div>
       </div>
 
+      {panelContent}
+
       {/* UE Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3">
         {safeUes.map((ue, ui) => {
@@ -809,7 +777,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
             <button
               key={ue}
               type="button"
-              onClick={(e) => onSelect(ue, e)}
+              onClick={() => onSelect(ue)}
               className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
                 transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] sm:min-h-[80px] overflow-hidden
                 ${isSelected
