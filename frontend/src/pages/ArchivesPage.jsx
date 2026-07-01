@@ -44,7 +44,6 @@ export default function ArchivesPage() {
                 <ArchiveGrid />
               </div>
             </div>
-            <ArchiveGrid />
           </div>
         </div>
       </main>
