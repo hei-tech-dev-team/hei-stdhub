@@ -145,6 +145,7 @@ export default function ArchiveGrid() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const panelRef = useRef(null);
+  const panelContentRef = useRef(null);
 
   const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
   const effectiveUeToLevel = Object.entries(effectiveUEs).reduce((map, [level, ues]) => {
@@ -672,14 +673,16 @@ export default function ArchiveGrid() {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="btn-primary flex-1"
+                className="flex-1 bg-navy text-white px-5 py-2.5 rounded-xl font-semibold text-sm
+                  hover:bg-navy-dark transition-all duration-200"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(confirmDelete)}
-                className="btn-danger flex-1"
+                className="flex-1 bg-red-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm
+                  hover:bg-red-600 transition-all duration-200"
               >
                 Supprimer
               </button>
