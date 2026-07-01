@@ -158,6 +158,7 @@ app.use("/api/submissions", require("./routes/submissions"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/push", require("./routes/push"));
 app.use("/api/pings", require("./routes/pings"));
+app.use("/api/custom-ues", require("./routes/custom-ues"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/alumni-spotlight", require("./routes/alumniSpotlight"));
