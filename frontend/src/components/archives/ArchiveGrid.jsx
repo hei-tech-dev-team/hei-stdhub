@@ -755,7 +755,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
                 type="button"
                 onClick={() => onSelect(ue)}
                 className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
-                  transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px]
+                  transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] overflow-hidden
                   ${isSelected
                     ? "bg-navy text-white shadow-lg shadow-navy/30 scale-[1.02]"
                     : "bg-white text-navy border border-contact/40 hover:border-gray-400/50 hover:shadow-md hover:-translate-y-0.5"
@@ -770,7 +770,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
                 }`}>
                   <FontAwesomeIcon icon={faArchive} className="text-[10px]" />
                 </div>
-                <span className="relative z-10 leading-tight text-center">{ue}</span>
+                <span className="relative z-10 leading-tight text-center truncate w-full px-1">{ue}</span>
               </button>
             );
           })}
@@ -831,7 +831,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
               type="button"
               onClick={() => onSelect(ue)}
               className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
-                transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] sm:min-h-[80px]
+                transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] sm:min-h-[80px] overflow-hidden
                 ${isSelected
                   ? "bg-navy text-white shadow-lg shadow-navy/30 scale-[1.02]"
                   : "bg-white text-navy border border-contact/40 hover:shadow-md hover:-translate-y-0.5"
@@ -859,7 +859,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect })
               >
                 <FontAwesomeIcon icon={faBookOpen} className="text-[10px] sm:text-sm" />
               </div>
-              <span className="relative z-10 leading-tight text-center font-semibold">{ue}</span>
+              <span className="relative z-10 leading-tight text-center font-semibold truncate w-full px-1">{ue}</span>
             </button>
           );
         })}
