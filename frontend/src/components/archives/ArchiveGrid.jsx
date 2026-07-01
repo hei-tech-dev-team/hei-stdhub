@@ -278,7 +278,7 @@ export default function ArchiveGrid() {
 
   const marginRight = isDesktop && showPanel ? "calc(28rem + 1.5rem)" : "0";
 
-  const renderPanelContent = (scrollable = true, centered = false) => (
+  const renderPanelContent = (scrollable = true) => (
     <>
       <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
@@ -356,7 +356,7 @@ export default function ArchiveGrid() {
       )}
 
         <div className={`flex flex-col ${scrollable ? "flex-1 min-h-0" : ""} px-5 sm:px-6 pt-4 pb-5 sm:pb-6`}>
-          <div className={`flex flex-col gap-2 ${scrollable ? "flex-1 overflow-y-auto min-h-0 custom-scrollbar" : ""} ${centered ? "items-center" : ""}`}>
+          <div className={`flex flex-col gap-2 ${scrollable ? "flex-1 overflow-y-auto min-h-0 custom-scrollbar" : ""}`}>
           {loading && (
             <div className="flex flex-col items-center justify-center flex-1 gap-3">
               <FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-navy/30 text-3xl" />
@@ -631,7 +631,7 @@ export default function ArchiveGrid() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-2xl shadow-modal flex flex-col w-full max-w-lg"
             >
-              {renderPanelContent(false, true)}
+              {renderPanelContent(false)}
             </div>
           </div>
         </>
