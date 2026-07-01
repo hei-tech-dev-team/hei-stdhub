@@ -145,7 +145,6 @@ export default function ArchiveGrid() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const panelRef = useRef(null);
-  const panelContentRef = useRef(null);
 
   const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
   const effectiveUeToLevel = Object.entries(effectiveUEs).reduce((map, [level, ues]) => {
@@ -667,14 +666,16 @@ export default function ArchiveGrid() {
             <div
               ref={panelRef}
               className={
-                "fixed right-0 top-0 h-screen w-[28rem] z-40 bg-white shadow-2xl flex flex-col " +
+                "fixed right-6 top-[5.5rem] bottom-6 w-[28rem] z-40 bg-white rounded-2xl shadow-2xl flex flex-col " +
                 "transition-all duration-300 ease-out " +
                 (showPanel
                   ? "translate-x-0 opacity-100"
-                  : "translate-x-full opacity-0 pointer-events-none")
+                  : "translate-x-[calc(100%+1.5rem)] opacity-0 pointer-events-none")
               }
             >
-              {inner}
+              <div className="flex flex-col flex-1 min-h-0">
+                {inner}
+              </div>
             </div>
           );
         }
