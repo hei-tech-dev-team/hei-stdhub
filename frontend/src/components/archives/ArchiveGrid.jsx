@@ -378,9 +378,9 @@ export default function ArchiveGrid() {
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${getFileColor(s.url)} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                   <FontAwesomeIcon icon={icon} className="text-sm" />
                 </div>
-                <a href={s.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
-                  <span className="text-sm font-semibold text-navy group-hover:text-gold transition-colors duration-200 truncate min-w-0">{s.label}</span>
-                  <FontAwesomeIcon icon={faExternalLinkAlt} className="text-gray-300 text-xs shrink-0 group-hover:text-gold transition-all duration-200 opacity-0 group-hover:opacity-100" />
+                <a href={s.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 truncate text-sm font-semibold text-navy group-hover:text-gold transition-colors duration-200">
+                  {s.label}
+                  <FontAwesomeIcon icon={faExternalLinkAlt} className="ml-1 text-gray-300 group-hover:text-gold transition-all duration-200 opacity-0 group-hover:opacity-100 text-xs" />
                 </a>
                 {isTeacher && (
                   <button type="button" onClick={() => setConfirmDelete(s.id)} className="w-7 h-7 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100" title="Supprimer">
@@ -404,7 +404,7 @@ export default function ArchiveGrid() {
   );
 
   const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
-    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden min-w-0 max-w-full">
+    <div className="mb-4 bg-white rounded-2xl shadow-modal min-w-0 max-w-full overflow-hidden">
       {renderPanelContent(false)}
     </div>
   );
