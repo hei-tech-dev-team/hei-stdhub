@@ -404,7 +404,7 @@ export default function ArchiveGrid() {
   );
 
   const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
-    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden">
+    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden min-w-0 max-w-full">
       {renderPanelContent(false)}
     </div>
   );
@@ -730,7 +730,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
 
   return (
     <div
-      className={`transition-all duration-700 ease-out ${
+      className={`transition-all duration-700 ease-out overflow-x-hidden ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
       }`}
       style={{ transitionDelay: `${yi * 120}ms` }}
