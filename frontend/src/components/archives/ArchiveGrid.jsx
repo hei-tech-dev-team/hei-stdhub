@@ -157,6 +157,17 @@ export default function ArchiveGrid() {
   }, []);
 
   useEffect(() => {
+    const scrollContainer = panelRef.current?.closest(".overflow-y-auto");
+    if (!scrollContainer) return;
+    if (showPanel) {
+      scrollContainer.style.overflow = "hidden";
+    } else {
+      scrollContainer.style.overflow = "";
+    }
+    return () => { scrollContainer.style.overflow = ""; };
+  }, [showPanel]);
+
+  useEffect(() => {
     api.get("/custom-ues").then(({ data }) => {
       if (Array.isArray(data)) {
         const grouped = { L1: [], L2: [], L3: [] };
@@ -480,7 +491,7 @@ export default function ArchiveGrid() {
             <div className={
               "bg-white lg:bg-white/95 lg:backdrop-blur-xl rounded-t-3xl lg:rounded-2xl " +
               "shadow-modal lg:shadow-card flex flex-col " +
-              "h-full lg:h-full " +
+              "h-full lg:h-full overflow-hidden " +
               "transition-all duration-300 ease-out " +
               (showPanel
                 ? "scale-100"
