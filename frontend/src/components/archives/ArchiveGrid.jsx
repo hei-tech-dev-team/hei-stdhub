@@ -629,7 +629,7 @@ export default function ArchiveGrid() {
             onClick={handleClosePanel}
           />
           <div
-            className={`fixed inset-0 z-40 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
               showPanel ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
             }`}
             style={{ transformOrigin: `${clickOrigin.x}px ${clickOrigin.y}px` }}
@@ -638,7 +638,7 @@ export default function ArchiveGrid() {
             <div
               ref={panelRef}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white flex flex-col w-full h-full"
+              className="bg-white rounded-2xl shadow-modal flex flex-col w-full max-w-lg"
             >
               {renderPanelContent(false)}
             </div>
