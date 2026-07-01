@@ -148,10 +148,14 @@ export default function AdminPage() {
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
-  const [failedRefs, setFailedRefs] = useState([]);
-  const [failedInput, setFailedInput] = useState("");
+  const [failedL1Refs, setFailedL1Refs] = useState([]);
+  const [failedL1Input, setFailedL1Input] = useState("");
+  const [failedL2Refs, setFailedL2Refs] = useState([]);
+  const [failedL2Input, setFailedL2Input] = useState("");
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [upgradeDone, setUpgradeDone] = useState(false);
+  const [alumniLoading, setAlumniLoading] = useState(false);
+  const [alumniDone, setAlumniDone] = useState(false);
 
   const [newL1, setNewL1] = useState({
     nom: "", prenom: "", email: "", groupLetter: "",
@@ -353,30 +357,58 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddFailedRef = () => {
-    const ref = failedInput.trim().toUpperCase();
+  const handleAddFailedRef = (level) => {
+    const input = level === "L1" ? failedL1Input : failedL2Input;
+    const setInput = level === "L1" ? setFailedL1Input : setFailedL2Input;
+    const setRefs = level === "L1" ? setFailedL1Refs : setFailedL2Refs;
+    const refs = level === "L1" ? failedL1Refs : failedL2Refs;
+    const ref = input.trim().toUpperCase();
     if (!ref) return;
-    if (failedRefs.includes(ref)) return;
-    setFailedRefs((prev) => [...prev, ref]);
-    setFailedInput("");
+    if (refs.includes(ref)) return;
+    setRefs((prev) => [...prev, ref]);
+    setInput("");
   };
 
-  const handleRemoveFailedRef = (ref) => {
-    setFailedRefs((prev) => prev.filter((r) => r !== ref));
+  const handleRemoveFailedRef = (level, ref) => {
+    if (level === "L1") {
+      setFailedL1Refs((prev) => prev.filter((r) => r !== ref));
+    } else {
+      setFailedL2Refs((prev) => prev.filter((r) => r !== ref));
+    }
   };
 
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
-      await api.post("/admin/class-upgrade", { failed_refs: failedRefs });
+      await api.post("/admin/class-upgrade", {
+        failed_l1_refs: failedL1Refs,
+        failed_l2_refs: failedL2Refs,
+      });
       setUpgradeDone(true);
-      setFailedRefs([]);
+      setFailedL1Refs([]);
+      setFailedL1Input("");
+      setFailedL2Refs([]);
+      setFailedL2Input("");
       loadUsers();
       showToast("Passage de classe effectué !");
     } catch (err) {
-      showToast("Erreur lors du passage", "error");
+      showToast(err.response?.data?.error || "Erreur lors du passage", "error");
     } finally {
       setUpgradeLoading(false);
+    }
+  };
+
+  const handleAlumniUpgrade = async () => {
+    setAlumniLoading(true);
+    try {
+      const { data } = await api.post("/admin/alumni-upgrade");
+      setAlumniDone(true);
+      loadUsers();
+      showToast(`${data.upgraded} étudiant${data.upgraded > 1 ? "s" : ""} L3 promu${data.upgraded > 1 ? "s" : ""} Alumni !`);
+    } catch (err) {
+      showToast(err.response?.data?.error || "Erreur lors de la promotion", "error");
+    } finally {
+      setAlumniLoading(false);
     }
   };
 
@@ -431,11 +463,12 @@ export default function AdminPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const seasonalTabs = [];
-  if (isSeptember) seasonalTabs.push({ key: "upgrade", label: "Passage de classe", icon: faGraduationCap });
-  if (isNovember) seasonalTabs.push({ key: "new-l1", label: "Nouveaux L1", icon: faUserPlus });
-
-  const allTabs = [...TABS, ...seasonalTabs];
+  const allTabs = [
+    ...TABS,
+    { key: "upgrade", label: "Passage de classe", icon: faGraduationCap },
+    { key: "new-l1", label: "Nouveau étudiant", icon: faUserPlus },
+    { key: "alumni", label: "Alumni", icon: faGraduationCap },
+  ];
 
   const renderRoleBadge = (role) => {
     const cfg = ROLE_CONFIG[role];
@@ -810,9 +843,9 @@ export default function AdminPage() {
                   <FontAwesomeIcon icon={faGraduationCap} className="text-xl" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-navy text-base">Passage de classe — Septembre {now.getFullYear()}</h2>
+                  <h2 className="font-bold text-navy text-base">Passage de classe — {now.getFullYear()}</h2>
                   <p className="text-xs text-gray-400">
-                    Saisissez les étudiants qui <strong className="text-red-500">ne passent pas</strong> dans la classe supérieure. Tous les autres seront automatiquement promus.
+                    Saisissez les étudiants qui <strong className="text-red-500">redoublent</strong> leur année. Tous les autres passeront automatiquement au niveau supérieur.
                   </p>
                 </div>
               </div>
@@ -824,50 +857,90 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mb-4">
-                <input
-                  className="input-field font-mono uppercase"
-                  placeholder="Référence STD (ex: STD25001)"
-                  value={failedInput}
-                  onChange={(e) => setFailedInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") { e.preventDefault(); handleAddFailedRef(); }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddFailedRef}
-                  className="btn-primary"
-                >
-                  <FontAwesomeIcon icon={faBan} className="text-sm" />
-                  Bloquer
-                </button>
-              </div>
-
-              {failedRefs.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                    Étudiants en échec ({failedRefs.length})
-                  </p>
+              {/* L1 Redoublants */}
+              <div className="mb-5">
+                <h3 className="text-sm font-bold text-cyan-700 mb-2 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  L1 — Redoublants
+                </h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    className="input-field font-mono uppercase"
+                    placeholder="Référence STD (ex: STD25001)"
+                    value={failedL1Input}
+                    onChange={(e) => setFailedL1Input(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); handleAddFailedRef("L1"); }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddFailedRef("L1")}
+                    className="btn-primary shrink-0"
+                  >
+                    <FontAwesomeIcon icon={faBan} className="text-sm" />
+                    Redouble
+                  </button>
+                </div>
+                {failedL1Refs.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {failedRefs.map((ref) => (
+                    {failedL1Refs.map((ref) => (
                       <span key={ref} className="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full">
                         {ref}
-                        <button type="button" onClick={() => handleRemoveFailedRef(ref)} className="hover:text-red-800 transition">
+                        <button type="button" onClick={() => handleRemoveFailedRef("L1", ref)} className="hover:text-red-800 transition">
                           <FontAwesomeIcon icon={faTimes} size="xs" />
                         </button>
                       </span>
                     ))}
                   </div>
+                )}
+              </div>
+
+              {/* L2 Redoublants */}
+              <div className="mb-5">
+                <h3 className="text-sm font-bold text-violet-700 mb-2 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-violet-400" />
+                  L2 — Redoublants
+                </h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    className="input-field font-mono uppercase"
+                    placeholder="Référence STD (ex: STD25001)"
+                    value={failedL2Input}
+                    onChange={(e) => setFailedL2Input(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); handleAddFailedRef("L2"); }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddFailedRef("L2")}
+                    className="btn-primary shrink-0"
+                  >
+                    <FontAwesomeIcon icon={faBan} className="text-sm" />
+                    Redouble
+                  </button>
                 </div>
-              )}
+                {failedL2Refs.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {failedL2Refs.map((ref) => (
+                      <span key={ref} className="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full">
+                        {ref}
+                        <button type="button" onClick={() => handleRemoveFailedRef("L2", ref)} className="hover:text-red-800 transition">
+                          <FontAwesomeIcon icon={faTimes} size="xs" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
                 <div className="flex items-start gap-2">
                   <FontAwesomeIcon icon={faArrowRight} className="text-blue-500 mt-0.5" />
                   <div className="text-xs text-blue-700">
-                    Les étudiants <strong>L3</strong> qui passent deviendront <strong>AlumniHEI</strong>.<br />
-                    Les étudiants <strong>L1</strong> passeront en <strong>L2</strong>, les <strong>L2</strong> en <strong>L3</strong>.
+                    Les étudiants <strong>L1</strong> passeront en <strong>L2</strong>, les <strong>L2</strong> en <strong>L3</strong>.<br />
+                    Seuls les étudiants listés ci-dessus redoubleront leur année.
                   </div>
                 </div>
               </div>
@@ -888,7 +961,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Nouveaux L1 */}
+          {/* Nouveau étudiant */}
           {tab === "new-l1" && (
             <div className="bg-white rounded-2xl shadow-card p-6">
               <div className="flex items-center gap-3 mb-5">
@@ -896,7 +969,7 @@ export default function AdminPage() {
                   <FontAwesomeIcon icon={faUserPlus} className="text-xl" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-navy text-base">Nouveaux étudiants L1</h2>
+                  <h2 className="font-bold text-navy text-base">Nouveau étudiant</h2>
                   <p className="text-xs text-gray-400">
                     Remplissez les informations de l'étudiant. L'email, le pseudo et le mot de passe sont générés automatiquement.
                   </p>
@@ -978,6 +1051,55 @@ export default function AdminPage() {
                   Inscrire l'étudiant
                 </button>
               </form>
+            </div>
+          )}
+
+          {/* Alumni */}
+          {tab === "alumni" && (
+            <div className="bg-white rounded-2xl shadow-card p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 flex items-center justify-center shadow-sm">
+                  <FontAwesomeIcon icon={faGraduationCap} className="text-xl" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-navy text-base">Promotion Alumni</h2>
+                  <p className="text-xs text-gray-400">
+                    Tous les étudiants en <strong>L3</strong> seront promus au statut <strong>Alumni</strong> en un clic.
+                  </p>
+                </div>
+              </div>
+
+              {alumniDone && (
+                <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2 animate-slide-up">
+                  <FontAwesomeIcon icon={faCheckCircle} />
+                  Promotion Alumni effectuée avec succès !
+                </div>
+              )}
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+                <div className="flex items-start gap-2">
+                  <FontAwesomeIcon icon={faGraduationCap} className="text-amber-500 mt-0.5" />
+                  <div className="text-xs text-amber-700">
+                    Cette action est <strong>irréversible</strong>. Tous les utilisateurs ayant le niveau <strong>L3</strong> deviendront Alumni.<br />
+                    Leur rôle passera de <strong>student</strong> à <strong>alumni</strong> et leur niveau à <strong>alumni</strong>.
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAlumniUpgrade}
+                disabled={alumniLoading}
+                className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-3 rounded-xl font-bold text-sm
+                  hover:from-amber-600 hover:to-amber-700 transition-all duration-200 disabled:opacity-60 active:scale-[0.97] shadow-md shadow-amber-500/20"
+              >
+                {alumniLoading ? (
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                ) : (
+                  <FontAwesomeIcon icon={faGraduationCap} />
+                )}
+                Passer tous les L3 en Alumni
+              </button>
             </div>
           )}
 
