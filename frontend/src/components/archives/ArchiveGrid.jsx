@@ -143,6 +143,7 @@ export default function ArchiveGrid() {
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
   const panelRef = useRef(null);
   const panelContentRef = useRef(null);
 
@@ -154,7 +155,16 @@ export default function ArchiveGrid() {
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
-  }, []);  useEffect(() => {
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
     api.get("/custom-ues").then(({ data }) => {
       if (Array.isArray(data)) {
         const grouped = { L1: [], L2: [], L3: [] };
@@ -456,221 +466,246 @@ export default function ArchiveGrid() {
         </div>
       </div>
 
-      {/* Supports Modal (centered, independent of grid) */}
-      {selectedUE && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 animate-fade-in"
-            onClick={handleClosePanel}
-          />
-          <div
-            className="fixed inset-0 z-40 flex items-center justify-center p-4"
-            onClick={handleClosePanel}
-          >
-            <div
-              ref={panelRef}
-              onClick={(e) => e.stopPropagation()}
-              className={
-                "bg-white rounded-2xl shadow-modal flex flex-col w-full max-w-lg max-h-[85vh] " +
-                "transition-all duration-300 ease-out " +
-                (showPanel
-                  ? "scale-100 opacity-100"
-                  : "scale-95 opacity-0")
-              }
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+      {/* Supports Panel — centered modal on mobile, fixed right panel on desktop */}
+      {selectedUE && (() => {
+        const inner = (
+          <>
+            {/* Header */}
+            <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    background: selectedMeta
+                      ? `linear-gradient(135deg, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"}20, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.to || "#0891b2"}10)`
+                      : "linear-gradient(135deg, rgba(223,164,8,0.2), rgba(223,164,8,0.1))",
+                  }}
+                >
+                  <FontAwesomeIcon
+                    icon={faBookOpen}
+                    className="text-lg"
                     style={{
-                      background: selectedMeta
-                        ? `linear-gradient(135deg, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"}20, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.to || "#0891b2"}10)`
-                        : "linear-gradient(135deg, rgba(223,164,8,0.2), rgba(223,164,8,0.1))",
+                      color: selectedMeta
+                        ? LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"
+                        : "#DFA408",
                     }}
-                  >
-                    <FontAwesomeIcon
-                      icon={faBookOpen}
-                      className="text-lg"
-                      style={{
-                        color: selectedMeta
-                          ? LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"
-                          : "#DFA408",
-                      }}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-navy text-lg leading-tight truncate">
-                      {selectedUE}
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                      <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
-                      Supports pédagogiques
-                      {supportsCount > 0 && (
-                        <span className="ml-1.5 px-2 py-0.5 rounded-full bg-navy/5 text-navy/60 text-[10px] font-bold">
-                          {supportsCount}
-                        </span>
-                      )}
-                    </p>
-                  </div>
+                  />
                 </div>
-                <div className="flex gap-2 shrink-0 ml-3">
-                  {isTeacher && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAdd((p) => !p);
-                        setAddError("");
-                      }}
-                      className="w-9 h-9 rounded-xl bg-gold text-white flex items-center justify-center hover:opacity-80 transition-all duration-200 active:scale-90 shadow-sm"
-                      title={showAdd ? "Fermer" : "Ajouter un support"}
-                    >
-                      <FontAwesomeIcon icon={showAdd ? faTimes : faPlus} className="text-sm" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleClosePanel}
-                    className="w-9 h-9 rounded-xl bg-surface text-gray-400 flex items-center justify-center hover:bg-contact hover:text-navy transition-all duration-200 active:scale-90"
-                    title="Fermer"
-                  >
-                    <FontAwesomeIcon icon={faTimes} className="text-sm" />
-                  </button>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-navy text-lg leading-tight truncate">
+                    {selectedUE}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                    <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
+                    Supports pédagogiques
+                    {supportsCount > 0 && (
+                      <span className="ml-1.5 px-2 py-0.5 rounded-full bg-navy/5 text-navy/60 text-[10px] font-bold">
+                        {supportsCount}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
-
-              {/* Add Support Form */}
-              {isTeacher && showAdd && (
-                <div className="px-5 sm:px-6 pt-4 shrink-0">
-                  <form
-                    onSubmit={handleAdd}
-                    className="p-4 bg-gradient-to-br from-gold/10 via-amber-50 to-transparent rounded-2xl border border-gold/20 flex flex-col gap-3"
+              <div className="flex gap-2 shrink-0 ml-3">
+                {isTeacher && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAdd((p) => !p);
+                      setAddError("");
+                    }}
+                    className="w-9 h-9 rounded-xl bg-gold text-white flex items-center justify-center hover:opacity-80 transition-all duration-200 active:scale-90 shadow-sm"
+                    title={showAdd ? "Fermer" : "Ajouter un support"}
                   >
-                    {addError && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                        <p className="text-red-500 text-xs font-medium">{addError}</p>
-                      </div>
+                    <FontAwesomeIcon icon={showAdd ? faTimes : faPlus} className="text-sm" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClosePanel}
+                  className="w-9 h-9 rounded-xl bg-surface text-gray-400 flex items-center justify-center hover:bg-contact hover:text-navy transition-all duration-200 active:scale-90"
+                  title="Fermer"
+                >
+                  <FontAwesomeIcon icon={faTimes} className="text-sm" />
+                </button>
+              </div>
+            </div>
+
+            {/* Add Support Form */}
+            {isTeacher && showAdd && (
+              <div className="px-5 sm:px-6 pt-4 shrink-0">
+                <form
+                  onSubmit={handleAdd}
+                  className="p-4 bg-gradient-to-br from-gold/10 via-amber-50 to-transparent rounded-2xl border border-gold/20 flex flex-col gap-3"
+                >
+                  {addError && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      <p className="text-red-500 text-xs font-medium">{addError}</p>
+                    </div>
+                  )}
+                  <input
+                    className="w-full bg-white border border-contact/60 rounded-xl px-4 py-2.5 text-sm text-navy
+                      placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5
+                      transition-all"
+                    placeholder="Intitulé du support *"
+                    value={addForm.label}
+                    onChange={(e) => {
+                      setAdd("label", e.target.value);
+                      setAddError("");
+                    }}
+                    required
+                  />
+                  <input
+                    className="w-full bg-white border border-contact/60 rounded-xl px-4 py-2.5 text-sm text-navy
+                      placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5
+                      transition-all"
+                    placeholder="URL (https://...) *"
+                    value={addForm.url}
+                    onChange={(e) => {
+                      setAdd("url", e.target.value);
+                      setAddError("");
+                    }}
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full bg-gold text-white px-5 py-2.5 rounded-xl font-bold text-sm
+                      hover:opacity-90 transition-all duration-200 disabled:opacity-60 active:scale-[0.97]"
+                  >
+                    {saving ? (
+                      <FontAwesomeIcon icon={faCircleNotch} className="animate-spin" />
+                    ) : (
+                      "Ajouter le support"
                     )}
-                    <input
-                      className="w-full bg-white border border-contact/60 rounded-xl px-4 py-2.5 text-sm text-navy
-                        placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5
-                        transition-all"
-                      placeholder="Intitulé du support *"
-                      value={addForm.label}
-                      onChange={(e) => {
-                        setAdd("label", e.target.value);
-                        setAddError("");
-                      }}
-                      required
-                    />
-                    <input
-                      className="w-full bg-white border border-contact/60 rounded-xl px-4 py-2.5 text-sm text-navy
-                        placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5
-                        transition-all"
-                      placeholder="URL (https://...) *"
-                      value={addForm.url}
-                      onChange={(e) => {
-                        setAdd("url", e.target.value);
-                        setAddError("");
-                      }}
-                      required
-                    />
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="w-full bg-gold text-white px-5 py-2.5 rounded-xl font-bold text-sm
-                        hover:opacity-90 transition-all duration-200 disabled:opacity-60 active:scale-[0.97]"
-                    >
-                      {saving ? (
-                        <FontAwesomeIcon icon={faCircleNotch} className="animate-spin" />
-                      ) : (
-                        "Ajouter le support"
-                      )}
-                    </button>
-                  </form>
-                </div>
-              )}
+                  </button>
+                </form>
+              </div>
+            )}
 
-              {/* Supports List */}
-              <div className="flex flex-col flex-1 min-h-0 px-5 sm:px-6 pt-4 pb-5 sm:pb-6">
-                <div className="flex flex-col gap-2 flex-1 overflow-y-auto min-h-0 custom-scrollbar">
-                  {loading && (
-                    <div className="flex flex-col items-center justify-center flex-1 gap-3">
-                      <FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-navy/30 text-3xl" />
-                      <p className="text-sm text-gray-400 font-medium">Chargement des supports...</p>
-                    </div>
-                  )}
+            {/* Supports List */}
+            <div className="flex flex-col flex-1 min-h-0 px-5 sm:px-6 pt-4 pb-5 sm:pb-6">
+              <div className="flex flex-col gap-2 flex-1 overflow-y-auto min-h-0 custom-scrollbar">
+                {loading && (
+                  <div className="flex flex-col items-center justify-center flex-1 gap-3">
+                    <FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-navy/30 text-3xl" />
+                    <p className="text-sm text-gray-400 font-medium">Chargement des supports...</p>
+                  </div>
+                )}
 
-                  {!loading && supports.length === 0 && (
-                    <div className="flex flex-col items-center justify-center flex-1 text-center">
-                      <div className="relative mb-6">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center ring-1 ring-gold/10">
-                          <FontAwesomeIcon icon={faFolderOpen} className="text-gold/60 text-2xl" />
-                        </div>
+                {!loading && supports.length === 0 && (
+                  <div className="flex flex-col items-center justify-center flex-1 text-center">
+                    <div className="relative mb-6">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center ring-1 ring-gold/10">
+                        <FontAwesomeIcon icon={faFolderOpen} className="text-gold/60 text-2xl" />
                       </div>
-                      <p className="text-navy font-bold text-sm mb-1">Aucun support pour l'instant</p>
-                      <p className="text-gray-400 text-xs max-w-[220px] leading-relaxed">
-                        {isTeacher
-                          ? "Ajoutez des ressources pédagogiques pour vos étudiants."
-                          : "Les supports seront ajoutés par vos enseignants."}
-                      </p>
                     </div>
-                  )}
-
-                  {!loading && supports.map((s) => {
-                    const icon = getFileIcon(s.url);
-                    return (
-                      <div
-                        key={s.id}
-                        className="group flex items-center gap-3 p-3.5 bg-white rounded-xl hover:bg-gold/[0.02] border border-contact/40 hover:border-gold/20 transition-all duration-200 shadow-sm"
-                      >
-                        <div
-                          className={`w-9 h-9 rounded-xl bg-gradient-to-br ${getFileColor(s.url)} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}
-                        >
-                          <FontAwesomeIcon icon={icon} className="text-sm" />
-                        </div>
-                        <a
-                          href={s.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex-1 min-w-0 flex items-center gap-2"
-                        >
-                          <span className="text-sm font-semibold text-navy group-hover:text-gold transition-colors duration-200 truncate">
-                            {s.label}
-                          </span>
-                          <FontAwesomeIcon
-                            icon={faExternalLinkAlt}
-                            className="text-gray-300 text-xs shrink-0 group-hover:text-gold transition-all duration-200 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0"
-                          />
-                        </a>
-                        {isTeacher && (
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDelete(s.id)}
-                            className="w-7 h-7 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100"
-                            title="Supprimer"
-                          >
-                            <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {!loading && supportsCount > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gold/20 shrink-0">
-                    <p className="text-[11px] text-gray-400 font-medium text-center">
-                      {supportsCount} support{supportsCount > 1 ? "s" : ""}
+                    <p className="text-navy font-bold text-sm mb-1">Aucun support pour l'instant</p>
+                    <p className="text-gray-400 text-xs max-w-[220px] leading-relaxed">
+                      {isTeacher
+                        ? "Ajoutez des ressources pédagogiques pour vos étudiants."
+                        : "Les supports seront ajoutés par vos enseignants."}
                     </p>
                   </div>
                 )}
+
+                {!loading && supports.map((s) => {
+                  const icon = getFileIcon(s.url);
+                  return (
+                    <div
+                      key={s.id}
+                      className="group flex items-center gap-3 p-3.5 bg-white rounded-xl hover:bg-gold/[0.02] border border-contact/40 hover:border-gold/20 transition-all duration-200 shadow-sm"
+                    >
+                      <div
+                        className={`w-9 h-9 rounded-xl bg-gradient-to-br ${getFileColor(s.url)} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}
+                      >
+                        <FontAwesomeIcon icon={icon} className="text-sm" />
+                      </div>
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 min-w-0 flex items-center gap-2"
+                      >
+                        <span className="text-sm font-semibold text-navy group-hover:text-gold transition-colors duration-200 truncate">
+                          {s.label}
+                        </span>
+                        <FontAwesomeIcon
+                          icon={faExternalLinkAlt}
+                          className="text-gray-300 text-xs shrink-0 group-hover:text-gold transition-all duration-200 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0"
+                        />
+                      </a>
+                      {isTeacher && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(s.id)}
+                          className="w-7 h-7 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100"
+                          title="Supprimer"
+                        >
+                          <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {!loading && supportsCount > 0 && (
+                <div className="mt-3 pt-3 border-t border-gold/20 shrink-0">
+                  <p className="text-[11px] text-gray-400 font-medium text-center">
+                    {supportsCount} support{supportsCount > 1 ? "s" : ""}
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        );
+
+        if (isDesktop) {
+          return (
+            <div
+              ref={panelRef}
+              className={
+                "fixed right-0 top-0 h-screen w-[28rem] z-40 bg-white shadow-2xl flex flex-col " +
+                "transition-all duration-300 ease-out " +
+                (showPanel
+                  ? "translate-x-0 opacity-100"
+                  : "translate-x-full opacity-0 pointer-events-none")
+              }
+            >
+              {inner}
+            </div>
+          );
+        }
+
+        return (
+          <>
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 animate-fade-in"
+              onClick={handleClosePanel}
+            />
+            <div
+              className="fixed inset-0 z-40 flex items-center justify-center p-4"
+              onClick={handleClosePanel}
+            >
+              <div
+                ref={panelRef}
+                onClick={(e) => e.stopPropagation()}
+                className={
+                  "bg-white rounded-2xl shadow-modal flex flex-col w-full max-w-lg max-h-[85vh] " +
+                  "transition-all duration-300 ease-out " +
+                  (showPanel
+                    ? "scale-100 opacity-100"
+                    : "scale-95 opacity-0")
+                }
+              >
+                {inner}
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {/* Custom Confirm Dialog */}
       {confirmDelete && (
