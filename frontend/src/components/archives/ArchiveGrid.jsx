@@ -145,7 +145,6 @@ export default function ArchiveGrid() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const panelRef = useRef(null);
-  const panelContentRef = useRef(null);
 
   const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
   const effectiveUeToLevel = Object.entries(effectiveUEs).reduce((map, [level, ues]) => {
