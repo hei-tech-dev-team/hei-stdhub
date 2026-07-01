@@ -623,7 +623,7 @@ export default function ArchiveGrid() {
               : "translate-x-[calc(100%+1.5rem)] opacity-0 pointer-events-none")
           }
         >
-          <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-col flex-1 min-h-0 max-w-full overflow-hidden">
             {renderPanelContent()}
           </div>
         </div>
