@@ -85,20 +85,6 @@ const LEVEL_META = {
   },
 };
 
-const CUSTOM_UES_KEY = "archive_custom_ues";
-
-function loadCustomUes() {
-  try {
-    return JSON.parse(localStorage.getItem(CUSTOM_UES_KEY)) || {};
-  } catch {
-    return {};
-  }
-}
-
-function saveCustomUes(data) {
-  localStorage.setItem(CUSTOM_UES_KEY, JSON.stringify(data));
-}
-
 function mergeUes(hardcoded, custom) {
   const result = {};
   for (const level of ["L1", "L2", "L3"]) {
@@ -150,7 +136,7 @@ export default function ArchiveGrid() {
   const [addError, setAddError] = useState("");
   const [visible, setVisible] = useState(false);
   const [otherUes, setOtherUes] = useState([]);
-  const [customUes, setCustomUes] = useState(loadCustomUes);
+  const [customUes, setCustomUes] = useState({});
   const [showAddUE, setShowAddUE] = useState(false);
   const [addUECode, setAddUECode] = useState("");
   const [addUELevel, setAddUELevel] = useState("L1");
@@ -168,6 +154,18 @@ export default function ArchiveGrid() {
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
+  }, []);
+
+  useEffect(() => {
+    api.get("/custom-ues").then(({ data }) => {
+      if (Array.isArray(data)) {
+        const grouped = { L1: [], L2: [], L3: [] };
+        data.forEach((cu) => {
+          if (grouped[cu.level]) grouped[cu.level].push(cu.ue);
+        });
+        setCustomUes(grouped);
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -399,17 +397,24 @@ export default function ArchiveGrid() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         const code = addUECode.trim();
                         if (!code) return;
-                        const updated = { ...customUes };
-                        if (!updated[addUELevel]) updated[addUELevel] = [];
-                        if (updated[addUELevel].includes(code)) return;
-                        updated[addUELevel] = [...updated[addUELevel], code];
-                        saveCustomUes(updated);
-                        setCustomUes(updated);
-                        setAddUECode("");
-                        setShowAddUE(false);
+                        try {
+                          await api.post("/custom-ues", { ue: code, level: addUELevel });
+                          setCustomUes((prev) => {
+                            const updated = { ...prev };
+                            if (!updated[addUELevel]) updated[addUELevel] = [];
+                            if (!updated[addUELevel].includes(code)) {
+                              updated[addUELevel] = [...updated[addUELevel], code];
+                            }
+                            return updated;
+                          });
+                          setAddUECode("");
+                          setShowAddUE(false);
+                        } catch (err) {
+                          if (err.response?.status === 409) return;
+                        }
                       }}
                       className="inline-flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-bold
                         hover:bg-navy-dark transition-all duration-200 active:scale-[0.97]"

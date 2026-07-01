@@ -97,6 +97,14 @@ const ensureIndexes = async () => {
       CREATE INDEX IF NOT EXISTS idx_messages_global_id ON messages(id DESC) WHERE is_global = TRUE;
       CREATE INDEX IF NOT EXISTS idx_messages_private_pair ON messages(sender_id, receiver_id, id DESC) WHERE is_global = FALSE;
       CREATE INDEX IF NOT EXISTS idx_push_notifications_user_unread ON push_notifications(user_id, is_read) WHERE is_read = FALSE;
+      ALTER TABLE supports DROP CONSTRAINT IF EXISTS chk_support_ue;
+      CREATE TABLE IF NOT EXISTS custom_ues (
+        id         SERIAL       PRIMARY KEY,
+        ue         VARCHAR(30)  NOT NULL UNIQUE,
+        level      VARCHAR(2)   NOT NULL DEFAULT 'L1',
+        created_by INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      );
     `);
   } catch (err) {
     console.error("Failed to ensure indexes:", err.message);
