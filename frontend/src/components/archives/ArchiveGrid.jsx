@@ -492,7 +492,7 @@ export default function ArchiveGrid() {
                 <div className="w-10 h-1.5 bg-gray-300 rounded-full" />
               </div>
 
-              <div ref={panelContentRef} className="p-5 sm:p-6 flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <div ref={panelContentRef} className="p-5 sm:p-6 flex flex-col flex-1 min-h-0">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-5 shrink-0">
                   <div className="flex items-center gap-3 min-w-0">
@@ -606,7 +606,7 @@ export default function ArchiveGrid() {
                 )}
 
                 {/* Supports List */}
-                <div className="flex flex-col gap-2 flex-1">
+                <div className="flex flex-col gap-2 flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                   {loading && (
                     <div className="flex flex-col items-center justify-center flex-1 gap-3">
                       <FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-navy/30 text-3xl" />
