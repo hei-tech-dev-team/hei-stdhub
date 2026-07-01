@@ -611,7 +611,7 @@ export default function ArchiveGrid() {
               ref={panelRef}
               onClick={(e) => e.stopPropagation()}
               className={
-                "bg-white rounded-t-2xl shadow-modal flex flex-col w-full max-h-[85dvh] overflow-y-auto min-h-[30vh] " +
+                "bg-white rounded-t-2xl shadow-modal flex flex-col w-full " +
                 "transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] " +
                 (showPanel ? "translate-y-0" : "translate-y-full")
               }
