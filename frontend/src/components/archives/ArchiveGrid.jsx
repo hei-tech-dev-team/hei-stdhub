@@ -165,6 +165,15 @@ export default function ArchiveGrid() {
   }, []);
 
   useEffect(() => {
+    if (!isDesktop && showPanel) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isDesktop, showPanel]);
+
+  useEffect(() => {
     api.get("/custom-ues").then(({ data }) => {
       if (Array.isArray(data)) {
         const grouped = { L1: [], L2: [], L3: [] };
