@@ -191,11 +191,11 @@ export default function ArchiveGrid() {
 
   const handleSelectUE = async (ue) => {
     setSelectedUE(ue);
-    setShowPanel(true);
     setShowAdd(false);
     setAddForm({ label: "", url: "" });
     setAddError("");
     setLoading(true);
+    requestAnimationFrame(() => setShowPanel(true));
     try {
       const { data } = await api.get(`/supports/${ue}`);
       setSupports(Array.isArray(data) ? data : []);
