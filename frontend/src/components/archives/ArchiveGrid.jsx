@@ -404,7 +404,7 @@ export default function ArchiveGrid() {
   );
 
   const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
-    <div className="mb-4 bg-white rounded-2xl shadow-modal min-w-0 max-w-full overflow-hidden">
+    <div className="mb-4 mx-auto w-80 max-w-full bg-white rounded-2xl shadow-modal overflow-hidden">
       {renderPanelContent(false)}
     </div>
   );
