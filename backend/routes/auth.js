@@ -493,7 +493,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar
+      `SELECT id, ref, nom, prenom, email, pseudo, role, level, ues, avatar
        FROM users WHERE id=$1`,
       [req.user.id],
     );

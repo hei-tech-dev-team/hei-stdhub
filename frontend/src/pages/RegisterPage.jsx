@@ -107,7 +107,9 @@ export default function RegisterPage() {
       const { data } = await api.post("/auth/verify-invite", {
         code: form.inviteCode.trim().toUpperCase(),
       });
-      set("role", determineRegisterRole(data.role, selectedRole));
+      const finalRole = determineRegisterRole(data.role);
+      set("role", finalRole);
+      setSelectedRole(finalRole);
       setCodeVerified(true);
     } catch (err) {
       setCodeError(err.response?.data?.error || "Code invalide ou expiré.");

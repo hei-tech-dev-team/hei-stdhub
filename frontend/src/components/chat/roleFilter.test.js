@@ -37,19 +37,11 @@ describe("expandRoleFilter", () => {
 });
 
 describe("determineRegisterRole", () => {
-  it('returns "teacher" when inviteRole is "teacher"', () => {
-    expect(determineRegisterRole("teacher", false)).to.equal("teacher");
-    expect(determineRegisterRole("teacher", true)).to.equal("teacher");
-  });
-
-  it('returns "alumni" when isAlumni is true and inviteRole is not teacher', () => {
-    expect(determineRegisterRole("student", true)).to.equal("alumni");
-    expect(determineRegisterRole("alumni", true)).to.equal("alumni");
-  });
-
-  it('returns "student" when isAlumni is false and inviteRole is not teacher', () => {
-    expect(determineRegisterRole("student", false)).to.equal("student");
-    expect(determineRegisterRole("alumni", false)).to.equal("student");
+  it("returns the inviteRole as-is (code role always wins)", () => {
+    expect(determineRegisterRole("teacher")).to.equal("teacher");
+    expect(determineRegisterRole("student")).to.equal("student");
+    expect(determineRegisterRole("alumni")).to.equal("alumni");
+    expect(determineRegisterRole("admin")).to.equal("admin");
   });
 });
 
