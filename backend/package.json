@@ -28,7 +28,7 @@
     "jspdf": "^4.2.1",
     "mime-types": "^2.1.35",
     "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^2.2.1",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^9.0.1",
     "pg": "^8.19.0",
     "socket.io": "^4.8.3",
