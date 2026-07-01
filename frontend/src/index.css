@@ -162,6 +162,14 @@
     background: transparent;
   }
 
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-contact rounded-full;
   }

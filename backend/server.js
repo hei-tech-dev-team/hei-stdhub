@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config();
+require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
