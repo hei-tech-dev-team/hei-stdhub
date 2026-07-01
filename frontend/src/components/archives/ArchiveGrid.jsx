@@ -271,12 +271,6 @@ export default function ArchiveGrid() {
 
   const marginRight = isDesktop && showPanel ? "calc(28rem + 1.5rem)" : "0";
 
-  const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
-    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden">
-      {renderPanelContent(false)}
-    </div>
-  );
-
   const renderPanelContent = (scrollable = true) => (
     <>
       <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
@@ -407,6 +401,12 @@ export default function ArchiveGrid() {
         )}
       </div>
     </>
+  );
+
+  const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
+    <div className="mb-4 bg-white rounded-2xl shadow-modal overflow-hidden">
+      {renderPanelContent(false)}
+    </div>
   );
 
   return (
