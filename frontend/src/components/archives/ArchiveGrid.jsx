@@ -165,6 +165,15 @@ export default function ArchiveGrid() {
   }, []);
 
   useEffect(() => {
+    if (!isDesktop && showPanel) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isDesktop, showPanel]);
+
+  useEffect(() => {
     api.get("/custom-ues").then(({ data }) => {
       if (Array.isArray(data)) {
         const grouped = { L1: [], L2: [], L3: [] };
@@ -620,7 +629,7 @@ export default function ArchiveGrid() {
             onClick={handleClosePanel}
           />
           <div
-            className={`fixed inset-0 z-40 flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 overflow-y-auto transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
               showPanel ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
             }`}
             style={{ transformOrigin: `${clickOrigin.x}px ${clickOrigin.y}px` }}
