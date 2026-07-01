@@ -287,9 +287,9 @@ export default function ArchiveGrid() {
 
   const marginRight = isDesktop && showPanel ? "calc(28rem + 1.5rem)" : "0";
 
-  const renderPanelContent = (scrollable = true) => (
+  const renderPanelContent = (scrollable = true, compact = false) => (
     <>
-      <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
+      <div className={`flex items-start justify-between px-5 sm:px-6 ${compact ? "pt-0" : "pt-5 sm:pt-6"} pb-0 shrink-0`}>
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
@@ -364,7 +364,7 @@ export default function ArchiveGrid() {
         </div>
       )}
 
-        <div className={`flex flex-col ${scrollable ? "flex-1 min-h-0" : ""} px-5 sm:px-6 pt-4 pb-5 sm:pb-6`}>
+        <div className={`flex flex-col ${scrollable ? "flex-1 min-h-0" : ""} px-5 sm:px-6 ${compact ? "pt-0 pb-0" : "pt-4 pb-5 sm:pb-6"}`}>
           <div className={`flex flex-col gap-2 ${scrollable ? "flex-1 overflow-y-auto min-h-0 custom-scrollbar" : ""}`}>
           {loading && (
             <div className="flex flex-col items-center justify-center flex-1 gap-3">
@@ -629,7 +629,7 @@ export default function ArchiveGrid() {
             onClick={handleClosePanel}
           />
           <div
-            className={`fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 overflow-y-auto transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`fixed inset-0 z-40 flex items-center justify-center px-3 sm:px-6 overflow-y-auto transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
               showPanel ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
             }`}
             style={{ transformOrigin: `${clickOrigin.x}px ${clickOrigin.y}px` }}
@@ -640,7 +640,7 @@ export default function ArchiveGrid() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-2xl shadow-modal flex flex-col w-full max-w-lg"
             >
-              {renderPanelContent(false)}
+              {renderPanelContent(false, true)}
             </div>
           </div>
         </>
