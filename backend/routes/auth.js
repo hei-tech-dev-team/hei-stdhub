@@ -143,6 +143,10 @@ router.post("/register", async (req, res) => {
         return res
           .status(400)
           .json({ error: "Code d'invitation invalide ou expiré." });
+      if (invite.rows[0].role !== role)
+        return res
+          .status(403)
+          .json({ error: `Ce code d'invitation est réservé aux ${invite.rows[0].role === "teacher" ? "professeurs" : invite.rows[0].role === "alumni" ? "alumni" : "étudiants"}.` });
     }
 
     const existingRef = await db.query(

@@ -469,7 +469,7 @@ export default function ArchiveGrid() {
           <div
             ref={panelRef}
             className={
-              "fixed inset-x-0 bottom-0 z-40 " +
+              "fixed inset-0 z-40 " +
               "lg:static lg:w-[28rem] lg:shrink-0 lg:block " +
               "transition-all duration-300 ease-out " +
               (showPanel
@@ -480,7 +480,7 @@ export default function ArchiveGrid() {
             <div className={
               "bg-white lg:bg-white/95 lg:backdrop-blur-xl rounded-t-3xl lg:rounded-2xl " +
               "shadow-modal lg:shadow-card flex flex-col " +
-              "max-h-[85vh] lg:max-h-none lg:h-full " +
+              "h-full lg:h-full " +
               "transition-all duration-300 ease-out " +
               (showPanel
                 ? "scale-100"
@@ -492,7 +492,7 @@ export default function ArchiveGrid() {
                 <div className="w-10 h-1.5 bg-gray-300 rounded-full" />
               </div>
 
-              <div ref={panelContentRef} className="p-5 sm:p-6 flex flex-col h-full overflow-hidden">
+              <div ref={panelContentRef} className="p-5 sm:p-6 flex flex-col flex-1 min-h-0 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-5 shrink-0">
                   <div className="flex items-center gap-3 min-w-0">
