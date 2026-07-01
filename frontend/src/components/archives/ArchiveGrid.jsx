@@ -492,7 +492,7 @@ export default function ArchiveGrid() {
                 <div className="w-10 h-1.5 bg-gray-300 rounded-full" />
               </div>
 
-              <div ref={panelContentRef} className="p-5 sm:p-6 flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div ref={panelContentRef} className="p-5 sm:p-6 flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-5 shrink-0">
                   <div className="flex items-center gap-3 min-w-0">
@@ -606,16 +606,16 @@ export default function ArchiveGrid() {
                 )}
 
                 {/* Supports List */}
-                <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                <div className="flex flex-col gap-2 flex-1">
                   {loading && (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="flex flex-col items-center justify-center flex-1 gap-3">
                       <FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-navy/30 text-3xl" />
                       <p className="text-sm text-gray-400 font-medium">Chargement des supports...</p>
                     </div>
                   )}
 
                   {!loading && supports.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="flex flex-col items-center justify-center flex-1 text-center">
                       <div className="relative mb-6">
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center ring-1 ring-gold/10">
                           <FontAwesomeIcon icon={faFolderOpen} className="text-gold/60 text-2xl" />
