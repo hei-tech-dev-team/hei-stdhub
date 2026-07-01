@@ -144,6 +144,7 @@ export default function ArchiveGrid() {
   const [levelFilter, setLevelFilter] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [clickOrigin, setClickOrigin] = useState({ x: 0, y: 0 });
   const panelRef = useRef(null);
 
   const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
@@ -189,7 +190,14 @@ export default function ArchiveGrid() {
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
-  const handleSelectUE = async (ue) => {
+  const handleSelectUE = async (ue, event) => {
+    if (event?.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setClickOrigin({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      });
+    }
     setSelectedUE(ue);
     setShowAdd(false);
     setAddForm({ label: "", url: "" });
@@ -410,7 +418,7 @@ export default function ArchiveGrid() {
 
   const marginRight = isDesktop && showPanel ? "calc(28rem + 1.5rem)" : "0";
 
-  const renderPanelContent = (scrollable = true) => (
+  const renderPanelContent = (scrollable = true, centered = false) => (
     <>
       <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
@@ -487,8 +495,8 @@ export default function ArchiveGrid() {
         </div>
       )}
 
-      <div className={`flex flex-col ${scrollable ? "flex-1 min-h-0" : ""} px-5 sm:px-6 pt-4 pb-5 sm:pb-6`}>
-        <div className={`flex flex-col gap-2 ${scrollable ? "flex-1 overflow-y-auto min-h-0 custom-scrollbar" : ""}`}>
+        <div className={`flex flex-col ${scrollable ? "flex-1 min-h-0" : ""} px-5 sm:px-6 pt-4 pb-5 sm:pb-6`}>
+          <div className={`flex flex-col gap-2 ${scrollable ? "flex-1 overflow-y-auto min-h-0 custom-scrollbar" : ""} ${centered ? "items-center" : ""}`}>
           {loading && (
             <div className="flex flex-col items-center justify-center flex-1 gap-3">
               <FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-navy/30 text-3xl" />
@@ -863,7 +871,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
               <button
                 key={ue}
                 type="button"
-                onClick={() => onSelect(ue)}
+                onClick={(e) => onSelect(ue, e)}
                 className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
                   transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] overflow-hidden
                   ${isSelected
@@ -941,7 +949,7 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
             <button
               key={ue}
               type="button"
-              onClick={() => onSelect(ue)}
+              onClick={(e) => onSelect(ue, e)}
               className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
                 transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] sm:min-h-[80px] overflow-hidden
                 ${isSelected
