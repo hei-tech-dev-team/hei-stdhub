@@ -143,6 +143,10 @@ router.post("/register", async (req, res) => {
         return res
           .status(400)
           .json({ error: "Code d'invitation invalide ou expiré." });
+      if (invite.rows[0].role !== role)
+        return res
+          .status(403)
+          .json({ error: `Ce code d'invitation est réservé aux ${invite.rows[0].role === "teacher" ? "professeurs" : invite.rows[0].role === "alumni" ? "alumni" : "étudiants"}.` });
     }
 
     const existingRef = await db.query(
@@ -333,15 +337,12 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
       [user.id, codeHash],
     );
 
-    try {
-      const { sendPushToUser } = require("../services/notificationService");
-      sendPushToUser(user.id, {
-        title: "Code de reinitialisation",
-        body: `Votre code: ${code}`,
-        tag: `reset-${user.id}`,
-        type: "reset-code",
-      }).catch((err) => console.error("sendPushToUser error (auth):", err?.message));
-    } catch (_) {}
+    sendPushToUser(user.id, {
+      title: "Code de reinitialisation",
+      body: `Votre code: ${code}`,
+      tag: `reset-${user.id}`,
+      type: "reset-code",
+    }).catch((err) => console.error("sendPushToUser error (auth):", err?.message));
 
     res.json({ message: "Code de verification envoye." });
   } catch (err) {
@@ -492,7 +493,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, role, level, avatar
+      `SELECT id, ref, nom, prenom, email, pseudo, role, level, ues, avatar
        FROM users WHERE id=$1`,
       [req.user.id],
     );

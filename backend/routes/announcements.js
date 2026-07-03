@@ -5,7 +5,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const { sendPushToAll } = require("../services/notificationService");
+const { sendPushToAll, sendPushToLevel } = require("../services/notificationService");
 
 const router = express.Router();
 
@@ -157,13 +157,22 @@ router.post("/", auth, adminOnly, (req, res) => {
 
       res.status(201).json(result.rows[0]);
 
-      sendPushToAll({
+      const ann = result.rows[0];
+      const payload = {
         title: "Nouvelle annonce – HEI STDnews",
-        body: result.rows[0].title,
-        tag: `announcement-${result.rows[0].id}`,
+        body: ann.title,
+        tag: `announcement-${ann.id}`,
         url: "/announcements",
         type: "announcement",
-      }).catch((err) => console.error("sendPushToAll error (announcements):", err?.message));
+      };
+
+      if (ann.target_level) {
+        sendPushToLevel(ann.target_level, payload)
+          .catch((err) => console.error("sendPushToLevel error (announcements):", err?.message));
+      } else {
+        sendPushToAll(payload)
+          .catch((err) => console.error("sendPushToAll error (announcements):", err?.message));
+      }
     } catch (err) {
       console.error("Error creating announcement:", err);
       res.status(500).json({ error: "Erreur serveur." });
