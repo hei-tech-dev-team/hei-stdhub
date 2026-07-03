@@ -5,10 +5,12 @@ const path = require("path");
 const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config();
+require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
+
+const { startMessagePurgeJob } = require("./services/messagePurgeJob");
 
 // Validate critical env vars at startup
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"];
@@ -20,24 +22,25 @@ if (missingEnv.length > 0) {
 
 // VAPID keys — auto-generated if missing, persisted to disk across restarts
 const VAPID_KEYS_FILE = process.env.VAPID_KEYS_FILE || path.join(__dirname, ".vapid-keys.json");
+const VAPID_KEYS_FILE_FALLBACK = path.join(__dirname, "..", ".vapid-keys.json");
 
 function loadOrGenerateVapidKeys() {
-  // 1. Environment variables (production best practice)
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     console.info("VAPID keys loaded from environment variables.");
     return;
   }
-  // 2. Persistent file from a previous run
-  try {
-    const saved = JSON.parse(fs.readFileSync(VAPID_KEYS_FILE, "utf8"));
-    if (saved.publicKey && saved.privateKey) {
-      process.env.VAPID_PUBLIC_KEY = saved.publicKey;
-      process.env.VAPID_PRIVATE_KEY = saved.privateKey;
-      console.info("VAPID keys loaded from persistent file.");
-      return;
-    }
-  } catch {}
-  // 3. Generate and persist so they survive restarts
+  const candidates = [VAPID_KEYS_FILE, VAPID_KEYS_FILE_FALLBACK];
+  for (const file of candidates) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(file, "utf8"));
+      if (saved.publicKey && saved.privateKey) {
+        process.env.VAPID_PUBLIC_KEY = saved.publicKey;
+        process.env.VAPID_PRIVATE_KEY = saved.privateKey;
+        console.info("VAPID keys loaded from", file);
+        return;
+      }
+    } catch {}
+  }
   const vapidKeys = webpush.generateVAPIDKeys();
   process.env.VAPID_PUBLIC_KEY = vapidKeys.publicKey;
   process.env.VAPID_PRIVATE_KEY = vapidKeys.privateKey;
@@ -157,6 +160,7 @@ app.use("/api/submissions", require("./routes/submissions"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/push", require("./routes/push"));
 app.use("/api/pings", require("./routes/pings"));
+app.use("/api/custom-ues", require("./routes/custom-ues"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/alumni-spotlight", require("./routes/alumniSpotlight"));
@@ -442,6 +446,8 @@ const { pool } = require("./db");
     `);
   } catch (err) { console.error("Failed to create alumni_tip_reactions table:", err); }
 })();
+
+startMessagePurgeJob(io);
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {

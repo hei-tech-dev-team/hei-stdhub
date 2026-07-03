@@ -17,7 +17,7 @@ async function iteratorToArray(iter) {
   return arr;
 }
 
-function pushWithTimeout(subscription, payload, ms = 10000) {
+function pushWithTimeout(subscription, payload, ms = 5000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error("webpush timeout"));
@@ -61,6 +61,26 @@ async function saveNotification(userId, type, title, body, data = {}) {
   }
 }
 
+async function saveNotificationsBatch(users, type, title, body, data) {
+  if (!users.length) return;
+  try {
+    const params = [];
+    const values = [];
+    let idx = 1;
+    for (const uid of users) {
+      values.push(`($${idx}, $${idx + 1}, $${idx + 2}, $${idx + 3}, $${idx + 4})`);
+      params.push(uid, type, title, body || "", JSON.stringify(data));
+      idx += 5;
+    }
+    await db.query(
+      `INSERT INTO push_notifications (user_id, type, title, body, data) VALUES ${values.join(", ")}`,
+      params,
+    );
+  } catch (err) {
+    console.error("Failed to save notifications batch:", err.message);
+  }
+}
+
 async function sendPushToUser(userId, { title, body, tag, url, type }) {
   const data = { title, body, tag, url, icon: "/logo.png" };
   await saveNotification(userId, type || "general", title, body, data);
@@ -80,13 +100,11 @@ async function sendPushToUser(userId, { title, body, tag, url, type }) {
 }
 
 async function sendPushToAll({ title, body, tag, url, type }) {
+  const data = { title, body, tag, url, icon: "/logo.png" };
+  const notifType = type || "general";
   try {
-    const { rows: userIds } = await db.query(
-      `SELECT DISTINCT user_id FROM push_subscriptions`,
-    );
-    for (const { user_id } of userIds) {
-      await saveNotification(user_id, type || "general", title, body, { title, body, tag, url, icon: "/logo.png" });
-    }
+    const { rows: userIds } = await db.query(`SELECT id FROM users`);
+    await saveNotificationsBatch(userIds.map(r => r.id), notifType, title, body, data);
   } catch (err) {
     console.error("sendPushToAll save error:", err.message);
   }
@@ -97,11 +115,40 @@ async function sendPushToAll({ title, body, tag, url, type }) {
        FROM push_subscriptions`,
     );
     if (!rows.length) return;
-    const payload = JSON.stringify({ title, body, tag, url, icon: "/logo.png" });
+    const payload = JSON.stringify(data);
     await sendPushWithConcurrency(rows, payload);
   } catch (err) {
     console.error("sendPushToAll push error:", err.message);
   }
 }
 
-module.exports = { sendPushToUser, sendPushToAll, sendPushWithConcurrency, saveNotification };
+async function sendPushToLevel(level, { title, body, tag, url, type }) {
+  const data = { title, body, tag, url, icon: "/logo.png" };
+  const notifType = type || "general";
+  try {
+    const { rows: users } = await db.query(
+      `SELECT id FROM users WHERE level = $1`,
+      [level],
+    );
+    await saveNotificationsBatch(users.map(r => r.id), notifType, title, body, data);
+  } catch (err) {
+    console.error("sendPushToLevel save error:", err.message);
+  }
+
+  try {
+    const { rows } = await db.query(
+      `SELECT DISTINCT ON (ps.endpoint) ps.endpoint, ps.auth_key AS "auth", ps.p256dh_key AS "p256dh"
+       FROM push_subscriptions ps
+       JOIN users u ON u.id = ps.user_id
+       WHERE u.level = $1`,
+      [level],
+    );
+    if (!rows.length) return;
+    const payload = JSON.stringify(data);
+    await sendPushWithConcurrency(rows, payload);
+  } catch (err) {
+    console.error("sendPushToLevel push error:", err.message);
+  }
+}
+
+module.exports = { sendPushToUser, sendPushToAll, sendPushToLevel, sendPushWithConcurrency, saveNotification };
