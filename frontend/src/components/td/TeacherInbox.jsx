@@ -65,13 +65,17 @@ export default function TeacherInbox() {
       <div
         className="transition-all duration-700 ease-out opacity-100 translate-y-0"
       >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-navy/10 flex items-center justify-center">
-            <FontAwesomeIcon icon={faFileAlt} className="text-navy text-lg" />
-          </div>
-          <div>
-            <h3 className="font-bold text-navy text-base">Rendus des étudiants</h3>
-            <p className="text-sm text-gray-400">Consultez et téléchargez les devoirs soumis</p>
+        <div className="bg-gradient-to-br from-navy to-navy-dark rounded-2xl p-6 sm:p-8 mb-4 text-white relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex items-center gap-4 relative">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm ring-1 ring-white/20 flex items-center justify-center shrink-0">
+              <FontAwesomeIcon icon={faFileAlt} className="text-gold text-xl sm:text-2xl" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">Rendus des étudiants</h1>
+              <p className="text-white/60 text-sm mt-0.5">Consultez et téléchargez les devoirs soumis</p>
+            </div>
           </div>
         </div>
 
