@@ -36,6 +36,14 @@ api.interceptors.response.use(
       window.location.href = "/login";
     }
 
+    if (status === 503) {
+      window.location.href = "/maintenance";
+    } else if (status === 418) {
+      window.location.href = "/teapot";
+    } else if (status >= 500) {
+      window.location.href = "/server-error";
+    }
+
     if (err.code === "ECONNABORTED" && !err.response) {
       err.userMessage = "Le chargement peut varier selon la connexion, merci de patienter...";
     }
