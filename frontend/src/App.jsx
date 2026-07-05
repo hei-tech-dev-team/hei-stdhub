@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import OnboardingModal from "./components/ui/OnboardingModal";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -20,6 +21,11 @@ const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 const PingBoxPage = lazy(() => import("./pages/PingBoxPage"));
 const STDnewsPage = lazy(() => import("./pages/STDnewsPage"));
 const AlumniSpotlightPage = lazy(() => import("./pages/AlumniSpotlightPage"));
+
+const NotFound = lazy(() => import("./components/errors/NotFound"));
+const ServerError = lazy(() => import("./components/errors/ServerError"));
+const Maintenance = lazy(() => import("./components/errors/Maintenance"));
+const TeapotError = lazy(() => import("./components/errors/TeapotError"));
 
 function LoadingFallback() {
   const [slow, setSlow] = useState(false);
@@ -95,6 +101,11 @@ export default function App() {
           <Route path="/pings" element={<ProtectedRoute><PingBoxPage /></ProtectedRoute>} />
           <Route path="/stdnews" element={<ProtectedRoute><STDnewsPage /></ProtectedRoute>} />
           <Route path="/alumni-spotlight" element={<ProtectedRoute><AlumniSpotlightPage /></ProtectedRoute>} />
+
+          <Route path="/server-error" element={<ServerError />}/>
+          <Route path="/maintenance" element={<Maintenance />}/>
+          <Route path="/teapot" element={<TeapotError />}/>
+          <Route path="*" element={<NotFound />}/>
         </Routes>
       </Suspense>
       {user && firstLogin && <OnboardingModal />}

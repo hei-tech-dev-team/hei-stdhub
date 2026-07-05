@@ -238,9 +238,24 @@ router.get("/private/:userId", auth, async (req, res) => {
   }
 });
 
+// POST /purge-test —  (admin only, debug)
+router.post("/purge-test", auth, async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Réservé aux administrateurs." });
+  }
+  try {
+    const { purgeGlobalMessages } = require("../services/messagePurgeJob");
+    await purgeGlobalMessages(req.app.get("io"));
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la purge." });
+  }
+});
+
 // Send a message (global or private)
 router.post("/", auth, async (req, res) => {
-  const { receiver_id, is_global } = req.body;
+  const { receiver_id, is_global, reply_to_id = null } = req.body;
   const content = typeof req.body.content === "string" ? req.body.content : "";
   if (!content.trim()) return res.status(400).json({ error: "Message vide." });
   if (!is_global && !receiver_id)
@@ -248,22 +263,43 @@ router.post("/", auth, async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO messages (sender_id, receiver_id, content, is_global)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [req.user.id, is_global ? null : receiver_id, content, !!is_global],
+      `INSERT INTO messages (sender_id, receiver_id, content, is_global, reply_to_id)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.user.id, is_global ? null : receiver_id, content, !!is_global, reply_to_id],
     );
 
     const msg = rows[0];
 
     const { rows: userRows } = await db.query(
-      "SELECT pseudo, avatar FROM users WHERE id=$1",
+      "SELECT pseudo, avatar, ref, role FROM users WHERE id=$1",
       [req.user.id],
     );
+
+    let replyToContent = null;
+    let replyToSender  = null;
+    if (reply_to_id) {
+      const { rows: replyRows } = await db.query(
+        `SELECT rm.content, u.pseudo AS sender_pseudo
+         FROM messages rm
+         LEFT JOIN users u ON u.id = rm.sender_id
+         WHERE rm.id = $1`,
+        [reply_to_id],
+      );
+      if (replyRows.length) {
+        replyToContent = replyRows[0].content;
+        replyToSender  = replyRows[0].sender_pseudo;
+      }
+    }
 
     const fullMsg = {
       ...msg,
       sender_pseudo: userRows[0]?.pseudo || "Inconnu",
       sender_avatar: userRows[0]?.avatar || null,
+      sender_ref: userRows[0]?.ref || null,
+      sender_role: userRows[0]?.role || null,
+      reply_to_content: replyToContent,
+      reply_to_sender: replyToSender,
+      reactions: [],
     };
 
     const io = req.app.get("io");
