@@ -155,26 +155,21 @@ export default function STDnewsPage() {
     <div className="flex h-screen bg-surface overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col lg:overflow-hidden overflow-y-auto">
-        {/* Banner */}
-        <div className="bg-gradient-to-br from-navy via-navy-dark to-navy px-4 sm:px-6 lg:px-8 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-14 shrink-0">
+        {/* Fixed header + filters */}
+        <div className="lg:shrink-0 px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 lg:pt-5 pb-0">
           <div className="max-w-3xl mx-auto w-full">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 ring-1 ring-white/20">
-                <FontAwesomeIcon icon={faNewspaper} className="text-gold text-lg sm:text-xl" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-navy/10 text-navy flex items-center justify-center">
+                <FontAwesomeIcon icon={faNewspaper} className="text-base" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">STDnews</h1>
-                <p className="text-sm sm:text-base text-white/60 mt-1 font-medium">Annonces et témoignages</p>
+                <h1 className="text-lg sm:text-xl font-bold text-navy">STDnews</h1>
+                <p className="text-gray-400 text-xs">Annonces et temoignages</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Scrollable list */}
-        <div className="lg:flex-1 lg:overflow-y-auto px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-5 pb-6 sm:pb-8">
-          <div className="max-w-3xl mx-auto w-full">
-            <div className="flex items-center gap-3 pb-3 mb-3 sm:mb-4 border-b border-contact/30 flex-wrap">
-              <div className="flex items-center gap-2 text-white/70">
+            <div className="flex items-center gap-3 pb-3 border-b border-contact/30 flex-wrap">
+              <div className="flex items-center gap-2 text-navy/60">
                 <FontAwesomeIcon icon={faFilter} className="text-[10px]" />
                 <span className="text-[10px] font-bold uppercase tracking-wider">Filtrer</span>
               </div>
@@ -209,6 +204,12 @@ export default function STDnewsPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Scrollable list */}
+        <div className="lg:flex-1 lg:overflow-y-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="max-w-3xl mx-auto w-full">
             {loading && (
               <div className="flex justify-center py-16">
                 <FontAwesomeIcon icon={faSpinner} className="text-navy text-3xl animate-spin" />

@@ -50,27 +50,25 @@ export default function SuggestionPage() {
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0">
         <Navbar title="Suggestions BDE" />
-        {/* Banner */}
-        <div className="bg-gradient-to-br from-navy via-navy-dark to-navy px-4 sm:px-6 lg:px-8 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-14 shrink-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 ring-1 ring-white/20">
-                <FontAwesomeIcon icon={faLightbulb} className="text-gold text-lg sm:text-xl" />
+            {/* Header */}
+            <div className="bg-navy rounded-2xl p-6 mb-6 text-white">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center">
+                  <FontAwesomeIcon
+                    icon={faLightbulb}
+                    className="text-gold text-lg"
+                  />
+                </div>
+                <h1 className="text-lg font-bold">Boîte à idées du BDE</h1>
               </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">Boîte à idées du BDE</h1>
-                <p className="text-sm sm:text-base text-white/60 mt-1 font-medium">
-                  {isTeacher
-                    ? "En tant que professeur, vous pouvez soumettre des suggestions au BDE pour améliorer la vie à HEI. Vous recevrez un retour par email."
-                    : "Tu as une idée pour améliorer la vie étudiante à HEI ? Soumets ta suggestion au Bureau Des Étudiants. Chaque suggestion sera examinée et tu recevras un retour par email."}
-                </p>
-              </div>
+              <p className="text-white/60 text-sm leading-relaxed">
+                {isTeacher
+                  ? "En tant que professeur, vous pouvez soumettre des suggestions au BDE pour améliorer la vie à HEI. Vous recevrez un retour par email."
+                  : "Tu as une idée pour améliorer la vie étudiante à HEI ? Soumets ta suggestion au Bureau Des Étudiants. Chaque suggestion sera examinée et tu recevras un retour par email."}
+              </p>
             </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-5 pb-6 sm:pb-8">
-          <div className="max-w-2xl mx-auto">
 
             {/* Succès */}
             {submitted && (

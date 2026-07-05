@@ -77,23 +77,17 @@ export default function AlumniSpotlightPage() {
   return (
     <div className="flex min-h-screen bg-surface">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-y-auto h-screen">
-        {/* Banner */}
-        <div className="bg-gradient-to-br from-navy via-navy-dark to-navy px-4 sm:px-6 lg:px-8 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-14 shrink-0">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 ring-1 ring-white/20">
-                <FontAwesomeIcon icon={faGraduationCap} className="text-gold text-lg sm:text-xl" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">AlumniSpotlight</h1>
-                <p className="text-sm sm:text-base text-white/60 mt-1 font-medium">Partagez votre expérience HEI</p>
-              </div>
+      <main className="flex-1 overflow-y-auto h-screen">
+        <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-navy/10 text-navy flex items-center justify-center">
+              <FontAwesomeIcon icon={faGraduationCap} className="text-lg" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-navy">AlumniSpotlight</h1>
+              <p className="text-gray-400 text-sm">Partagez votre experience HEI</p>
             </div>
           </div>
-        </div>
-
-        <div className="flex-1 px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto w-full -mt-4 sm:-mt-5 pb-6 sm:pb-8">
 
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">

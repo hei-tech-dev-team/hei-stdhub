@@ -521,43 +521,40 @@ export default function BDEPage() {
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0">
         <Navbar title="Interface BDE" />
-        {/* Banner */}
-        <div className="bg-gradient-to-br from-navy via-navy-dark to-navy px-4 sm:px-6 lg:px-8 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-14 shrink-0">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 ring-1 ring-white/20">
-                <FontAwesomeIcon icon={faComments} className="text-gold text-lg sm:text-xl" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">Gestion des suggestions</h1>
-                <p className="text-sm sm:text-base text-white/60 mt-1 font-medium">
-                  Glissez-déposez les suggestions dans les colonnes, puis confirmez pour générer le rapport PDF et le partager dans le chat.
-                </p>
-              </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-xl font-bold text-navy">
+                Gestion des suggestions
+              </h1>
+              <p className="text-gray-400 text-sm mt-0.5">
+                Glissez-déposez les suggestions dans les colonnes, puis
+                confirmez pour générer le rapport PDF et le partager dans le
+                chat.
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              {done && (
+                <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200">
+                  <FontAwesomeIcon icon={faCheckCircle} />
+                  PDF téléchargé & partagé dans le chat !
+                </div>
+              )}
+              <button
+                onClick={handleConfirmAll}
+                disabled={sending}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+              >
+                {sending ? (
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                ) : (
+                  <FontAwesomeIcon icon={faFilePdf} />
+                )}
+                Confirmer & générer le rapport
+              </button>
             </div>
           </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-5 pb-6 sm:pb-8">
-          {done && (
-            <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 mb-4">
-              <FontAwesomeIcon icon={faCheckCircle} />
-              PDF téléchargé & partagé dans le chat !
-            </div>
-          )}
-
-          <button
-            onClick={handleConfirmAll}
-            disabled={sending}
-            className="w-full sm:w-auto btn-primary flex items-center gap-2 disabled:opacity-50 mb-4"
-          >
-            {sending ? (
-              <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-            ) : (
-              <FontAwesomeIcon icon={faFilePdf} />
-            )}
-            Confirmer & générer le rapport
-          </button>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4">
