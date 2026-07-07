@@ -105,7 +105,7 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "Titre, UE et type requis." });
 
   const file_name = req.file?.originalname || null;
-  const file_path = req.file?.path || null;
+  const file_path = req.file ? `uploads/${req.file.filename}` : null;
 
   if (!file_path && !link)
     return res.status(400).json({ error: "Fichier ou lien requis." });
