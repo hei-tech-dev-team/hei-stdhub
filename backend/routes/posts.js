@@ -2,23 +2,52 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
+const cloudinary = require("cloudinary").v2;
+const CloudinaryStorage = require("multer-storage-cloudinary");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const { sendPushToAll } = require("../services/notificationService");
-
 
 const router = express.Router();
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: 20 * 1024 * 1024 },
-});
+
+const useCloudinary =
+  process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+  process.env.CLOUDINARY_API_KEY?.trim() &&
+  process.env.CLOUDINARY_API_SECRET?.trim();
+
+let upload;
+if (useCloudinary) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  upload = multer({
+    storage: new CloudinaryStorage({
+      cloudinary,
+      folder: "hei-stdhub/posts",
+      allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "zip", "rar", "7z", "txt", "csv"],
+      resource_type: "raw",
+    }),
+    limits: { fileSize: 20 * 1024 * 1024 },
+  });
+} else {
+  upload = multer({
+    storage: multer.diskStorage({
+      destination: UPLOAD_DIR,
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || "";
+        const name = crypto.randomBytes(16).toString("hex") + ext;
+        cb(null, name);
+      },
+    }),
+    limits: { fileSize: 20 * 1024 * 1024 },
+  });
+}
 
 const UES_BY_LEVEL = {
   L1: [
@@ -105,7 +134,9 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "Titre, UE et type requis." });
 
   const file_name = req.file?.originalname || null;
-  const file_path = req.file?.path || null;
+  const file_path = req.file
+    ? (req.file.path?.startsWith("http") ? req.file.path : `uploads/${req.file.filename}`)
+    : null;
 
   if (!file_path && !link)
     return res.status(400).json({ error: "Fichier ou lien requis." });
@@ -140,11 +171,51 @@ router.post("/", auth, upload.single("file"), async (req, res) => {
   }
 });
 
+router.get("/:id/download", async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT * FROM posts WHERE id=$1", [req.params.id]);
+    const post = rows[0];
+
+    if (!post) return res.status(404).json({ error: "Post introuvable." });
+    if (!post.file_path) return res.status(404).json({ error: "Aucun fichier pour ce post." });
+
+    if (post.file_path.startsWith("http")) {
+      const forcedUrl = post.file_path.replace(
+        "/upload/",
+        `/upload/fl_attachment:${encodeURIComponent(post.file_name || "fichier")}/`
+      );
+      return res.redirect(forcedUrl);
+    }
+
+    const absolutePath = path.join(__dirname, "..", post.file_path);
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ error: "Fichier introuvable sur le serveur." });
+    }
+    res.download(absolutePath, post.file_name || path.basename(absolutePath));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
 router.delete("/:id", auth, async (req, res) => {
   if (!["teacher", "admin"].includes(req.user.role))
     return res.status(403).json({ error: "Accès refusé." });
   try {
+    const { rows } = await db.query("SELECT file_path FROM posts WHERE id=$1", [req.params.id]);
+    const post = rows[0];
+
     await db.query("DELETE FROM posts WHERE id=$1", [req.params.id]);
+
+    if (useCloudinary && post?.file_path?.startsWith("http")) {
+      const urlParts = post.file_path.split("/upload/");
+      if (urlParts.length === 2) {
+        const publicId = urlParts[1].replace(/^v\d+\//, "").replace(/\.[^/.]+$/, "");
+        cloudinary.uploader.destroy(publicId, { resource_type: "raw" })
+          .catch((e) => console.warn("Cloudinary delete warning:", e.message));
+      }
+    }
+
     res.json({ message: "Post supprimé." });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });

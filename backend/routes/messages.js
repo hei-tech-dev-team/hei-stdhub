@@ -239,10 +239,15 @@ router.get("/private/:userId", auth, async (req, res) => {
 });
 
 // POST /purge-test —  (admin only, debug)
+let purgeInProgress = false;
 router.post("/purge-test", auth, async (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ error: "Réservé aux administrateurs." });
   }
+  if (purgeInProgress) {
+    return res.status(429).json({ error: "Une purge est déjà en cours." });
+  }
+  purgeInProgress = true;
   try {
     const { purgeGlobalMessages } = require("../services/messagePurgeJob");
     await purgeGlobalMessages(req.app.get("io"));
@@ -250,6 +255,8 @@ router.post("/purge-test", auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors de la purge." });
+  } finally {
+    purgeInProgress = false;
   }
 });
 
