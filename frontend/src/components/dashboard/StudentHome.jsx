@@ -309,7 +309,7 @@ export default function StudentHome() {
                     </a>
                   ) : post.file_path ? (
                     <a
-                      href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${post.file_path}`}
+                      href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/posts/${post.id}/download`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs text-gold font-bold hover:text-gold-light hover:underline
