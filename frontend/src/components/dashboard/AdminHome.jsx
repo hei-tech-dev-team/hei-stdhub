@@ -10,9 +10,17 @@ import {
   faFaceSadTear,
   faPaperPlane,
   faUsers,
+  faImage,
+  faChevronLeft,
+  faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination, Navigation } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
 
 const REACTION_ICONS = {
   like: faThumbsUp,
@@ -33,6 +41,7 @@ const LEVELS = ["Tous", "L1", "L2", "L3"];
 export default function AdminHome() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [images, setImages] = useState([]);
   const [targetLevel, setTargetLevel] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
@@ -91,7 +100,9 @@ export default function AdminHome() {
       if (ann.user_reaction === reactionType) {
         await api.delete(`/announcements/${announcementId}/react`);
       } else {
-        await api.post(`/announcements/${announcementId}/react`, { reaction_type: reactionType });
+        await api.post(`/announcements/${announcementId}/react`, {
+          reaction_type: reactionType,
+        });
       }
       fetchAnnouncements();
     } catch (err) {
@@ -101,9 +112,18 @@ export default function AdminHome() {
 
   const levelBadge = (level) => {
     if (!level) return null;
-    const colors = { L1: "bg-cyan-100 text-cyan-700", L2: "bg-emerald-100 text-emerald-700", L3: "bg-amber-100 text-amber-700" };
+    const colors = {
+      L1: "bg-cyan-100 text-cyan-700",
+      L2: "bg-emerald-100 text-emerald-700",
+      L3: "bg-amber-100 text-amber-700",
+    };
     return (
-      <span className={"text-xs font-bold px-2 py-0.5 rounded-full " + (colors[level] || "bg-gray-100 text-gray-600")}>
+      <span
+        className={
+          "text-xs font-bold px-2 py-0.5 rounded-full " +
+          (colors[level] || "bg-gray-100 text-gray-600")
+        }
+      >
         {level}
       </span>
     );
@@ -120,11 +140,16 @@ export default function AdminHome() {
             <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-white/5 rounded-full blur-3xl pointer-events-none" />
             <div className="flex items-center gap-4 relative">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm ring-1 ring-white/20 flex items-center justify-center shrink-0">
-                <FontAwesomeIcon icon={faNewspaper} className="text-gold text-xl sm:text-2xl" />
+                <FontAwesomeIcon
+                  icon={faNewspaper}
+                  className="text-gold text-xl sm:text-2xl"
+                />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold">STDnews</h1>
-                <p className="text-white/60 text-sm mt-0.5">Publier et gérer les annonces</p>
+                <p className="text-white/60 text-sm mt-0.5">
+                  Publier et gérer les annonces
+                </p>
               </div>
             </div>
           </div>
@@ -141,7 +166,9 @@ export default function AdminHome() {
           ) : (
             <div className="bg-white rounded-2xl shadow-card p-5 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-navy text-base">Nouvelle annonce</h2>
+                <h2 className="font-bold text-navy text-base">
+                  Nouvelle annonce
+                </h2>
                 <button
                   onClick={() => setShowForm(false)}
                   className="text-gray-400 hover:text-navy transition text-sm font-bold"
@@ -162,7 +189,74 @@ export default function AdminHome() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                 />
+                <input
+                  type="file"
+                  className="hidden"
+                  id="fileInput"
+                  accept="image/jpeg, image/png"
+                  multiple
+                  onChange={(e) => {
+                    setImages(Array.from(e.target.files));
+                  }}
+                />
+                <label
+                  htmlFor="fileInput"
+                  className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide"
+                >
+                  {images.length > 0 ? (
+                    <span className="flex items-center gap-1">
+                      <FontAwesomeIcon icon={faImage} />
+                      Ajouter des images ({images.length} selectionnées)
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <FontAwesomeIcon icon={faImage} />
+                      Sélectionner des images (optionnel)
+                    </span>
+                  )}
+                </label>
+                {images.length > 1 && (
+                  <div className="relative">
+                    <button
+                      className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy shadow-md transition hover:bg-white"
+                      aria-label="Previous image"
+                      type="button"
+                    >
+                      <FontAwesomeIcon icon={faChevronLeft} />
+                    </button>
 
+                    <Swiper
+                      slidesPerView={1}
+                      spaceBetween={30}
+                      modules={[Pagination, Navigation]}
+                      pagination={{ clickable: true }}
+                      navigation={{
+                        prevEl: ".custom-prev",
+                        nextEl: ".custom-next",
+                      }}
+                      loop={true}
+                      className="max-w-full max-h-full"
+                    >
+                      {images.map((image) => (
+                        <SwiperSlide key={image.name}>
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={image.name}
+                            className="max-w-full max-h-full rounded-xl"
+                          />
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+
+                    <button
+                      className="custom-next absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy shadow-md transition hover:bg-white"
+                      aria-label="Next image"
+                      type="button"
+                    >
+                      <FontAwesomeIcon icon={faChevronRight} />
+                    </button>
+                  </div>
+                )}
                 {/* Level selector */}
                 <div>
                   <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
@@ -194,7 +288,10 @@ export default function AdminHome() {
                   className="btn-primary self-end flex items-center gap-2 disabled:opacity-60"
                 >
                   {submitting ? (
-                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      className="animate-spin"
+                    />
                   ) : (
                     <FontAwesomeIcon icon={faPaperPlane} />
                   )}
@@ -207,31 +304,51 @@ export default function AdminHome() {
           {/* Announcements list */}
           {loading && (
             <div className="flex justify-center py-12">
-              <FontAwesomeIcon icon={faSpinner} className="text-navy text-2xl animate-spin" />
+              <FontAwesomeIcon
+                icon={faSpinner}
+                className="text-navy text-2xl animate-spin"
+              />
             </div>
           )}
 
           {!loading && announcements.length === 0 && (
             <div className="text-center py-16">
-              <FontAwesomeIcon icon={faNewspaper} className="text-4xl text-gray-300 mb-3" />
-              <p className="text-gray-400 text-sm">Aucune annonce pour le moment.</p>
+              <FontAwesomeIcon
+                icon={faNewspaper}
+                className="text-4xl text-gray-300 mb-3"
+              />
+              <p className="text-gray-400 text-sm">
+                Aucune annonce pour le moment.
+              </p>
             </div>
           )}
 
           <div className="flex flex-col gap-4">
             {announcements.map((ann) => (
-              <div key={ann.id} className="bg-white rounded-2xl shadow-card overflow-hidden">
+              <div
+                key={ann.id}
+                className="bg-white rounded-2xl shadow-card overflow-hidden"
+              >
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h2 className="text-lg font-bold text-navy">{ann.title}</h2>
+                        <h2 className="text-lg font-bold text-navy">
+                          {ann.title}
+                        </h2>
                         {levelBadge(ann.target_level)}
                       </div>
-                      <p className="text-gray-600 text-sm whitespace-pre-wrap mb-4">{ann.content}</p>
+                      <p className="text-gray-600 text-sm whitespace-pre-wrap mb-4">
+                        {ann.content}
+                      </p>
                       <p className="text-xs text-gray-400">
-                        Publié le {new Date(ann.created_at).toLocaleDateString("fr-FR", {
-                          day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+                        Publié le{" "}
+                        {new Date(ann.created_at).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </p>
                     </div>
@@ -261,7 +378,9 @@ export default function AdminHome() {
                         >
                           <FontAwesomeIcon icon={icon} className="text-sm" />
                           <span>{count > 0 ? count : ""}</span>
-                          <span className="hidden sm:inline">{REACTION_LABELS[type]}</span>
+                          <span className="hidden sm:inline">
+                            {REACTION_LABELS[type]}
+                          </span>
                         </button>
                       );
                     })}
