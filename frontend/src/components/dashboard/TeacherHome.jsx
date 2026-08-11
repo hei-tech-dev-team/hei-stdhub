@@ -363,9 +363,6 @@ export default function TeacherHome() {
                     <span className="text-xs text-gray-400 group-hover:text-gray-500 transition-colors">
                       {post.author_pseudo}
                     </span>
-                    <span className="text-xs text-gray-300 ml-auto">
-                      {new Date(post.created_at).toLocaleDateString("fr-FR")}
-                    </span>
                   </div>
                 </div>
                 <div className="flex sm:flex-col gap-2 items-center sm:items-end justify-end">
@@ -382,7 +379,7 @@ export default function TeacherHome() {
                   )}
                   {post.file_path && (
                     <a
-                      href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/${post.file_path}`}
+                      href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/posts/${post.id}/download`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs text-gold font-bold hover:text-gold-light hover:underline transition-colors"
