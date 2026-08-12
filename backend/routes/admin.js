@@ -54,9 +54,10 @@ router.get("/users", auth, adminOnly, async (req, res) => {
 
             let countQuery = "SELECT COUNT(*) FROM users WHERE 1=1";
             let query = `
-      SELECT id, ref, nom, prenom, email, pseudo, role, level, groupe, created_at
-      FROM users WHERE 1=1
-    `;
+                  SELECT id, ref, nom, prenom, email, pseudo, role, level, groupe, COALESCE(ues, '{}') AS ues, created_at 
+                  FROM users
+                  WHERE 1=1
+            `;
             const params = [];
             if (q) {
                   params.push(`%${q}%`);
@@ -312,6 +313,30 @@ router.delete("/invitations/:id", auth, adminOnly, async (req, res) => {
             res.json({ success: true });
       } catch (err) {
             res.status(500).json({ error: "Erreur serveur." });
+      }
+});
+
+router.patch("/users/:id/ues", auth, adminOnly, async (req, res) => {
+      const { ues } = req.body;
+
+      if (!Array.isArray(ues)) {
+            return res.status(400).json({ error: "Le champ UEs doit être un tableau." });
+      }
+
+      try {
+            const { rows } = await db.query(
+                  "UPDATE users SET ues = $1, updated_at = NOW() WHERE id = $2 RETURNING id, ues",
+                  [ues, req.params.id]
+            );
+
+            if (rows.length === 0) {
+                  return res.status(404).json({ error: "Utilisateur non trouvé." });
+            }
+
+            res.json(rows[0]);
+      } catch (err) {
+            console.error("ERREUR PATCH /admin/users/:id/ues:", err);
+            res.status(500).json({ error: "Erreur serveur lors de la mise à jour des UEs." });
       }
 });
 
