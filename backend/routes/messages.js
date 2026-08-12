@@ -6,7 +6,7 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
-const CloudinaryStorage = require("multer-storage-cloudinary");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
@@ -43,21 +43,30 @@ const useCloudinary =
   process.env.CLOUDINARY_API_SECRET?.trim();
 
 let chatUpload;
+
 if (useCloudinary) {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
+
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+      const isImage = file.mimetype?.startsWith("image/");
+      return {
+        folder: "hei-stdhub/chat",
+        resource_type: isImage ? "image" : "raw",
+        public_id: `${crypto.randomBytes(16).toString("hex")}-${path.parse(file.originalname).name}`,
+      };
+    },
+  });
+
   chatUpload = multer({
-    storage: new CloudinaryStorage({
-    cloudinary,
-    folder: "hei-stdhub/chat",
-    allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "html", "css", "js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "cs", "php", "rb", "go", "rs", "json", "xml", "yaml", "yml", "csv", "txt", "md", "sh", "bat", "zip", "rar", "7z"],
-    resource_type: "raw",
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).single("file");
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }).single("file");
 } else {
   chatUpload = multer({
     storage: multer.diskStorage({
@@ -541,9 +550,13 @@ router.delete("/:id", auth, async (req, res) => {
           const fileUrl = match[1];
           const urlParts = fileUrl.split("/upload/");
           if (urlParts.length === 2) {
-            const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
-            const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
-            await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
+            const fullPath = urlParts[1].replace(/^v\d+\//, "");
+            const publicId = fullPath.replace(/\.[^/.]+$/, "");
+            
+            const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(fileUrl);
+            const resourceType = isImage ? "image" : "raw";
+
+            await cloudinary.uploader.destroy(isImage ? publicId : fullPath, { resource_type: resourceType });
           }
         } catch (e) {
           console.warn("Cloudinary delete warning:", e.message);

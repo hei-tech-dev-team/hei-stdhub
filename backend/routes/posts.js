@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const cloudinary = require("cloudinary").v2;
-const CloudinaryStorage = require("multer-storage-cloudinary");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const { sendPushToAll } = require("../services/notificationService");
@@ -26,13 +26,25 @@ if (useCloudinary) {
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
+
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+      const isImage = file.mimetype?.startsWith("image/");
+      const fileName = isImage 
+        ? path.parse(file.originalname).name 
+        : file.originalname;
+
+      return {
+        folder: "hei-stdhub/posts",
+        resource_type: isImage ? "image" : "raw",
+        public_id: `${crypto.randomBytes(16).toString("hex")}-${fileName}`,
+      };
+    },
+  });
+
   upload = multer({
-    storage: new CloudinaryStorage({
-      cloudinary,
-      folder: "hei-stdhub/posts",
-      allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "zip", "rar", "7z", "txt", "csv"],
-      resource_type: "raw",
-    }),
+    storage,
     limits: { fileSize: 20 * 1024 * 1024 },
   });
 } else {
@@ -210,8 +222,13 @@ router.delete("/:id", auth, async (req, res) => {
     if (useCloudinary && post?.file_path?.startsWith("http")) {
       const urlParts = post.file_path.split("/upload/");
       if (urlParts.length === 2) {
-        const publicId = urlParts[1].replace(/^v\d+\//, "").replace(/\.[^/.]+$/, "");
-        cloudinary.uploader.destroy(publicId, { resource_type: "raw" })
+        const fullPath = urlParts[1].replace(/^v\d+\//, "");
+        const publicId = fullPath.replace(/\.[^/.]+$/, "");
+        
+        const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(post.file_path);
+        const resourceType = isImage ? "image" : "raw";
+
+        cloudinary.uploader.destroy(isImage ? publicId : fullPath, { resource_type: resourceType })
           .catch((e) => console.warn("Cloudinary delete warning:", e.message));
       }
     }
