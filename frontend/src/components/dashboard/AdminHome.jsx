@@ -201,10 +201,10 @@ export default function AdminHome() {
                 />
                 <label
                   htmlFor="fileInput"
-                  className="text-sm font-bold mb-2 tracking-wide"
+                  className="text-xs font-bold mb-2 tracking-wide"
                 >
                   {images.length > 0 ? (
-                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full text-sm transition bg-white text-navy shadow-sm hover:border-navy">
+                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy">
                       <ImagePlus className="mr-1" />
                       Ajouter des images ({images.length} selectionnées)
                     </span>
@@ -215,7 +215,15 @@ export default function AdminHome() {
                     </span>
                   )}
                 </label>
-                {images.length > 1 && (
+                {images.length <= 1 ? (
+                  <div className="border border-navy rounded-lg flex justify-center items-center overflow-hidden">
+                    <img
+                      src={URL.createObjectURL(images[0])}
+                      alt={images[0].name}
+                      className="max-w-full max-h-96"
+                    />
+                  </div>
+                ) : (
                   <div className="relative">
                     <button
                       className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy shadow-md transition hover:bg-white"
@@ -235,17 +243,17 @@ export default function AdminHome() {
                         nextEl: ".custom-next",
                       }}
                       loop={true}
-                      className="size-full border border-navy rounded-lg flex"
+                      className="h-96 border border-navy rounded-lg"
                     >
                       {images.map((image) => (
                         <SwiperSlide
                           key={image.name}
-                          className="flex items-center justify-center"
+                          className="flex !h-full justify-center items-center overflow-hidden bg-navy"
                         >
                           <img
                             src={URL.createObjectURL(image)}
                             alt={image.name}
-                            className="max-w-full max-h-full rounded-xl"
+                            className="max-w-full h-full block object-contain mx-auto"
                           />
                         </SwiperSlide>
                       ))}
