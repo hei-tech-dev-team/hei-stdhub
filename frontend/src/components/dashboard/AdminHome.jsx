@@ -10,10 +10,10 @@ import {
   faFaceSadTear,
   faPaperPlane,
   faUsers,
-  faImage,
   faChevronLeft,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
+import { ImagePlus } from "lucide-react";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -201,17 +201,17 @@ export default function AdminHome() {
                 />
                 <label
                   htmlFor="fileInput"
-                  className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide"
+                  className="text-sm font-bold mb-2 tracking-wide"
                 >
                   {images.length > 0 ? (
-                    <span className="flex items-center gap-1">
-                      <FontAwesomeIcon icon={faImage} />
+                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full text-sm transition bg-white text-navy shadow-sm hover:border-navy">
+                      <ImagePlus className="mr-1" />
                       Ajouter des images ({images.length} selectionnées)
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1">
-                      <FontAwesomeIcon icon={faImage} />
-                      Sélectionner des images (optionnel)
+                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy">
+                      <ImagePlus className="mr-1" />
+                      Ajouter des images (optionnel)
                     </span>
                   )}
                 </label>
@@ -235,10 +235,13 @@ export default function AdminHome() {
                         nextEl: ".custom-next",
                       }}
                       loop={true}
-                      className="max-w-full max-h-full"
+                      className="size-full border border-navy rounded-lg flex"
                     >
                       {images.map((image) => (
-                        <SwiperSlide key={image.name}>
+                        <SwiperSlide
+                          key={image.name}
+                          className="flex items-center justify-center"
+                        >
                           <img
                             src={URL.createObjectURL(image)}
                             alt={image.name}
