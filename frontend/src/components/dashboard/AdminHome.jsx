@@ -216,7 +216,7 @@ export default function AdminHome() {
                   )}
                 </label>
                 {images.length === 1 ? (
-                  <div className="border border-navy rounded-lg flex justify-center items-center overflow-hidden">
+                  <div className="rounded-xl flex justify-center items-center overflow-hidden">
                     <img
                       src={URL.createObjectURL(images[0])}
                       alt={images[0].name}
@@ -243,7 +243,7 @@ export default function AdminHome() {
                         nextEl: ".custom-next",
                       }}
                       loop={true}
-                      className="h-96 border border-navy rounded-lg"
+                      className="h-96 rounded-xl overflow-hidden"
                     >
                       {images.map((image) => (
                         <SwiperSlide
