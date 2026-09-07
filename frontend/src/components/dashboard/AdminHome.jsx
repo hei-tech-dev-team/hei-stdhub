@@ -13,7 +13,7 @@ import {
   faChevronLeft,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Trash } from "lucide-react";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -47,7 +47,7 @@ export default function AdminHome() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-
+  const [activeSlide, setActiveSlide] = useState(0);
   useEffect(() => {
     fetchAnnouncements();
   }, []);
@@ -230,7 +230,7 @@ export default function AdminHome() {
                 ) : images.length > 1 ? (
                   <div className="relative">
                     <button
-                      className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
+                      className="custom-prev\ absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
                       aria-label="Previous image"
                       type="button"
                     >
@@ -247,6 +247,7 @@ export default function AdminHome() {
                         nextEl: ".custom-next",
                       }}
                       loop={true}
+                      onSlideChange={(slide) => setActiveSlide(slide.realIndex)}
                       className="h-96 rounded-xl overflow-hidden"
                     >
                       {images.map((image) => (
@@ -272,6 +273,23 @@ export default function AdminHome() {
                     </button>
                   </div>
                 ) : null}
+                {images.length > 0 && (
+                  <button
+                    className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-navy hover:text-white text-sm font-bold px-2 py-1.5 self-end"
+                    aria-label="Delete image"
+                    type="button"
+                    onClick={() =>
+                      images.length > 1
+                        ? setImages(
+                            images.filter((_, index) => index !== activeSlide),
+                          )
+                        : setImages([])
+                    }
+                  >
+                    <Trash className="cursor-pointer" />
+                    Retirer cette image
+                  </button>
+                )}
                 {/* Level selector */}
                 <div>
                   <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
