@@ -215,7 +215,7 @@ export default function AdminHome() {
                     </span>
                   )}
                 </label>
-                {images.length <= 1 ? (
+                {images.length === 1 ? (
                   <div className="border border-navy rounded-lg flex justify-center items-center overflow-hidden">
                     <img
                       src={URL.createObjectURL(images[0])}
@@ -223,7 +223,7 @@ export default function AdminHome() {
                       className="max-w-full max-h-96"
                     />
                   </div>
-                ) : (
+                ) : images.length > 1 ? (
                   <div className="relative">
                     <button
                       className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy shadow-md transition hover:bg-white"
@@ -267,7 +267,7 @@ export default function AdminHome() {
                       <FontAwesomeIcon icon={faChevronRight} />
                     </button>
                   </div>
-                )}
+                ) : null}
                 {/* Level selector */}
                 <div>
                   <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
