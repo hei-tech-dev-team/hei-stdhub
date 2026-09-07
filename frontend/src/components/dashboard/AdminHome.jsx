@@ -37,6 +37,8 @@ const REACTION_LABELS = {
 };
 
 const LEVELS = ["Tous", "L1", "L2", "L3"];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export default function AdminHome() {
   const [title, setTitle] = useState("");
@@ -48,6 +50,7 @@ export default function AdminHome() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [error, setError] = useState("");
   useEffect(() => {
     fetchAnnouncements();
   }, []);
@@ -109,6 +112,29 @@ export default function AdminHome() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleFiles = (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (selectedFiles.length === 0) return;
+
+    const invalidType = selectedFiles.find(
+      (file) => !ALLOWED_IMAGE_TYPES.has(file.type),
+    );
+    if (invalidType) {
+      setError("Formats acceptés : JPG, PNG ou WEBP.");
+      return;
+    }
+
+    const oversized = selectedFiles.find((file) => file.size > MAX_IMAGE_SIZE);
+    if (oversized) {
+      setError("Chaque image doit faire au maximum 10 Mo.");
+      return;
+    }
+
+    setImages((currentImages) => [...currentImages, ...selectedFiles]);
+    setError("");
   };
 
   const levelBadge = (level) => {
@@ -194,14 +220,9 @@ export default function AdminHome() {
                   type="file"
                   className="hidden"
                   id="fileInput"
-                  accept="image/jpeg, image/png"
+                  accept="image/jpeg,image/png,image/webp"
                   multiple
-                  onChange={(e) => {
-                    setImages((currentImages) => [
-                      ...currentImages,
-                      ...Array.from(e.target.files),
-                    ]);
-                  }}
+                  onChange={handleFiles}
                 />
                 <label
                   htmlFor="fileInput"
@@ -219,6 +240,11 @@ export default function AdminHome() {
                     </span>
                   )}
                 </label>
+                {error && (
+                  <p className="text-sm font-medium text-red-500" role="alert">
+                    {error}
+                  </p>
+                )}
                 {images.length === 1 ? (
                   <div className="rounded-xl flex justify-center items-center overflow-hidden">
                     <img
