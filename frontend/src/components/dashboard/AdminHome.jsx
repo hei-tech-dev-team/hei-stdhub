@@ -74,6 +74,7 @@ export default function AdminHome() {
       });
       setTitle("");
       setContent("");
+      setImages([]);
       setTargetLevel("");
       setShowForm(false);
       fetchAnnouncements();
@@ -196,7 +197,10 @@ export default function AdminHome() {
                   accept="image/jpeg, image/png"
                   multiple
                   onChange={(e) => {
-                    setImages(Array.from(e.target.files));
+                    setImages((currentImages) => [
+                      ...currentImages,
+                      ...Array.from(e.target.files),
+                    ]);
                   }}
                 />
                 <label
@@ -206,7 +210,7 @@ export default function AdminHome() {
                   {images.length > 0 ? (
                     <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy">
                       <ImagePlus className="mr-1" />
-                      Ajouter des images ({images.length} selectionnées)
+                      Ajouter des images ({images.length} sélectionnées)
                     </span>
                   ) : (
                     <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy">
