@@ -230,7 +230,7 @@ export default function AdminHome() {
                 ) : images.length > 1 ? (
                   <div className="relative">
                     <button
-                      className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy shadow-md transition hover:bg-white"
+                      className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
                       aria-label="Previous image"
                       type="button"
                     >
@@ -264,7 +264,7 @@ export default function AdminHome() {
                     </Swiper>
 
                     <button
-                      className="custom-next absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy shadow-md transition hover:bg-white"
+                      className="custom-next absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
                       aria-label="Next image"
                       type="button"
                     >
