@@ -285,7 +285,7 @@ export default function AdminHome() {
                       onSlideChange={(slide) =>
                         setActiveSlide(slide.activeIndex)
                       }
-                      className="h-96 rounded-xl overflow-hidden"
+                      className="announcement-swiper h-96 rounded-xl overflow-hidden"
                     >
                       {images.map((image) => (
                         <SwiperSlide
