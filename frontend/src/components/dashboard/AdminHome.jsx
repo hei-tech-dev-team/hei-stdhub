@@ -74,6 +74,7 @@ export default function AdminHome() {
         title: title.trim(),
         content: content.trim(),
         target_level: targetLevel || null,
+        images,
       });
       setTitle("");
       setContent("");
