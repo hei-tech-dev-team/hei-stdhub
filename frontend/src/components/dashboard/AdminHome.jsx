@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faNewspaper,
@@ -17,7 +17,7 @@ import { ImagePlus, Trash } from "lucide-react";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination, Navigation } from "swiper/modules";
+import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
@@ -51,6 +51,7 @@ export default function AdminHome() {
   const [showForm, setShowForm] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [error, setError] = useState("");
+  const swiperRef = useRef(null);
   useEffect(() => {
     fetchAnnouncements();
   }, []);
@@ -238,12 +239,12 @@ export default function AdminHome() {
                   className="text-xs font-bold mb-2 tracking-wide"
                 >
                   {images.length > 0 ? (
-                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy">
+                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy cursor-pointer">
                       <ImagePlus className="mr-1" />
                       Ajouter des images ({images.length} sélectionnées)
                     </span>
                   ) : (
-                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy">
+                    <span className="flex w-fit items-center px-2 py-1.5 border rounded-full transition bg-white text-navy shadow-sm hover:border-navy cursor-pointer">
                       <ImagePlus className="mr-1" />
                       Ajouter des images (optionnel)
                     </span>
@@ -275,13 +276,15 @@ export default function AdminHome() {
                     <Swiper
                       slidesPerView={1}
                       spaceBetween={30}
-                      modules={[Pagination, Navigation]}
-                      pagination={{ clickable: true }}
+                      modules={[Navigation]}
+                      onSwiper={(swiper) => {
+                        swiperRef.current = swiper;
+                      }}
                       navigation={{
                         prevEl: ".custom-prev",
                         nextEl: ".custom-next",
                       }}
-                      loop={true}
+                      loop={false}
                       onSlideChange={(slide) =>
                         setActiveSlide(slide.activeIndex)
                       }
@@ -311,15 +314,33 @@ export default function AdminHome() {
                   </div>
                 ) : null}
                 {images.length > 0 && (
-                  <button
-                    className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 self-end"
-                    aria-label="Delete image"
-                    type="button"
-                    onClick={handleRemoveActiveImage}
-                  >
-                    <Trash className="cursor-pointer" />
-                    Retirer cette image
-                  </button>
+                  <div className="relative flex items-center justify-end min-h-10">
+                    {images.length > 1 && (
+                      <div className="announcement-pagination absolute left-1/2 -translate-x-1/2">
+                        {images.map((image, index) => (
+                          <button
+                            key={`${image.name}-${image.lastModified}-${image.size}`}
+                            type="button"
+                            aria-label={`Afficher l'image ${index + 1}`}
+                            aria-current={activeSlide === index}
+                            onClick={() => swiperRef.current?.slideTo(index)}
+                            className={`announcement-pagination-bullet ${
+                              activeSlide === index ? "is-active" : ""
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 ml-auto"
+                      aria-label="Delete image"
+                      type="button"
+                      onClick={handleRemoveActiveImage}
+                    >
+                      <Trash className="cursor-pointer" />
+                      Retirer cette image
+                    </button>
+                  </div>
                 )}
                 {/* Level selector */}
                 <div>
