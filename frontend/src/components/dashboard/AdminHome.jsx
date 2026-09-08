@@ -67,7 +67,7 @@ export default function AdminHome() {
   };
 
   const handlePublish = async () => {
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim()) return;
     setSubmitting(true);
     try {
       await api.post("/announcements", {
@@ -220,7 +220,7 @@ export default function AdminHome() {
                 />
                 <textarea
                   className="input-field min-h-[120px] resize-y"
-                  placeholder="Contenu de l'annonce..."
+                  placeholder="Contenu de l'annonce(optionnel)"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                 />
@@ -347,7 +347,7 @@ export default function AdminHome() {
 
                 <button
                   onClick={handlePublish}
-                  disabled={submitting || !title.trim() || !content.trim()}
+                  disabled={submitting || !title.trim()}
                   className="btn-primary self-end flex items-center gap-2 disabled:opacity-60"
                 >
                   {submitting ? (
