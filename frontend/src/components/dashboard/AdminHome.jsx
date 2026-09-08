@@ -312,7 +312,7 @@ export default function AdminHome() {
                 ) : null}
                 {images.length > 0 && (
                   <button
-                    className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-navy hover:text-white text-sm font-bold px-2 py-1.5 self-end"
+                    className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 self-end"
                     aria-label="Delete image"
                     type="button"
                     onClick={handleRemoveActiveImage}
