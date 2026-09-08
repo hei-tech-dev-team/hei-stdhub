@@ -266,7 +266,7 @@ export default function AdminHome() {
                 ) : images.length > 1 ? (
                   <div className="relative">
                     <button
-                      className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
+                      className="custom-prev absolute left-2 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-navy opacity-10 transition hover:bg-white hover:opacity-80 sm:flex"
                       aria-label="Previous image"
                       type="button"
                     >
@@ -305,7 +305,7 @@ export default function AdminHome() {
                     </Swiper>
 
                     <button
-                      className="custom-next absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
+                      className="custom-next absolute right-2 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-navy opacity-10 transition hover:bg-white hover:opacity-80 sm:flex"
                       aria-label="Next image"
                       type="button"
                     >
@@ -314,9 +314,9 @@ export default function AdminHome() {
                   </div>
                 ) : null}
                 {images.length > 0 && (
-                  <div className="relative flex items-center justify-end min-h-10">
+                  <div className="relative flex flex-col gap-4 md:flex-row items-center justify-center md:justify-end min-h-10">
                     {images.length > 1 && (
-                      <div className="announcement-pagination absolute left-1/2 -translate-x-1/2">
+                      <div className="announcement-pagination self-center">
                         {images.map((image, index) => (
                           <button
                             key={`${image.name}-${image.lastModified}-${image.size}`}
@@ -332,7 +332,7 @@ export default function AdminHome() {
                       </div>
                     )}
                     <button
-                      className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 ml-auto"
+                      className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 self-center md:self-end"
                       aria-label="Delete image"
                       type="button"
                       onClick={handleRemoveActiveImage}
