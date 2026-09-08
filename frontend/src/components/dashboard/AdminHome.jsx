@@ -137,6 +137,14 @@ export default function AdminHome() {
     setError("");
   };
 
+  const handleRemoveActiveImage = () => {
+    const nextImages = images.filter((_, index) => index !== activeSlide);
+    setImages(nextImages);
+    setActiveSlide((currentSlide) =>
+      Math.min(currentSlide, Math.max(nextImages.length - 1, 0)),
+    );
+  };
+
   const levelBadge = (level) => {
     if (!level) return null;
     const colors = {
@@ -256,7 +264,7 @@ export default function AdminHome() {
                 ) : images.length > 1 ? (
                   <div className="relative">
                     <button
-                      className="custom-prev\ absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
+                      className="custom-prev absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full opacity-10 bg-white/90 text-navy transition hover:bg-white hover:opacity-80"
                       aria-label="Previous image"
                       type="button"
                     >
@@ -273,12 +281,14 @@ export default function AdminHome() {
                         nextEl: ".custom-next",
                       }}
                       loop={true}
-                      onSlideChange={(slide) => setActiveSlide(slide.realIndex)}
+                      onSlideChange={(slide) =>
+                        setActiveSlide(slide.activeIndex)
+                      }
                       className="h-96 rounded-xl overflow-hidden"
                     >
                       {images.map((image) => (
                         <SwiperSlide
-                          key={image.name}
+                          key={`${image.name}-${image.lastModified}-${image.size}`}
                           className="flex !h-full justify-center items-center overflow-hidden bg-navy"
                         >
                           <img
@@ -304,13 +314,7 @@ export default function AdminHome() {
                     className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-navy hover:text-white text-sm font-bold px-2 py-1.5 self-end"
                     aria-label="Delete image"
                     type="button"
-                    onClick={() =>
-                      images.length > 1
-                        ? setImages(
-                            images.filter((_, index) => index !== activeSlide),
-                          )
-                        : setImages([])
-                    }
+                    onClick={handleRemoveActiveImage}
                   >
                     <Trash className="cursor-pointer" />
                     Retirer cette image
