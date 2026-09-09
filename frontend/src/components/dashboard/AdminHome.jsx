@@ -381,7 +381,7 @@ export default function AdminHome() {
                     onClick={() => setIsFullscreenPreviewOpen(false)}
                   >
                     <div
-                      className="relative flex h-[85vh] w-full max-w- flex-col rounded-2xl bg-navy/95 p-3 shadow-2xl"
+                      className="relative flex h-[85vh] w-full max-w-7xl flex-col rounded-2xl bg-navy/95 p-3 shadow-2xl"
                       onClick={(event) => event.stopPropagation()}
                     >
                       <div className="flex h-10 shrink-0 items-center justify-end">
