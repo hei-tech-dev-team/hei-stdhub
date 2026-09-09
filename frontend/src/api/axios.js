@@ -36,11 +36,11 @@ api.interceptors.response.use(
       window.location.href = "/login";
     }
 
-    if (status === 503) {
+    if (err.response?.status === 503) {
       window.location.href = "/maintenance";
-    } else if (status === 418) {
+    } else if (err.response?.status === 418) {
       window.location.href = "/teapot";
-    } else if (status >= 500) {
+    } else if (err.response?.status >= 500) {
       window.location.href = "/server-error";
     }
 
