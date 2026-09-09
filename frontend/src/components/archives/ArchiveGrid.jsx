@@ -137,9 +137,6 @@ export default function ArchiveGrid() {
   const [visible, setVisible] = useState(false);
   const [otherUes, setOtherUes] = useState([]);
   const [customUes, setCustomUes] = useState({});
-  const [showAddUE, setShowAddUE] = useState(false);
-  const [addUECode, setAddUECode] = useState("");
-  const [addUELevel, setAddUELevel] = useState("L1");
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -509,103 +506,6 @@ export default function ArchiveGrid() {
               <p className="text-gray-400 text-sm max-w-[260px] leading-relaxed">
                 Aucun résultat ne correspond à votre recherche. Essayez de modifier vos filtres.
               </p>
-            </div>
-          )}
-
-          {/* Admin: Add UE */}
-          {isAdmin && (
-            <div className="mt-2">
-              {showAddUE ? (
-                <div className="p-5 sm:p-6 bg-white rounded-2xl shadow-card border border-navy/5">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center">
-                      <FontAwesomeIcon icon={faPlusCircle} className="text-gold" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-navy">Nouvelle UE personnalisée</p>
-                      <p className="text-xs text-gray-400">Ajoutez un code UE qui n'existe pas encore</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <input
-                      className="flex-1 bg-white border border-contact/60 rounded-xl px-4 py-3 text-sm text-navy
-                        placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5
-                        transition-all font-mono uppercase"
-                      placeholder="Code UE (ex: NOUVELLE1)"
-                      value={addUECode}
-                      onChange={(e) => setAddUECode(e.target.value.toUpperCase())}
-                      autoFocus
-                    />
-                    <select
-                      className="bg-white border border-contact/60 rounded-xl px-4 py-3 text-sm text-navy
-                        focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5 transition-all"
-                      value={addUELevel}
-                      onChange={(e) => setAddUELevel(e.target.value)}
-                    >
-                      <option value="L1">L1 — Première Année</option>
-                      <option value="L2">L2 — Deuxième Année</option>
-                      <option value="L3">L3 — Troisième Année</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const code = addUECode.trim();
-                        if (!code) return;
-                        try {
-                          await api.post("/custom-ues", { ue: code, level: addUELevel });
-                          setCustomUes((prev) => {
-                            const updated = { ...prev };
-                            if (!updated[addUELevel]) updated[addUELevel] = [];
-                            if (!updated[addUELevel].includes(code)) {
-                              updated[addUELevel] = [...updated[addUELevel], code];
-                            }
-                            return updated;
-                          });
-                          setAddUECode("");
-                          setShowAddUE(false);
-                        } catch (err) {
-                          if (err.response?.status === 409) return;
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-bold
-                        hover:bg-navy-dark transition-all duration-200 active:scale-[0.97]"
-                    >
-                      <FontAwesomeIcon icon={faPlus} className="text-xs" />
-                      Ajouter
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddUE(false);
-                        setAddUECode("");
-                      }}
-                      className="text-sm text-gray-400 hover:text-navy px-4 py-2.5 transition-colors font-medium"
-                    >
-                      Annuler
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowAddUE(true)}
-                  className="w-full group flex items-center gap-4 p-4 sm:p-5 bg-white rounded-2xl shadow-card border border-dashed border-contact/60 hover:border-gold/40 transition-all duration-200 hover:shadow-md active:scale-[0.99]"
-                >
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center group-hover:from-gold/30 group-hover:to-gold/10 transition-all duration-300">
-                    <FontAwesomeIcon icon={faPlus} className="text-gold text-lg" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-bold text-navy text-sm group-hover:text-gold transition-colors">
-                      Ajouter une UE personnalisée
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Créez un nouveau code UE pour y attacher des supports
-                    </p>
-                  </div>
-                </button>
-              )}
             </div>
           )}
         </div>
