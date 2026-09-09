@@ -283,17 +283,19 @@ export default function AdminHome() {
                     </span>
                   )}
                 </label>
+                {/* Upload validation errors. */}
                 {error && (
                   <p className="text-sm font-medium text-red-500" role="alert">
                     {error}
                   </p>
                 )}
+                {/* Inline image preview: single image or carousel. */}
                 {images.length === 1 ? (
-                  <div className="rounded-xl flex justify-center items-center overflow-hidden">
+                  <div className="flex justify-center items-center overflow-hidden">
                     <img
                       src={URL.createObjectURL(images[0])}
                       alt={images[0].name}
-                      className="max-w-full max-h-96"
+                      className="max-w-full max-h-96 rounded-xl"
                     />
                   </div>
                 ) : images.length > 1 ? (
@@ -351,6 +353,7 @@ export default function AdminHome() {
                     </button>
                   </div>
                 ) : null}
+                {/* Image preview controls and actions. */}
                 {images.length > 0 && (
                   <div className="relative flex flex-col gap-4 md:flex-row items-center justify-center md:justify-end min-h-10">
                     {images.length > 1 && (
@@ -392,6 +395,7 @@ export default function AdminHome() {
                     </button>
                   </div>
                 )}
+                {/* Fullscreen image preview and its controls. */}
                 {isFullscreenPreviewOpen && images.length > 0 && (
                   <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
@@ -447,6 +451,18 @@ export default function AdminHome() {
                           </SwiperSlide>
                         ))}
                       </Swiper>
+
+                      <div className="flex h-12 shrink-0 items-center justify-center">
+                        <button
+                          type="button"
+                          className="flex w-fit items-center gap-1.5 rounded-full border border-white/30 bg-white px-3 py-1.5 text-sm font-bold text-navy shadow-sm transition hover:bg-red-600 hover:text-white"
+                          aria-label="Retirer cette image"
+                          onClick={handleRemoveActiveImage}
+                        >
+                          <Trash className="h-4 w-4" />
+                          Retirer cette image
+                        </button>
+                      </div>
 
                       <button
                         type="button"
