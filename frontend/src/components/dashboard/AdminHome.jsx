@@ -345,7 +345,7 @@ export default function AdminHome() {
                             aria-label={`Afficher l'image ${index + 1}`}
                             aria-current={activeSlide === index}
                             onClick={() => swiperRef.current?.slideTo(index)}
-                            className={`announcement-pagination-bullet ${
+                            className={`${
                               activeSlide === index ? "is-active" : ""
                             }`}
                           />
@@ -381,14 +381,14 @@ export default function AdminHome() {
                     onClick={() => setIsFullscreenPreviewOpen(false)}
                   >
                     <div
-                      className="relative flex h-[85vh] w-full max-w-7xl flex-col rounded-2xl bg-navy/95 p-3 shadow-2xl"
+                      className="relative flex h-[85vh] w-full max-w-7xl flex-col rounded-2xl p-3 shadow-2xl"
                       onClick={(event) => event.stopPropagation()}
                     >
                       <div className="flex h-10 shrink-0 items-center justify-end">
                         <button
                           type="button"
                           onClick={() => setIsFullscreenPreviewOpen(false)}
-                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white hover:text-navy"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-navy ring-1 ring-white/20"
                           aria-label="Fermer la vue plein écran"
                         >
                           <X className="h-5 w-5" />

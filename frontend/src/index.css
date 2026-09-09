@@ -121,7 +121,7 @@
     padding: 0;
     border: 0;
     border-radius: 9999px;
-    background: #001948;
+    background-color: #001948 !important;
     opacity: 0.35;
     transition: opacity 0.2s, transform 0.2s;
   }
@@ -140,6 +140,23 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+  }
+
+  .fullscreen-pagination-bullet {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background-color: white;
+    opacity: 0.45;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .fullscreen-pagination-bullet.is-active {
+    background-color: white;
+    opacity: 1;
+    transform: scale(1.2);
   }
 
   /* Glassmorphism */
