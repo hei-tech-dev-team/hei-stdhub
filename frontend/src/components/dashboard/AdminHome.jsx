@@ -316,7 +316,7 @@ export default function AdminHome() {
                 {images.length > 0 && (
                   <div className="relative flex flex-col gap-4 md:flex-row items-center justify-center md:justify-end min-h-10">
                     {images.length > 1 && (
-                      <div className="announcement-pagination self-center">
+                      <div className="announcement-pagination self-center md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-auto">
                         {images.map((image, index) => (
                           <button
                             key={`${image.name}-${image.lastModified}-${image.size}`}
@@ -332,7 +332,7 @@ export default function AdminHome() {
                       </div>
                     )}
                     <button
-                      className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 self-center md:self-end"
+                      className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 self-center md:ml-auto md:self-end"
                       aria-label="Delete image"
                       type="button"
                       onClick={handleRemoveActiveImage}

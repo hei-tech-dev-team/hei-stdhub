@@ -109,8 +109,10 @@
   .announcement-pagination {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.625rem;
     padding: 0 0.25rem;
+    width: 100%;
   }
 
   .announcement-pagination-bullet {
