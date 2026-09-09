@@ -431,7 +431,7 @@ export default function AdminHome() {
                           nextEl: ".fullscreen-next",
                         }}
                         pagination={{ clickable: true }}
-                        loop={true}
+                        loop={images.length > 1}
                         className="fullscreen-swiper min-h-0 flex-1 w-full rounded-xl sm:mx-14 sm:w-[calc(100%-7rem)]"
                       >
                         {images.map((image) => (
