@@ -151,7 +151,24 @@ export default function AdminHome() {
       return;
     }
 
-    setImages((currentImages) => [...currentImages, ...selectedFiles]);
+    const imageKey = (file) =>
+      `${file.name}-${file.size}-${file.lastModified}-${file.type}`;
+    const existingImageKeys = new Set(images.map(imageKey));
+    const selectedImageKeys = new Set();
+    const uniqueFiles = selectedFiles.filter((file) => {
+      const key = imageKey(file);
+      if (existingImageKeys.has(key) || selectedImageKeys.has(key)) {
+        return false;
+      }
+      selectedImageKeys.add(key);
+      return true;
+    });
+
+    if (uniqueFiles.length === 0) {
+      return;
+    }
+
+    setImages((currentImages) => [...currentImages, ...uniqueFiles]);
     setError("");
   };
 
