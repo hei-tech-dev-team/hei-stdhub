@@ -13,11 +13,11 @@ import {
   faChevronLeft,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { ImagePlus, Trash } from "lucide-react";
+import { Fullscreen, ImagePlus, Trash, X } from "lucide-react";
 import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from "swiper/modules";
+import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
@@ -50,11 +50,27 @@ export default function AdminHome() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [isFullscreenPreviewOpen, setIsFullscreenPreviewOpen] = useState(false);
+  const [fullscreenPreviewIndex, setFullscreenPreviewIndex] = useState(0);
   const [error, setError] = useState("");
   const swiperRef = useRef(null);
+
   useEffect(() => {
     fetchAnnouncements();
   }, []);
+
+  useEffect(() => {
+    if (!isFullscreenPreviewOpen) return;
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsFullscreenPreviewOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isFullscreenPreviewOpen]);
 
   const fetchAnnouncements = async () => {
     try {
@@ -295,11 +311,16 @@ export default function AdminHome() {
                           key={`${image.name}-${image.lastModified}-${image.size}`}
                           className="flex !h-full justify-center items-center overflow-hidden bg-navy"
                         >
-                          <img
-                            src={URL.createObjectURL(image)}
-                            alt={image.name}
-                            className="max-w-full h-full block object-contain mx-auto"
-                          />
+                          <button
+                            type="button"
+                            className="h-full w-full flex items-center justify-center"
+                          >
+                            <img
+                              src={URL.createObjectURL(image)}
+                              alt={image.name}
+                              className="max-w-full h-full block object-contain mx-auto"
+                            />
+                          </button>
                         </SwiperSlide>
                       ))}
                     </Swiper>
@@ -332,7 +353,19 @@ export default function AdminHome() {
                       </div>
                     )}
                     <button
-                      className="flex w-fit items-center shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 self-center md:ml-auto md:self-end"
+                      className="flex w-fit items-center gap-1.5 shadow-sm border rounded-full bg-white text-navy transition hover:bg-navy hover:text-white text-sm font-bold px-3 py-1.5 self-center md:mr-auto md:self-end"
+                      aria-label="Ouvrir l'aperçu plein écran"
+                      type="button"
+                      onClick={() => {
+                        setFullscreenPreviewIndex(activeSlide);
+                        setIsFullscreenPreviewOpen(true);
+                      }}
+                    >
+                      <Fullscreen className="h-4 w-4" />
+                      Aperçu
+                    </button>
+                    <button
+                      className="flex w-fit items-center gap-1.5 shadow-sm border rounded-full bg-white text-navy transition hover:bg-red-600 hover:text-white text-sm font-bold px-2 py-1.5 self-center md:self-end"
                       aria-label="Delete image"
                       type="button"
                       onClick={handleRemoveActiveImage}
@@ -340,6 +373,72 @@ export default function AdminHome() {
                       <Trash className="cursor-pointer" />
                       Retirer cette image
                     </button>
+                  </div>
+                )}
+                {isFullscreenPreviewOpen && images.length > 0 && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+                    onClick={() => setIsFullscreenPreviewOpen(false)}
+                  >
+                    <div
+                      className="relative flex h-[85vh] w-full max-w- flex-col rounded-2xl bg-navy/95 p-3 shadow-2xl"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="flex h-10 shrink-0 items-center justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setIsFullscreenPreviewOpen(false)}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white hover:text-navy"
+                          aria-label="Fermer la vue plein écran"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="fullscreen-prev absolute left-2 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-navy opacity-70 transition hover:bg-white hover:opacity-100 sm:flex"
+                        aria-label="Image précédente"
+                      >
+                        <FontAwesomeIcon icon={faChevronLeft} />
+                      </button>
+
+                      <Swiper
+                        initialSlide={fullscreenPreviewIndex}
+                        onSlideChange={(swiper) =>
+                          setActiveSlide(swiper.activeIndex)
+                        }
+                        modules={[Navigation, Pagination]}
+                        navigation={{
+                          prevEl: ".fullscreen-prev",
+                          nextEl: ".fullscreen-next",
+                        }}
+                        pagination={{ clickable: true }}
+                        loop={true}
+                        className="fullscreen-swiper min-h-0 flex-1 w-full rounded-xl sm:mx-14 sm:w-[calc(100%-7rem)]"
+                      >
+                        {images.map((image) => (
+                          <SwiperSlide
+                            key={`fullscreen-${image.name}-${image.lastModified}-${image.size}`}
+                            className="flex !h-full !w-full items-center justify-center bg-black"
+                          >
+                            <img
+                              src={URL.createObjectURL(image)}
+                              alt={image.name}
+                              className="block max-h-full max-w-full object-contain"
+                            />
+                          </SwiperSlide>
+                        ))}
+                      </Swiper>
+
+                      <button
+                        type="button"
+                        className="fullscreen-next absolute right-2 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-navy opacity-70 transition hover:bg-white hover:opacity-100 sm:flex"
+                        aria-label="Image suivante"
+                      >
+                        <FontAwesomeIcon icon={faChevronRight} />
+                      </button>
+                    </div>
                   </div>
                 )}
                 {/* Level selector */}

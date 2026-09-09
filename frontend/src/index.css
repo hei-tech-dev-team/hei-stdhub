@@ -131,6 +131,17 @@
     transform: scale(1.2);
   }
 
+  .fullscreen-swiper .swiper-wrapper {
+    align-items: center;
+  }
+
+  .fullscreen-swiper .swiper-slide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
   /* Glassmorphism */
   .glass {
     @apply bg-white/5 backdrop-blur-xl;
