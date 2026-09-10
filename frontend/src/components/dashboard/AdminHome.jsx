@@ -329,9 +329,9 @@ export default function AdminHome() {
                         prevEl: ".custom-prev",
                         nextEl: ".custom-next",
                       }}
-                      loop={false}
-                      onSlideChange={(slide) =>
-                        setActiveSlide(slide.activeIndex)
+                      loop={images.length > 1}
+                      onRealIndexChange={(swiper) =>
+                        setActiveSlide(swiper.realIndex)
                       }
                       className="announcement-swiper h-96 rounded-xl overflow-hidden"
                     >
@@ -374,7 +374,7 @@ export default function AdminHome() {
                             type="button"
                             aria-label={`Afficher l'image ${index + 1}`}
                             aria-current={activeSlide === index}
-                            onClick={() => swiperRef.current?.slideTo(index)}
+                            onClick={() => swiperRef.current?.slideToLoop(index)}
                             className={`announcement-pagination-bullet ${
                               activeSlide === index ? "is-active" : ""
                             }`}
@@ -437,7 +437,7 @@ export default function AdminHome() {
                       <Swiper
                         initialSlide={fullscreenPreviewIndex}
                         onSlideChange={(swiper) =>
-                          setActiveSlide(swiper.activeIndex)
+                          setActiveSlide(swiper.realIndex)
                         }
                         modules={[Navigation, Pagination]}
                         navigation={{
