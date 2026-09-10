@@ -102,6 +102,63 @@
            hover:bg-green-600 transition-all duration-200 cursor-pointer;
   }
 
+  .announcement-swiper {
+    --swiper-theme-color: #001948;
+  }
+
+  .announcement-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 0 0.25rem;
+    width: 100%;
+  }
+
+  .announcement-pagination-bullet {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background-color: #001948 !important;
+    opacity: 0.35;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .announcement-pagination-bullet.is-active {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+
+  .fullscreen-swiper .swiper-wrapper {
+    align-items: center;
+  }
+
+  .fullscreen-swiper .swiper-slide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .fullscreen-pagination-bullet {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background-color: white;
+    opacity: 0.45;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .fullscreen-pagination-bullet.is-active {
+    background-color: white;
+    opacity: 1;
+    transform: scale(1.2);
+  }
+
   /* Glassmorphism */
   .glass {
     @apply bg-white/5 backdrop-blur-xl;
