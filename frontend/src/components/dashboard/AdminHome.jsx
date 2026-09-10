@@ -375,7 +375,7 @@ export default function AdminHome() {
                             aria-label={`Afficher l'image ${index + 1}`}
                             aria-current={activeSlide === index}
                             onClick={() => swiperRef.current?.slideTo(index)}
-                            className={`${
+                            className={`announcement-pagination-bullet ${
                               activeSlide === index ? "is-active" : ""
                             }`}
                           />
