@@ -27,6 +27,7 @@ CREATE TABLE users (
   level      user_level   NULL,
   avatar     VARCHAR      NULL,
   ues        TEXT[]       DEFAULT '{}',
+  first_login BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_student_level CHECK (
