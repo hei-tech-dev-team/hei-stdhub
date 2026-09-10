@@ -44,6 +44,7 @@ export default function AdminHome() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState([]);
   const [targetLevel, setTargetLevel] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
@@ -54,6 +55,15 @@ export default function AdminHome() {
   const [fullscreenPreviewIndex, setFullscreenPreviewIndex] = useState(0);
   const [error, setError] = useState("");
   const swiperRef = useRef(null);
+
+  useEffect(() => {
+    const urls = images.map((image) => URL.createObjectURL(image));
+    setImagePreviewUrls(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [images]);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -293,7 +303,7 @@ export default function AdminHome() {
                 {images.length === 1 ? (
                   <div className="flex justify-center items-center overflow-hidden">
                     <img
-                      src={URL.createObjectURL(images[0])}
+                      src={imagePreviewUrls[0]}
                       alt={images[0].name}
                       className="max-w-full max-h-96 rounded-xl"
                     />
@@ -325,7 +335,7 @@ export default function AdminHome() {
                       }
                       className="announcement-swiper h-96 rounded-xl overflow-hidden"
                     >
-                      {images.map((image) => (
+                      {images.map((image, index) => (
                         <SwiperSlide
                           key={`${image.name}-${image.lastModified}-${image.size}`}
                           className="flex !h-full justify-center items-center overflow-hidden bg-navy"
@@ -335,7 +345,7 @@ export default function AdminHome() {
                             className="h-full w-full flex items-center justify-center"
                           >
                             <img
-                              src={URL.createObjectURL(image)}
+                              src={imagePreviewUrls[index]}
                               alt={image.name}
                               className="max-w-full h-full block object-contain mx-auto"
                             />
@@ -438,13 +448,13 @@ export default function AdminHome() {
                         loop={images.length > 1}
                         className="fullscreen-swiper min-h-0 flex-1 w-full rounded-xl sm:mx-14 sm:w-[calc(100%-7rem)]"
                       >
-                        {images.map((image) => (
+                        {images.map((image, index) => (
                           <SwiperSlide
                             key={`fullscreen-${image.name}-${image.lastModified}-${image.size}`}
                             className="flex !h-full !w-full items-center justify-center bg-black"
                           >
                             <img
-                              src={URL.createObjectURL(image)}
+                              src={imagePreviewUrls[index]}
                               alt={image.name}
                               className="block max-h-full max-w-full object-contain"
                             />
