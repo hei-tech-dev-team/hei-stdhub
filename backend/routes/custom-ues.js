@@ -46,11 +46,25 @@ router.post("/", auth, developerOrAdmin, async (req, res) => {
 // DELETE a custom UE
 router.delete("/:id", auth, developerOrAdmin, async (req, res) => {
   try {
-    await db.query("DELETE FROM custom_ues WHERE id=$1", [req.params.id]);
-    res.json({ message: "UE supprimée." });
+    const getUe = await db.query("SELECT ue FROM custom_ues WHERE id = $1", [req.params.id]);
+    
+    if (getUe.rows.length === 0) {
+      return res.status(404).json({ error: "UE non trouvée." });
+    }
+
+    const ueCode = getUe.rows[0].ue;
+
+    await db.query("DELETE FROM custom_ues WHERE id = $1", [req.params.id]);
+
+    await db.query(
+      "UPDATE users SET ues = array_remove(ues, $1) WHERE $1 = ANY(ues)",
+      [ueCode]
+    );
+
+    res.json({ message: "UE supprimée et retirée des enseignants.", deletedUe: ueCode });
   } catch (err) {
-    console.error("ERREUR DELETE /custom-ues:", err);
-    res.status(500).json({ error: "Erreur serveur." });
+    console.error("Erreur suppression UE:", err);
+    res.status(500).json({ error: "Erreur lors de la suppression de l'UE." });
   }
 });
 

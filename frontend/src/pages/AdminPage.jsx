@@ -35,12 +35,14 @@ import {
   faLink,
   faEye,
   faEyeSlash,
+  faCode
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { getSocket } from "../socket";
 import Sidebar from "../components/layout/Sidebar";
 import { expandRoleFilter } from "../utils/roleFilter";
+import { TeacherUeModal } from "../components/modal/TeacherUeModal";
 
 const ROLE_CONFIG = {
   student: { label: "Étudiant", icon: faUserGraduate, color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
@@ -235,6 +237,79 @@ export default function AdminPage() {
   const PAGE_SIZE = 50;
 
   const [confirmState, setConfirmState] = useState(null);
+
+  const [customUes, setCustomUes] = useState([]);
+  const [selectedTeacherForUes, setSelectedTeacherForUes] = useState(null);
+
+  const [newUeCode, setNewUeCode] = useState("");
+  const [newUeLevel, setNewUeLevel] = useState("L1");
+  const [createUeLoading, setCreateUeLoading] = useState(false);
+
+  const loadCustomUes = useCallback(() => {
+    api.get("/custom-ues")
+      .then(({ data }) => setCustomUes(data))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    loadCustomUes();
+  }, [loadCustomUes]);
+
+  const handleCreateCustomUe = async (e) => {
+    e.preventDefault();
+    if (!newUeCode.trim()) return;
+    setCreateUeLoading(true);
+    try {
+      await api.post("/custom-ues", { ue: newUeCode.trim(), level: newUeLevel });
+      setNewUeCode("");
+      loadCustomUes();
+      showToast("UE créée avec succès !");
+    } catch (err) {
+      showToast(err.response?.data?.error || "Erreur création UE", "error");
+    } finally {
+      setCreateUeLoading(false);
+    }
+  };
+
+  const handleDeleteCustomUe = async (id) => {
+    try {
+      const { data } = await api.delete(`/custom-ues/${id}`);
+      
+      loadCustomUes();
+
+      if (data.deletedUe) {
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => ({
+            ...u,
+            ues: Array.isArray(u.ues) ? u.ues.filter((ue) => ue !== data.deletedUe) : [],
+          }))
+        );
+      }
+
+      showToast("UE supprimée avec succès.");
+    } catch (err) {
+      showToast("Erreur lors de la suppression", "error");
+    }
+  };
+
+  const handleSaveTeacherUes = async (teacherId, uesArray) => {
+    try {
+      const { data } = await api.patch(`/admin/users/${teacherId}/ues`, { ues: uesArray });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === teacherId ? { ...u, ues: data.ues } : u))
+      );
+      setSelectedTeacherForUes(null);
+      showToast("UEs mises à jour !");
+    } catch (err) {
+      showToast(err.response?.data?.error || "Erreur de mise à jour des UEs", "error");
+    }
+  };
+
+  const [filterLevel, setFilterLevel] = useState("ALL");
+
+  const filteredCustomUes = customUes.filter((u) =>
+    filterLevel === "ALL" ? true : u.level === filterLevel
+  );
 
   const showToast = (message, type = "success") => {
     setToast({ message, type, id: Date.now() });
@@ -468,6 +543,7 @@ export default function AdminPage() {
     { key: "upgrade", label: "Passage de classe", icon: faGraduationCap },
     { key: "new-l1", label: "Nouveau étudiant", icon: faUserPlus },
     { key: "alumni", label: "Alumni", icon: faGraduationCap },
+    { key: "ues", label: "UEs", icon: faCode}
   ];
 
   const renderRoleBadge = (role) => {
@@ -672,7 +748,33 @@ export default function AdminPage() {
                                 )}
                               </td>
                               <td className="py-3.5 px-4 text-gray-500 text-xs">{u.pseudo}</td>
-                              <td className="py-3.5 px-4">{renderLevelBadge(u.level)}</td>
+                              <td className="py-3.5 px-4">
+                                {u.role === "student" ? (
+                                  renderLevelBadge(u.level)
+                                ) : u.role === "teacher" ? (
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {Array.isArray(u.ues) && u.ues.length > 0 ? (
+                                      u.ues.map((ue) => (
+                                        <span key={ue} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-100 text-purple-700">
+                                          {ue}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="text-xs text-gray-300 italic">Aucune</span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedTeacherForUes(u)}
+                                      className="text-xs font-bold text-navy hover:text-gold transition underline ml-1"
+                                      title="Gérer les UEs de cet enseignant"
+                                    >
+                                      Gérer
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-gray-300">—</span>
+                                )}
+                              </td>
                               <td className="py-3.5 px-4">
                                 <select
                                   value={u.role}
@@ -1359,6 +1461,103 @@ export default function AdminPage() {
             </div>
           )}
 
+          {tab === "ues" && (
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl shadow-card p-6">
+                <h2 className="font-bold text-navy text-base mb-4">Créer une nouvelle UE</h2>
+                <form onSubmit={handleCreateCustomUe} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Code UE</label>
+                    <input
+                      className="input-field uppercase"
+                      placeholder="ex: PROG1, WEB2..."
+                      value={newUeCode}
+                      onChange={(e) => setNewUeCode(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Niveau</label>
+                    <select
+                      className="input-field"
+                      value={newUeLevel}
+                      onChange={(e) => setNewUeLevel(e.target.value)}
+                    >
+                      <option value="L1">L1</option>
+                      <option value="L2">L2</option>
+                      <option value="L3">L3</option>
+                    </select>
+                  </div>
+                  <button type="submit" disabled={createUeLoading} className="btn-gold">
+                    {createUeLoading ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : <FontAwesomeIcon icon={faPlus} />}
+                    Ajouter l'UE
+                  </button>
+                </form>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-card p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h2 className="font-bold text-navy text-base">
+                    Liste des UEs ({filteredCustomUes.length})
+                  </h2>
+
+                  <div className="flex gap-1 bg-surface p-1 rounded-xl border border-contact/50">
+                    {["ALL", "L1", "L2", "L3"].map((lvl) => (
+                      <button
+                        key={lvl}
+                        type="button"
+                        onClick={() => setFilterLevel(lvl)}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                          filterLevel === lvl
+                            ? "bg-navy text-white shadow-sm"
+                            : "text-gray-500 hover:text-navy"
+                        }`}
+                      >
+                        {lvl === "ALL" ? "Tous" : lvl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                  {filteredCustomUes.length === 0 ? (
+                    <div className="p-4 bg-surface rounded-xl text-center text-xs text-gray-400">
+                      Aucune UE trouvée pour ce niveau.
+                    </div>
+                  ) : (
+                    filteredCustomUes.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 bg-surface rounded-xl border border-contact/50 hover:border-purple-200 transition"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-navy text-sm">{item.ue}</span>
+                          {renderLevelBadge(item.level)}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmState({
+                          title: "Supprimer cette UE ?",
+                          message: `${item.ue} sera supprimé. Cette action est irréversible.`,
+                          confirmLabel: "Supprimer",
+                          confirmColor: "red",
+                          icon: faTrash,
+                          onConfirm: () => { handleDeleteCustomUe(item.id); setConfirmState(null); },
+                          onCancel: () => setConfirmState(null),
+                          })}
+                          className="text-red-300 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50"
+                          title="Supprimer"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
                 </div>
               </div>
             </div>
@@ -1513,6 +1712,15 @@ export default function AdminPage() {
             )}
           </div>
         </div>
+      )}
+
+      {selectedTeacherForUes && (
+        <TeacherUeModal
+          teacher={selectedTeacherForUes}
+          availableUes={customUes}
+          onClose={() => setSelectedTeacherForUes(null)}
+          onSave={handleSaveTeacherUes}
+        />
       )}
 
       {/* Global Confirm Modal */}
