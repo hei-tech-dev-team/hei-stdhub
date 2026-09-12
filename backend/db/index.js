@@ -72,6 +72,51 @@ const ensureIndexes = async () => {
   try {
     await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS groupe VARCHAR(10) NULL`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login BOOLEAN NOT NULL DEFAULT true;`);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS custom_ues (
+        id         SERIAL       PRIMARY KEY,
+        ue         VARCHAR(30)  NOT NULL UNIQUE,
+        level      VARCHAR(2)   NOT NULL DEFAULT 'L1',
+        created_by INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id          SERIAL       PRIMARY KEY,
+        reporter_id INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title       VARCHAR(255) NOT NULL,
+        description TEXT         NOT NULL,
+        page        VARCHAR(255) NULL,
+        status      VARCHAR(20)  NOT NULL DEFAULT 'open',
+        created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS support_ticket_responses (
+        id         SERIAL       PRIMARY KEY,
+        ticket_id  INTEGER      NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+        user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        response   TEXT         NOT NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE TRIGGER trg_support_tickets_updated_at
+        BEFORE UPDATE ON support_tickets
+        FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+    `);
+  } catch (err) {
+    console.error("Failed to ensure tables:", err.message);
+  }
+
+  try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS custom_ues (
         id         SERIAL       PRIMARY KEY,
@@ -85,8 +130,6 @@ const ensureIndexes = async () => {
       CREATE INDEX IF NOT EXISTS idx_global_chat_read_user ON global_chat_read(user_id);
       CREATE INDEX IF NOT EXISTS idx_invitations_code ON invitations(code);
       CREATE INDEX IF NOT EXISTS idx_invitations_expires ON invitations(expires_at) WHERE use_count < max_uses;
-      CREATE INDEX IF NOT EXISTS idx_suggestions_statut ON suggestions(statut);
-      CREATE INDEX IF NOT EXISTS idx_suggestions_student ON suggestions(student_id);
       CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
       CREATE INDEX IF NOT EXISTS idx_push_subscriptions_endpoint ON push_subscriptions(endpoint);
       CREATE INDEX IF NOT EXISTS idx_messages_receiver_seen ON messages(receiver_id, seen) WHERE is_global = FALSE;
@@ -110,6 +153,13 @@ const ensureIndexes = async () => {
     `);
   } catch (err) {
     console.error("Failed to ensure indexes:", err.message);
+  }
+
+  try {
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_suggestions_statut ON suggestions(statut)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_suggestions_student ON suggestions(student_id)`);
+  } catch (err) {
+    console.error("Failed to ensure suggestions indexes:", err.message);
   }
 };
 ensureIndexes();

@@ -10,7 +10,7 @@ DROP TYPE IF EXISTS user_level  CASCADE;
 DROP TYPE IF EXISTS post_type   CASCADE;
 DROP TYPE IF EXISTS submit_type CASCADE;
 
-CREATE TYPE user_role   AS ENUM ('student', 'teacher', 'admin', 'bde', 'alumni');
+CREATE TYPE user_role   AS ENUM ('student', 'teacher', 'admin', 'bde', 'alumni', 'developer');
 CREATE TYPE user_level  AS ENUM ('L1', 'L2', 'L3');
 CREATE TYPE post_type   AS ENUM ('cours', 'td', 'examen');
 CREATE TYPE submit_type AS ENUM ('TD', 'Examen');
@@ -32,16 +32,17 @@ CREATE TABLE users (
   updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_student_level CHECK (
     (role IN ('student', 'bde') AND level IS NOT NULL)
-    OR (role IN ('teacher','admin','alumni') AND level IS NULL)
+    OR (role IN ('teacher','admin','alumni','developer') AND level IS NULL)
   ),
   CONSTRAINT chk_ref_format CHECK (
     (role IN ('student', 'alumni', 'bde') AND ref ~ '^STD[0-9]{5,}$')
-    OR (role = 'teacher' AND ref ~ '^PROF[0-9]{3,}$')
-    OR (role = 'admin'   AND ref ~ '^ADMIN[0-9]{3,}$')
+    OR (role = 'teacher'   AND ref ~ '^PROF[0-9]{3,}$')
+    OR (role = 'admin'     AND ref ~ '^ADMIN[0-9]{3,}$')
+    OR (role = 'developer' AND ref ~ '^DEV[0-9]{3,}$')
   ),
   CONSTRAINT chk_student_email CHECK (
     (role = 'student' AND email ~ '^hei\.[a-zA-Z0-9._%+-]+(\.\d+)?@gmail\.com$')
-    OR role IN ('teacher','admin','bde','alumni')
+    OR role IN ('teacher','admin','bde','alumni','developer')
   )
 );
 
@@ -188,6 +189,37 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   UNIQUE (user_id, endpoint)
 );
 
+CREATE TABLE IF NOT EXISTS bug_reports (
+  id          SERIAL       PRIMARY KEY,
+  reporter_id INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title       VARCHAR(255) NOT NULL,
+  description TEXT         NOT NULL,
+  page        VARCHAR(255) NULL,
+  severity    VARCHAR(20)  NOT NULL DEFAULT 'medium',
+  status      VARCHAR(20)  NOT NULL DEFAULT 'open',
+  created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMP    NULL
+);
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id          SERIAL       PRIMARY KEY,
+  reporter_id INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title       VARCHAR(255) NOT NULL,
+  description TEXT         NOT NULL,
+  page        VARCHAR(255) NULL,
+  status      VARCHAR(20)  NOT NULL DEFAULT 'open',
+  created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS support_ticket_responses (
+  id         SERIAL       PRIMARY KEY,
+  ticket_id  INTEGER      NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  response   TEXT         NOT NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
 CREATE OR REPLACE FUNCTION fn_set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -210,4 +242,6 @@ INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level) VALUE
   ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
    '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student', 'L1'),
   ('PROF001','Tester','PROF','tester@gmail.com','PROFTEST',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher',NULL);
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher',NULL),
+  ('DEV001','Developer','HEI','hei.dev@gmail.com','DEV',
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','developer',NULL);
