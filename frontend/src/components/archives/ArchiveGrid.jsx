@@ -31,15 +31,6 @@ import { useAuth } from "../../context/AuthContext";
 const GOLD = "223,164,8";
 const NAVY_RGB = "0,25,72";
 
-const UES_BY_LEVEL = {
-  L1: [
-    "WEB1", "PROG1", "SYS1", "DONNEES1", "THEORIE1-P1", "THEORIE1-P2",
-    "WEB2", "PROG2-POO", "PROG2-API", "SYS2", "MGT1", "LV1",
-  ],
-  L2: ["WEB3", "PROG3", "MGT2", "PROG4-SYS3", "DONNEES2", "IA1"],
-  L3: ["MOB1", "PROG5", "SECU1", "SECU2"],
-};
-
 const LEVEL_META = {
   L1: {
     label: "Première Année",
@@ -84,14 +75,6 @@ const LEVEL_META = {
     ring: "ring-amber-500/20",
   },
 };
-
-function mergeUes(hardcoded, custom) {
-  const result = {};
-  for (const level of ["L1", "L2", "L3"]) {
-    result[level] = [...(hardcoded[level] || []), ...(custom[level] || [])];
-  }
-  return result;
-}
 
 function getFileIcon(url) {
   if (!url) return faLink;
@@ -143,8 +126,7 @@ export default function ArchiveGrid() {
   const [isDesktop, setIsDesktop] = useState(false);
   const panelRef = useRef(null);
 
-  const effectiveUEs = mergeUes(UES_BY_LEVEL, customUes);
-  const effectiveUeToLevel = Object.entries(effectiveUEs).reduce((map, [level, ues]) => {
+  const effectiveUeToLevel = Object.entries(customUes).reduce((map, [level, ues]) => {
     ues.forEach((ue) => { map[ue] = level; });
     return map;
   }, {});
@@ -252,7 +234,7 @@ export default function ArchiveGrid() {
   const filteredLevels = allLevels.filter((levelId) => {
     if (levelId === "Autre") return !levelFilter || levelFilter === "Autre";
     if (levelFilter && levelId !== levelFilter) return false;
-    const ues = levelId === "Autre" ? otherUes : effectiveUEs[levelId] || [];
+    const ues = levelId === "Autre" ? otherUes : customUes[levelId] || [];
     if (searchTerm) {
       return ues.some((ue) => ue.toLowerCase().includes(searchTerm.toLowerCase()));
     }
@@ -476,7 +458,7 @@ export default function ArchiveGrid() {
             }
 
             const meta = LEVEL_META[levelId];
-            const ues = (effectiveUEs[levelId] || []).filter((ue) =>
+            const ues = (customUes[levelId] || []).filter((ue) =>
               !searchTerm || ue.toLowerCase().includes(searchTerm.toLowerCase())
             );
             if (ues.length === 0 && levelFilter !== levelId) return null;
