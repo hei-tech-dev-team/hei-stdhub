@@ -115,6 +115,8 @@ router.patch("/users/:id/role", auth, developerOrAdmin, async (req, res) => {
       const validRoles = ["student", "teacher", "admin", "bde", "alumni", "developer"];
       if (!validRoles.includes(role))
             return res.status(400).json({ error: "Rôle invalide." });
+      if (req.user.role === "developer" && parseInt(req.params.id) === req.user.id)
+            return res.status(403).json({ error: "Un developpeur ne peut pas modifier son propre rôle." });
       try {
             const { rows } = await db.query(
                   "UPDATE users SET role=$1 WHERE id=$2 RETURNING id, ref, pseudo, role",
