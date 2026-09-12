@@ -5,15 +5,10 @@ const fs = require("fs");
 const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const developerOrAdmin = require("../middleware/developerOrAdmin");
 const { sendPushToAll, sendPushToLevel } = require("../services/notificationService");
 
 const router = express.Router();
-
-const adminOnly = (req, res, next) => {
-  if (req.user.role !== "admin")
-    return res.status(403).json({ error: "Accès réservé à l'admin." });
-  next();
-};
 
 const useCloudinary =
   process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
@@ -130,7 +125,7 @@ router.get("/", auth, async (req, res) => {
 });
 
 // POST / — admin creates an announcement (optional image)
-router.post("/", auth, adminOnly, (req, res) => {
+router.post("/", auth, developerOrAdmin, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "Fichier trop volumineux." });
@@ -181,7 +176,7 @@ router.post("/", auth, adminOnly, (req, res) => {
 });
 
 // DELETE /:id — admin deletes an announcement
-router.delete("/:id", auth, adminOnly, async (req, res) => {
+router.delete("/:id", auth, developerOrAdmin, async (req, res) => {
   try {
     const result = await db.query(
       "DELETE FROM announcements WHERE id = $1 RETURNING id",
