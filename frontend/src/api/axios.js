@@ -59,11 +59,12 @@ api.interceptors.response.use(
   async (err) => {
     const config = err.config;
     const status = err.response?.status;
+    const isNetwordError = !err.response && err.code !== "ERR_NETWORK";
 
     const canRetry =
       config &&
       config.method === "get" &&
-      RETRYABLE_STATUS.includes(status) &&
+      (RETRYABLE_STATUS.includes(status) || isNetwordError) &&
       (config.__retryCount || 0) < MAX_RETRIES;
 
     if (canRetry) {
