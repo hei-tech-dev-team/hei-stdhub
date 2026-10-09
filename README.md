@@ -34,6 +34,24 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 - **Security** — JWT with 7-day expiry, parameterized SQL queries (no injection), bcrypt password hashing (salt: 10), profanity filter on messages/suggestions, DOMPurify XSS sanitization, CORS restricted origin, SHA-256 password reset tokens (1-hour expiry, single-use)
 - **Error Handling** — Every route wrapped in try/catch, consistent error response format `{ error: "Message en français." }`, request timeout (30s), malformed JSON detection, Multer error handling
 
+## Backend Hosting and Cold Starts (Render Free Tier)
+
+The backend is hosted on Render's free tier. This plan comes with several limitations that must be kept in mind.
+
+### Limitations
+
+- **Spin Down (Sleep mode)** : The service spins down after 15 minutes of inactivity. The first incoming request after this triggers a cold start that takes about 1 minute (sometimes longer).
+- **WebSocket Connections** :  Connections are dropped during every spin down, restart, or redeployment. Socket.io automatically attempts to reconnect.
+
+### Implemented Measured
+
+**1. Keep-alive**
+An UptimeRobot monitor pings GET /api/health every 10 minutes. This route is intentionally lightweight and does not query the database. This method is not officially supported by Render: it reduces cold starts but does not completely eliminate them (restarts and redeployments will still occur).
+
+**2. Frontend Resilience (`src/api/axios.js`)**
+- Request timeout is set to 90 seconds.
+- After a 4-second delay, a banner reading "The server is waking up, please wait..." is displayed (ServerWakingBanner). It disappears once there are no longer any slow requests.
+- `GET` requests encountering 502, 503, 504, or network errors are retried up to 3 times, spaced 5 seconds apart, before an error page is shown. Write requests (POST, etc.) are never retried to prevent duplicate actions.
 ---
 
 &copy; 2026 HEI STDhub. All rights reserved.
