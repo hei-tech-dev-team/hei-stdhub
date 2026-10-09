@@ -98,7 +98,7 @@ api.interceptors.response.use(
     }
 
     if (err.code === "ECONNABORTED" && !err.response) {
-      err.userMessage = "Le chargement peut varier selon la connexion, merci de patienter...";
+      err.userMessage = "Le serveur met trop de temps à répondre, réessayez dans un instant";
     }
 
     return Promise.reject(err);
