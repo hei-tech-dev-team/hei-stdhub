@@ -12,7 +12,7 @@ export default function ServerWakingBanner() {
     if (visible) return null;
 
     return (
-        <div role="status">
+        <div role="status" className="fixed top-0 inset-x-0 z-50 bg-gold text-navy text-center text-sm font-semibold py-2 px-4">
             Le serveur démarre, merci de patienter…
         </div>
     )
