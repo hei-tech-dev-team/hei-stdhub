@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import ServerWakingBanner from "./components/ui/ServerWakingBanner";
 import OnboardingModal from "./components/ui/OnboardingModal";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 
@@ -83,6 +84,7 @@ export default function App() {
         <meta name="google-site-verification" content="0aPPiamPtnQc4mFJun2ATrN1P8--rtRj2aaan-nNM3Q" />
         <link rel="canonical" href="https://hei-stdhub.vercel.app" />
       </Helmet>
+      <ServerWakingBanner />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />

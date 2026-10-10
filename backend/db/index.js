@@ -118,15 +118,6 @@ const ensureIndexes = async () => {
 
   try {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS custom_ues (
-        id         SERIAL       PRIMARY KEY,
-        ue         VARCHAR(30)  NOT NULL UNIQUE,
-        level      VARCHAR(2)   NOT NULL DEFAULT 'L1',
-        created_by INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
-        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
-      );
-    `);
-    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_global_chat_read_user ON global_chat_read(user_id);
       CREATE INDEX IF NOT EXISTS idx_invitations_code ON invitations(code);
       CREATE INDEX IF NOT EXISTS idx_invitations_expires ON invitations(expires_at) WHERE use_count < max_uses;
