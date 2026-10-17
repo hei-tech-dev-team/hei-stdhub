@@ -14,8 +14,6 @@ backend/
 ├── routes/
 │   ├── auth.js               # 12 endpoints — register, login, forgot-password, verify-code, reset-password, me, profile, password, avatar, verify-invite, user/:ref
 │   ├── admin.js              # 10 endpoints — stats, users (CRUD + role/email), invitations (CRUD + bulk), class-upgrade
-│   ├── posts.js              # 3 endpoints — list, create (teacher/admin), delete
-│   ├── submissions.js        # 2 endpoints — submit (any), list (teacher/admin, filtered by UEs)
 │   ├── supports.js           # 3 endpoints — list by UE, create, delete (teacher/admin)
 │   ├── messages.js           # 14 endpoints — search, contacts, global, private, send, seen, upload, unread, global/read, delete, favorites (list/add/remove)
 │   ├── suggestions.js        # 5 endpoints — submit, list (BDE), patch status, confirm (post to chat), report (PDF)
@@ -27,7 +25,7 @@ backend/
 │   ├── notificationService.js # Web Push sender (batched concurrency, cleanup invalid subs)
 │   └── suggestionPdf.js      # PDF report (jsPDF, navy/gold branding, summary cards)
 ├── test/                     # Backend test files
-└── uploads/                  # Local file storage (avatars, chat, submissions, announcements, alumni-spotlight, posts)
+└── uploads/                  # Local file storage (avatars, chat, announcements, alumni-spotlight)
 ```
 
 ---
@@ -145,27 +143,10 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 
 ---
 
-## `routes/posts.js` — Course Posts (3 endpoints)
-
-| Route | Auth | Role | Input | Description |
-|-------|------|------|-------|-------------|
-| GET `/` | No | Any | `?ue=&type=&level=&limit=&offset=` | Filters by level (expands to UEs), UE code, type |
-| POST `/` | Yes | teacher/admin | `FormData{ title, description, ue, type, file?, link? }` | File max 20MB, requires file OR link, push to all |
-| DELETE `/:id` | Yes | teacher/admin | — | Hard delete |
-
 ### UE by Level
 - L1: 13 UEs (WEB1, PROG1, SYS1, DONNEES1, THEORIE1-P1, THEORIE1-P2, WEB2, PROG2-POO, PROG2-API, SYS2, MGT1, DONNEES2, IA1)
 - L2: 5 UEs (WEB3, PROG3, MGT2, PROG4, SYS3)
 - L3: 4 UEs (MOB1, PROG5, SECU1, SECU2)
-
----
-
-## `routes/submissions.js` — Homework Submissions (2 endpoints)
-
-| Route | Auth | Role | Input | Description |
-|-------|------|------|-------|-------------|
-| POST `/` | Yes | Any | `FormData{ nom, prenom, email, ref, level, groupe, ue, type, file?, link? }` | Cloudinary or local, push to all |
-| GET `/` | Yes | teacher/admin | `?type=&groupe=&ue=&search=&limit=&offset=` | Teachers see only their UEs, ILIKE search on ref/nom/prenom/email/groupe |
 
 ---
 
@@ -289,9 +270,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 ### Tables
 - `users` — id, ref (UNIQUE), nom, prenom, email (UNIQUE), pseudo (UNIQUE), password, role (ENUM), level, avatar, ues (TEXT[]), first_login (DEFAULT TRUE), created_at, updated_at (auto-trigger)
 - `password_reset_tokens` — id, user_id (FK), token_hash (SHA-256, UNIQUE), expires_at, used_at
-- `posts` — id, title, description, ue (CHECK valid), type (cours/td/examen), file_name, file_path, link, author_id, created_at, updated_at
 - `supports` — id, ue (CHECK valid), label, url (https://), author_id
-- `submissions` — id, student_id, nom, prenom, email, ref, level, groupe (CHECK by level), ue, type (TD/Examen), file_name, file_path, link
 - `messages` — id, sender_id, receiver_id (NULL for global), content (NOT NULL), is_global, seen, seen_at, created_at, indexes on sender/receiver/created
 - `global_chat_read` — user_id (PK, FK), last_read_msg_id, updated_at
 - `suggestions` — id, student_id, titre, contenu, anonyme, statut (recu/accepte/a_discuter/refuse), justification, created_at, updated_at

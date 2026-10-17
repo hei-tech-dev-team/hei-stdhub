@@ -62,14 +62,6 @@
   }
 
   /* Badges */
-  .badge-td {
-    @apply bg-cyan-100 text-cyan-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
-  }
-
-  .badge-examen {
-    @apply bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
-  }
-
   .badge-cours {
     @apply bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
   }

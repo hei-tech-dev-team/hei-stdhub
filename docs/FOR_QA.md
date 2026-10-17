@@ -43,7 +43,6 @@ cd frontend && npm test    # Frontend tests
 | SECURITY | 3 | SQL injection login/password, XSS in message |
 | ADMIN | 4 | Stats no-token/ok, users no-token, invitations create |
 | MESSAGES | 6 | Global no-token/ok, post empty/ok/private-no-receiver, search no-token, delete no-token/not-found |
-| SUBMISSIONS | 3 | List no-token/ok, create missing fields |
 
 ### `routes.test.js` — Extended Route Tests
 
@@ -64,7 +63,7 @@ cd frontend && npm test    # Frontend tests
 | AUTH HEADER | 5 | Token in query/body, spaces-only, colon separator, multiple headers |
 | SQL INJECTION | 5 | Login: `' OR 1=1--`, `' OR '1'='1`, `'; DROP TABLE`, message search/content |
 | XSS | 3 | Script tag in message, safe message, HTML entities |
-| AUTHORIZATION | 5 | Admin/messages/submissions/auth/me no-token, admin stats with token |
+| AUTHORIZATION | 5 | Admin/messages/auth/me no-token, admin stats with token |
 | INPUT VALIDATION | 10 | Whitespace/null/object/long(10k)/unicode/duplicate-pseudo/special-chars, empty/whitespace pseudo, avatar no-file |
 | HTTP TAMPERING | 2 | PUT on messages/global, DELETE on auth/me |
 | MALFORMED | 1 | Invalid JSON body |
@@ -179,7 +178,7 @@ it("protected route", async () => {
 - [ ] `JWT_SECRET` is a production-worthy random string
 - [ ] Rate limiting active (not in test mode)
 - [ ] VAPID keys persisted in production
-- [ ] Cloudinary uploads work (avatars, submissions, chat, announcements, alumni spotlight)
+- [ ] Cloudinary uploads work (avatars, chat, announcements, alumni spotlight)
 - [ ] Push notifications work (service worker + VAPID keys)
 - [ ] Socket.IO connects in production (CORS config)
 - [ ] Keep-alive ping configured (prevent Render sleep)

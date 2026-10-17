@@ -126,10 +126,6 @@ frontend/src/
 - Navbar("Archives de cours") + ArchiveGrid
 - UEs grouped by year (L1/L2/L3), click opens side panel with support links
 
-### `TDPage.jsx`
-- Teacher/admin → TeacherInbox (submissions table)
-- Others → StudentUpload (homework submission form)
-
 ### `ChatPage.jsx`
 - Dark gradient full-height background + ChatLayout
 
@@ -189,11 +185,8 @@ frontend/src/
 - Alumni badge (if alumni), page title pill, profile button
 
 ### `StudentHome.jsx`
-- Course posts filtered by level (Tous/L1/L2/L3), card layout with type badge
 
 ### `TeacherHome.jsx`
-- Post creation (drag-drop file upload, link input, UE from teacher's assigned UEs, type toggle)
-- List existing posts with delete
 
 ### `AlumniHome.jsx`
 - Hero section with graduation cap, promo info, quick links (Chat, BDE Suggestions, Profile)
@@ -239,7 +232,7 @@ frontend/src/
 
 ### UI Components
 - `Avatar.jsx` — Image with initial-letter fallback, sm/md/lg sizes
-- `Badge.jsx` — Type badge (cours/td/examen) with color coding
+- `Badge.jsx` — Type badge (cours) with color coding
 - `OnboardingModal.jsx` — 5-step wizard with floating particles, spring transitions, gold sparkle
 - `UserAvatar.jsx` — Avatar with role badge overlay
 - `GlassDomeLogo.jsx` — Animated glass dome SVG logo
@@ -253,7 +246,7 @@ frontend/src/
 ### Key Classes
 - `.sidebar-link / .sidebar-link-active` — Navigation link styles
 - `.card` — White rounded card with padding
-- `.badge-td / .badge-examen / .badge-cours` — Type badge variants
+- `.badge-cours` — Type badge variants
 - `.input-field` — Navy border + focus ring
 - `.btn-primary / .btn-gold / .btn-danger / .btn-success` — Button variants
 - `.glass / .glass-heavy / .glass-border / .glass-card` — Glassmorphism effects

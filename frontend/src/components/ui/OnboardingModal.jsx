@@ -57,7 +57,6 @@ const steps = [
       "Utilisez le menu lateral pour acceder a toutes les sections de l'application.",
     tips: [
       { icon: faArchive, text: "Archives — Consultez les cours par UE" },
-      { icon: faFileAlt, text: "TD/Examen — Soumettez vos devoirs" },
       { icon: faLightbulb, text: "Suggestions — Proposez vos idees" },
     ],
     color: "from-navy to-navy-dark",

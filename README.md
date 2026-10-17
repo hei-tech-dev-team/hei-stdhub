@@ -1,6 +1,6 @@
 # HEI STDhub — v1.9.0
 
-Full-stack web platform for HEI students, alumni, teachers, and admin. Access course materials (cours, TD, examens), submit homework, chat in real-time with role badges, suggest improvements to the BDE, browse alumni tips & school announcements, ping other users, and manage the school community — all with a navy/gold glassmorphism UI.
+Full-stack web platform for HEI students, alumni, teachers, and admin. Access course materials (cours), submit homework, chat in real-time with role badges, suggest improvements to the BDE, browse alumni tips & school announcements, ping other users, and manage the school community — all with a navy/gold glassmorphism UI.
 
 ## Stack
 
@@ -15,8 +15,7 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 - **Auth** — Login, register with invitation codes; push-based password reset (6-char code via push notification); alumni/student toggle on login & register pages; unique pseudo enforcement
 - **Alumni** — Dedicated AlumniHome dashboard; amber "Alumni · Promo X" badge in Navbar and chat; restricted nav (Home, Chat, Suggestions, Profile only); alumni ref validation (STD21xxx/STD22xxx)
 - **Dashboard** — Role-based: StudentHome (browse posts filtered by level), TeacherHome (create/manage posts with drag-drop upload), AlumniHome (quick links), AdminHome (announcements + reactions)
-- **Archives** — Course materials (cours/TD/examen) by UE with support links; teachers can add/delete support links
-- **Submissions** — Submit homework files/links by level, group, and UE; teacher inbox with paginated server-side search/filter
+- **Archives** — Course materials (cours) by UE with support links; teachers can add/delete support links
 - **Chat** — Real-time global & private messaging with Socket.IO, online/offline indicators, file/image sharing (10MB), seen/delivered status with batch marking, message deletion (own messages only), unread badges (global + per-contact), role badges, favorites, push notifications via Web Push API, typing indicators, image lightbox
 - **Suggestions** — Submit ideas (students, alumni, teachers, admin); BDE reviews with drag-and-drop Kanban, real-time sync via Socket.IO, generates PDF reports shared to global chat
 - **BDE Kanban** — 4 columns (Reçu/Accepté/À discuter/Refusé), drag-and-drop with mouse/touch, real-time multi-user sync, justification required for refusal, confirm round posts summary to global chat

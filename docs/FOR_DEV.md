@@ -10,7 +10,7 @@
 
 ## Project Overview
 
-Full-stack web platform for **HEI Madagascar** (school). Students browse course materials, submit homework, chat in real-time, submit suggestions to BDE. Teachers publish materials, view submissions. BDE manages suggestions via Kanban. Alumni share tips. Admin manages users, invitations, announcements, and seasonal operations.
+Full-stack web platform for **HEI Madagascar** (school). Students browse course materials, submit homework, chat in real-time, submit suggestions to BDE. Teachers publish materials. BDE manages suggestions via Kanban. Alumni share tips. Admin manages users, invitations, announcements, and seasonal operations.
 
 ---
 
@@ -73,8 +73,6 @@ hei-stdhub-v2/
 │   ├── routes/
 │   │   ├── auth.js                      # 12 endpoints — register, login, password reset, profile, avatar
 │   │   ├── admin.js                     # 10 endpoints — users, invitations, stats, class upgrade
-│   │   ├── posts.js                     # 3 endpoints — course materials CRUD
-│   │   ├── submissions.js               # 2 endpoints — homework submit/list
 │   │   ├── supports.js                  # 3 endpoints — external links CRUD
 │   │   ├── messages.js                  # 14 endpoints — chat, search, upload, favorites, seen, unread
 │   │   ├── suggestions.js               # 5 endpoints — submit, list, patch, confirm, report
@@ -161,8 +159,6 @@ hei-stdhub-v2/
 ### Enums
 - `user_role`: `student`, `teacher`, `admin`, `bde`, `alumni`
 - `user_level`: `L1`, `L2`, `L3`
-- `post_type`: `cours`, `td`, `examen`
-- `submit_type`: `TD`, `Examen`
 
 ### Valid UE Codes
 WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1, DONNEES2, THEORIE1-P1, THEORIE1-P2, MGT2, IA1, MOB1, SECU1, SECU2
@@ -204,7 +200,7 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 - **Typing Indicators**: `typing:started`/`typing:stopped` — global chat uses `socket.to("global-chat")`, private uses `io.to(user:{contactId})`.
 - **Pings**: `ping:new`, `ping:accepted`, `ping:refused` events sent to affected user rooms.
 - **BDE Sync**: BDE members join `bde` room. Drag-and-drop events scoped via `socket.to("bde")`.
-- **Push Notifications**: Sent via `sendPushToUser` (private messages) or `sendPushToAll` (posts, submissions, announcements, alumni tips) with concurrency control (10 parallel). Invalid subscriptions cleaned up on 410/404.
+- **Push Notifications**: Sent via `sendPushToUser` (private messages) or `sendPushToAll` (announcements, alumni tips) with concurrency control (10 parallel). Invalid subscriptions cleaned up on 410/404.
 - **Connection Auth**: JWT verified via `socket.handshake.auth.token` on connection.
 - **Performance**: `perMessageDeflate` compression (threshold: 1KB), `maxHttpBufferSize` (1MB), `connectionStateRecovery` (2 min window), `pingTimeout` (20s).
 - **Reconnection**: Stale rooms cleaned on reconnect. `refreshSocket()` for token changes.
@@ -214,9 +210,7 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 ## File Storage
 
 - **Avatars**: Cloudinary `hei-stdhub/avatars` folder, 200x200 crop (local fallback: `backend/uploads/avatars/`). Max 5MB.
-- **Submissions**: Cloudinary `hei-stdhub/submissions` folder, auto resource type (local fallback: `backend/uploads/submissions/`). Max 10MB.
 - **Chat files**: Cloudinary `hei-stdhub/chat` folder (local fallback: `backend/uploads/chat/`). Max 10MB. Supports docs, images, code files.
-- **Course posts**: Local `backend/uploads/` with timestamp-prefixed filenames. Max 20MB.
 - **Announcements**: Cloudinary `hei-stdhub/announcements` folder, 1200px width limit (local fallback). Max 10MB.
 - **Alumni Spotlight**: Cloudinary `hei-stdhub/alumni-spotlight` folder, 1200px width limit (local fallback). Max 10MB.
 
@@ -324,8 +318,6 @@ npm run release:major   # 1.9.0 -> 2.0.0
 - Teacher refs: `PROF\d{3,}`
 - Admin refs: `ADMIN\d{3,}`
 - Alumni refs: `STD21\d+` or `STD22\d+`
-- Posts: 21 valid UE codes, types cours/td/examen
-- Submissions: types TD/Examen, groups by level
 - Messages: profanity filter on global chat
 - Suggestions: profanity filter on title and content
 
