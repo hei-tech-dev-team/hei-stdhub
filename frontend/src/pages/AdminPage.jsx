@@ -607,8 +607,6 @@ export default function AdminPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <StatCard icon={faUsers} label="Utilisateurs" value={stats?.total_users} color="bg-navy/10 text-navy" />
-            <StatCard icon={faFileAlt} label="Posts" value={stats?.total_posts} color="bg-gold/10 text-gold" />
-            <StatCard icon={faInbox} label="Rendus" value={stats?.total_submissions} color="bg-cyan-100 text-cyan-600" />
             <StatCard icon={faComments} label="Messages" value={stats?.total_messages} color="bg-purple-100 text-purple-600" />
           </div>
 

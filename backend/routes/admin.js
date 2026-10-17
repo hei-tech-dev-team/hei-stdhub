@@ -18,16 +18,12 @@ router.get("/stats", auth, developerOrAdmin, async (req, res) => {
                   db.query(`
                     SELECT
                       (SELECT COUNT(*) FROM users) AS total_users,
-                      (SELECT COUNT(*) FROM posts) AS total_posts,
-                      (SELECT COUNT(*) FROM submissions) AS total_submissions,
                       (SELECT COUNT(*) FROM messages) AS total_messages
                   `),
                   db.query("SELECT role, COUNT(*) FROM users GROUP BY role"),
             ]);
             res.json({
                   total_users: parseInt(counts.rows[0].total_users),
-                  total_posts: parseInt(counts.rows[0].total_posts),
-                  total_submissions: parseInt(counts.rows[0].total_submissions),
                   total_messages: parseInt(counts.rows[0].total_messages),
                   by_role: byRole.rows,
             });
