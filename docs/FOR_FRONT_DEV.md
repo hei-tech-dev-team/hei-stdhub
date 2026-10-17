@@ -23,7 +23,6 @@ frontend/src/
     ├── dashboard/              # StudentHome, TeacherHome, AlumniHome, AdminHome
     ├── chat/                   # ChatLayout, ContactList, MessagePanel, useLongPress, chat-utils
     ├── archives/               # ArchiveGrid, ArchiveCard
-    ├── td/                     # StudentUpload, TeacherInbox
     └── ui/                     # Avatar, Badge, OnboardingModal, UserAvatar, GlassDomeLogo, JarvisScanAnimation, WaveAnimation
 ```
 
@@ -39,7 +38,6 @@ frontend/src/
 | `/reset-password` | ResetPasswordPage | none |
 | `/` | HomePage | ProtectedRoute |
 | `/archives` | ArchivesPage | ProtectedRoute |
-| `/td` | TDPage | ProtectedRoute |
 | `/chat` | ChatPage | ProtectedRoute |
 | `/suggestions` | SuggestionPage | ProtectedRoute |
 | `/bde` | BDEPage | BDERoute (bde only) |

@@ -141,7 +141,6 @@ hei-stdhub-v2/
 | `/reset-password` | ResetPasswordPage | Public | Token + new password form |
 | `/` | HomePage | Protected | Role-based dashboard (Student/Teacher/Alumni/AdminHome) |
 | `/archives` | ArchivesPage | Protected | Course materials by UE with support links |
-| `/td` | TDPage | Protected | Homework (student) / Inbox (teacher) |
 | `/chat` | ChatPage | Protected | Real-time chat (global + private) |
 | `/suggestions` | SuggestionPage | Protected | Submit anonymous suggestion to BDE |
 | `/bde` | BDEPage | BDE only | Kanban for suggestion triage |
