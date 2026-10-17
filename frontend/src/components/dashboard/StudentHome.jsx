@@ -4,10 +4,7 @@ import {
   faExternalLinkAlt,
   faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
-import api from "../../api/axios";
 import Navbar from "../layout/Navbar";
-import Badge from "../ui/Badge";
-import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
 
 const SkeletonPostCard = () => (
@@ -55,7 +52,6 @@ const EmptyStateAnimation = () => (
 
 export default function StudentHome() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
 
   return (
     <div className="flex flex-col h-screen overflow-y-hidden">
