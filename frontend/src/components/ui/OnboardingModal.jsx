@@ -29,7 +29,7 @@ const steps = [
     title: "Bienvenue sur HEI STDhub",
     subtitle: "Votre plateforme etudiante tout-en-un",
     description:
-      "Accedez a vos cours, soumettez vos devoirs, discutez avec vos camarades et bien plus encore. Ce guide vous presente les fonctionnalites essentielles.",
+      "Accedez a vos cours, discutez avec vos camarades et bien plus encore. Ce guide vous presente les fonctionnalites essentielles.",
     color: "from-navy to-navy-dark",
   },
   {

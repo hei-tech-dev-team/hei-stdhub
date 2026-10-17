@@ -45,7 +45,6 @@ const EmptyStateAnimation = () => (
     </h2>
     <p className="text-gray-400 max-w-xs leading-relaxed animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}>
       Aucun contenu disponible pour le moment.<br />
-      Les professeurs publieront bientôt des cours, TD et examens ici.
     </p>
   </div>
 );
