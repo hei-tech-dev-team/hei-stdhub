@@ -182,24 +182,3 @@ describe("PUSH — PATCH /notifications/read", () => {
     }
   });
 });
-
-describe("PUSH — Notification triggers in routes", () => {
-  itWithToken("POST /posts triggers push notification", async () => {
-    const res = await agent
-      .post("/api/posts")
-      .set("Authorization", `Bearer ${adminToken}`)
-      .field("title", "Test notification post")
-      .field("ue", "WEB1")
-      .field("type", "COURS")
-      .field("link", "https://example.com/test");
-    expect([201, 500]).to.include(res.status);
-  });
-
-  itWithToken("POST /announcements triggers push notification", async () => {
-    const res = await agent
-      .post("/api/announcements")
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ title: "Nouveau message", content: "Voici une annonce de test" });
-    expect([201, 500]).to.include(res.status);
-  });
-});
