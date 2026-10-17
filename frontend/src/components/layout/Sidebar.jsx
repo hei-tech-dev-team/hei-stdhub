@@ -25,7 +25,6 @@ const NAV_LINKS = [
       { to: "/", label: "Accueil", icon: faHouse, end: true },
       { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
       { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
-      { to: "/td", label: "TD / Examen", icon: faFileAlt, end: false },
       { to: "/chat", label: "Chat", icon: faComments, end: false },
       { to: "/pings", label: "Ping Box", icon: faBell, end: false },
 ];
