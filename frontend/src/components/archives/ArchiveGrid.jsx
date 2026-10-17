@@ -154,18 +154,6 @@ export default function ArchiveGrid() {
     }).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    api.get("/posts").then(({ data }) => {
-      const allPosts = data.posts || [];
-      const known = new Set(Object.keys(effectiveUeToLevel));
-      const others = new Set();
-      allPosts.forEach((p) => {
-        if (p.ue && !known.has(p.ue)) others.add(p.ue);
-      });
-      setOtherUes([...others].sort());
-    }).catch(() => {});
-  }, [customUes]);
-
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
 
   const handleSelectUE = async (ue) => {
