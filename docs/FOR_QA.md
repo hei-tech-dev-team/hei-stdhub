@@ -48,7 +48,6 @@ cd frontend && npm test    # Frontend tests
 
 | Area | Tests | What it verifies |
 |------|-------|------------------|
-| POSTS | 8 | GET public/filtered by UE/type/level/invalid-type, POST missing title/UE, DELETE no-token |
 | SUPPORTS | 6 | GET by UE, POST no-token/missing-UE/label/URL, DELETE no-token |
 | SUGGESTIONS | 7 | POST no-token/missing-titre/missing-contenu/whitespace, GET no-token, PATCH no-token, CONFIRM no-token |
 | ADMIN | 4 | PATCH role no-body/invalid, GET invitations, edge cases |

@@ -14,7 +14,7 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 
 - **Auth** — Login, register with invitation codes; push-based password reset (6-char code via push notification); alumni/student toggle on login & register pages; unique pseudo enforcement
 - **Alumni** — Dedicated AlumniHome dashboard; amber "Alumni · Promo X" badge in Navbar and chat; restricted nav (Home, Chat, Suggestions, Profile only); alumni ref validation (STD21xxx/STD22xxx)
-- **Dashboard** — Role-based: StudentHome (browse posts filtered by level), TeacherHome (create/manage posts with drag-drop upload), AlumniHome (quick links), AdminHome (announcements + reactions)
+- **Dashboard** — Role-based: StudentHome, TeacherHome, AlumniHome (quick links), AdminHome (announcements + reactions)
 - **Archives** — Course materials (cours) by UE with support links; teachers can add/delete support links
 - **Chat** — Real-time global & private messaging with Socket.IO, online/offline indicators, file/image sharing (10MB), seen/delivered status with batch marking, message deletion (own messages only), unread badges (global + per-contact), role badges, favorites, push notifications via Web Push API, typing indicators, image lightbox
 - **Suggestions** — Submit ideas (students, alumni, teachers, admin); BDE reviews with drag-and-drop Kanban, real-time sync via Socket.IO, generates PDF reports shared to global chat
