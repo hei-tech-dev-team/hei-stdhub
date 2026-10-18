@@ -212,11 +212,6 @@ describe("SECURITY — Authorization matrix", () => {
     expect(res.status).to.equal(401);
   });
 
-  it("returns 401 for submissions without token", async () => {
-    const res = await agent.get("/api/submissions");
-    expect(res.status).to.equal(401);
-  });
-
   it("returns 401 for auth/me without token", async () => {
     const res = await agent.get("/api/auth/me");
     expect(res.status).to.equal(401);

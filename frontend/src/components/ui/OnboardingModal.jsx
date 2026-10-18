@@ -29,7 +29,7 @@ const steps = [
     title: "Bienvenue sur HEI STDhub",
     subtitle: "Votre plateforme etudiante tout-en-un",
     description:
-      "Accedez a vos cours, soumettez vos devoirs, discutez avec vos camarades et bien plus encore. Ce guide vous presente les fonctionnalites essentielles.",
+      "Accedez a vos cours, discutez avec vos camarades et bien plus encore. Ce guide vous presente les fonctionnalites essentielles.",
     color: "from-navy to-navy-dark",
   },
   {
@@ -57,7 +57,6 @@ const steps = [
       "Utilisez le menu lateral pour acceder a toutes les sections de l'application.",
     tips: [
       { icon: faArchive, text: "Archives — Consultez les cours par UE" },
-      { icon: faFileAlt, text: "TD/Examen — Soumettez vos devoirs" },
       { icon: faLightbulb, text: "Suggestions — Proposez vos idees" },
     ],
     color: "from-navy to-navy-dark",

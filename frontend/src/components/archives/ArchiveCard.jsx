@@ -19,8 +19,6 @@ export default function ArchiveCard({ post }) {
             className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
               post.type === "cours"
                 ? "bg-blue-100 text-blue-600"
-                : post.type === "td"
-                ? "bg-gold/10 text-gold"
                 : "bg-purple-100 text-purple-600"
             }`}
           >

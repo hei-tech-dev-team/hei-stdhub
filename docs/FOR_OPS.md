@@ -13,7 +13,7 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 - **Frontend**: Vercel, SPA rewrite all routes to `/index.html`
 - **Backend**: Render (free tier sleeps after inactivity, keep-alive ping via start.sh)
 - **Database**: Supabase PostgreSQL
-- **File Storage**: Cloudinary (avatars, submissions, chat files, announcements, alumni spotlight images)
+- **File Storage**: Cloudinary (avatars, chat files, announcements, alumni spotlight images)
 - **Push Notifications**: Web Push API (auto-generated VAPID keys — persist in production)
 
 ---

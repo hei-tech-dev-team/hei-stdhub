@@ -12,7 +12,6 @@ const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const ArchivesPage = lazy(() => import("./pages/ArchivesPage"));
-const TDPage = lazy(() => import("./pages/TDPage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -93,7 +92,6 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/archives" element={<ProtectedRoute><ArchivesPage /></ProtectedRoute>} />
-          <Route path="/td" element={<ProtectedRoute><TDPage /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/suggestions" element={<ProtectedRoute><SuggestionPage /></ProtectedRoute>} />
           <Route path="/bde" element={<BDERoute><BDEPage /></BDERoute>} />

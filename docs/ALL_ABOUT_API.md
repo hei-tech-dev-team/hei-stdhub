@@ -43,7 +43,7 @@
 
 This API follows **REST** (Representational State Transfer) conventions:
 
-1. **Resources mapped to URLs**: `/api/users`, `/api/messages`, `/api/posts`
+1. **Resources mapped to URLs**: `/api/users`, `/api/messages`
 2. **HTTP methods as actions**: GET to read, POST to create, PATCH to update, DELETE to remove
 3. **Stateless**: Each request contains all info needed (auth token in header)
 4. **JSON responses**: All responses are JSON objects
@@ -190,20 +190,6 @@ The configured instance (`api/axios.js`) automatically:
 | POST | `/favorites` | Yes | Any | Add contact to favorites |
 | DELETE | `/favorites/:contactId` | Yes | Any | Remove contact from favorites |
 
-### Posts (`/api/posts`)
-
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/` | No | Any | List posts (?ue=, ?type=, ?level=, ?limit=, ?offset=) |
-| POST | `/` | Yes | teacher/admin | Create post (file max 20MB or link) + push to all |
-| DELETE | `/:id` | Yes | teacher/admin | Delete post |
-
-### Submissions (`/api/submissions`)
-
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| POST | `/` | Yes | Any | Submit homework (file max 10MB or link) + push to all |
-| GET | `/` | Yes | teacher/admin | List submissions (teachers see only their UEs) |
 
 ### Supports (`/api/supports`)
 
@@ -227,7 +213,7 @@ The configured instance (`api/axios.js`) automatically:
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| GET | `/stats` | Yes | admin | Platform stats (users, posts, submissions, messages, by_role) |
+| GET | `/stats` | Yes | admin | Platform stats (users, messages, by_role) |
 | GET | `/users?q=&role=&limit=&offset=` | Yes | admin | List users with search and role filter (max 200) |
 | PATCH | `/users/:id/role` | Yes | admin | Change user role |
 | PATCH | `/users/:id/email` | Yes | admin | Change user email |
@@ -285,7 +271,7 @@ The configured instance (`api/axios.js`) automatically:
 |--------|------|------|-------------|
 | GET | `/api/health` | No | Health check `{ status: "ok", time: Date }` |
 | GET | `/api/push/vapid-key` | No | Get VAPID public key |
-| GET | `/uploads/*` | No | Static file serving (avatars, announcements, chat, submissions) 7d cache |
+| GET | `/uploads/*` | No | Static file serving (avatars, announcements, chat) 7d cache |
 
 ---
 
@@ -298,8 +284,6 @@ The configured instance (`api/axios.js`) automatically:
 | `global_chat_read` | Per-user global chat read tracking | user_id (PK), last_read_msg_id |
 | `push_subscriptions` | Web Push endpoints | user_id, endpoint (UNIQUE combo), auth_key, p256dh_key |
 | `push_notifications` | Persistent notification history | user_id, type, title, body, data (JSONB), is_read |
-| `posts` | Course materials | id, title, ue, type (cours/td/examen), file_path, link, author_id |
-| `submissions` | Homework submissions | id, student_id, ref, level, groupe, ue, type (TD/Examen), file_path |
 | `supports` | External resource links | id, ue, label, url (https://), author_id |
 | `suggestions` | BDE suggestions | id, student_id, titre, contenu, anonyme, statut, justification |
 | `announcements` | Admin announcements | id, title, content, image_url, target_level, author_id |

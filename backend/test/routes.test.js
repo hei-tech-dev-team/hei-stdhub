@@ -26,61 +26,6 @@ before(async () => {
   }
 });
 
-describe("POSTS — CRUD & access control", () => {
-  it("GET /posts returns 200 (public)", async () => {
-    const res = await agent.get("/api/posts");
-    // 200 if DB reachable, 500 if not — either is acceptable
-    expect([200, 500]).to.include(res.status);
-    if (res.status === 200) expect(res.body.posts).to.be.an("array");
-  });
-
-  it("GET /posts with UE filter", async () => {
-    const res = await agent.get("/api/posts?ue=WEB1");
-    expect([200, 500]).to.include(res.status);
-  });
-
-  it("GET /posts with type filter", async () => {
-    const res = await agent.get("/api/posts?type=cours");
-    expect([200, 500]).to.include(res.status);
-  });
-
-  it("GET /posts with level filter", async () => {
-    const res = await agent.get("/api/posts?level=L1");
-    expect([200, 500]).to.include(res.status);
-  });
-
-  it("GET /posts with invalid type returns 200 or 500", async () => {
-    const res = await agent.get("/api/posts?type=invalid_type_xyz");
-    expect([200, 500]).to.include(res.status);
-  });
-
-  itWithToken("POST /posts without title returns 400", async () => {
-    const res = await agent
-      .post("/api/posts")
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ ue: "WEB1", type: "cours" });
-    expect(res.status).to.equal(400);
-  });
-
-  itWithToken("POST /posts without UE returns 400", async () => {
-    const res = await agent
-      .post("/api/posts")
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ title: "Test", type: "cours" });
-    expect(res.status).to.equal(400);
-  });
-
-  it("DELETE /posts/:id without token returns 401", async () => {
-    const res = await agent.delete("/api/posts/1");
-    expect(res.status).to.equal(401);
-  });
-
-  it("GET /posts with combined filters", async () => {
-    const res = await agent.get("/api/posts?ue=WEB1&type=cours&level=L1");
-    expect([200, 500]).to.include(res.status);
-  });
-});
-
 describe("SUPPORTS — CRUD & access control", () => {
   it("GET /supports/:ue returns 200 or 500", async () => {
     const res = await agent.get("/api/supports/WEB1");

@@ -222,30 +222,6 @@ describe("MESSAGES", () => {
   });
 });
 
-// Submissions API
-describe("SUBMISSIONS", () => {
-  it("GET /submissions sans token → 401", async () => {
-    const res = await agent.get("/api/submissions");
-    expect(res.status).to.equal(401);
-  });
-
-  it("GET /submissions avec token admin → 200", async () => {
-    const res = await agent
-      .get("/api/submissions")
-      .set("Authorization", `Bearer ${adminToken}`);
-    expect(res.status).to.equal(200);
-    expect(res.body.submissions).to.be.an("array");
-  });
-
-  it("POST /submissions champs manquants → 400", async () => {
-    const res = await agent
-      .post("/api/submissions")
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ nom: "Test" });
-    expect(res.status).to.equal(400);
-  });
-});
-
 // Health check
 describe("HEALTH", () => {
   it("GET /api/health → 200", async () => {
