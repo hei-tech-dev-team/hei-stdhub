@@ -214,6 +214,63 @@ describe("AUTH — PATCH /profile", () => {
   });
 });
 
+describe("AUTH — POST /login unifié", () => {
+  const seeds = [
+    { ref: "ADMIN001", role: "admin" },
+    { ref: "STD25001", role: "student" },
+    { ref: "PROF001", role: "teacher" },
+    { ref: "DEV001", role: "developer" },
+  ];
+
+  seeds.forEach(({ ref, role }) => {
+    it(`logs in ${ref} (${role}) → 200 avec access.role`, async () => {
+      const res = await agent
+        .post("/api/auth/login")
+        .send({ ref, password: "password" });
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property("token");
+      expect(res.body).to.have.property("access");
+      expect(res.body.access).to.have.property("role", role);
+    });
+  });
+
+  it("normalizes ref (trim + uppercase)", async () => {
+    const res = await agent
+      .post("/api/auth/login")
+      .send({ ref: "  admin001  ", password: "password" });
+    expect(res.status).to.equal(200);
+    expect(res.body.user).to.have.property("ref", "ADMIN001");
+  });
+
+  it("rejects invalid ref format → 400", async () => {
+    const res = await agent
+      .post("/api/auth/login")
+      .send({ ref: "TOTO", password: "password" });
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property("error", "Format de référence invalide.");
+  });
+
+  it("rejects email as ref → 400", async () => {
+    const res = await agent
+      .post("/api/auth/login")
+      .send({ ref: "hei.test@gmail.com", password: "password" });
+    expect(res.status).to.equal(400);
+  });
+
+  it("unknown ref and wrong password share the same 401 message", async () => {
+    const unknown = await agent
+      .post("/api/auth/login")
+      .send({ ref: "STD99999", password: "password" });
+    const wrongPwd = await agent
+      .post("/api/auth/login")
+      .send({ ref: "ADMIN001", password: "mauvais-mdp" });
+    expect(unknown.status).to.equal(401);
+    expect(wrongPwd.status).to.equal(401);
+    expect(unknown.body.error).to.equal("Référence ou mot de passe incorrect.");
+    expect(wrongPwd.body.error).to.equal(unknown.body.error);
+  });
+});
+
 describe("AUTH — Forgot/Reset Password", () => {
   describe("POST /auth/forgot-password/send-email", () => {
     it("returns generic message for existing email", async () => {

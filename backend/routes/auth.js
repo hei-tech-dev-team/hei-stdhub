@@ -82,6 +82,12 @@ const makeToken = (user) =>
     { expiresIn: "7d" },
   );
 
+const REF_FORMAT = /^(STD\d{5,}|PROF\d{3,}|ADMIN\d{3,}|DEV\d{3,})$/;
+
+// Hash bcrypt factice : comparé quand la référence n'existe pas, pour que le
+// temps de réponse ne révèle pas l'existence du compte (anti-énumération).
+const DUMMY_HASH = "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+
 const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
@@ -218,26 +224,42 @@ router.post("/login", async (req, res) => {
   if (ref.includes("@"))
     return res.status(400).json({ error: "Veuillez entrer votre référence, pas votre email." });
 
+  const refUpper = String(ref).trim().toUpperCase();
+  if (!REF_FORMAT.test(refUpper))
+    return res.status(400).json({ error: "Format de référence invalide." });
+
   try {
     const { rows } = await db.query(
       `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, ues, avatar, first_login
        FROM users WHERE ref=$1`,
-      [ref.toUpperCase()],
+      [refUpper],
     );
-    if (!rows.length)
-      return res.status(401).json({ error: "Référence introuvable." });
+
+    if (!rows.length) {
+      await bcrypt.compare(password, DUMMY_HASH);
+      return res.status(401).json({ error: "Référence ou mot de passe incorrect." });
+    }
 
     const user = rows[0];
     if (!(await bcrypt.compare(password, user.password)))
-      return res.status(401).json({ error: "Mot de passe incorrect." });
+      return res.status(401).json({ error: "Référence ou mot de passe incorrect." });
 
     const isFirstLogin = user.first_login;
     if (isFirstLogin) {
       await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [user.id]);
     }
 
+    const access = {
+      role: user.role,
+      level: user.level || null,
+      bde: user.role === "bde",
+      admin: user.role === "admin",
+      teacher: user.role === "teacher",
+      developer: user.role === "developer",
+    };
+
     const { password: _, first_login: __, ...safeUser } = user;
-    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin });
+    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin, access });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });

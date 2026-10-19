@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
-import { Eye, EyeOff, User, Lock, ArrowRight, GraduationCap } from "lucide-react";
+import { Eye, EyeOff, User, Lock, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
       const { login } = useAuth();
@@ -11,7 +11,6 @@ export default function LoginPage() {
       const [error, setError] = useState("");
       const [loading, setLoading] = useState(false);
       const [showPwd, setShowPwd] = useState(false);
-      const [loginRole, setLoginRole] = useState("student");
 
       const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -26,18 +25,10 @@ export default function LoginPage() {
                   return;
             }
 
-            if (loginRole === "alumni") {
-                  const refUpper = form.ref.trim().toUpperCase();
-                  if (!/^STD2[12]\d{3,}$/.test(refUpper)) {
-                        setError("Les alumni doivent avoir une reference STD21xxx ou STD22xxx.");
-                        return;
-                  }
-            }
-
             setLoading(true);
             setError("");
             try {
-                  await login(form.ref.toUpperCase(), form.password);
+                  await login(form.ref.trim().toUpperCase(), form.password);
                   navigate("/");
             } catch (err) {
                   setError(
@@ -49,8 +40,6 @@ export default function LoginPage() {
                   setLoading(false);
             }
       };
-
-      const isAlumni = loginRole === "alumni";
 
       return (
             <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
@@ -96,23 +85,21 @@ export default function LoginPage() {
 
                                     <div className="relative z-10">
                                           <h2 className="text-white text-3xl font-bold leading-snug mb-3">
-                                                {isAlumni ? "Espace" : "Bon retour"}
+                                                Bon retour
                                                 <br />
-                                                {isAlumni ? "Alumni !" : "parmi nous !"}
+                                                parmi nous !
                                           </h2>
                                           <p className="text-white/60 text-sm leading-relaxed">
-                                                {isAlumni
-                                                      ? "Accedez a votre espace alumni et partagez votre experience HEI."
-                                                      : "Connectez-vous pour acceder a vos cours, archives et discussions avec la communaute HEI."}
+                                                Connectez-vous pour acceder a vos cours, archives et discussions avec la communaute HEI.
                                           </p>
                                     </div>
 
                                     <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
                                           <p className="text-white/80 text-xs font-medium">
-                                                {isAlumni ? "Promotions 2021 & 2022" : "Communaute HEI Madagascar"}
+                                                Communaute HEI Madagascar
                                           </p>
                                           <p className="text-white/50 text-xs mt-0.5">
-                                                {isAlumni ? "STD21xxx / STD22xxx" : "Etudiants · Professeurs · Admin"}
+                                                Etudiants · Professeurs · Admin
                                           </p>
                                     </div>
                               </div>
@@ -131,12 +118,10 @@ export default function LoginPage() {
 
                                     <div className="mb-8">
                                           <h1 className="text-2xl sm:text-3xl font-bold text-navy">
-                                                {isAlumni ? "Connexion Alumni" : "Connexion"}
+                                                Connexion
                                           </h1>
                                           <p className="text-gray-400 text-sm mt-1">
-                                                {isAlumni
-                                                      ? "Entrez votre reference alumni STD21/STD22"
-                                                      : "Entrez vos identifiants pour continuer"}
+                                                Entrez vos identifiants pour continuer
                                           </p>
                                     </div>
 
@@ -146,47 +131,13 @@ export default function LoginPage() {
                                           </div>
                                     )}
 
-                                    <div className="flex items-center gap-2 mb-4 p-1 bg-surface rounded-xl">
-                                      {[
-                                        { key: "student", label: "Etudiant" },
-                                        { key: "teacher", label: "Professeur" },
-                                        { key: "alumni", label: "Alumni" },
-                                      ].map((r) => (
-                                        <div
-                                          key={r.key}
-                                          onClick={() => { setLoginRole(r.key); setError(""); }}
-                                          className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
-                                            loginRole === r.key
-                                              ? r.key === "alumni"
-                                                ? "bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white shadow-sm"
-                                                : "bg-navy text-white shadow-sm"
-                                              : "text-gray-400 hover:text-navy"
-                                          }`}
-                                        >
-                                          {r.label}
-                                        </div>
-                                      ))}
-                                    </div>
-
-                                    {isAlumni && (
-                                          <div className="mb-5 bg-gold/10 border border-gold/20 rounded-2xl p-3 flex items-start gap-2">
-                                                <GraduationCap size={16} className="text-gold mt-0.5 shrink-0" />
-                                                <div>
-                                                      <p className="text-gold font-semibold text-xs">Espace Alumni uniquement</p>
-                                                      <p className="text-gold/70 text-[11px] mt-0.5">
-                                                            Seules les references STD21xxx et STD22xxx sont acceptees. Les etudiants actuels ne peuvent pas se connecter ici.
-                                                      </p>
-                                                </div>
-                                          </div>
-                                    )}
-
                                     <form
                                           onSubmit={handleSubmit}
                                           className="flex flex-col gap-5"
                                     >
                                           <div>
                                                 <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
-                                                      {isAlumni ? "Reference Alumni" : "Reference"}
+                                                      Reference
                                                 </label>
                                                 <div className="relative">
                                                       <User
@@ -195,13 +146,7 @@ export default function LoginPage() {
                                                       />
                                                       <input
                                                             className="input-field pl-10"
-                                                            placeholder={
-                                                                  loginRole === "teacher"
-                                                                    ? "PROF001"
-                                                                    : loginRole === "alumni"
-                                                                      ? "STD21XXX ou STD22XXX"
-                                                                      : "STD25XXX"
-                                                               }
+                                                            placeholder="STD25XXX, PROF001..."
                                                             value={form.ref}
                                                             onChange={(e) => {
                                                                   set(
@@ -286,9 +231,8 @@ export default function LoginPage() {
                                                 disabled={loading}
                                                 className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                                 style={{
-                                                      background: isAlumni
-                                                            ? "linear-gradient(135deg, #D4AF37, #B8860B)"
-                                                            : "linear-gradient(135deg, #0A1A33, #001948)",
+                                                      background:
+                                                            "linear-gradient(135deg, #0A1A33, #001948)",
                                                 }}
                                           >
                                                 {loading ? (
@@ -296,7 +240,7 @@ export default function LoginPage() {
                                                 ) : (
                                                       <>
                                                             <span>
-                                                                  {isAlumni ? "Acceder a l'espace Alumni" : "Se connecter"}
+                                                                  Se connecter
                                                             </span>
                                                             <ArrowRight
                                                                   size={16}
