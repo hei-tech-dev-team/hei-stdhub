@@ -8,6 +8,7 @@ let agent;
 let adminToken = "";
 let studentToken = "";
 let inviteCode = "";
+let teacherInviteCode = "";
 
 const itWithToken = (desc, fn) => {
   it(desc, function () {
@@ -44,6 +45,15 @@ before(async () => {
     } catch {
       inviteCode = "";
     }
+    try {
+      const res = await agent
+        .post("/api/admin/invitations")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ role: "teacher" });
+      teacherInviteCode = res.body.code || "";
+    } catch {
+      teacherInviteCode = "";
+    }
   }
 });
 
@@ -56,15 +66,15 @@ describe("AUTH — POST /register", () => {
     expect(res.body).to.have.property("error", "Tous les champs sont requis.");
   });
 
-  it("returns 400 when teacher has no ues", async () => {
+  itWithToken("returns 400 when teacher has no ues", async () => {
     const res = await agent.post("/api/auth/register").send({
-      ref: `NEWTEACH${uniqueSuffix()}`,
+      ref: `PROF${uniqueSuffix()}`,
       nom: "Test",
       prenom: "Test",
       email: `teacher${uniqueSuffix()}@test.com`,
       pseudo: "teachertest",
       password: "password123",
-      role: "teacher",
+      inviteCode: teacherInviteCode,
     });
     expect(res.status).to.equal(400);
     expect(res.body).to.have.property(
@@ -107,13 +117,13 @@ describe("AUTH — POST /register", () => {
 
   itWithToken("returns 409 on duplicate ref or email", async () => {
     const res = await agent.post("/api/auth/register").send({
-      ref: "ADMIN001",
+      ref: "STD25001",
       nom: "Dup",
       prenom: "Dup",
-      email: `dup${uniqueSuffix()}@test.com`,
+      email: `hei.dup${uniqueSuffix()}@gmail.com`,
       pseudo: "dupuser",
       password: "password123",
-      role: "student",
+      level: "L1",
       inviteCode,
     });
     expect(res.status).to.equal(409);
@@ -121,6 +131,143 @@ describe("AUTH — POST /register", () => {
       "error",
       "Référence déjà utilisée.",
     );
+  });
+});
+
+describe("AUTH — register : le rôle vient du code d'invitation", () => {
+  const suffix = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+
+  const studentPayload = (code, extra = {}) => ({
+    ref: `STD${suffix()}`,
+    nom: "Test",
+    prenom: "Test",
+    email: `hei.test${suffix()}@gmail.com`,
+    pseudo: `stduser${suffix()}`,
+    password: "password123",
+    level: "L1",
+    inviteCode: code,
+    ...extra,
+  });
+
+  const makeCode = async (role, max_uses = 1) => {
+    const res = await agent
+      .post("/api/admin/invitations")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ role, max_uses });
+    return res.body.code;
+  };
+
+  itWithToken("student code + role teacher dans le body → 403 (choix : rejet explicite)", async () => {
+    const code = await makeCode("student");
+    const res = await agent
+      .post("/api/auth/register")
+      .send(studentPayload(code, { role: "teacher" }));
+    expect(res.status).to.equal(403);
+    expect(res.body.error).to.equal("Ce code d'invitation est réservé aux étudiants.");
+  });
+
+  itWithToken("teacher code + role student dans le body → 403", async () => {
+    const code = await makeCode("teacher");
+    const res = await agent.post("/api/auth/register").send({
+      ref: `PROF${suffix()}`,
+      nom: "Test",
+      prenom: "Test",
+      email: `prof${suffix()}@test.com`,
+      pseudo: `profuser${suffix()}`,
+      password: "password123",
+      role: "student",
+      inviteCode: code,
+    });
+    expect(res.status).to.equal(403);
+    expect(res.body.error).to.equal("Ce code d'invitation est réservé aux professeurs.");
+  });
+
+  itWithToken("student code + role admin dans le body → 403 (jamais d'admin via register)", async () => {
+    const code = await makeCode("student");
+    const res = await agent
+      .post("/api/auth/register")
+      .send(studentPayload(code, { role: "admin" }));
+    expect(res.status).to.equal(403);
+  });
+
+  itWithToken("admin token sans code + role admin → 400 (whitelist student/teacher/bde)", async () => {
+    const res = await agent
+      .post("/api/auth/register")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        ref: `ADMIN${Date.now()}`,
+        nom: "Test",
+        prenom: "Test",
+        email: `admin${suffix()}@test.com`,
+        pseudo: `adminuser${suffix()}`,
+        password: "password123",
+        role: "admin",
+      });
+    expect(res.status).to.equal(400);
+    expect(res.body.error).to.equal("Rôle non autorisé à l'inscription.");
+  });
+
+  itWithToken("code expiré → 400", async () => {
+    const db = require("../db");
+    const expiredCode = `HEI-STD-EXP${suffix()}`.slice(0, 20);    await db.query(
+      `INSERT INTO invitations (code, role, max_uses, use_count, expires_at)
+       VALUES ($1, 'student', 1, 0, NOW() - INTERVAL '1 day')`,
+      [expiredCode],
+    );
+    const res = await agent
+      .post("/api/auth/register")
+      .send(studentPayload(expiredCode));
+    expect(res.status).to.equal(400);
+    expect(res.body.error).to.equal("Code d'invitation invalide ou expiré.");
+  });
+
+  itWithToken("code épuisé (use_count = max_uses) → 400", async () => {
+    const code = await makeCode("student", 1);
+    const first = await agent
+      .post("/api/auth/register")
+      .send(studentPayload(code));
+    expect(first.status).to.equal(201);
+    const second = await agent
+      .post("/api/auth/register")
+      .send(studentPayload(code));
+    expect(second.status).to.equal(400);
+    expect(second.body.error).to.equal("Code d'invitation invalide ou expiré.");
+  });
+
+  itWithToken("2 inscriptions concurrentes sur un code max_uses=1 → une seule passe", async () => {
+    const code = await makeCode("student", 1);
+    const [a, b] = await Promise.all([
+      agent.post("/api/auth/register").send(studentPayload(code)),
+      agent.post("/api/auth/register").send(studentPayload(code)),
+    ]);
+    const statuses = [a.status, b.status].sort();
+    expect(statuses).to.deep.equal([201, 400]);
+  });
+
+  itWithToken("register sans role dans le body mais avec un code valide → 201 (rôle lu dans le code)", async () => {
+    const code = await makeCode("student");
+    const res = await agent
+      .post("/api/auth/register")
+      .send(studentPayload(code));
+    expect(res.status).to.equal(201);
+    expect(res.body.user).to.have.property("role", "student");
+  });
+
+  itWithToken("étudiant avec un email non-HEI → 400", async () => {
+    const code = await makeCode("student");
+    const payload = studentPayload(code, { email: `perso${suffix()}@gmail.com` });
+    const res = await agent.post("/api/auth/register").send(payload);
+    expect(res.status).to.equal(400);
+    expect(res.body.error).to.equal("Un étudiant doit utiliser un email HEI (@gmail.com).");
+  });
+
+  itWithToken("étudiant avec un niveau invalide → 400", async () => {
+    const code = await makeCode("student");
+    const res = await agent
+      .post("/api/auth/register")
+      .send(studentPayload(code, { level: "L4" }));
+    expect(res.status).to.equal(400);
+    expect(res.body.error).to.equal("Niveau invalide (L1, L2 ou L3).");
   });
 });
 

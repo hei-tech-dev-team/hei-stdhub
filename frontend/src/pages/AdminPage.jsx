@@ -1591,7 +1591,7 @@ export default function AdminPage() {
               </button>
             </div>
 
-            <p className="text-sm text-gray-400 mb-5">Le code sera valable <strong>14 jours</strong>.</p>
+            <p className="text-sm text-gray-400 mb-5">Le code sera valable <strong>7 jours</strong>.</p>
 
             {invError && (
               <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
@@ -1641,7 +1641,7 @@ export default function AdminPage() {
 
             {bulkCodes.length === 0 ? (
               <>
-                <p className="text-sm text-gray-400 mb-4">Générez jusqu'à <strong>1 000 codes</strong> en une seule fois. Chaque code sera valable <strong>14 jours</strong>.</p>
+                <p className="text-sm text-gray-400 mb-4">Générez jusqu'à <strong>1 000 codes</strong> en une seule fois. Chaque code sera valable <strong>7 jours</strong>.</p>
 
                 {bulkError && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4">{bulkError}</div>}
 

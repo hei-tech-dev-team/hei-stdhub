@@ -243,7 +243,6 @@ const generateInviteCode = (role) => {
       const prefixes = {
             student: "HEI-STD",
             teacher: "HEI-PROF",
-            alumni: "HEI-ALUM",
       };
       const random = Array.from(
             { length: 6 },
@@ -257,11 +256,11 @@ const generateInviteCode = (role) => {
 
 router.post("/invitations", auth, developerOrAdmin, async (req, res) => {
       const { role, max_uses } = req.body;
-      if (!["student", "teacher", "alumni"].includes(role))
+      if (!["student", "teacher"].includes(role))
             return res.status(400).json({ error: "Rôle invalide." });
 
       const code = generateInviteCode(role);
-      const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const uses = Math.max(parseInt(max_uses) || 1, 1);
 
       try {
@@ -278,12 +277,12 @@ router.post("/invitations", auth, developerOrAdmin, async (req, res) => {
 
 router.post("/invitations/bulk", auth, developerOrAdmin, async (req, res) => {
   const { role, count, max_uses } = req.body;
-  if (!["student", "teacher", "alumni"].includes(role))
+  if (!["student", "teacher"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
   const qty = Math.min(Math.max(parseInt(count) || 1, 1), 1000);
   const uses = Math.max(parseInt(max_uses) || 1, 1);
 
-  const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   try {
     const codes = [];
