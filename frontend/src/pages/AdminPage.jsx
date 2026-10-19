@@ -49,7 +49,6 @@ const ROLE_CONFIG = {
   teacher: { label: "Professeur", icon: faChalkboardTeacher, color: "bg-purple-100 text-purple-700 border-purple-200" },
   admin: { label: "Admin", icon: faUserShield, color: "bg-red-100 text-red-700 border-red-200" },
   bde: { label: "BDE", icon: faUsers, color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  alumni: { label: "Alumni", icon: faGraduationCap, color: "bg-amber-100 text-amber-700 border-amber-200" },
 };
 
 const LEVEL_COLORS = {
@@ -156,8 +155,6 @@ export default function AdminPage() {
   const [failedL2Input, setFailedL2Input] = useState("");
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [upgradeDone, setUpgradeDone] = useState(false);
-  const [alumniLoading, setAlumniLoading] = useState(false);
-  const [alumniDone, setAlumniDone] = useState(false);
 
   const [newL1, setNewL1] = useState({
     nom: "", prenom: "", email: "", groupLetter: "",
@@ -473,20 +470,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleAlumniUpgrade = async () => {
-    setAlumniLoading(true);
-    try {
-      const { data } = await api.post("/admin/alumni-upgrade");
-      setAlumniDone(true);
-      loadUsers();
-      showToast(`${data.upgraded} étudiant${data.upgraded > 1 ? "s" : ""} L3 promu${data.upgraded > 1 ? "s" : ""} Alumni !`);
-    } catch (err) {
-      showToast(err.response?.data?.error || "Erreur lors de la promotion", "error");
-    } finally {
-      setAlumniLoading(false);
-    }
-  };
-
   const FORBIDDEN_LETTERS = ["G", "H", "J", "K", "N", "L", "M"];
   const isLetterForbidden = (letter) => {
     const c = (letter || "").toUpperCase();
@@ -542,7 +525,6 @@ export default function AdminPage() {
     ...TABS,
     { key: "upgrade", label: "Passage de classe", icon: faGraduationCap },
     { key: "new-l1", label: "Nouveau étudiant", icon: faUserPlus },
-    { key: "alumni", label: "Alumni", icon: faGraduationCap },
     { key: "ues", label: "UEs", icon: faCode}
   ];
 
@@ -678,7 +660,6 @@ export default function AdminPage() {
                   <option value="teacher">Professeur</option>
                   <option value="admin">Admin</option>
                   <option value="bde">BDE</option>
-                  <option value="alumni">Alumni</option>
                 </select>
               </div>
 
@@ -785,7 +766,6 @@ export default function AdminPage() {
                                   <option value="bde">BDE</option>
                                   <option value="teacher">Professeur</option>
                                   <option value="student">Étudiant</option>
-                                  <option value="alumni">Alumni</option>
                                 </select>
                               </td>
                               <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
@@ -875,7 +855,6 @@ export default function AdminPage() {
                             <option value="teacher">Professeur</option>
                             <option value="admin">Admin</option>
                             <option value="bde">BDE</option>
-                            <option value="alumni">Alumni</option>
                           </select>
                           {u.id !== user.id && (
                             <button
@@ -1159,55 +1138,6 @@ export default function AdminPage() {
                   Inscrire l'étudiant
                 </button>
               </form>
-            </div>
-          )}
-
-          {/* Alumni */}
-          {tab === "alumni" && (
-            <div className="bg-white rounded-2xl shadow-card p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 flex items-center justify-center shadow-sm">
-                  <FontAwesomeIcon icon={faGraduationCap} className="text-xl" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-navy text-base">Promotion Alumni</h2>
-                  <p className="text-xs text-gray-400">
-                    Tous les étudiants en <strong>L3</strong> seront promus au statut <strong>Alumni</strong> en un clic.
-                  </p>
-                </div>
-              </div>
-
-              {alumniDone && (
-                <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2 animate-slide-up">
-                  <FontAwesomeIcon icon={faCheckCircle} />
-                  Promotion Alumni effectuée avec succès !
-                </div>
-              )}
-
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
-                <div className="flex items-start gap-2">
-                  <FontAwesomeIcon icon={faGraduationCap} className="text-amber-500 mt-0.5" />
-                  <div className="text-xs text-amber-700">
-                    Cette action est <strong>irréversible</strong>. Tous les utilisateurs ayant le niveau <strong>L3</strong> deviendront Alumni.<br />
-                    Leur rôle passera de <strong>student</strong> à <strong>alumni</strong> et leur niveau à <strong>alumni</strong>.
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAlumniUpgrade}
-                disabled={alumniLoading}
-                className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-3 rounded-xl font-bold text-sm
-                  hover:from-amber-600 hover:to-amber-700 transition-all duration-200 disabled:opacity-60 active:scale-[0.97] shadow-md shadow-amber-500/20"
-              >
-                {alumniLoading ? (
-                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                ) : (
-                  <FontAwesomeIcon icon={faGraduationCap} />
-                )}
-                Passer tous les L3 en Alumni
-              </button>
             </div>
           )}
 
@@ -1602,7 +1532,7 @@ export default function AdminPage() {
 
             <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Rôle de l'invité</label>
             <div className="flex gap-2 mb-5">
-              {["student", "teacher", "alumni"].map((r) => (
+                  {["student", "teacher"].map((r) => (
                 <button key={r} type="button" onClick={() => { setInvRole(r); setInvError(""); }}
                   className={`flex-1 py-3 rounded-xl text-sm font-bold border transition ${
                     invRole === r ? "bg-navy text-white border-navy shadow-md" : "bg-white text-navy border-contact hover:bg-surface"
@@ -1647,7 +1577,7 @@ export default function AdminPage() {
 
                 <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Rôle des invités</label>
                 <div className="flex gap-2 mb-4">
-                  {["student", "teacher", "alumni"].map((r) => (
+              {["student", "teacher"].map((r) => (
                     <button key={r} type="button" onClick={() => { setBulkRole(r); setBulkError(""); }}
                       className={`flex-1 py-3 rounded-xl text-sm font-bold border transition ${
                         bulkRole === r ? "bg-navy text-white border-navy shadow-md" : "bg-white text-navy border-contact hover:bg-surface"

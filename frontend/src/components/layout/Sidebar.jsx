@@ -15,7 +15,6 @@ import {
       faUsersRectangle,
       faBell,
       faNewspaper,
-      faGraduationCap,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import STDHUB_LOGO from "../../assets/stdhub-logo-pwa.png";
@@ -27,13 +26,6 @@ const NAV_LINKS = [
       { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
       { to: "/chat", label: "Chat", icon: faComments, end: false },
       { to: "/pings", label: "Ping Box", icon: faBell, end: false },
-];
-
-const ALUMNI_NAV_LINKS = [
-      { to: "/", label: "Accueil", icon: faHouse, end: true },
-      { to: "/stdnews", label: "STDnews", icon: faNewspaper, end: false },
-      { to: "/alumni-spotlight", label: "AlumniSpotlight", icon: faGraduationCap, end: false },
-      { to: "/chat", label: "Chat", icon: faComments, end: false },
 ];
 
 let notificationPermissionRequested = false;
@@ -181,10 +173,7 @@ export default function Sidebar() {
                         </div>
 
                         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
-                              {(user?.role === "alumni"
-                                    ? ALUMNI_NAV_LINKS
-                                    : NAV_LINKS
-                              ).map(({ to, label, icon, end }) => (
+                              {NAV_LINKS.map(({ to, label, icon, end }) => (
                                     <NavLink
                                           key={to}
                                           to={to}
@@ -222,7 +211,7 @@ export default function Sidebar() {
                                     </NavLink>
                               ))}
 
-                              {["student", "teacher", "alumni"].includes(
+                              {["student", "teacher"].includes(
                                     user?.role,
                               ) && (
                                     <NavLink
@@ -297,9 +286,7 @@ export default function Sidebar() {
                                             ? "Admin"
                                             : user?.role === "bde"
                                               ? "BDE"
-                                              : user?.role === "alumni"
-                                                ? `Alumni${user?.promo ? ` · Promo ${user.promo}` : ""}`
-                                                : "Étudiant"}
+                                              : "Étudiant"}
                               </p>
                               <div className="flex items-center gap-2 px-2 mb-3">
                                     <UserAvatar

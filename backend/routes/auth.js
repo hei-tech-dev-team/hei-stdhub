@@ -114,7 +114,6 @@ const INVITE_ROLE_LABELS = {
   student: "étudiants",
   teacher: "professeurs",
   bde: "BDE",
-  alumni: "alumni",
 };
 
 router.post("/register", async (req, res) => {
@@ -227,13 +226,6 @@ router.post("/register", async (req, res) => {
         return res
           .status(400)
           .json({ error: "Une ou plusieurs UE sont inconnues." });
-      }
-    } else if (role === "alumni") {
-      if (!/^STD2[12]\d{3,}$/.test(refUpper)) {
-        await client.query("ROLLBACK");
-        return res
-          .status(400)
-          .json({ error: "Les alumni doivent avoir une référence STD21xxx ou STD22xxx." });
       }
     }
 

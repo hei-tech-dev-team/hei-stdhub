@@ -72,6 +72,14 @@ describe("ADMIN — POST /invitations/bulk", () => {
     expect(res.status).to.equal(400);
   });
 
+  itWithToken("returns 400 for role alumni (rôle supprimé)", async () => {
+    const res = await agent
+      .post("/api/admin/invitations/bulk")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ role: "alumni", count: 2 });
+    expect(res.status).to.equal(400);
+  });
+
   itWithToken("returns 400 when role is missing", async () => {
     const res = await agent
       .post("/api/admin/invitations/bulk")

@@ -85,7 +85,6 @@ export default function RegisterPage() {
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeError, setCodeError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("student");
   const [showConfirm, setShowConfirm] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -109,7 +108,6 @@ export default function RegisterPage() {
       });
       const finalRole = determineRegisterRole(data.role);
       set("role", finalRole);
-      setSelectedRole(finalRole);
       setCodeVerified(true);
     } catch (err) {
       setCodeError(err.response?.data?.error || "Code invalide ou expiré.");
@@ -132,12 +130,6 @@ export default function RegisterPage() {
     if (!validateRegisterEmail(form.email, form.role)) {
       if (form.role === "student")
         return "Format email etudiant : hei.prenom@gmail.com";
-      if (form.role === "alumni") return "Email invalide.";
-    }
-    if (form.role === "alumni") {
-      const refUpper = form.ref.trim().toUpperCase();
-      if (!/^STD2[12]\d{3,}$/.test(refUpper))
-        return "Les alumni doivent avoir une reference STD21xxx ou STD22xxx.";
     }
     if (form.role === "teacher" && form.ues.length === 0)
       return "Veuillez selectionner au moins une UE.";
@@ -292,27 +284,6 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                {/* Role selector */}
-                <div className="flex items-center gap-2 p-1 bg-surface rounded-xl">
-                  {[
-                    { key: "student", label: "Étudiant" },
-                    { key: "teacher", label: "Professeur" },
-                    { key: "alumni", label: "Alumni" },
-                  ].map((r) => (
-                    <div
-                      key={r.key}
-                      onClick={() => { setSelectedRole(r.key); set("role", r.key); }}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
-                        selectedRole === r.key
-                          ? "bg-navy text-white shadow-sm"
-                          : "text-gray-400 hover:text-navy"
-                      }`}
-                    >
-                      {r.label}
-                    </div>
-                  ))}
-                </div>
-
                 <InputWrapper label="Code d'invitation" icon={Hash}>
                   <input
                     className="input-field pl-10 tracking-widest font-mono uppercase"
@@ -368,11 +339,7 @@ export default function RegisterPage() {
                   <span>
                     Code valide — inscription en tant que{" "}
                     <strong className="capitalize">
-                      {form.role === "teacher"
-                        ? "Professeur"
-                        : form.role === "alumni"
-                          ? "Alumni"
-                          : "Étudiant"}
+                      {form.role === "teacher" ? "Professeur" : "Étudiant"}
                     </strong>
                   </span>
                 </div>
@@ -407,11 +374,9 @@ export default function RegisterPage() {
                     type="email"
                     className="input-field pl-10"
                     placeholder={
-                      form.role === "alumni"
-                        ? "jean.rakoto@gmail.com"
-                        : form.role === "student"
-                          ? "hei.jean@gmail.com"
-                          : "dr.nom@hei.mg"
+                      form.role === "student"
+                        ? "hei.jean@gmail.com"
+                        : "dr.nom@hei.mg"
                     }
                     value={form.email}
                     onChange={(e) => {
@@ -426,11 +391,7 @@ export default function RegisterPage() {
                     <input
                       className="input-field pl-9"
                       placeholder={
-                        form.role === "alumni"
-                          ? "STD21001 ou STD22001"
-                          : form.role === "student"
-                            ? "STD25001"
-                            : "PROF001"
+                        form.role === "student" ? "STD25001" : "PROF001"
                       }
                       value={form.ref}
                       onChange={(e) => {

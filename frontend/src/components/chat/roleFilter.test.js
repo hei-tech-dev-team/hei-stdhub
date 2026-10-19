@@ -23,10 +23,6 @@ describe("expandRoleFilter", () => {
     expect(expandRoleFilter("admin")).to.equal("admin");
   });
 
-  it('returns "alumni" for "alumni"', () => {
-    expect(expandRoleFilter("alumni")).to.equal("alumni");
-  });
-
   it('returns "" for ""', () => {
     expect(expandRoleFilter("")).to.equal("");
   });
@@ -40,7 +36,6 @@ describe("determineRegisterRole", () => {
   it("returns the inviteRole as-is (code role always wins)", () => {
     expect(determineRegisterRole("teacher")).to.equal("teacher");
     expect(determineRegisterRole("student")).to.equal("student");
-    expect(determineRegisterRole("alumni")).to.equal("alumni");
     expect(determineRegisterRole("admin")).to.equal("admin");
   });
 });
@@ -63,19 +58,6 @@ describe("validateRegisterEmail", () => {
 
   it("rejects empty email for student role", () => {
     expect(validateRegisterEmail("", "student")).to.be.false;
-  });
-
-  it("accepts any email with @ for alumni role", () => {
-    expect(validateRegisterEmail("jean.rakoto@gmail.com", "alumni")).to.be.true;
-    expect(validateRegisterEmail("jean@yahoo.fr", "alumni")).to.be.true;
-  });
-
-  it("rejects email without @ for alumni role", () => {
-    expect(validateRegisterEmail("jeanrakoto", "alumni")).to.be.false;
-  });
-
-  it("rejects empty email for alumni role", () => {
-    expect(validateRegisterEmail("", "alumni")).to.be.false;
   });
 
   it("accepts any email for teacher role", () => {

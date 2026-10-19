@@ -238,3 +238,26 @@ describe("HEALTH", () => {
     expect(res.body).to.have.property("status", "ok");
   });
 });
+
+// Alumni — feature removed
+describe("ALUMNI — supprimé", () => {
+  it("GET /api/alumni-spotlight → 404 (route supprimée)", async () => {
+    const res = await agent.get("/api/alumni-spotlight");
+    expect(res.status).to.equal(404);
+  });
+
+  it("POST /api/admin/invitations { role: alumni } → 400", async () => {
+    const res = await agent
+      .post("/api/admin/invitations")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ role: "alumni" });
+    expect(res.status).to.equal(400);
+  });
+
+  it("POST /api/admin/alumni-upgrade → 404 (route supprimée)", async () => {
+    const res = await agent
+      .post("/api/admin/alumni-upgrade")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).to.equal(404);
+  });
+});

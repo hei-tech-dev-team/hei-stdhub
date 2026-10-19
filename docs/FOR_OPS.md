@@ -13,7 +13,7 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 - **Frontend**: Vercel, SPA rewrite all routes to `/index.html`
 - **Backend**: Render (free tier sleeps after inactivity, keep-alive ping via start.sh)
 - **Database**: Supabase PostgreSQL
-- **File Storage**: Cloudinary (avatars, chat files, announcements, alumni spotlight images)
+- **File Storage**: Cloudinary (avatars, chat files, announcements)
 - **Push Notifications**: Web Push API (auto-generated VAPID keys — persist in production)
 
 ---
@@ -71,6 +71,11 @@ psql "$DATABASE_URL" -f database/migration_multi_use_invitations.sql
 psql "$DATABASE_URL" -f database/migration_alumni_support.sql
 psql "$DATABASE_URL" -f database/migration_chat_seen_pseudo_unique.sql
 psql "$DATABASE_URL" -f database/migration_scale_500.sql
+psql "$DATABASE_URL" -f database/migration_chat_emoji_transfer_answer.sql
+psql "$DATABASE_URL" -f database/migration_groupe_column.sql
+psql "$DATABASE_URL" -f database/migration_developer_role.sql
+psql "$DATABASE_URL" -f database/migration_refactor_td_exams.sql
+psql "$DATABASE_URL" -f database/migration_remove_alumni.sql
 ```
 
 ### 2. Backend
@@ -238,7 +243,7 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 → Verify token exists in `localStorage` key `hei_token`
 
 ### "Code d'invitation invalide ou expiré"
-→ Invitation codes expire after 14 days
+→ Invitation codes expire after 7 days
 → `use_count` may have reached `max_uses`
 → Generate a new code from the admin panel
 

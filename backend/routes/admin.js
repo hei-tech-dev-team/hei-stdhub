@@ -109,7 +109,7 @@ router.patch("/users/:id/role", auth, developerOrAdmin, async (req, res) => {
             req.params.id,
       );
       const { role } = req.body;
-      const validRoles = ["student", "teacher", "admin", "bde", "alumni", "developer"];
+      const validRoles = ["student", "teacher", "admin", "bde", "developer"];
       if (!validRoles.includes(role))
             return res.status(400).json({ error: "Rôle invalide." });
       if (req.user.role === "developer" && parseInt(req.params.id) === req.user.id)
@@ -206,19 +206,6 @@ router.patch("/users/:id/role-upgrade", auth, developerOrAdmin, async (req, res)
             console.error("ERREUR ROLE-UPGRADE:", err.message);
             res.status(500).json({ error: "Erreur serveur." });
       }
-});
-
-// Passage en alumni : L3->alumni (tous les L3)
-router.post("/alumni-upgrade", auth, adminOnly, async (req, res) => {
-  try {
-    const result = await db.query(
-      "UPDATE users SET level = 'alumni', role = 'alumni' WHERE level = 'L3' RETURNING id, ref, level, role"
-    );
-    res.json({ upgraded: result.rows.length, users: result.rows });
-  } catch (err) {
-    console.error("ERREUR alumni-upgrade:", err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
 });
 
 // Passage de classe : L1->L2, L2->L3 (exclut les redoublants)

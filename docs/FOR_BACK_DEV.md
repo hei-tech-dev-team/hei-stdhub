@@ -18,14 +18,13 @@ backend/
 │   ├── messages.js           # 14 endpoints — search, contacts, global, private, send, seen, upload, unread, global/read, delete, favorites (list/add/remove)
 │   ├── suggestions.js        # 5 endpoints — submit, list (BDE), patch status, confirm (post to chat), report (PDF)
 │   ├── announcements.js      # 5 endpoints — list with reactions, create (admin), delete (admin), upsert/remove reaction
-│   ├── alumniSpotlight.js    # 5 endpoints — list with reactions, create (alumni), delete (owner), upsert/remove reaction
 │   ├── push.js               # 5 endpoints — subscribe, unsubscribe, list notifications, mark read, unread count
 │   └── pings.js              # 4 endpoints — send, list, accept, refuse
 ├── services/
 │   ├── notificationService.js # Web Push sender (batched concurrency, cleanup invalid subs)
 │   └── suggestionPdf.js      # PDF report (jsPDF, navy/gold branding, summary cards)
 ├── test/                     # Backend test files
-└── uploads/                  # Local file storage (avatars, chat, announcements, alumni-spotlight)
+└── uploads/                  # Local file storage (avatars, chat, announcements)
 ```
 
 ---
@@ -64,7 +63,7 @@ backend/
 ```
 
 ### Schema Migrations (auto-run on startup)
-Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `announcements`, `announcement_reactions`, `chat_favorites`, `alumni_spotlight`, `alumni_spotlight_reactions`. Also adds `target_level` column to announcements if missing.
+Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `announcements`, `announcement_reactions`, `chat_favorites`. Also adds `target_level` column to announcements if missing.
 
 ---
 
@@ -103,8 +102,8 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 ### Routes
 | Route | Auth | Input | Description |
 |-------|------|-------|-------------|
-| POST `/register` | No | `{ ref, nom, prenom, email, pseudo, password, role, level?, inviteCode?, ues? }` | Validates fields, checks invite/admin, checks uniqueness (ref/email/pseudo), bcrypt hash, INSERT, increment invite use_count, emit `user:registered` |
-| POST `/login` | No | `{ ref, password }` | bcrypt.compare, check first_login, return JWT + user |
+| POST `/register` | No | `{ ref, nom, prenom, email, pseudo, password, inviteCode, ues? }` | Role and level come from the invitation code (transaction: SELECT FOR UPDATE + consume + INSERT), validates ref/email/UEs per role, checks uniqueness (ref/email/pseudo), bcrypt hash, INSERT, emit `user:registered` |
+| POST `/login` | No | `{ ref, password }` | Unified: uppercase + trim the identifier, validate `STD/PROF/ADMIN/DEV` format (400), dummy bcrypt compare to keep timing uniform, generic 401 "Référence ou mot de passe incorrect.", returns JWT + user + access rights |
 | GET `/user/:ref` | Yes | — | Public profile by ref |
 | POST `/forgot-password` | No | `{ email }` | Lookup user, invalidate old tokens, INSERT new 10min token, send 6-char code via push notification, always return generic response |
 | POST `/forgot-password/verify-code` | No | `{ email, code }` | Verify 6-char code, mark used, issue reset token (1h) |
@@ -122,7 +121,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 
 ### Helper
 ```js
-@function generateInviteCode(role) - Returns "HEI-STD/PROF/ALUM-XXXXXX"
+@function generateInviteCode(role) - Returns "HEI-STD/PROF-XXXXXX"
 ```
 
 ### Routes
@@ -130,13 +129,12 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 |-------|-------|-------------|
 | GET `/stats` | — | Parallel COUNT queries + GROUP BY role |
 | GET `/users` | `?q=&role=&limit=&offset=` | Dynamic SQL with ILIKE + role filter, paginated (max 200) |
-| PATCH `/users/:id/role` | `{ role }` | Validates against whitelist (student/teacher/admin/bde/alumni) |
+| PATCH `/users/:id/role` | `{ role }` | Validates against whitelist (student/teacher/admin/bde) |
 | PATCH `/users/:id/email` | `{ email }` | Validate email, update |
 | DELETE `/users/:id` | — | Cannot delete self |
 | POST `/class-upgrade` | `{ failed_refs }` or `{ failed_l1_refs, failed_l2_refs }` | L1→L2, L2→L3, redoublants stay at current level |
-| POST `/alumni-upgrade` | — | All L3→alumni in one query |
 | GET `/next-pseudo` | — | Get next sequential pseudo (new_userX) |
-| POST `/invitations` | `{ role, max_uses? }` | Single code, 14d expiry |
+| POST `/invitations` | `{ role, max_uses? }` | Single code, student/teacher only, 7d expiry |
 | POST `/invitations/bulk` | `{ role, count?, max_uses? }` | Up to 1000 codes, batch INSERT (100/batch) |
 | GET `/invitations` | `?limit=&offset=` | Paginated list (max 200) |
 | DELETE `/invitations/:id` | — | Hard delete |
@@ -185,7 +183,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 
 | Route | Auth | Role | Input | Description |
 |-------|------|------|-------|-------------|
-| POST `/` | Yes | student/teacher/alumni/admin | `{ titre, contenu, anonyme }` | Profanity filter |
+| POST `/` | Yes | student/teacher/admin | `{ titre, contenu, anonyme }` | Profanity filter |
 | GET `/` | Yes | bde | `?limit=&offset=` | Anonymizes nom/prenom/email/ref |
 | PATCH `/:id` | Yes | bde | `{ statut, justification? }` | statut: recu/accepte/a_discuter/refuse, refuse requires justification |
 | POST `/confirm` | Yes | bde | — | Fetch processed, build chat msg, INSERT global message, DELETE all suggestions |
@@ -200,18 +198,6 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 | GET `/` | Yes | Any | `?level=&limit=&offset=` | With reactions map + user_reaction |
 | POST `/` | Yes | admin | `FormData{ title, content, target_level?, image? }` | Max 10MB, push to all |
 | DELETE `/:id` | Yes | admin | — | Hard delete |
-| POST `/:id/react` | Yes | Any | `{ reaction_type }` | like/haha/dont_like/sad, UPSERT |
-| DELETE `/:id/react` | Yes | Any | — | Remove reaction |
-
----
-
-## `routes/alumniSpotlight.js` — Alumni Tips (5 endpoints)
-
-| Route | Auth | Role | Input | Description |
-|-------|------|------|-------|-------------|
-| GET `/` | Yes | Any | — | With reactions map + user_reaction |
-| POST `/` | Yes | alumni | `FormData{ title, content, image? }` | Max 10MB, push to all |
-| DELETE `/:id` | Yes | owner | — | Author only |
 | POST `/:id/react` | Yes | Any | `{ reaction_type }` | like/haha/dont_like/sad, UPSERT |
 | DELETE `/:id/react` | Yes | Any | — | Remove reaction |
 
@@ -280,8 +266,6 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 - `pings` — id, sender_id (FK), receiver_id (FK), status (pending/accepted/refused), created_at, responded_at, UNIQUE(sender_id, receiver_id)
 - `announcements` — id, title, content, image_url, author_id, target_level, created_at
 - `announcement_reactions` — id, announcement_id (FK), user_id (FK), reaction_type, UNIQUE(announcement_id, user_id)
-- `alumni_spotlight` — id, title, content, image_url, author_id, created_at
-- `alumni_spotlight_reactions` — id, tip_id (FK), user_id (FK), reaction_type, UNIQUE(tip_id, user_id)
 - `chat_favorites` — user_id, contact_id, PRIMARY KEY(user_id, contact_id)
 
 ### Indexes
@@ -301,6 +285,11 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 2. `migration_first_login.sql` — first_login column
 3. `migration_student_email_suffix.sql` — email constraint update
 4. `migration_multi_use_invitations.sql` — max_uses/use_count/used_by
-5. `migration_alumni_support.sql` — alumni/bde roles
+5. `migration_alumni_support.sql` — alumni/bde roles (superseded: alumni removed by #11)
 6. `migration_chat_seen_pseudo_unique.sql` — avatar, ues, unique pseudo, seen/seen_at, global_chat_read
 7. `migration_scale_500.sql` — performance indexes
+8. `migration_chat_emoji_transfer_answer.sql` — emoji transfer/answer columns
+9. `migration_groupe_column.sql` — groupe column
+10. `migration_developer_role.sql` — developer role
+11. `migration_refactor_td_exams.sql` — TD/exams refactor
+12. `migration_remove_alumni.sql` — alumni → student, drop alumni from enum/data
