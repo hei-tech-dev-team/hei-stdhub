@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChalkboardTeacher,
 } from "@fortawesome/free-solid-svg-icons";
+import EmptyStateAnimation from "../ui/EmptyStateAnimation";
 import Navbar from "../layout/Navbar";
 import { useAuth } from "../../context/AuthContext";
 
@@ -27,6 +28,7 @@ export default function TeacherHome() {
             </div>
           </div>
         </div>
+          <EmptyStateAnimation/>
       </div>
     </div>
   );
