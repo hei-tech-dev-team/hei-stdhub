@@ -1,8 +1,11 @@
 DROP TABLE IF EXISTS messages    CASCADE;
+DROP TABLE IF EXISTS message_reactions CASCADE;
 DROP TABLE IF EXISTS submissions CASCADE;
 DROP TABLE IF EXISTS supports    CASCADE;
 DROP TABLE IF EXISTS posts       CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
+DROP TABLE IF EXISTS invitations CASCADE;
+DROP TABLE IF EXISTS suggestions CASCADE;
 DROP TABLE IF EXISTS users       CASCADE;
 
 DROP TYPE IF EXISTS user_role   CASCADE;
@@ -131,6 +134,7 @@ CREATE TABLE messages (
   is_global   BOOLEAN   NOT NULL DEFAULT FALSE,
   seen        BOOLEAN   NOT NULL DEFAULT FALSE,
   seen_at     TIMESTAMP NULL,
+  reply_to_id INTEGER   NULL REFERENCES messages(id) ON DELETE SET NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_message_receiver CHECK (
     (is_global = TRUE  AND receiver_id IS NULL)
@@ -160,6 +164,44 @@ CREATE INDEX idx_password_reset_user_active
   ON password_reset_tokens(user_id, expires_at)
   WHERE used_at IS NULL;
 
+CREATE TABLE IF NOT EXISTS invitations (
+  id         SERIAL PRIMARY KEY,
+  code       VARCHAR(20) UNIQUE NOT NULL,
+  role       VARCHAR(20) NOT NULL,
+  used       BOOLEAN DEFAULT FALSE,
+  used_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  max_uses   INTEGER DEFAULT 1,
+  use_count  INTEGER DEFAULT 0,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS suggestions (
+  id            SERIAL PRIMARY KEY,
+  student_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  titre         VARCHAR(255) NOT NULL,
+  contenu       TEXT NOT NULL,
+  anonyme       BOOLEAN NOT NULL DEFAULT FALSE,
+  statut        VARCHAR(20) NOT NULL DEFAULT 'recu',
+  justification TEXT NULL,
+  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS message_reactions (
+  id         SERIAL PRIMARY KEY,
+  message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji      VARCHAR(10) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (message_id, user_id)
+);
+
+CREATE INDEX idx_msg_reply_to ON messages(reply_to_id);
+CREATE INDEX idx_reactions_message ON message_reactions(message_id);
+CREATE INDEX idx_reactions_user ON message_reactions(user_id);
+
 -- Indexes for scale (500+ users)
 CREATE INDEX IF NOT EXISTS idx_users_ues_gin ON users USING GIN (ues);
 CREATE INDEX IF NOT EXISTS idx_messages_global_created ON messages(is_global, created_at ASC);
@@ -167,7 +209,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_sender_receiver ON messages(sender_id, r
 CREATE INDEX IF NOT EXISTS idx_messages_receiver_sender ON messages(receiver_id, sender_id);
 CREATE INDEX IF NOT EXISTS idx_invitations_expires ON invitations(expires_at);
 CREATE INDEX IF NOT EXISTS idx_invitations_use_count ON invitations(use_count);
-CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
+CREATE INDEX IF NOT EXISTS idx_suggestions_statut ON suggestions(statut);
+CREATE INDEX IF NOT EXISTS idx_suggestions_student ON suggestions(student_id);
 
 CREATE TABLE IF NOT EXISTS pings (
   id           SERIAL       PRIMARY KEY,
@@ -188,6 +231,8 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, endpoint)
 );
+
+CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
 
 CREATE TABLE IF NOT EXISTS bug_reports (
   id          SERIAL       PRIMARY KEY,

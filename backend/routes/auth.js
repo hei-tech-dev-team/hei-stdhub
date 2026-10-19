@@ -69,6 +69,10 @@ if (useCloudinary) {
   }).single("avatar");
 }
 
+const genericForgotPasswordResponse = {
+  message: "Si un compte existe avec cet email, un lien de réinitialisation vous a été envoyé.",
+};
+
 const router = express.Router();
 
 const makeToken = (user) =>
