@@ -23,6 +23,7 @@ const ALLOWED_MIMES = new Set([
     "text/plain",
     "text/csv",
     "application/zip",
+    "application/x-zip-compressed",
 ]);
 
 const useCloudinary = [
