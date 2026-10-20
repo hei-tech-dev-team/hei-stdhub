@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS post_attachments (
     url         TEXT NOT NULL,
     file_name   TEXT,
     mime_type   VARCHAR(150),
+    storage_key TEXT NOT NULL,
+    resource_type VARCHAR(20),
     size_bytes  INTEGER
 );
 
