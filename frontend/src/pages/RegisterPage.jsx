@@ -213,7 +213,7 @@ export default function RegisterPage() {
 
           <InputWrapper label="Code d'invitation" icon={Hash}>
             <input
-              className="input-field pl-10 tracking-widest font-mono uppercase"
+              className="input-field pl-10 tracking-widest uppercase"
               placeholder="EX: AB12CD34"
               value={form.inviteCode}
               onChange={(e) => {
