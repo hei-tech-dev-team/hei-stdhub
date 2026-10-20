@@ -33,7 +33,7 @@ jobs:
 
       - name: Create test .env
         run: |
-          cat > backend/.env << EOF
+          cat > .env << EOF
           PORT=3001
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hei_stdhub_test
           JWT_SECRET=test-secret-for-ci

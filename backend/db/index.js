@@ -71,7 +71,6 @@ pool.on("error", (err) => {
 const ensureIndexes = async () => {
   try {
     await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS groupe VARCHAR(10) NULL`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login BOOLEAN NOT NULL DEFAULT true;`);
 
     await pool.query(`

@@ -17,14 +17,10 @@ const ROLE_BADGE = {
   bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
   teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
   admin: { label: "Admin", cls: "bg-red-500/20 text-red-300 border-red-500/30" },
-  alumni: { label: "Alumni", cls: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
 };
 
-function RoleBadge({ role, level }) {
-  let cfg = ROLE_BADGE[role];
-  if (role === "student" && level) {
-    cfg = { label: level, cls: "bg-navy/30 text-gold border-gold/20" };
-  }
+function RoleBadge({ role }) {
+  const cfg = ROLE_BADGE[role];
   if (!cfg) return null;
   return (
     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ml-1.5 ${cfg.cls}`}>
@@ -50,7 +46,7 @@ const ContactList = memo(function ContactList({ contacts, activeId, onSelect, on
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
-  const FILTERS = ["Tous", "L1", "L2", "L3", "Prof", "Admin"];
+  const FILTERS = ["Tous", "Étudiant", "Prof", "Admin"];
 
   const sorted = useMemo(() => {
     return [...contacts].filter(Boolean).sort((a, b) => {
@@ -80,7 +76,7 @@ const ContactList = memo(function ContactList({ contacts, activeId, onSelect, on
     if (roleFilter === "Tous" || c.isGlobal) return true;
     if (roleFilter === "Prof") return c.role === "teacher";
     if (roleFilter === "Admin") return c.role === "admin";
-    return c.level === roleFilter;
+    return true;
   });
 
   const getUnreadCount = (contact) => {
@@ -247,7 +243,7 @@ const ContactList = memo(function ContactList({ contacts, activeId, onSelect, on
                         : contact.role === "bde"
                           ? "BDE"
                           : "Étudiant"}
-                    <RoleBadge role={contact.role} level={contact.level} />
+                    <RoleBadge role={contact.role} />
                   </span>
                 )}
               </div>

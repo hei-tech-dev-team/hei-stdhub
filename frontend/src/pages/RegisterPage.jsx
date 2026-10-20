@@ -72,7 +72,6 @@ export default function RegisterPage() {
     ref: "",
     pseudo: "",
     role: "student",
-    level: "L1",
     password: "",
     confirmPassword: "",
     inviteCode: "",
@@ -85,7 +84,6 @@ export default function RegisterPage() {
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeError, setCodeError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("student");
   const [showConfirm, setShowConfirm] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -109,7 +107,6 @@ export default function RegisterPage() {
       });
       const finalRole = determineRegisterRole(data.role);
       set("role", finalRole);
-      setSelectedRole(finalRole);
       setCodeVerified(true);
     } catch (err) {
       setCodeError(err.response?.data?.error || "Code invalide ou expiré.");
@@ -132,12 +129,6 @@ export default function RegisterPage() {
     if (!validateRegisterEmail(form.email, form.role)) {
       if (form.role === "student")
         return "Format email etudiant : hei.prenom@gmail.com";
-      if (form.role === "alumni") return "Email invalide.";
-    }
-    if (form.role === "alumni") {
-      const refUpper = form.ref.trim().toUpperCase();
-      if (!/^STD2[12]\d{3,}$/.test(refUpper))
-        return "Les alumni doivent avoir une reference STD21xxx ou STD22xxx.";
     }
     if (form.role === "teacher" && form.ues.length === 0)
       return "Veuillez selectionner au moins une UE.";
@@ -166,7 +157,6 @@ export default function RegisterPage() {
         pseudo: form.pseudo,
         password: form.password,
         role: form.role,
-        level: form.role === "student" ? form.level : undefined,
         inviteCode: form.inviteCode.trim().toUpperCase(),
         ues: form.role === "teacher" ? form.ues : [],
       });
@@ -179,7 +169,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8 auth-page">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
@@ -221,10 +211,10 @@ export default function RegisterPage() {
             </div>
 
             <div className="relative z-10">
-              <h2 className="text-white text-3xl font-bold leading-snug mb-3">
+              <h2 className="text-white text-3xl font-bold leading-snug mb-3 font-fraunces">
                 Rejoignez
                 <br />
-                la communauté !
+                <span className="text-gold-light">la communauté !</span>
               </h2>
               <p className="text-white/60 text-sm leading-relaxed">
                 Créez votre compte pour accéder aux ressources, archives et
@@ -232,7 +222,7 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
+            <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20 border-l-2 border-l-gold">
               <p className="text-white/80 text-xs font-medium">
                 Inscription sur invitation
               </p>
@@ -254,8 +244,9 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-navy">Créer un compte</h1>
-              <p className="text-gray-400 text-sm mt-1">
+              <h1 className="text-2xl font-bold text-navy font-fraunces">Créer un compte</h1>
+              <span className="block w-12 h-1 rounded-full bg-gold mt-3" />
+              <p className="text-gray-400 text-sm mt-3">
                 Inscription sur invitation uniquement
               </p>
             </div>
@@ -292,27 +283,6 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                {/* Role selector */}
-                <div className="flex items-center gap-2 p-1 bg-surface rounded-xl">
-                  {[
-                    { key: "student", label: "Étudiant" },
-                    { key: "teacher", label: "Professeur" },
-                    { key: "alumni", label: "Alumni" },
-                  ].map((r) => (
-                    <div
-                      key={r.key}
-                      onClick={() => { setSelectedRole(r.key); set("role", r.key); }}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold text-center cursor-pointer transition-all duration-200 ${
-                        selectedRole === r.key
-                          ? "bg-navy text-white shadow-sm"
-                          : "text-gray-400 hover:text-navy"
-                      }`}
-                    >
-                      {r.label}
-                    </div>
-                  ))}
-                </div>
-
                 <InputWrapper label="Code d'invitation" icon={Hash}>
                   <input
                     className="input-field pl-10 tracking-widest font-mono uppercase"
@@ -335,7 +305,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={verifyCode}
                   disabled={codeLoading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40"
                   style={{
                     background: "linear-gradient(135deg, #0A1A33, #001948)",
                   }}
@@ -368,11 +338,7 @@ export default function RegisterPage() {
                   <span>
                     Code valide — inscription en tant que{" "}
                     <strong className="capitalize">
-                      {form.role === "teacher"
-                        ? "Professeur"
-                        : form.role === "alumni"
-                          ? "Alumni"
-                          : "Étudiant"}
+                      {form.role === "teacher" ? "Professeur" : "Étudiant"}
                     </strong>
                   </span>
                 </div>
@@ -407,11 +373,9 @@ export default function RegisterPage() {
                     type="email"
                     className="input-field pl-10"
                     placeholder={
-                      form.role === "alumni"
-                        ? "jean.rakoto@gmail.com"
-                        : form.role === "student"
-                          ? "hei.jean@gmail.com"
-                          : "dr.nom@hei.mg"
+                      form.role === "student"
+                        ? "hei.jean@gmail.com"
+                        : "dr.nom@hei.mg"
                     }
                     value={form.email}
                     onChange={(e) => {
@@ -426,11 +390,7 @@ export default function RegisterPage() {
                     <input
                       className="input-field pl-9"
                       placeholder={
-                        form.role === "alumni"
-                          ? "STD21001 ou STD22001"
-                          : form.role === "student"
-                            ? "STD25001"
-                            : "PROF001"
+                        form.role === "student" ? "STD25001" : "PROF001"
                       }
                       value={form.ref}
                       onChange={(e) => {
@@ -451,23 +411,6 @@ export default function RegisterPage() {
                     />
                   </InputWrapper>
                 </div>
-
-                {form.role === "student" && (
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">
-                      Niveau
-                    </label>
-                    <select
-                      className="input-field"
-                      value={form.level}
-                      onChange={(e) => set("level", e.target.value)}
-                    >
-                      <option value="L1">L1 — Première année</option>
-                      <option value="L2">L2 — Deuxième année</option>
-                      <option value="L3">L3 — Troisième année</option>
-                    </select>
-                  </div>
-                )}
 
                 {form.role === "teacher" && (
                   <div>
@@ -559,7 +502,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 mt-1"
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 mt-1 shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40"
                   style={{
                     background: "linear-gradient(135deg, #0A1A33, #001948)",
                   }}

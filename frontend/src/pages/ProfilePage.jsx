@@ -20,7 +20,6 @@ import {
   faChalkboardTeacher,
   faUserShield,
   faUsers,
-  faGraduationCap,
   faEnvelope,
   faIdCard,
   faPen,
@@ -46,11 +45,6 @@ const ROLE_LABEL = {
     cls: "bg-red-500/20 text-red-300",
   },
   bde: { label: "BDE", icon: faUsers, cls: "bg-yellow-500/20 text-yellow-300" },
-  alumni: {
-    label: "Alumni",
-    icon: faGraduationCap,
-    cls: "bg-amber-500/20 text-amber-300",
-  },
 };
 
 export default function ProfilePage() {
@@ -266,8 +260,6 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-gray-400 text-xs">{user?.ref}</span>
-                      {user?.level && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100/10 text-gray-300">{user.level}</span>}
-                      {user?.promo && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100/10 text-gray-300">Promo {user.promo}</span>}
                     </div>
                   </div>
                 </div>
@@ -438,8 +430,6 @@ export default function ProfilePage() {
                           <FontAwesomeIcon icon={roleCfg.icon} className="mr-1.5" />
                           {roleCfg.label}
                         </span>
-                        {user?.level && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">{user.level}</span>}
-                        {user?.promo && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">Promo {user.promo}</span>}
                       </div>
                     </div>
                   </div>

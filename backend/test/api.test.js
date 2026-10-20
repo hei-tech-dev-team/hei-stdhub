@@ -42,8 +42,16 @@ describe("AUTH", () => {
   it("LOGIN référence inexistante → 401", async () => {
     const res = await agent
       .post("/api/auth/login")
-      .send({ ref: "INCONNU999", password: "test" });
+      .send({ ref: "STD99999", password: "test" });
     expect(res.status).to.equal(401);
+    expect(res.body).to.have.property("error", "Référence ou mot de passe incorrect.");
+  });
+
+  it("LOGIN format de référence invalide → 400", async () => {
+    const res = await agent
+      .post("/api/auth/login")
+      .send({ ref: "INCONNU999", password: "test" });
+    expect(res.status).to.equal(400);
   });
 
   it("LOGIN champs manquants → 400", async () => {
@@ -125,7 +133,7 @@ describe("SÉCURITÉ — Injection SQL", () => {
     const res = await agent
       .post("/api/auth/login")
       .send({ ref: "' OR 1=1--", password: "test" });
-    expect(res.status).to.equal(401);
+    expect(res.status).to.equal(400);
   });
 
   it("Injection SQL dans password → pas de bypass", async () => {
@@ -228,5 +236,28 @@ describe("HEALTH", () => {
     const res = await agent.get("/api/health");
     expect(res.status).to.equal(200);
     expect(res.body).to.have.property("status", "ok");
+  });
+});
+
+// Alumni — feature removed
+describe("ALUMNI — supprimé", () => {
+  it("GET /api/alumni-spotlight → 404 (route supprimée)", async () => {
+    const res = await agent.get("/api/alumni-spotlight");
+    expect(res.status).to.equal(404);
+  });
+
+  it("POST /api/admin/invitations { role: alumni } → 400", async () => {
+    const res = await agent
+      .post("/api/admin/invitations")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ role: "alumni" });
+    expect(res.status).to.equal(400);
+  });
+
+  it("POST /api/admin/alumni-upgrade → 404 (route supprimée)", async () => {
+    const res = await agent
+      .post("/api/admin/alumni-upgrade")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).to.equal(404);
   });
 });

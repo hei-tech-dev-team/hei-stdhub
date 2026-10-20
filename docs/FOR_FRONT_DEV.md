@@ -17,10 +17,10 @@ frontend/src/
 │   └── roleFilter.js           # expandRoleFilter, determineRegisterRole, validateRegisterEmail
 ├── assets/
 │   └── logos.js                # HEI_WHITE_LOGO, HEI_BLUE_LOGO
-├── pages/                      # 16 page components
+├── pages/                      # 14 page components
 └── components/
     ├── layout/                 # Sidebar, Navbar
-    ├── dashboard/              # StudentHome, TeacherHome, AlumniHome, AdminHome
+    ├── dashboard/              # StudentHome, TeacherHome, AdminHome
     ├── chat/                   # ChatLayout, ContactList, MessagePanel, useLongPress, chat-utils
     ├── archives/               # ArchiveGrid, ArchiveCard
     └── ui/                     # Avatar, Badge, OnboardingModal, UserAvatar, GlassDomeLogo, JarvisScanAnimation, WaveAnimation
@@ -46,7 +46,6 @@ frontend/src/
 | `/profile/:ref` | UserProfilePage | ProtectedRoute |
 | `/ping-box` | PingBoxPage | ProtectedRoute |
 | `/std-news` | STDnewsPage | ProtectedRoute |
-| `/alumni-spotlight` | AlumniSpotlightPage | ProtectedRoute (alumni only) |
 
 ---
 
@@ -90,20 +89,22 @@ frontend/src/
 
 ### `utils/roleFilter.js`
 - `expandRoleFilter(role)`: `"student"` → `"student,bde"`, else unchanged
-- `determineRegisterRole(inviteRole, isAlumni)`: maps to teacher/alumni/student
-- `validateRegisterEmail(email, role)`: student → `hei.xxx@gmail.com`, alumni → contains `@`, other → always true
+- `determineRegisterRole(inviteRole)`: the invitation code role always wins (identity)
+- `validateRegisterEmail(email, role)`: student → `hei.xxx@gmail.com`, other → always true
 
 ---
 
 ## Pages
 
 ### `LoginPage.jsx`
-- Alumni/student toggle, ref + password fields, show/hide password, error/loading states
+- Single identifier field (ref or teacher/admin code) + password field, show/hide password, error/loading states
+- Generic error message "Référence ou mot de passe incorrect." for any bad credential
 - `handleSubmit`: calls `login()`, navigates to `/`
 
 ### `RegisterPage.jsx`
 - Two-step: 1) verify invite code (`POST /auth/verify-invite`), 2) fill user details
-- Role-specific fields: teacher → UE selection (multi-select), student → level auto, alumni → ref validation
+- No role selector: the role comes from the code and is announced after verification
+- Role-specific fields: teacher → UE selection (multi-select), student → ref/pseudo auto
 - Password confirmation, email validation per role, pseudo availability checked on submit
 
 ### `ForgotPasswordPage.jsx`
@@ -118,7 +119,7 @@ frontend/src/
 - Auto-redirect to `/login` after 2.5s on success
 
 ### `HomePage.jsx`
-- Role-based dashboard: alumni→AlumniHome, teacher/admin→TeacherHome, student/bde→StudentHome
+- Role-based dashboard: teacher/admin→TeacherHome, student/bde→StudentHome
 
 ### `ArchivesPage.jsx`
 - Navbar("Archives de cours") + ArchiveGrid
@@ -139,13 +140,11 @@ frontend/src/
 - Client-side PDF generation via jsPDF with navy/gold branding
 
 ### `AdminPage.jsx`
-- Tabs: Users, Invitations, Stats, Passage de classe (Sept), Nouveaux L1 (Nov)
+- Tabs: Users, Invitations, Annonces, Nouveau étudiant, UEs
 - Users: paginated (50/page), search + role filter, role/email change, delete
 - Invitations: paginated, create (single + bulk up to 1000), delete, copy to clipboard
 - Stats: polling every 3s via `GET /admin/stats`
-- Class upgrade: L1→L2, L2→L3 (redoublants stay); alumni upgrade: L3→alumni
-- L1 registration: auto-generate STD ref, register via `POST /auth/register`
-- Seasonal tabs: September (month 8), November (month 10)
+- New student registration: auto-generate STD ref, register via `POST /auth/register`
 
 ### `ProfilePage.jsx`
 - Avatar upload (PATCH /auth/avatar), pseudo edit (PATCH /auth/profile), password change (PATCH /auth/password)
@@ -160,34 +159,25 @@ frontend/src/
 - `GET /pings`, `PATCH /pings/:id/accept`, `PATCH /pings/:id/refuse`
 
 ### `STDnewsPage.jsx`
-- Combined feed: announcements + alumni tips
+- Announcements feed with search
 - Reactions (like/haha/dont_like/sad) via POST/DELETE
-- Alumni can delete own tips
-- `GET /announcements`, `GET /alumni-spotlight`, reaction endpoints
-
-### `AlumniSpotlightPage.jsx`
-- Create alumni tips with optional image upload
-- `POST /alumni-spotlight` with FormData
+- `GET /announcements`, reaction endpoints
 
 ---
 
 ## Components
 
 ### `Sidebar.jsx`
-- Role-based nav: alumni→restricted (Accueil, Chat, Suggestions, Profile), others→full
-- Conditional: Suggestions (student/teacher/alumni), BDE (bde), Admin (admin)
+- Role-based nav: full link set for everyone, Suggestions (student/teacher), BDE (bde), Admin (admin)
 - Mobile hamburger drawer, active link highlighting
 - Fetches pings + unread counts for badges
 
 ### `Navbar.jsx`
-- Alumni badge (if alumni), page title pill, profile button
+- Page title pill, profile button
 
 ### `StudentHome.jsx`
 
 ### `TeacherHome.jsx`
-
-### `AlumniHome.jsx`
-- Hero section with graduation cap, promo info, quick links (Chat, BDE Suggestions, Profile)
 
 ### `AdminHome.jsx`
 - Announcements CRUD + reactions, `POST /announcements`, `DELETE /announcements/:id`, reaction endpoints
@@ -223,7 +213,7 @@ frontend/src/
 - Single archive card with type badge, date, download link
 
 ### `StudentUpload.jsx`
-- Homework form: pre-filled user info, level/group/UE/type selectors, file drag-drop or link
+- Homework form: pre-filled user info, group/UE/type selectors, file drag-drop or link
 
 ### `TeacherInbox.jsx`
 - Paginated submission table (50/page), server-side search, type/UE filter, download links
@@ -260,7 +250,7 @@ colors: {
   surface: "#F2F4F8",
   contact: "#D9DCE3",
 }
-fontFamily: { quicksand: ["Quicksand", "sans-serif"] }
+fontFamily: { quicksand: ["Quicksand", "sans-serif"], fraunces: ["Fraunces", "serif"] }
 boxShadow: {
   card: "0 2px 12px 0 rgba(0,25,72,0.08)",
   modal: "0 8px 32px 0 rgba(0,25,72,0.16)",

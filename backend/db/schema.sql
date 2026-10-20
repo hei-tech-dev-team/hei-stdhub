@@ -1,19 +1,18 @@
 DROP TABLE IF EXISTS messages    CASCADE;
+DROP TABLE IF EXISTS message_reactions CASCADE;
 DROP TABLE IF EXISTS submissions CASCADE;
 DROP TABLE IF EXISTS supports    CASCADE;
 DROP TABLE IF EXISTS posts       CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
+DROP TABLE IF EXISTS invitations CASCADE;
+DROP TABLE IF EXISTS suggestions CASCADE;
 DROP TABLE IF EXISTS users       CASCADE;
 
 DROP TYPE IF EXISTS user_role   CASCADE;
-DROP TYPE IF EXISTS user_level  CASCADE;
 DROP TYPE IF EXISTS post_type   CASCADE;
-DROP TYPE IF EXISTS submit_type CASCADE;
 
-CREATE TYPE user_role   AS ENUM ('student', 'teacher', 'admin', 'bde', 'alumni', 'developer');
-CREATE TYPE user_level  AS ENUM ('L1', 'L2', 'L3');
+CREATE TYPE user_role   AS ENUM ('student', 'teacher', 'admin', 'bde', 'developer');
 CREATE TYPE post_type   AS ENUM ('cours', 'td', 'examen');
-CREATE TYPE submit_type AS ENUM ('TD', 'Examen');
 
 CREATE TABLE users (
   id         SERIAL       PRIMARY KEY,
@@ -24,25 +23,20 @@ CREATE TABLE users (
   pseudo     VARCHAR(100) NOT NULL UNIQUE,
   password   VARCHAR(255) NOT NULL,
   role       user_role    NOT NULL,
-  level      user_level   NULL,
   avatar     VARCHAR      NULL,
   ues        TEXT[]       DEFAULT '{}',
   first_login BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-  CONSTRAINT chk_student_level CHECK (
-    (role IN ('student', 'bde') AND level IS NOT NULL)
-    OR (role IN ('teacher','admin','alumni','developer') AND level IS NULL)
-  ),
   CONSTRAINT chk_ref_format CHECK (
-    (role IN ('student', 'alumni', 'bde') AND ref ~ '^STD[0-9]{5,}$')
+    (role IN ('student', 'bde') AND ref ~ '^STD[0-9]{5,}$')
     OR (role = 'teacher'   AND ref ~ '^PROF[0-9]{3,}$')
     OR (role = 'admin'     AND ref ~ '^ADMIN[0-9]{3,}$')
     OR (role = 'developer' AND ref ~ '^DEV[0-9]{3,}$')
   ),
   CONSTRAINT chk_student_email CHECK (
     (role = 'student' AND email ~ '^hei\.[a-zA-Z0-9._%+-]+(\.\d+)?@gmail\.com$')
-    OR role IN ('teacher','admin','bde','alumni','developer')
+    OR role IN ('teacher','admin','bde','developer')
   )
 );
 
@@ -98,31 +92,6 @@ CREATE TABLE supports (
   CONSTRAINT chk_support_url CHECK (url ~ '^https?://')
 );
 
-CREATE TABLE submissions (
-  id         SERIAL       PRIMARY KEY,
-  student_id INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
-  nom        VARCHAR(100) NOT NULL,
-  prenom     VARCHAR(100) NOT NULL,
-  email      VARCHAR(150) NOT NULL,
-  ref        VARCHAR(20)  NOT NULL,
-  level      user_level   NOT NULL,
-  groupe     VARCHAR(10)  NOT NULL,
-  ue         VARCHAR(30)  NOT NULL,
-  type       submit_type  NOT NULL,
-  file_name  VARCHAR(255) NULL,
-  file_path  VARCHAR(500) NULL,
-  link       VARCHAR(500) NULL,
-  created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-  CONSTRAINT chk_submission_source CHECK (
-    file_path IS NOT NULL OR link IS NOT NULL
-  ),
-  CONSTRAINT chk_groupe_level CHECK (
-    (level = 'L1' AND groupe IN ('N1','N2','N3','N4'))
-    OR (level = 'L2' AND groupe IN ('K1','K2','K3'))
-    OR (level = 'L3' AND groupe IN ('J1','J2'))
-  )
-);
-
 CREATE TABLE messages (
   id          SERIAL    PRIMARY KEY,
   sender_id   INTEGER   NULL REFERENCES users(id) ON DELETE SET NULL,
@@ -131,6 +100,7 @@ CREATE TABLE messages (
   is_global   BOOLEAN   NOT NULL DEFAULT FALSE,
   seen        BOOLEAN   NOT NULL DEFAULT FALSE,
   seen_at     TIMESTAMP NULL,
+  reply_to_id INTEGER   NULL REFERENCES messages(id) ON DELETE SET NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_message_receiver CHECK (
     (is_global = TRUE  AND receiver_id IS NULL)
@@ -146,10 +116,6 @@ CREATE INDEX idx_posts_type    ON posts(type);
 CREATE INDEX idx_posts_author  ON posts(author_id);
 CREATE INDEX idx_posts_created ON posts(created_at DESC);
 CREATE INDEX idx_supports_ue   ON supports(ue);
-CREATE INDEX idx_subs_student  ON submissions(student_id);
-CREATE INDEX idx_subs_ue       ON submissions(ue);
-CREATE INDEX idx_subs_type     ON submissions(type);
-CREATE INDEX idx_subs_groupe   ON submissions(groupe);
 CREATE INDEX idx_msg_global    ON messages(is_global);
 CREATE INDEX idx_msg_sender    ON messages(sender_id);
 CREATE INDEX idx_msg_receiver  ON messages(receiver_id);
@@ -160,6 +126,44 @@ CREATE INDEX idx_password_reset_user_active
   ON password_reset_tokens(user_id, expires_at)
   WHERE used_at IS NULL;
 
+CREATE TABLE IF NOT EXISTS invitations (
+  id         SERIAL PRIMARY KEY,
+  code       VARCHAR(20) UNIQUE NOT NULL,
+  role       VARCHAR(20) NOT NULL,
+  used       BOOLEAN DEFAULT FALSE,
+  used_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  max_uses   INTEGER DEFAULT 1,
+  use_count  INTEGER DEFAULT 0,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS suggestions (
+  id            SERIAL PRIMARY KEY,
+  student_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  titre         VARCHAR(255) NOT NULL,
+  contenu       TEXT NOT NULL,
+  anonyme       BOOLEAN NOT NULL DEFAULT FALSE,
+  statut        VARCHAR(20) NOT NULL DEFAULT 'recu',
+  justification TEXT NULL,
+  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS message_reactions (
+  id         SERIAL PRIMARY KEY,
+  message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji      VARCHAR(10) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (message_id, user_id)
+);
+
+CREATE INDEX idx_msg_reply_to ON messages(reply_to_id);
+CREATE INDEX idx_reactions_message ON message_reactions(message_id);
+CREATE INDEX idx_reactions_user ON message_reactions(user_id);
+
 -- Indexes for scale (500+ users)
 CREATE INDEX IF NOT EXISTS idx_users_ues_gin ON users USING GIN (ues);
 CREATE INDEX IF NOT EXISTS idx_messages_global_created ON messages(is_global, created_at ASC);
@@ -167,7 +171,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_sender_receiver ON messages(sender_id, r
 CREATE INDEX IF NOT EXISTS idx_messages_receiver_sender ON messages(receiver_id, sender_id);
 CREATE INDEX IF NOT EXISTS idx_invitations_expires ON invitations(expires_at);
 CREATE INDEX IF NOT EXISTS idx_invitations_use_count ON invitations(use_count);
-CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
+CREATE INDEX IF NOT EXISTS idx_suggestions_statut ON suggestions(statut);
+CREATE INDEX IF NOT EXISTS idx_suggestions_student ON suggestions(student_id);
 
 CREATE TABLE IF NOT EXISTS pings (
   id           SERIAL       PRIMARY KEY,
@@ -188,6 +193,8 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, endpoint)
 );
+
+CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
 
 CREATE TABLE IF NOT EXISTS bug_reports (
   id          SERIAL       PRIMARY KEY,
@@ -236,12 +243,12 @@ CREATE TRIGGER trg_posts_updated_at
   BEFORE UPDATE ON posts
   FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
-INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level) VALUES
+INSERT INTO users (ref, nom, prenom, email, pseudo, password, role) VALUES
   ('ADMIN001', 'Admin', 'HEI', 'stdhub.admin@gmail.com', 'ADMIN',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin', NULL),
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin'),
   ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student', 'L1'),
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student'),
   ('PROF001','Tester','PROF','tester@gmail.com','PROFTEST',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher',NULL),
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher'),
   ('DEV001','Developer','HEI','hei.dev@gmail.com','DEV',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','developer',NULL);
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','developer');

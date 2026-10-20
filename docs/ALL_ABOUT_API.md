@@ -158,8 +158,8 @@ The configured instance (`api/axios.js`) automatically:
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| POST | `/register` | No (invite) | Any | Register with invite code (checks pseudo uniqueness) |
-| POST | `/login` | No | Any | Login (3 req/15min rate limit) |
+| POST | `/register` | No (invite) | student/teacher/admin | Register with invite code; role comes from the code, never from the body |
+| POST | `/login` | No | Any | Single-field login: student ref (STD…), teacher (PROF…) or admin/dev code (3 req/15min rate limit) |
 | GET | `/user/:ref` | Yes | Any | Get public profile by reference |
 | POST | `/forgot-password` | No | Any | Request password reset code via push notification |
 | POST | `/forgot-password/verify-code` | No | Any | Verify 6-char reset code, returns reset token |
@@ -203,7 +203,7 @@ The configured instance (`api/axios.js`) automatically:
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| POST | `/` | Yes | student/teacher/alumni/admin | Submit suggestion (profanity filtered) |
+| POST | `/` | Yes | student/teacher/admin | Submit suggestion (profanity filtered) |
 | GET | `/` | Yes | bde | List suggestions (?limit=, ?offset=) |
 | PATCH | `/:id` | Yes | bde | Update suggestion status (recu/accepte/a_discuter/refuse) |
 | POST | `/confirm` | Yes | bde | Confirm round: post summary to global chat + delete all |
@@ -219,9 +219,7 @@ The configured instance (`api/axios.js`) automatically:
 | PATCH | `/users/:id/email` | Yes | admin | Change user email |
 | DELETE | `/users/:id` | Yes | admin | Delete user (cannot delete self) |
 | GET | `/next-pseudo` | Yes | admin | Get next sequential pseudo (new_userX) |
-| POST | `/class-upgrade` | Yes | admin | Upgrade L1→L2, L2→L3 (redoublants stay at current level) |
-| POST | `/alumni-upgrade` | Yes | admin | Promote all L3→alumni |
-| POST | `/invitations` | Yes | admin | Generate single invitation code (14d expiry) |
+| POST | `/invitations` | Yes | admin | Generate single invitation code (student/teacher, 7d expiry) |
 | POST | `/invitations/bulk` | Yes | admin | Bulk generate up to 1000 codes (batch INSERT) |
 | GET | `/invitations?limit=&offset=` | Yes | admin | List invitations (max 200) |
 | DELETE | `/invitations/:id` | Yes | admin | Delete invitation |
@@ -230,19 +228,9 @@ The configured instance (`api/axios.js`) automatically:
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| GET | `/` | Yes | Any | List announcements (?level=, ?limit=, ?offset=) + reactions |
-| POST | `/` | Yes | admin | Create announcement (optional image, target_level, max 10MB) + push |
+| GET | `/` | Yes | Any | List announcements (?limit=, ?offset=) + reactions |
+| POST | `/` | Yes | admin | Create announcement (optional image, max 10MB) + push |
 | DELETE | `/:id` | Yes | admin | Delete announcement |
-| POST | `/:id/react` | Yes | Any | Upsert reaction (like/haha/dont_like/sad) |
-| DELETE | `/:id/react` | Yes | Any | Remove reaction |
-
-### Alumni Spotlight (`/api/alumni-spotlight`)
-
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/` | Yes | Any | List all tips + reactions |
-| POST | `/` | Yes | alumni | Create tip (optional image, max 10MB) + push |
-| DELETE | `/:id` | Yes | owner | Delete own tip |
 | POST | `/:id/react` | Yes | Any | Upsert reaction (like/haha/dont_like/sad) |
 | DELETE | `/:id/react` | Yes | Any | Remove reaction |
 
@@ -279,17 +267,15 @@ The configured instance (`api/axios.js`) automatically:
 
 | Table | Purpose | Key columns |
 |-------|---------|-------------|
-| `users` | User accounts | id, ref (UNIQUE), pseudo (UNIQUE), email, password (bcrypt), role (ENUM), level, avatar, ues (TEXT[]), first_login |
+| `users` | User accounts | id, ref (UNIQUE), pseudo (UNIQUE), email, password (bcrypt), role (ENUM), avatar, ues (TEXT[]), first_login |
 | `messages` | Chat messages | id, sender_id, receiver_id, content, is_global, seen, seen_at |
 | `global_chat_read` | Per-user global chat read tracking | user_id (PK), last_read_msg_id |
 | `push_subscriptions` | Web Push endpoints | user_id, endpoint (UNIQUE combo), auth_key, p256dh_key |
 | `push_notifications` | Persistent notification history | user_id, type, title, body, data (JSONB), is_read |
 | `supports` | External resource links | id, ue, label, url (https://), author_id |
 | `suggestions` | BDE suggestions | id, student_id, titre, contenu, anonyme, statut, justification |
-| `announcements` | Admin announcements | id, title, content, image_url, target_level, author_id |
+| `announcements` | Admin announcements | id, title, content, image_url, author_id |
 | `announcement_reactions` | Announcement reactions | announcement_id, user_id (UNIQUE), reaction_type |
-| `alumni_spotlight` | Alumni tips | id, title, content, image_url, author_id |
-| `alumni_spotlight_reactions` | Alumni tip reactions | tip_id, user_id (UNIQUE), reaction_type |
 | `invitations` | Registration codes | code (UNIQUE), role, max_uses, use_count, expires_at, created_by |
 | `password_reset_tokens` | Password reset | user_id, token_hash (SHA-256), expires_at, used_at |
 | `pings` | Peer-to-peer pings | sender_id, receiver_id, status (pending/accepted/refused) |

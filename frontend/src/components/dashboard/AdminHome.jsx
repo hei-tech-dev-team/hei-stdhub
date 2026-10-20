@@ -9,7 +9,6 @@ import {
   faThumbsDown,
   faFaceSadTear,
   faPaperPlane,
-  faUsers,
   faChevronLeft,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
@@ -36,7 +35,6 @@ const REACTION_LABELS = {
   sad: "Triste",
 };
 
-const LEVELS = ["Tous", "L1", "L2", "L3"];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -45,7 +43,6 @@ export default function AdminHome() {
   const [content, setContent] = useState("");
   const [images, setImages] = useState([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState([]);
-  const [targetLevel, setTargetLevel] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,13 +97,11 @@ export default function AdminHome() {
       await api.post("/announcements", {
         title: title.trim(),
         content: content.trim(),
-        target_level: targetLevel || null,
         images,
       });
       setTitle("");
       setContent("");
       setImages([]);
-      setTargetLevel("");
       setShowForm(false);
       fetchAnnouncements();
     } catch (err) {
@@ -187,25 +182,6 @@ export default function AdminHome() {
     setImages(nextImages);
     setActiveSlide((currentSlide) =>
       Math.min(currentSlide, Math.max(nextImages.length - 1, 0)),
-    );
-  };
-
-  const levelBadge = (level) => {
-    if (!level) return null;
-    const colors = {
-      L1: "bg-cyan-100 text-cyan-700",
-      L2: "bg-emerald-100 text-emerald-700",
-      L3: "bg-amber-100 text-amber-700",
-    };
-    return (
-      <span
-        className={
-          "text-xs font-bold px-2 py-0.5 rounded-full " +
-          (colors[level] || "bg-gray-100 text-gray-600")
-        }
-      >
-        {level}
-      </span>
     );
   };
 
@@ -484,31 +460,6 @@ export default function AdminHome() {
                     </div>
                   </div>
                 )}
-                {/* Level selector */}
-                <div>
-                  <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
-                    <FontAwesomeIcon icon={faUsers} className="mr-1" />
-                    Visible par
-                  </p>
-                  <div className="flex gap-2">
-                    {LEVELS.map((l) => (
-                      <button
-                        key={l}
-                        type="button"
-                        onClick={() => setTargetLevel(l === "Tous" ? "" : l)}
-                        className={
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition " +
-                          ((l === "Tous" && !targetLevel) || targetLevel === l
-                            ? "bg-navy text-white shadow-sm"
-                            : "bg-white border border-contact text-navy hover:border-navy")
-                        }
-                      >
-                        {l === "Tous" ? "Tout le monde" : l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <button
                   onClick={handlePublish}
                   disabled={submitting || !title.trim()}
@@ -563,7 +514,6 @@ export default function AdminHome() {
                         <h2 className="text-lg font-bold text-navy">
                           {ann.title}
                         </h2>
-                        {levelBadge(ann.target_level)}
                       </div>
                       <p className="text-gray-600 text-sm whitespace-pre-wrap mb-4">
                         {ann.content}

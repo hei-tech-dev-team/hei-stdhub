@@ -10,7 +10,7 @@
 
 ## Project Overview
 
-Full-stack web platform for **HEI Madagascar** (school). Students browse course materials, submit homework, chat in real-time, submit suggestions to BDE. Teachers publish materials. BDE manages suggestions via Kanban. Alumni share tips. Admin manages users, invitations, announcements, and seasonal operations.
+Full-stack web platform for **HEI Madagascar** (school). Students browse course materials, submit homework, chat in real-time, submit suggestions to BDE. Teachers publish materials. BDE manages suggestions via Kanban. Admin manages users, invitations, announcements, and seasonal operations.
 
 ---
 
@@ -77,7 +77,6 @@ hei-stdhub-v2/
 │   │   ├── messages.js                  # 14 endpoints — chat, search, upload, favorites, seen, unread
 │   │   ├── suggestions.js               # 5 endpoints — submit, list, patch, confirm, report
 │   │   ├── announcements.js             # 5 endpoints — CRUD + reactions
-│   │   ├── alumniSpotlight.js           # 5 endpoints — CRUD + reactions
 │   │   ├── push.js                      # 5 endpoints — subscribe, unsubscribe, notifications
 │   │   └── pings.js                     # 4 endpoints — send, list, accept, refuse
 │   ├── services/
@@ -111,10 +110,10 @@ hei-stdhub-v2/
 │       │   └── roleFilter.js            # Role expansion, registration helpers
 │       ├── assets/
 │       │   └── logos.js                 # Logo URLs
-│       ├── pages/                       # 16 page components
+│       ├── pages/                       # 14 page components
 │       └── components/                  # Reusable components
 │           ├── layout/                  # Sidebar, Navbar
-│           ├── dashboard/               # StudentHome, TeacherHome, AlumniHome, AdminHome
+│           ├── dashboard/               # StudentHome, TeacherHome, AdminHome
 │           ├── chat/                    # ChatLayout, ContactList, MessagePanel, useLongPress
 │           ├── archives/                # ArchiveGrid, ArchiveCard
 │           ├── td/                      # StudentUpload, TeacherInbox
@@ -126,7 +125,14 @@ hei-stdhub-v2/
     ├── migration_multi_use_invitations.sql
     ├── migration_alumni_support.sql
     ├── migration_chat_seen_pseudo_unique.sql
-    └── migration_scale_500.sql
+    ├── migration_scale_500.sql
+    ├── migration_chat_emoji_transfer_answer.sql
+    ├── migration_groupe_column.sql
+    ├── migration_developer_role.sql
+    ├── migration_refactor_td_exams.sql
+    ├── migration_remove_alumni.sql
+    ├── migration_remove_levels.sql
+    └── migration_remove_groupe.sql
 ```
 
 ---
@@ -135,11 +141,11 @@ hei-stdhub-v2/
 
 | Route | Page | Access | Description |
 |-------|------|--------|-------------|
-| `/login` | LoginPage | Public | Login with ref/password, alumni toggle |
+| `/login` | LoginPage | Public | Single-field login (ref or code) + password |
 | `/register` | RegisterPage | Public | Two-step: invite code + form (role-based fields) |
 | `/forgot-password` | ForgotPasswordPage | Public | Email input → 6-char code via push → new password |
 | `/reset-password` | ResetPasswordPage | Public | Token + new password form |
-| `/` | HomePage | Protected | Role-based dashboard (Student/Teacher/Alumni/AdminHome) |
+| `/` | HomePage | Protected | Role-based dashboard (Student/Teacher/AdminHome) |
 | `/archives` | ArchivesPage | Protected | Course materials by UE with support links |
 | `/chat` | ChatPage | Protected | Real-time chat (global + private) |
 | `/suggestions` | SuggestionPage | Protected | Submit anonymous suggestion to BDE |
@@ -148,39 +154,36 @@ hei-stdhub-v2/
 | `/profile` | ProfilePage | Protected | Avatar, pseudo, password |
 | `/profile/:ref` | UserProfilePage | Protected | View any user's public profile |
 | `/ping-box` | PingBoxPage | Protected | Manage incoming/outgoing pings |
-| `/std-news` | STDnewsPage | Protected | Announcements + alumni spotlight feed with reactions |
-| `/alumni-spotlight` | AlumniSpotlightPage | Alumni | Create alumni tips with optional image |
+| `/std-news` | STDnewsPage | Protected | Announcements feed with reactions |
 
 ---
 
 ## Database Schema
 
 ### Enums
-- `user_role`: `student`, `teacher`, `admin`, `bde`, `alumni`
-- `user_level`: `L1`, `L2`, `L3`
+- `user_role`: `student`, `teacher`, `admin`, `bde`, `developer`
 
 ### Valid UE Codes
 WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1, DONNEES2, THEORIE1-P1, THEORIE1-P2, MGT2, IA1, MOB1, SECU1, SECU2
 
-### Groups
-- L1: N1, N2, N3, N4 (STD25)
-- L2: K1, K2, K3 (STD24)
-- L3: J1, J2 (STD23)
-- Alumni: G prom (STD21), H prom (STD22)
+### Groups (`groupe`)
+- Removed: the `groupe` column and the group letter input are gone
+  (migration_remove_groupe.sql).
 
 ### Seed Data
 - Admin: `ADMIN001` / `password`
-- Student: `STD25001` / `password` (L1)
+- Student: `STD25001` / `password`
 - Teacher: `PROF001` / `password`
-- Invitation codes: `HEI-STD-DEVTEST`, `HEI-PROF-DEVTEST`, `HEI-ALUM-DEVTEST`
+- Developer: `DEV001` / `password`
+- Invitation codes are generated from the admin panel (student/teacher only, 7-day expiry)
 
 ---
 
 ## Authentication Flow
 
-1. **Registration**: Valid invitation code required (generated by admin). Code verified via `POST /api/auth/verify-invite`. Registration creates user, increments invite `use_count`, returns JWT. Admin can also register users directly (L1 registration in November).
-2. **Login**: `ref` + `password`. Server verifies bcrypt hash, checks `first_login` flag, returns JWT + user data.
-3. **JWT**: `{ id, ref, role, ues, level }` signed with `JWT_SECRET`, expires in **7 days**. Sent as `Bearer <token>` in `Authorization` header.
+1. **Registration**: Valid invitation code required (generated by admin, 7-day expiry). Code verified via `POST /api/auth/verify-invite`; the code alone decides the role (student/teacher) — a contradicting role in the body returns 403. The code is consumed in the same transaction as the user INSERT. Admin can also register users directly from the admin panel.
+2. **Login**: Single identifier field + `password`. The server trims/uppercases it, checks the `STD…`/`PROF…`/`ADMIN…`/`DEV…` format (400 otherwise), runs a dummy bcrypt compare for unknown refs and always returns the same 401 message ("Référence ou mot de passe incorrect.") to prevent account enumeration. Returns JWT + user data + access rights.
+3. **JWT**: `{ id, ref, role, ues }` signed with `JWT_SECRET`, expires in **7 days**. Sent as `Bearer <token>` in `Authorization` header.
 4. **Auth Middleware**: Verifies JWT on protected routes, attaches `req.user`.
 5. **Frontend**: Token in `localStorage` key `hei_token`. User object in `hei_user`. Axios interceptor adds `Authorization`. On 401 (non-auth routes), token cleared + redirect to `/login`.
 6. **Rate Limiting**: Login/register: 3 req/15min. Forgot-password: 2 req/15min. Verify-code: 2 req/15min.
@@ -199,7 +202,7 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 - **Typing Indicators**: `typing:started`/`typing:stopped` — global chat uses `socket.to("global-chat")`, private uses `io.to(user:{contactId})`.
 - **Pings**: `ping:new`, `ping:accepted`, `ping:refused` events sent to affected user rooms.
 - **BDE Sync**: BDE members join `bde` room. Drag-and-drop events scoped via `socket.to("bde")`.
-- **Push Notifications**: Sent via `sendPushToUser` (private messages) or `sendPushToAll` (announcements, alumni tips) with concurrency control (10 parallel). Invalid subscriptions cleaned up on 410/404.
+- **Push Notifications**: Sent via `sendPushToUser` (private messages) or `sendPushToAll` (announcements) with concurrency control (10 parallel). Invalid subscriptions cleaned up on 410/404.
 - **Connection Auth**: JWT verified via `socket.handshake.auth.token` on connection.
 - **Performance**: `perMessageDeflate` compression (threshold: 1KB), `maxHttpBufferSize` (1MB), `connectionStateRecovery` (2 min window), `pingTimeout` (20s).
 - **Reconnection**: Stale rooms cleaned on reconnect. `refreshSocket()` for token changes.
@@ -211,7 +214,6 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 - **Avatars**: Cloudinary `hei-stdhub/avatars` folder, 200x200 crop (local fallback: `backend/uploads/avatars/`). Max 5MB.
 - **Chat files**: Cloudinary `hei-stdhub/chat` folder (local fallback: `backend/uploads/chat/`). Max 10MB. Supports docs, images, code files.
 - **Announcements**: Cloudinary `hei-stdhub/announcements` folder, 1200px width limit (local fallback). Max 10MB.
-- **Alumni Spotlight**: Cloudinary `hei-stdhub/alumni-spotlight` folder, 1200px width limit (local fallback). Max 10MB.
 
 ---
 
@@ -291,23 +293,22 @@ npm run release:major   # 1.9.0 -> 2.0.0
 
 ### Styling
 - Colors: Navy (`#001948`, `#0A1A33`), Gold (`#DFA408`, `#F2C94C`), Surface (`#F2F4F8`), Contact (`#D9DCE3`).
-- Font: Quicksand (sans-serif).
+- Fonts: Quicksand (body), Fraunces (auth page headings).
 - Glassmorphism on auth pages, chat, onboarding modal.
 
-### Seasonal Admin Features
-- **September** (`month === 8`, 0-indexed): "Passage de classe" tab — promote L1→L2, L2→L3 (redoublants excluded); "Alumni" tab — promote all L3→alumni.
-- **November** (`month === 10`, 0-indexed): "Nouveaux L1" tab — register new L1 students with auto-generated STD ref.
+### Admin Tabs
+- Always visible: Utilisateurs, Invitations, Annonces, Nouveau étudiant (auto-generated STD ref), UEs (archive).
 
 ### BDE Workflow
-1. Suggestions submitted (optionally anonymous) by students/teachers/alumni.
+1. Suggestions submitted (optionally anonymous) by students/teachers/admin.
 2. BDE Kanban: 4 columns (Reçu, Accepté, À discuter, Refusé).
 3. Drag-and-drop with mouse/touch, real-time sync via Socket.IO.
 4. Refuse requires justification.
 5. "Confirm & generate report" posts summary to global chat + generates PDF + deletes all suggestions.
 
 ### Invitation Codes
-- Format: `HEI-STD-XXXXXX`, `HEI-PROF-XXXXXX`, `HEI-ALUM-XXXXXX`
-- Expire: 14 days
+- Format: `HEI-STD-XXXXXX` (student), `HEI-PROF-XXXXXX` (teacher)
+- Expire: 7 days
 - Configurable `max_uses` (default 1)
 - Bulk generation: up to 1000 codes, batch INSERT of 100
 
@@ -316,7 +317,6 @@ npm run release:major   # 1.9.0 -> 2.0.0
 - Student refs: `STD\d{5,}`
 - Teacher refs: `PROF\d{3,}`
 - Admin refs: `ADMIN\d{3,}`
-- Alumni refs: `STD21\d+` or `STD22\d+`
 - Messages: profanity filter on global chat
 - Suggestions: profanity filter on title and content
 

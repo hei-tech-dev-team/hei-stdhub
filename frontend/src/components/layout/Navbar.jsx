@@ -1,13 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGraduationCap } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import UserAvatar from "../ui/UserAvatar";
 
 export default function Navbar({ title }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isAlumni = user?.role === "alumni";
 
   return (
     <header
@@ -16,12 +13,6 @@ export default function Navbar({ title }) {
                        bg-white border-b border-contact shrink-0"
     >
       <div className="ml-12 lg:ml-0 flex items-center gap-3">
-        {isAlumni && (
-          <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
-            <FontAwesomeIcon icon={faGraduationCap} className="text-[10px]" />
-            Alumni{user?.promo ? ` ${user.promo}` : ""}
-          </span>
-        )}
         {title ? (
           <div
             className="bg-navy-dark text-white font-bold text-xs

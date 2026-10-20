@@ -12,7 +12,6 @@ import {
       faChalkboardTeacher,
       faUserShield,
       faUsers,
-      faGraduationCap,
       faIdCard,
       faCommentDots,
       faSpinner,
@@ -41,11 +40,6 @@ const ROLE_CFG = {
             label: "BDE",
             icon: faUsers,
             cls: "bg-yellow-500/20 text-yellow-300",
-      },
-      alumni: {
-            label: "Alumni",
-            icon: faGraduationCap,
-            cls: "bg-amber-500/20 text-amber-300",
       },
 };
 
@@ -247,13 +241,6 @@ export default function UserProfilePage() {
                                                                                     roleCfg.label
                                                                               }
                                                                         </span>
-                                                                        {profile.level && (
-                                                                              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                                                                                    {
-                                                                                          profile.level
-                                                                                    }
-                                                                              </span>
-                                                                        )}
                                                                   </div>
                                                             </div>
                                                       </div>

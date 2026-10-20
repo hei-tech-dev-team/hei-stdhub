@@ -1,7 +1,6 @@
 import Sidebar from "../components/layout/Sidebar";
 import TeacherHome from "../components/dashboard/TeacherHome";
 import StudentHome from "../components/dashboard/StudentHome";
-import AlumniHome from "../components/dashboard/AlumniHome";
 import AdminHome from "../components/dashboard/AdminHome";
 import { useAuth } from "../context/AuthContext";
 
@@ -17,8 +16,6 @@ export default function HomePage() {
       >
         {user?.role === "admin" ? (
           <AdminHome />
-        ) : user?.role === "alumni" ? (
-          <AlumniHome />
         ) : user?.role === "teacher" ? (
           <TeacherHome />
         ) : (

@@ -177,10 +177,10 @@ it("protected route", async () => {
 - [ ] `JWT_SECRET` is a production-worthy random string
 - [ ] Rate limiting active (not in test mode)
 - [ ] VAPID keys persisted in production
-- [ ] Cloudinary uploads work (avatars, chat, announcements, alumni spotlight)
+- [ ] Cloudinary uploads work (avatars, chat, announcements)
 - [ ] Push notifications work (service worker + VAPID keys)
 - [ ] Socket.IO connects in production (CORS config)
 - [ ] Keep-alive ping configured (prevent Render sleep)
 - [ ] Invitation codes generate and validate
-- [ ] Role-based access control works (admin, bde, teacher, student, alumni)
-- [ ] Seasonal features show at correct times (Sept upgrade, Nov L1 registration)
+- [ ] Role-based access control works (admin, bde, teacher, student)
+- [ ] New student registration works from the admin panel (Nov tab)

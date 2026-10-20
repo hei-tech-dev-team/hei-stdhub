@@ -1,6 +1,6 @@
 # HEI STDhub — v1.9.0
 
-Full-stack web platform for HEI students, alumni, teachers, and admin. Access course materials (cours), submit homework, chat in real-time with role badges, suggest improvements to the BDE, browse alumni tips & school announcements, ping other users, and manage the school community — all with a navy/gold glassmorphism UI.
+Full-stack web platform for HEI students, teachers, and admin. Access course materials (cours), submit homework, chat in real-time with role badges, suggest improvements to the BDE, browse school announcements, ping other users, and manage the school community — all with a navy/gold glassmorphism UI.
 
 ## Stack
 
@@ -12,18 +12,16 @@ Full-stack web platform for HEI students, alumni, teachers, and admin. Access co
 
 ## Features
 
-- **Auth** — Login, register with invitation codes; push-based password reset (6-char code via push notification); alumni/student toggle on login & register pages; unique pseudo enforcement
-- **Alumni** — Dedicated AlumniHome dashboard; amber "Alumni · Promo X" badge in Navbar and chat; restricted nav (Home, Chat, Suggestions, Profile only); alumni ref validation (STD21xxx/STD22xxx)
-- **Dashboard** — Role-based: StudentHome, TeacherHome, AlumniHome (quick links), AdminHome (announcements + reactions)
+- **Auth** — Single-field login (student reference, teacher or admin code + password), register with invitation codes (role taken from the code); push-based password reset (6-char code via push notification); unique pseudo enforcement
+- **Dashboard** — Role-based: StudentHome, TeacherHome, AdminHome (announcements + reactions)
 - **Archives** — Course materials (cours) by UE with support links; teachers can add/delete support links
 - **Chat** — Real-time global & private messaging with Socket.IO, online/offline indicators, file/image sharing (10MB), seen/delivered status with batch marking, message deletion (own messages only), unread badges (global + per-contact), role badges, favorites, push notifications via Web Push API, typing indicators, image lightbox
-- **Suggestions** — Submit ideas (students, alumni, teachers, admin); BDE reviews with drag-and-drop Kanban, real-time sync via Socket.IO, generates PDF reports shared to global chat
+- **Suggestions** — Submit ideas (students, teachers, admin); BDE reviews with drag-and-drop Kanban, real-time sync via Socket.IO, generates PDF reports shared to global chat
 - **BDE Kanban** — 4 columns (Reçu/Accepté/À discuter/Refusé), drag-and-drop with mouse/touch, real-time multi-user sync, justification required for refusal, confirm round posts summary to global chat
 - **Pings** — Send pings to other users; accept or refuse; real-time notifications via Socket.IO
-- **Announcements** — Admin creates announcements with optional level targeting (L1/L2/L3) and images; all users can react (like/haha/dont_like/sad)
-- **Alumni Spotlight** — Alumni share tips with images; all users can react; alumni can delete their own tips
-- **STDnews** — Combined feed of announcements + alumni spotlight with reactions
-- **Admin** — User management (search, role/email change, delete), invitation management (single + bulk up to 1000), stats dashboard with live polling, class upgrade (L1→L2, L2→L3, redoublants stay), alumni upgrade (L3→alumni), next-pseudo generator, L1 registration (November), real-time user updates via Socket.IO
+- **Announcements** — Admin creates announcements with optional images; all users can react (like/haha/dont_like/sad)
+- **STDnews** — Announcements feed with reactions
+- **Admin** — User management (search, role/email change, delete), invitation management (single + bulk up to 1000), stats dashboard with live polling, next-pseudo generator, new student registration, real-time user updates via Socket.IO
 - **Profile** — Avatar upload (Cloudinary/local fallback), unique pseudo update, password change with current password verification
 - **User profiles** — View any user's public profile from chat; send pings from profile page
 - **UI/UX** — Glassmorphism design, smooth micro-animations, responsive mobile layout, onboarding modal with 5-step wizard + floating particles, image lightbox in chat, file upload preview, scroll-to-bottom button, infinite scroll pagination

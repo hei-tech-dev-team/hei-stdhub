@@ -69,14 +69,24 @@ if (useCloudinary) {
   }).single("avatar");
 }
 
+const genericForgotPasswordResponse = {
+  message: "Si un compte existe avec cet email, un lien de réinitialisation vous a été envoyé.",
+};
+
 const router = express.Router();
 
 const makeToken = (user) =>
   jwt.sign(
-    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [], level: user.level || null },
+    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [] },
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
+
+const REF_FORMAT = /^(STD\d{5,}|PROF\d{3,}|ADMIN\d{3,}|DEV\d{3,})$/;
+
+// Hash bcrypt factice : comparé quand la référence n'existe pas, pour que le
+// temps de réponse ne révèle pas l'existence du compte (anti-énumération).
+const DUMMY_HASH = "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
 const hashResetToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
@@ -100,6 +110,12 @@ const tryGetAdminFromToken = (req) => {
   }
 };
 
+const INVITE_ROLE_LABELS = {
+  student: "étudiants",
+  teacher: "professeurs",
+  bde: "BDE",
+};
+
 router.post("/register", async (req, res) => {
   const {
     ref,
@@ -108,91 +124,166 @@ router.post("/register", async (req, res) => {
     email,
     pseudo,
     password,
-    role,
-    level,
-    groupe,
+    role: bodyRole,
     inviteCode,
     ues,
   } = req.body;
 
-  if (!ref || !nom || !prenom || !email || !pseudo || !password || !role)
+  if (!ref || !nom || !prenom || !email || !pseudo || !password)
     return res.status(400).json({ error: "Tous les champs sont requis." });
-
-  if (role === "teacher" && (!ues || ues.length === 0))
-    return res
-      .status(400)
-      .json({ error: "Un professeur doit avoir au moins une UE." });
-
-  if (role === "alumni") {
-    const refUpper = ref.trim().toUpperCase();
-    if (!/^STD2[12]\d{3,}$/.test(refUpper))
-      return res.status(400).json({ error: "Les alumni doivent avoir une reference STD21xxx ou STD22xxx." });
-  }
 
   const adminUser = tryGetAdminFromToken(req);
   if (!inviteCode && !adminUser)
     return res.status(400).json({ error: "Code d'invitation requis." });
 
+  const refUpper = String(ref).trim().toUpperCase();
+  const emailLower = String(email).trim().toLowerCase();
+
+  const client = await db.pool.connect();
   try {
+    await client.query("BEGIN");
+
+    let role;
+
     if (inviteCode) {
-      const invite = await db.query(
-        `SELECT * FROM invitations WHERE code=$1 AND use_count < max_uses AND expires_at > NOW()`,
-        [inviteCode.toUpperCase()],
+      // Le rôle effectif vient UNIQUEMENT du code, jamais du body client.
+      const { rows } = await client.query(
+        `SELECT * FROM invitations WHERE code = $1 FOR UPDATE`,
+        [String(inviteCode).toUpperCase()],
       );
-      if (!invite.rows.length)
+      const invite = rows[0];
+      if (
+        !invite ||
+        invite.use_count >= invite.max_uses ||
+        new Date(invite.expires_at) <= new Date()
+      ) {
+        await client.query("ROLLBACK");
         return res
           .status(400)
           .json({ error: "Code d'invitation invalide ou expiré." });
-      if (invite.rows[0].role !== role)
+      }
+      role = invite.role;
+      if (bodyRole && bodyRole !== role) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({
+          error: `Ce code d'invitation est réservé aux ${INVITE_ROLE_LABELS[role] || role}.`,
+        });
+      }
+    } else {
+      // Chemin token admin/developer sans code : création limitée à ces rôles.
+      role = bodyRole;
+      if (!["student", "teacher", "bde"].includes(role)) {
+        await client.query("ROLLBACK");
         return res
-          .status(403)
-          .json({ error: `Ce code d'invitation est réservé aux ${invite.rows[0].role === "teacher" ? "professeurs" : invite.rows[0].role === "alumni" ? "alumni" : "étudiants"}.` });
+          .status(400)
+          .json({ error: "Rôle non autorisé à l'inscription." });
+      }
     }
 
-    const existingRef = await db.query(
-      "SELECT id FROM users WHERE ref=$1", [ref.toUpperCase()],
+    if (role === "student" || role === "bde") {
+      if (!/^STD\d{5,}$/.test(refUpper)) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Un étudiant doit avoir une référence STDxxxxx." });
+      }
+      if (
+        role === "student" &&
+        !/^hei\.[a-zA-Z0-9._%+-]+@gmail\.com$/.test(emailLower)
+      ) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Un étudiant doit utiliser un email HEI (@gmail.com)." });
+      }
+    } else if (role === "teacher") {
+      if (!/^PROF\d{3,}$/.test(refUpper)) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Un professeur doit avoir une référence PROFxxxxx." });
+      }
+      if (!ues || !Array.isArray(ues) || ues.length === 0) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Un professeur doit avoir au moins une UE." });
+      }
+      const { rows: existingUes } = await client.query(
+        "SELECT ue FROM custom_ues WHERE ue = ANY($1::text[])",
+        [ues],
+      );
+      if (existingUes.length !== new Set(ues).size) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Une ou plusieurs UE sont inconnues." });
+      }
+    }
+
+    const existingRef = await client.query(
+      "SELECT id FROM users WHERE ref=$1", [refUpper],
     );
-    if (existingRef.rows.length)
+    if (existingRef.rows.length) {
+      await client.query("ROLLBACK");
       return res.status(409).json({ error: "Référence déjà utilisée." });
+    }
 
-    const existingEmail = await db.query(
-      "SELECT id FROM users WHERE email=$1", [email.toLowerCase()],
+    const existingEmail = await client.query(
+      "SELECT id FROM users WHERE email=$1", [emailLower],
     );
-    if (existingEmail.rows.length)
+    if (existingEmail.rows.length) {
+      await client.query("ROLLBACK");
       return res.status(409).json({ error: "Email déjà utilisé." });
+    }
 
-    const existingPseudo = await db.query(
+    const existingPseudo = await client.query(
       "SELECT id FROM users WHERE pseudo=$1", [capitalize(pseudo)],
     );
-    if (existingPseudo.rows.length)
+    if (existingPseudo.rows.length) {
+      await client.query("ROLLBACK");
       return res.status(409).json({ error: "Pseudo déjà pris." });
+    }
 
     const hash = await bcrypt.hash(password, 10);
-    const { rows } = await db.query(
-      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues, groupe)
- VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
- RETURNING id, ref, nom, prenom, email, pseudo, role, level, groupe, ues, first_login`,
+    const { rows } = await client.query(
+      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, ues)
+ VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+ RETURNING id, ref, nom, prenom, email, pseudo, role, ues, first_login`,
       [
-        ref.toUpperCase(),
+        refUpper,
         capitalize(nom),
         capitalize(prenom),
-        email.toLowerCase(),
+        emailLower,
         capitalize(pseudo),
         hash,
         role,
-        level || null,
         ues || [],
-        groupe || null,
       ],
     );
 
     const newUser = rows[0];
+
     if (inviteCode) {
-      await db.query(
-        `UPDATE invitations SET use_count = use_count + 1, used_by = $1 WHERE code = $2 AND use_count < max_uses`,
-        [newUser.id, inviteCode.toUpperCase()],
+      // Consommation atomique dans la même transaction que l'INSERT user :
+      // le SELECT ... FOR UPDATE ci-dessus a verrouillé la ligne, deux
+      // inscriptions concurrentes sur un code max_uses=1 ne peuvent pas
+      // toutes les deux passer.
+      const consumed = await client.query(
+        `UPDATE invitations
+         SET use_count = use_count + 1, used_by = $1
+         WHERE code = $2 AND use_count < max_uses AND expires_at > NOW()`,
+        [newUser.id, String(inviteCode).toUpperCase()],
       );
+      if (consumed.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Code d'invitation invalide ou expiré." });
+      }
     }
+
+    await client.query("COMMIT");
 
     try {
       const io = req.app.get("io");
@@ -200,10 +291,12 @@ router.post("/register", async (req, res) => {
     } catch (_) {}
 
     res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
-
   } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
+  } finally {
+    client.release();
   }
 });
 
@@ -214,26 +307,41 @@ router.post("/login", async (req, res) => {
   if (ref.includes("@"))
     return res.status(400).json({ error: "Veuillez entrer votre référence, pas votre email." });
 
+  const refUpper = String(ref).trim().toUpperCase();
+  if (!REF_FORMAT.test(refUpper))
+    return res.status(400).json({ error: "Format de référence invalide." });
+
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, ues, avatar, first_login
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, ues, avatar, first_login
        FROM users WHERE ref=$1`,
-      [ref.toUpperCase()],
+      [refUpper],
     );
-    if (!rows.length)
-      return res.status(401).json({ error: "Référence introuvable." });
+
+    if (!rows.length) {
+      await bcrypt.compare(password, DUMMY_HASH);
+      return res.status(401).json({ error: "Référence ou mot de passe incorrect." });
+    }
 
     const user = rows[0];
     if (!(await bcrypt.compare(password, user.password)))
-      return res.status(401).json({ error: "Mot de passe incorrect." });
+      return res.status(401).json({ error: "Référence ou mot de passe incorrect." });
 
     const isFirstLogin = user.first_login;
     if (isFirstLogin) {
       await db.query("UPDATE users SET first_login = FALSE WHERE id = $1", [user.id]);
     }
 
+    const access = {
+      role: user.role,
+      bde: user.role === "bde",
+      admin: user.role === "admin",
+      teacher: user.role === "teacher",
+      developer: user.role === "developer",
+    };
+
     const { password: _, first_login: __, ...safeUser } = user;
-    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin });
+    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin, access });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -290,7 +398,7 @@ router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, re
 router.get("/user/:ref", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT id, ref, nom, prenom, pseudo, role, level, avatar FROM users WHERE ref=$1",
+      "SELECT id, ref, nom, prenom, pseudo, role, avatar FROM users WHERE ref=$1",
       [req.params.ref.toUpperCase()],
     );
     if (!rows.length)
@@ -493,7 +601,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, role, level, ues, avatar
+      `SELECT id, ref, nom, prenom, email, pseudo, role, ues, avatar
        FROM users WHERE id=$1`,
       [req.user.id],
     );
@@ -534,7 +642,7 @@ router.patch("/profile", auth, async (req, res) => {
 
     const { rows } = await db.query(
       `UPDATE users SET pseudo=$1 WHERE id=$2
-       RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+       RETURNING id, ref, nom, prenom, email, pseudo, role, avatar`,
       [pseudo.trim(), req.user.id],
     );
     res.json(rows[0]);
@@ -580,7 +688,7 @@ router.patch("/avatar", auth, (req, res) => {
 
       const { rows } = await db.query(
         `UPDATE users SET avatar=$1 WHERE id=$2
-         RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+         RETURNING id, ref, nom, prenom, email, pseudo, role, avatar`,
         [avatarUrl, req.user.id],
       );
       res.json(rows[0]);

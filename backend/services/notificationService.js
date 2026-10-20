@@ -122,33 +122,4 @@ async function sendPushToAll({ title, body, tag, url, type }) {
   }
 }
 
-async function sendPushToLevel(level, { title, body, tag, url, type }) {
-  const data = { title, body, tag, url, icon: "/logo.png" };
-  const notifType = type || "general";
-  try {
-    const { rows: users } = await db.query(
-      `SELECT id FROM users WHERE level = $1`,
-      [level],
-    );
-    await saveNotificationsBatch(users.map(r => r.id), notifType, title, body, data);
-  } catch (err) {
-    console.error("sendPushToLevel save error:", err.message);
-  }
-
-  try {
-    const { rows } = await db.query(
-      `SELECT DISTINCT ON (ps.endpoint) ps.endpoint, ps.auth_key AS "auth", ps.p256dh_key AS "p256dh"
-       FROM push_subscriptions ps
-       JOIN users u ON u.id = ps.user_id
-       WHERE u.level = $1`,
-      [level],
-    );
-    if (!rows.length) return;
-    const payload = JSON.stringify(data);
-    await sendPushWithConcurrency(rows, payload);
-  } catch (err) {
-    console.error("sendPushToLevel push error:", err.message);
-  }
-}
-
-module.exports = { sendPushToUser, sendPushToAll, sendPushToLevel, sendPushWithConcurrency, saveNotification };
+module.exports = { sendPushToUser, sendPushToAll, sendPushWithConcurrency, saveNotification };

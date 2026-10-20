@@ -5,10 +5,10 @@ const auth = require("../middleware/auth");
 
 
 router.post("/", auth, async (req, res) => {
-  if (!["student", "teacher", "alumni", "admin"].includes(req.user.role))
+  if (!["student", "teacher", "admin"].includes(req.user.role))
     return res
       .status(403)
-      .json({ error: "Réservé aux étudiants, professeurs, alumni et admin." });
+      .json({ error: "Réservé aux étudiants, professeurs et admin." });
 
   const { titre, contenu, anonyme } = req.body;
   if (!titre?.trim() || !contenu?.trim())
