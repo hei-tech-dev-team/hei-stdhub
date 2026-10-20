@@ -169,16 +169,16 @@ export default function RegisterPage() {
     <AuthShell
       headline="Rejoignez"
       headlineAccent="la communauté !"
-      sub="Créez votre compte pour accéder aux ressources, archives et échanges en temps réel."
+      sub="Créez votre compte pour interagir avec la tribu HEI."
       cardTitle="Inscription sur invitation"
-      cardSub="Code requis — contactez l'admin"
+      cardSub="Code requis -- "
       title="Créer un compte"
       subtitle="Inscription sur invitation uniquement"
       footer={
         <p className="text-xs text-gray-400">
           Déjà un compte ?{" "}
           <Link to="/login" className="text-navy font-bold hover:underline">
-            Se connecter
+            Connectez-vous
           </Link>
         </p>
       }
@@ -193,15 +193,15 @@ export default function RegisterPage() {
               Accès sur invitation uniquement
             </p>
             <p className="text-gray-500 text-xs leading-relaxed">
-              Contactez l'administrateur à{" "}
+              Contactez l'equipe de STDhub à{" "}
               <a
                 href="mailto:stdhub.admin@gmail.com"
                 className="text-[#001948] hover:underline font-medium"
               >
                 stdhub.admin@gmail.com
               </a>{" "}
-              en précisant votre rôle. Le code est unique et expire après
-              7 jours.
+              en précisant votre rôle. Un code d'invitation vous sera fourni
+              dans les plus bref delai.
             </p>
           </div>
 
@@ -401,11 +401,7 @@ export default function RegisterPage() {
             </InputWrapper>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="auth-submit mt-1"
-          >
+          <button type="submit" disabled={loading} className="auth-submit mt-1">
             {loading ? (
               "Inscription..."
             ) : (
