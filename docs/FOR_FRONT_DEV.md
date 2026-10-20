@@ -98,8 +98,8 @@ frontend/src/
 
 All four auth pages (`LoginPage`, `RegisterPage`, `ForgotPasswordPage`,
 `ResetPasswordPage`) render through the shared `AuthShell` component
-(uniform navy/gold two-panel card, Fraunces headings, `.auth-*` controls,
-gold focus states).
+(flat full-screen navy/white split, Fraunces headings, `.auth-*` controls,
+gold accents).
 
 ### `LoginPage.jsx`
 - Single identifier field (ref or teacher/admin code) + password field, show/hide password, error/loading states
@@ -173,13 +173,13 @@ gold focus states).
 ## Components
 
 ### `auth/AuthShell.jsx`
-- Uniform shell for the 4 auth pages: navy gradient background, left brand
-  panel (Fraunces headline with gold accent line, gold-bordered info card),
-  right form panel (mobile logo, Fraunces title + gold rule, content,
-  footer slot)
+- Uniform shell for the 4 auth pages: full-screen two-panel split — flat
+  navy brand panel (Fraunces headline with gold accent line, gold-left-rule
+  caption) and white form panel (mobile logo, Fraunces title with gold
+  full stop, content, footer slot). No gradients, blobs or glow shadows.
 - Also exports `AuthBackLink` (back-to-login link used by forgot/reset)
 - Pairs with `.auth-label / .auth-error / .auth-submit / .auth-foot` and
-  `.auth-page .input-field` (gold focus) in `index.css`
+  `.auth-page .input-field` (flat fill fields, gold focus) in `index.css`
 
 ### `Sidebar.jsx`
 - Role-based nav: full link set for everyone, Suggestions (student/teacher), BDE (bde), Admin (admin)

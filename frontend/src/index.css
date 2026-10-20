@@ -74,25 +74,24 @@
   }
 
   .auth-page .input-field {
-    @apply focus:border-gold focus:ring-gold/25;
+    @apply bg-[#F6F7F8] border border-transparent focus:bg-white focus:border-gold/50 focus:ring-1 focus:ring-gold/20;
   }
 
   /* Auth pages (AuthShell) — uniform typography and controls */
   .auth-label {
-    @apply text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide;
+    @apply text-[11px] font-semibold text-navy/50 mb-2 block uppercase tracking-[0.1em];
   }
 
   .auth-error {
-    @apply bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2;
+    @apply bg-[#FEF3F2] border border-[#FECACA] text-[#B42318] text-[13px] px-4 py-3 rounded-lg mb-6 flex items-center gap-2;
   }
 
   .auth-submit {
-    @apply w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40;
-    background: linear-gradient(135deg, #0a1a33, #001948);
+    @apply w-full py-3 rounded-xl font-semibold text-sm text-white bg-navy hover:bg-navy-dark transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:ring-offset-2;
   }
 
   .auth-foot {
-    @apply mt-6 text-center border-t border-gray-100 pt-5;
+    @apply mt-7 text-center border-t border-gray-100 pt-5;
   }
 
   /* Buttons */

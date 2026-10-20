@@ -4,9 +4,11 @@ import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../../assets/logos";
 
 /**
  * Shell uniforme des pages d'authentification (login, register,
- * forgot-password, reset-password) : fond navy, panneau marque à gauche
- * (titre Fraunces + accent or, carte à bordure or), panneau formulaire à
- * droite (logo mobile, titre Fraunces + filet or, contenu, pied de page).
+ * forgot-password, reset-password) : plein écran en deux volets — volet
+ * marque navy plat (titre Fraunces + accent or, repère or à gauche) et
+ * volet formulaire blanc (logo mobile, titre Fraunces avec point or,
+ * contenu, pied de page). Aucun dégradé ni ornement : typographie,
+ * aplats et espacement.
  */
 export default function AuthShell({
   headline,
@@ -20,90 +22,77 @@ export default function AuthShell({
   footer,
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8 auth-page">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-white/3 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative w-full max-w-4xl">
-        <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex min-h-[540px]">
-          <div
-            className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
-            style={{
-              background:
-                "linear-gradient(160deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
-            }}
-          >
-            <div className="absolute top-[-60px] left-[-60px] w-56 h-56 bg-white/10 rounded-full" />
-            <div className="absolute top-[30%] right-[-80px] w-72 h-72 bg-white/8 rounded-full" />
-            <div className="absolute bottom-[-40px] left-[20%] w-48 h-48 bg-white/10 rounded-full" />
-            <div className="absolute bottom-[20%] left-[-30px] w-32 h-32 bg-white/12 rounded-full" />
-            <div className="absolute top-[55%] right-[10%] w-20 h-20 bg-white/10 rounded-full" />
-
-            <div className="relative z-10 flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <img
-                  src={HEI_WHITE_LOGO}
-                  alt="HEI"
-                  className="w-8 h-8 object-contain"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                  }}
-                />
-              </div>
-              <div>
-                <span className="text-white font-bold text-lg leading-none block">
-                  HEI STDhub
-                </span>
-                <span className="text-white/60 text-xs">
-                  Plateforme étudiante
-                </span>
-              </div>
-            </div>
-
-            <div className="relative z-10">
-              <h2 className="text-white text-3xl font-bold leading-snug mb-3 font-fraunces">
-                {headline}
-                <br />
-                <span className="text-gold-light">{headlineAccent}</span>
-              </h2>
-              <p className="text-white/60 text-sm leading-relaxed">{sub}</p>
-            </div>
-
-            <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20 border-l-2 border-l-gold">
-              <p className="text-white/80 text-xs font-medium">{cardTitle}</p>
-              <p className="text-white/50 text-xs mt-0.5">{cardSub}</p>
-            </div>
+    <div className="min-h-screen bg-white flex auth-page">
+      <aside className="hidden lg:flex lg:w-[42%] bg-navy relative flex-col justify-between p-12 xl:p-16 overflow-hidden">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+            <img
+              src={HEI_WHITE_LOGO}
+              alt="HEI"
+              className="w-6 h-6 object-contain"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
           </div>
-
-          <div className="flex-1 flex flex-col px-8 sm:px-12 py-10 overflow-y-auto max-h-screen">
-            <div className="m-auto w-full">
-              <div className="flex lg:hidden items-center gap-2 mb-8">
-                <img
-                  src={HEI_BLUE_LOGO}
-                  alt="HEI"
-                  className="h-9 object-contain"
-                />
-                <span className="text-navy font-bold text-lg">HEI STDhub</span>
-              </div>
-
-              <div className="mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-navy font-fraunces">
-                  {title}
-                </h1>
-                <span className="block w-12 h-1 rounded-full bg-gold mt-3" />
-                <div className="text-gray-400 text-sm mt-3">{subtitle}</div>
-              </div>
-
-              {children}
-
-              {footer && <div className="auth-foot">{footer}</div>}
-            </div>
+          <div>
+            <span className="text-white font-bold text-[15px] leading-none block">
+              HEI STDhub
+            </span>
+            <span className="text-white/40 text-[11px]">
+              Plateforme étudiante
+            </span>
           </div>
         </div>
-      </div>
+
+        <div className="max-w-md">
+          <h1 className="font-fraunces text-white text-[40px] xl:text-[48px] font-semibold leading-[1.08] tracking-[-0.01em]">
+            {headline}
+            <br />
+            <span className="text-gold">{headlineAccent}</span>
+          </h1>
+          <p className="text-white/50 text-[15px] leading-relaxed mt-6">
+            {sub}
+          </p>
+          <div className="mt-10 border-l-2 border-gold pl-5">
+            <p className="text-white/75 text-sm font-medium">{cardTitle}</p>
+            <p className="text-white/40 text-xs mt-1">{cardSub}</p>
+          </div>
+        </div>
+
+        <p className="text-white/30 text-[11px] uppercase tracking-[0.2em]">
+          HEI · Madagascar
+        </p>
+      </aside>
+
+      <main className="flex-1 flex flex-col px-6 sm:px-10 xl:px-16 py-10 overflow-y-auto max-h-screen">
+        <div className="m-auto w-full max-w-[400px]">
+          <div className="flex items-center gap-2.5 mb-10 lg:hidden">
+            <img
+              src={HEI_BLUE_LOGO}
+              alt="HEI"
+              className="h-8 object-contain"
+            />
+            <span className="font-bold text-navy text-[15px] tracking-tight">
+              HEI STDhub
+            </span>
+          </div>
+
+          <header className="mb-8">
+            <h2 className="font-fraunces text-[28px] sm:text-[32px] font-semibold text-navy leading-tight">
+              {title}
+              <span className="text-gold">.</span>
+            </h2>
+            <div className="text-gray-400 text-sm mt-2.5 leading-relaxed">
+              {subtitle}
+            </div>
+          </header>
+
+          {children}
+
+          {footer && <div className="auth-foot">{footer}</div>}
+        </div>
+      </main>
     </div>
   );
 }

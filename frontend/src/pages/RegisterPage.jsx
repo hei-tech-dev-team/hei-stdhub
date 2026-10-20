@@ -188,7 +188,7 @@ export default function RegisterPage() {
       {/* ÉTAPE 1 : Code */}
       {!codeVerified ? (
         <div className="flex flex-col gap-4">
-          <div className="bg-[#e6edf7] border border-[#b8c9e0] rounded-2xl p-4">
+          <div className="bg-navy/5 border border-navy/10 rounded-lg p-4">
             <p className="text-[#001948] font-semibold text-sm mb-1">
               Accès sur invitation uniquement
             </p>
@@ -206,7 +206,7 @@ export default function RegisterPage() {
           </div>
 
           {codeError && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2 rounded-xl">
+            <div className="bg-[#FEF3F2] border border-[#FECACA] text-[#B42318] text-[13px] px-4 py-2.5 rounded-lg">
               {codeError}
             </div>
           )}
@@ -248,7 +248,7 @@ export default function RegisterPage() {
       ) : (
         /* ÉTAPE 2 : Formulaire complet */
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-[#001948] text-sm px-4 py-2.5 rounded-2xl">
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-navy text-sm px-4 py-2.5 rounded-lg">
             <CheckCircle size={16} />
             <span>
               Code valide — inscription en tant que{" "}
@@ -340,17 +340,8 @@ export default function RegisterPage() {
                     className={
                       "px-3 py-1.5 rounded-full text-xs font-semibold border transition " +
                       (form.ues.includes(ue)
-                        ? "text-white border-transparent"
+                        ? "text-white border-transparent bg-navy"
                         : "bg-white border-gray-300 text-navy hover:bg-gray-50")
-                    }
-                    style={
-                      form.ues.includes(ue)
-                        ? {
-                            background:
-                              "linear-gradient(135deg, #0A1A33, #001948)",
-                            borderColor: "transparent",
-                          }
-                        : {}
                     }
                   >
                     {ue}

@@ -135,11 +135,7 @@ export default function ResetPasswordPage() {
                   ) : done ? (
                         <div className="flex flex-col items-center gap-4 py-2">
                               <div
-                                    className="w-20 h-20 rounded-full flex items-center justify-center"
-                                    style={{
-                                          background:
-                                                "linear-gradient(135deg, #0A1A33, #001948)",
-                                    }}
+                                    className="w-20 h-20 rounded-full bg-navy flex items-center justify-center"
                               >
                                     <CheckCircle size={36} className="text-white" />
                               </div>

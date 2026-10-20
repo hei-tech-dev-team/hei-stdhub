@@ -227,7 +227,7 @@ export default function ForgotPasswordPage() {
                         </form>
                   ) : (
                         <>
-                              <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-2xl mb-5 flex items-start gap-3">
+                              <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-lg mb-5 flex items-start gap-3">
                                     <Bell
                                           size={18}
                                           className="shrink-0 mt-0.5"
@@ -244,7 +244,7 @@ export default function ForgotPasswordPage() {
                               </div>
 
                               {message && (
-                                    <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2">
+                                    <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-lg mb-5 flex items-center gap-2">
                                           <CheckCircle size={16} /> {message}
                                     </div>
                               )}
@@ -294,10 +294,10 @@ export default function ForgotPasswordPage() {
                                   codeSuccess
                                         ? `border-green-400 bg-green-50 text-green-700 animate-box-confirm`
                                         : digit
-                                          ? "border-navy bg-white shadow-sm"
-                                          : "border-gray-200 bg-gray-50/50 hover:border-gray-300"
+                                          ? "border-navy bg-white"
+                                          : "border-gray-200 bg-[#F6F7F8] hover:border-gray-300"
                             }
-                            focus:border-gold focus:ring-gold/25
+                            focus:border-gold focus:ring-1 focus:ring-gold/15
                             [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none
                             [&::-webkit-outer-spin-button]:appearance-none
                           `}
