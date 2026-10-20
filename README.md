@@ -13,7 +13,7 @@ Full-stack web platform for HEI students, teachers, and admin. Access course mat
 ## Features
 
 - **Auth** — Single-field login (student reference, teacher or admin code + password), register with invitation codes (role taken from the code); push-based password reset (6-char code via push notification); unique pseudo enforcement
-- **Dashboard** — Role-based: StudentHome, TeacherHome, AdminHome (announcements + reactions)
+- **Dashboard** — posts and announcements by STUDENT, TEACHER, ADMIN, BDE
 - **Archives** — Course materials (cours) by UE with support links; teachers can add/delete support links
 - **Chat** — Real-time global & private messaging with Socket.IO, online/offline indicators, file/image sharing (10MB), seen/delivered status with batch marking, message deletion (own messages only), unread badges (global + per-contact), role badges, favorites, push notifications via Web Push API, typing indicators, image lightbox
 - **Suggestions** — Submit ideas (students, teachers, admin); BDE reviews with drag-and-drop Kanban, real-time sync via Socket.IO, generates PDF reports shared to global chat

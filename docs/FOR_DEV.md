@@ -113,7 +113,6 @@ hei-stdhub-v2/
 │       ├── pages/                       # 14 page components
 │       └── components/                  # Reusable components
 │           ├── layout/                  # Sidebar, Navbar
-│           ├── dashboard/               # StudentHome, TeacherHome, AdminHome
 │           ├── chat/                    # ChatLayout, ContactList, MessagePanel, useLongPress
 │           ├── archives/                # ArchiveGrid, ArchiveCard
 │           ├── td/                      # StudentUpload, TeacherInbox
@@ -145,7 +144,7 @@ hei-stdhub-v2/
 | `/register` | RegisterPage | Public | Two-step: invite code + form (role-based fields) |
 | `/forgot-password` | ForgotPasswordPage | Public | Email input → 6-char code via push → new password |
 | `/reset-password` | ResetPasswordPage | Public | Token + new password form |
-| `/` | HomePage | Protected | Role-based dashboard (Student/Teacher/AdminHome) |
+| `/` | HomePage | Protected | Role-based |
 | `/archives` | ArchivesPage | Protected | Course materials by UE with support links |
 | `/chat` | ChatPage | Protected | Real-time chat (global + private) |
 | `/suggestions` | SuggestionPage | Protected | Submit anonymous suggestion to BDE |
