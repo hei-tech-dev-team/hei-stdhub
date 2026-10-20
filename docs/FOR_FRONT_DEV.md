@@ -98,8 +98,8 @@ frontend/src/
 
 All four auth pages (`LoginPage`, `RegisterPage`, `ForgotPasswordPage`,
 `ResetPasswordPage`) render through the shared `AuthShell` component
-(flat full-screen navy/white split, Fraunces headings, `.auth-*` controls,
-gold accents).
+(flat full-screen navy/white split, `.auth-*` controls,
+gold accents, single Quicksand font).
 
 ### `LoginPage.jsx`
 - Single identifier field (ref or teacher/admin code) + password field, show/hide password, error/loading states
@@ -174,8 +174,8 @@ gold accents).
 
 ### `auth/AuthShell.jsx`
 - Uniform shell for the 4 auth pages: full-screen two-panel split — flat
-  navy brand panel (Fraunces headline with gold accent line, gold-left-rule
-  caption) and white form panel (mobile logo, Fraunces title with gold
+  navy brand panel (bold headline with gold accent line, gold-left-rule
+  caption) and white form panel (mobile logo, title with gold
   full stop, content, footer slot). No gradients, blobs or glow shadows.
 - Also exports `AuthBackLink` (back-to-login link used by forgot/reset)
 - Pairs with `.auth-label / .auth-error / .auth-submit / .auth-foot` and
@@ -264,7 +264,7 @@ colors: {
   surface: "#F2F4F8",
   contact: "#D9DCE3",
 }
-fontFamily: { quicksand: ["Quicksand", "sans-serif"], fraunces: ["Fraunces", "serif"] }
+fontFamily: { quicksand: ["Quicksand", "sans-serif"] }
 boxShadow: {
   card: "0 2px 12px 0 rgba(0,25,72,0.08)",
   modal: "0 8px 32px 0 rgba(0,25,72,0.16)",

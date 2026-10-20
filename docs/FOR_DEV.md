@@ -293,8 +293,8 @@ npm run release:major   # 1.9.0 -> 2.0.0
 
 ### Styling
 - Colors: Navy (`#001948`, `#0A1A33`), Gold (`#DFA408`, `#F2C94C`), Surface (`#F2F4F8`), Contact (`#D9DCE3`).
-- Fonts: Quicksand (body), Fraunces (auth page headings).
-- Glassmorphism on chat and onboarding modal; auth pages use the shared `AuthShell` (flat navy/white split, Fraunces headings, gold accents).
+- Font: Quicksand only (single font across the app, auth included).
+- Glassmorphism on chat and onboarding modal; auth pages use the shared `AuthShell` (flat navy/white split, gold accents).
 
 ### Admin Tabs
 - Always visible: Utilisateurs, Invitations, Annonces, Nouveau étudiant (auto-generated STD ref), UEs (archive).

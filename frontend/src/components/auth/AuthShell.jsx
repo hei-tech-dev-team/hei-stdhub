@@ -5,10 +5,9 @@ import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../../assets/logos";
 /**
  * Shell uniforme des pages d'authentification (login, register,
  * forgot-password, reset-password) : plein écran en deux volets — volet
- * marque navy plat (titre Fraunces + accent or, repère or à gauche) et
- * volet formulaire blanc (logo mobile, titre Fraunces avec point or,
- * contenu, pied de page). Aucun dégradé ni ornement : typographie,
- * aplats et espacement.
+ * marque navy plat (titre en gras, accent or, repère or à gauche) et
+ * volet formulaire blanc (logo mobile, titre avec point or, contenu,
+ * pied de page). Une seule fonte (Quicksand), aplats et espacement.
  */
 export default function AuthShell({
   headline,
@@ -46,7 +45,7 @@ export default function AuthShell({
         </div>
 
         <div className="max-w-md">
-          <h1 className="font-fraunces text-white text-[40px] xl:text-[48px] font-semibold leading-[1.08] tracking-[-0.01em]">
+          <h1 className="text-white text-[34px] xl:text-[42px] font-bold leading-[1.15] tracking-tight">
             {headline}
             <br />
             <span className="text-gold">{headlineAccent}</span>
@@ -79,7 +78,7 @@ export default function AuthShell({
           </div>
 
           <header className="mb-8">
-            <h2 className="font-fraunces text-[28px] sm:text-[32px] font-semibold text-navy leading-tight">
+            <h2 className="text-[26px] sm:text-[30px] font-bold text-navy tracking-tight leading-tight">
               {title}
               <span className="text-gold">.</span>
             </h2>
