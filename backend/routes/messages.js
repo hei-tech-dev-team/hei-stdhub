@@ -4,16 +4,14 @@ const fs = require("fs");
 const crypto = require("crypto");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
-const CloudinaryStorage = require("multer-storage-cloudinary");
+const storage = require("../services/storage");
 const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
 
 const reactionsLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,             // 30 reactions/minute
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -33,44 +31,6 @@ const REACTIONS_SUBQUERY = `
     WHERE mr.message_id = base.id
   ) AS reactions
 `;
-
-const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "chat");
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const useCloudinary =
-  process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-  process.env.CLOUDINARY_API_KEY?.trim() &&
-  process.env.CLOUDINARY_API_SECRET?.trim();
-
-let chatUpload;
-if (useCloudinary) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
-  chatUpload = multer({
-    storage: new CloudinaryStorage({
-    cloudinary,
-    folder: "hei-stdhub/chat",
-    allowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "html", "css", "js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "cs", "php", "rb", "go", "rs", "json", "xml", "yaml", "yml", "csv", "txt", "md", "sh", "bat", "zip", "rar", "7z"],
-    resource_type: "raw",
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).single("file");
-} else {
-  chatUpload = multer({
-    storage: multer.diskStorage({
-      destination: UPLOAD_DIR,
-      filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname) || "";
-        const name = crypto.randomBytes(16).toString("hex") + ext;
-        cb(null, name);
-      },
-    }),
-    limits: { fileSize: 10 * 1024 * 1024 },
-  }).single("file");
-}
 
 // Search users by ref or pseudo
 router.get("/search", auth, async (req, res) => {
@@ -540,23 +500,6 @@ router.delete("/:id", auth, async (req, res) => {
 
     const msg = rows[0];
 
-    if (useCloudinary && msg.content) {
-      const match = msg.content.match(/\[FILE:[^:]+:([^:]+):/);
-      if (match) {
-        try {
-          const fileUrl = match[1];
-          const urlParts = fileUrl.split("/upload/");
-          if (urlParts.length === 2) {
-            const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
-            const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
-            await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
-          }
-        } catch (e) {
-          console.warn("Cloudinary delete warning:", e.message);
-        }
-      }
-    }
-
     const io = req.app.get("io");
     if (io) io.emit("message:deleted", {
       messageId: msg.id,
@@ -573,22 +516,15 @@ router.delete("/:id", auth, async (req, res) => {
 });
 
 // Upload a file to Cloudinary (or local disk) for chat sharing
-router.post("/upload", auth, (req, res) => {
-  chatUpload(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message });
-    if (!req.file) return res.status(400).json({ error: "Fichier requis." });
-
-    const isImage = req.file.mimetype?.startsWith("image/");
-    const url = req.file.secure_url
-      || (req.file.path ? `${req.protocol}://${req.get("host")}/uploads/chat/${req.file.filename}` : null);
-    if (!url) return res.status(500).json({ error: "Upload échoué." });
-
-    res.json({
-      filename: req.file.originalname || req.file.filename,
-      url,
-      isImage,
-    });
-  });
+router.post("/upload", auth, storage.single("file"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "Fichier requis." });
+  try {
+    const f = await storage.saveFile(req.file, "chat");
+    res.json({ filename: f.filename, url: f.url, isImage: f.isImage });
+  } catch (e) {
+    console.error("Upload chat:", e);
+    res.status(500).json({ error: "Upload échoué." });
+  }
 });
 
 router.get("/favorites", auth, async (req, res) => {
