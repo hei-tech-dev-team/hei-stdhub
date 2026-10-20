@@ -160,7 +160,6 @@ app.use("/api/push", require("./routes/push"));
 app.use("/api/pings", require("./routes/pings"));
 app.use("/api/custom-ues", require("./routes/custom-ues"));
 app.use("/api/admin", require("./routes/admin"));
-app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/bug-reports", require("./routes/bugReports"));
 app.use("/api/support-tickets", require("./routes/supportTickets"));
 app.use("/api/posts", require("./routes/post"));

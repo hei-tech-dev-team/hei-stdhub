@@ -51,7 +51,6 @@ const ROLE_CONFIG = {
 const TABS = [
   { key: "users", label: "Utilisateurs", icon: faUsers },
   { key: "invitations", label: "Invitations", icon: faTicket },
-  { key: "annonces", label: "Annonces", icon: faNewspaper },
 ];
 
 function StatCard({ icon, label, value, color, trend }) {
@@ -161,7 +160,6 @@ export default function AdminPage() {
   const [annImage, setAnnImage] = useState(null);
   const [annImagePreview, setAnnImagePreview] = useState(null);
   const [annSubmitting, setAnnSubmitting] = useState(false);
-  const [announcements, setAnnouncements] = useState([]);
   const [annLoading, setAnnLoading] = useState(false);
 
   const [toast, setToast] = useState(null);
@@ -330,22 +328,6 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab === "invitations") loadInvitations();
   }, [tab, loadInvitations]);
-
-  const loadAnnouncements = useCallback(async () => {
-    setAnnLoading(true);
-    try {
-      const { data } = await api.get("/announcements");
-      setAnnouncements(Array.isArray(data) ? data : Array.isArray(data?.announcements) ? data.announcements : []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAnnLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (tab === "annonces") loadAnnouncements();
-  }, [tab, loadAnnouncements]);
 
   const handleRoleChange = async (userId, newRole) => {
     try {
@@ -1008,145 +990,6 @@ export default function AdminPage() {
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          )}
-
-          {/* Annonces */}
-          {tab === "annonces" && (
-            <div className="flex flex-col gap-5">
-              {/* Composer */}
-              <div className="bg-white rounded-2xl shadow-card p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-navy/10 to-navy/5 flex items-center justify-center">
-                    <FontAwesomeIcon icon={faNewspaper} className="text-navy text-lg" />
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-navy text-base">Publier une annonce</h2>
-                    <p className="text-xs text-gray-400">Visible par tous les utilisateurs</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <input
-                    className="input-field"
-                    placeholder="Titre de l'annonce"
-                    value={annTitle}
-                    onChange={(e) => setAnnTitle(e.target.value)}
-                  />
-                  <textarea
-                    className="input-field min-h-[120px] resize-y"
-                    placeholder="Contenu de l'annonce..."
-                    value={annContent}
-                    onChange={(e) => setAnnContent(e.target.value)}
-                  />
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface text-navy text-sm font-bold hover:bg-navy/10 transition cursor-pointer">
-                      <FontAwesomeIcon icon={faImage} />
-                      {annImage ? "Changer l'image" : "Ajouter une image"}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) { setAnnImage(file); setAnnImagePreview(URL.createObjectURL(file)); }
-                      }} />
-                    </label>
-                    {annImage && (
-                      <button type="button" onClick={() => { setAnnImage(null); setAnnImagePreview(null); }} className="text-red-400 hover:text-red-600 text-sm font-bold transition">
-                        <FontAwesomeIcon icon={faTimes} className="mr-1" />
-                        Retirer
-                      </button>
-                    )}
-                  </div>
-                  {annImagePreview && (
-                    <img src={annImagePreview} alt="Aperçu" className="w-full max-h-48 object-cover rounded-xl border border-contact" />
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!annTitle.trim() || !annContent.trim()) return;
-                      setAnnSubmitting(true);
-                      try {
-                        const form = new FormData();
-                        form.append("title", annTitle.trim());
-                        form.append("content", annContent.trim());
-                        if (annImage) form.append("image", annImage);
-                        await api.post("/announcements", form, { headers: { "Content-Type": "multipart/form-data" } });
-                        setAnnTitle(""); setAnnContent(""); setAnnImage(null); setAnnImagePreview(null);
-                        loadAnnouncements();
-                        showToast("Annonce publiée !");
-                      } catch (err) {
-                        showToast("Erreur lors de la publication", "error");
-                      } finally { setAnnSubmitting(false); }
-                    }}
-                    disabled={annSubmitting || !annTitle.trim() || !annContent.trim()}
-                    className="btn-gold self-start"
-                  >
-                    {annSubmitting ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : <FontAwesomeIcon icon={faNewspaper} />}
-                    Publier
-                  </button>
-                </div>
-              </div>
-
-              {/* Published announcements */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                  <span>Annonces publiées</span>
-                  <span className="text-xs font-normal text-gray-300">({announcements.length})</span>
-                </h3>
-                {annLoading && (
-                  <div className="flex justify-center py-8">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 border-2 border-navy border-t-gold rounded-full animate-spin" />
-                      <span className="text-sm text-gray-400">Chargement...</span>
-                    </div>
-                  </div>
-                )}
-                {!annLoading && announcements.length === 0 && (
-                  <div className="text-center py-12 bg-white rounded-2xl shadow-card">
-                    <div className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center mx-auto mb-3">
-                      <FontAwesomeIcon icon={faNewspaper} className="text-navy/30 text-xl" />
-                    </div>
-                    <p className="text-gray-400 text-sm">Aucune annonce publiée.</p>
-                  </div>
-                )}
-                <div className="flex flex-col gap-3">
-                  {announcements.map((ann) => (
-                    <div key={ann.id} className="bg-white rounded-2xl shadow-card p-4 flex items-start gap-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 group">
-                      {ann.image_url && (
-                        <img src={ann.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-navy text-sm truncate flex items-center gap-2">
-                          {ann.title}
-                        </h4>
-                        <p className="text-xs text-gray-500 line-clamp-2 mt-1">{ann.content}</p>
-                        <p className="text-xs text-gray-300 mt-1.5">
-                          {new Date(ann.created_at).toLocaleDateString("fr-FR", {
-                            day: "numeric", month: "long", year: "numeric",
-                          })}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmState({
-                          title: "Supprimer cette annonce ?",
-                          message: `"${ann.title}" sera définitivement supprimé.`,
-                          confirmLabel: "Supprimer",
-                          confirmColor: "red",
-                          icon: faTrash,
-                          onConfirm: async () => {
-                            try { await api.delete(`/announcements/${ann.id}`); loadAnnouncements(); showToast("Annonce supprimée"); } catch (err) { showToast("Erreur", "error"); }
-                            setConfirmState(null);
-                          },
-                          onCancel: () => setConfirmState(null),
-                        })}
-                        className="text-red-300 hover:text-red-500 transition shrink-0 p-1.5 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           )}
