@@ -104,7 +104,7 @@ frontend/src/
 ### `RegisterPage.jsx`
 - Two-step: 1) verify invite code (`POST /auth/verify-invite`), 2) fill user details
 - No role selector: the role comes from the code and is announced after verification
-- Role-specific fields: teacher → UE selection (multi-select), student → level auto
+- Role-specific fields: teacher → UE selection (multi-select), student → ref/pseudo auto
 - Password confirmation, email validation per role, pseudo availability checked on submit
 
 ### `ForgotPasswordPage.jsx`
@@ -140,13 +140,11 @@ frontend/src/
 - Client-side PDF generation via jsPDF with navy/gold branding
 
 ### `AdminPage.jsx`
-- Tabs: Users, Invitations, Stats, Passage de classe (Sept), Nouveaux L1 (Nov)
+- Tabs: Users, Invitations, Annonces, Nouveau étudiant, UEs
 - Users: paginated (50/page), search + role filter, role/email change, delete
 - Invitations: paginated, create (single + bulk up to 1000), delete, copy to clipboard
 - Stats: polling every 3s via `GET /admin/stats`
-- Class upgrade: L1→L2, L2→L3 (redoublants stay)
-- L1 registration: auto-generate STD ref, register via `POST /auth/register`
-- Seasonal tabs: September (month 8), November (month 10)
+- New student registration: auto-generate STD ref, register via `POST /auth/register`
 
 ### `ProfilePage.jsx`
 - Avatar upload (PATCH /auth/avatar), pseudo edit (PATCH /auth/profile), password change (PATCH /auth/password)
@@ -161,7 +159,7 @@ frontend/src/
 - `GET /pings`, `PATCH /pings/:id/accept`, `PATCH /pings/:id/refuse`
 
 ### `STDnewsPage.jsx`
-- Announcements feed with level filter + search
+- Announcements feed with search
 - Reactions (like/haha/dont_like/sad) via POST/DELETE
 - `GET /announcements`, reaction endpoints
 
@@ -215,7 +213,7 @@ frontend/src/
 - Single archive card with type badge, date, download link
 
 ### `StudentUpload.jsx`
-- Homework form: pre-filled user info, level/group/UE/type selectors, file drag-drop or link
+- Homework form: pre-filled user info, group/UE/type selectors, file drag-drop or link
 
 ### `TeacherInbox.jsx`
 - Paginated submission table (50/page), server-side search, type/UE filter, download links

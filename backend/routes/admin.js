@@ -52,7 +52,7 @@ router.get("/users", auth, developerOrAdmin, async (req, res) => {
 
             let countQuery = "SELECT COUNT(*) FROM users WHERE 1=1";
             let query = `
-                  SELECT id, ref, nom, prenom, email, pseudo, role, level, groupe, COALESCE(ues, '{}') AS ues, created_at 
+                  SELECT id, ref, nom, prenom, email, pseudo, role, groupe, COALESCE(ues, '{}') AS ues, created_at 
                   FROM users
                   WHERE 1=1
             `;
@@ -163,30 +163,6 @@ router.delete("/users/:id", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/level", auth, developerOnly, async (req, res) => {
-      const { level } = req.body;
-      if (!["L1", "L2", "L3"].includes(level))
-            return res.status(400).json({ error: "Level invalide." });
-      try {
-            const { rows } = await db.query(
-                  "SELECT id, role FROM users WHERE id = $1",
-                  [req.params.id],
-            );
-            if (!rows.length)
-                  return res.status(404).json({ error: "Utilisateur introuvable." });
-            if (!["student", "bde"].includes(rows[0].role))
-                  return res.status(400).json({ error: "Level reserve aux etudiants et BDE." });
-            const { rows: updated } = await db.query(
-                  "UPDATE users SET level = $1 WHERE id = $2 RETURNING id, ref, level",
-                  [level, req.params.id],
-            );
-            res.json(updated[0]);
-      } catch (err) {
-            console.error("ERREUR PATCH LEVEL:", err.message);
-            res.status(500).json({ error: "Erreur serveur." });
-      }
-});
-
 router.patch("/users/:id/role-upgrade", auth, developerOrAdmin, async (req, res) => {
       try {
             const { rows } = await db.query(
@@ -206,24 +182,6 @@ router.patch("/users/:id/role-upgrade", auth, developerOrAdmin, async (req, res)
             console.error("ERREUR ROLE-UPGRADE:", err.message);
             res.status(500).json({ error: "Erreur serveur." });
       }
-});
-
-// Passage de classe : L1->L2, L2->L3 (exclut les redoublants)
-router.post("/class-upgrade", auth, developerOnly, async (req, res) => {
-  const { failed_l1_refs, failed_l2_refs } = req.body;
-  try {
-    const allFailed = [...(failed_l1_refs || []), ...(failed_l2_refs || [])];
-    const result = await db.query(
-      `UPDATE users SET level = CASE WHEN level = 'L1' THEN 'L2' WHEN level = 'L2' THEN 'L3' ELSE level END
-       WHERE level IN ('L1', 'L2') AND ref != ALL($1::text[])
-       RETURNING id, ref, level, role`,
-      [allFailed]
-    );
-    res.json({ upgraded: result.rows.length, users: result.rows });
-  } catch (err) {
-    console.error("ERREUR class-upgrade:", err);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
 });
 
 const generateInviteCode = (role) => {

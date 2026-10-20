@@ -123,7 +123,6 @@ describe("AUTH — POST /register", () => {
       email: `hei.dup${uniqueSuffix()}@gmail.com`,
       pseudo: "dupuser",
       password: "password123",
-      level: "L1",
       inviteCode,
     });
     expect(res.status).to.equal(409);
@@ -144,7 +143,6 @@ describe("AUTH — register : le rôle vient du code d'invitation", () => {
     email: `hei.test${suffix()}@gmail.com`,
     pseudo: `stduser${suffix()}`,
     password: "password123",
-    level: "L1",
     inviteCode: code,
     ...extra,
   });
@@ -261,13 +259,13 @@ describe("AUTH — register : le rôle vient du code d'invitation", () => {
     expect(res.body.error).to.equal("Un étudiant doit utiliser un email HEI (@gmail.com).");
   });
 
-  itWithToken("étudiant avec un niveau invalide → 400", async () => {
+  itWithToken("le champ level du body est ignore (systeme de niveaux supprime)", async () => {
     const code = await makeCode("student");
     const res = await agent
       .post("/api/auth/register")
       .send(studentPayload(code, { level: "L4" }));
-    expect(res.status).to.equal(400);
-    expect(res.body.error).to.equal("Niveau invalide (L1, L2 ou L3).");
+    expect(res.status).to.equal(201);
+    expect(res.body.user).to.not.have.property("level");
   });
 });
 

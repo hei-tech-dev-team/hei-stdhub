@@ -72,7 +72,6 @@ export default function RegisterPage() {
     ref: "",
     pseudo: "",
     role: "student",
-    level: "L1",
     password: "",
     confirmPassword: "",
     inviteCode: "",
@@ -158,7 +157,6 @@ export default function RegisterPage() {
         pseudo: form.pseudo,
         password: form.password,
         role: form.role,
-        level: form.role === "student" ? form.level : undefined,
         inviteCode: form.inviteCode.trim().toUpperCase(),
         ues: form.role === "teacher" ? form.ues : [],
       });
@@ -412,23 +410,6 @@ export default function RegisterPage() {
                     />
                   </InputWrapper>
                 </div>
-
-                {form.role === "student" && (
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">
-                      Niveau
-                    </label>
-                    <select
-                      className="input-field"
-                      value={form.level}
-                      onChange={(e) => set("level", e.target.value)}
-                    >
-                      <option value="L1">L1 — Première année</option>
-                      <option value="L2">L2 — Deuxième année</option>
-                      <option value="L3">L3 — Troisième année</option>
-                    </select>
-                  </div>
-                )}
 
                 {form.role === "teacher" && (
                   <div>

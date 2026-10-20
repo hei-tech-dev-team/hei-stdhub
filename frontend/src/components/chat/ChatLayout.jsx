@@ -116,7 +116,6 @@ export default function ChatLayout() {
           name: c.pseudo,
           role: c.role,
           ref: c.ref,
-          level: c.level,
           avatar: c.avatar || null,
         }));
         setContacts([GLOBAL_CONTACT, ...formatted]);

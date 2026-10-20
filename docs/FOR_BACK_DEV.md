@@ -13,7 +13,7 @@ backend/
 │   └── auth.js               # JWT verification
 ├── routes/
 │   ├── auth.js               # 12 endpoints — register, login, forgot-password, verify-code, reset-password, me, profile, password, avatar, verify-invite, user/:ref
-│   ├── admin.js              # 10 endpoints — stats, users (CRUD + role/email), invitations (CRUD + bulk), class-upgrade
+│   ├── admin.js              # 12 endpoints — stats, next-pseudo, users (list, role, email, delete, role-upgrade, ues), invitations (CRUD + bulk)
 │   ├── supports.js           # 3 endpoints — list by UE, create, delete (teacher/admin)
 │   ├── messages.js           # 14 endpoints — search, contacts, global, private, send, seen, upload, unread, global/read, delete, favorites (list/add/remove)
 │   ├── suggestions.js        # 5 endpoints — submit, list (BDE), patch status, confirm (post to chat), report (PDF)
@@ -63,7 +63,7 @@ backend/
 ```
 
 ### Schema Migrations (auto-run on startup)
-Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `announcements`, `announcement_reactions`, `chat_favorites`. Also adds `target_level` column to announcements if missing.
+Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `announcements`, `announcement_reactions`, `chat_favorites`.
 
 ---
 
@@ -93,7 +93,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 ### Helpers
 ```js
 @function capitalize(str) - Capitalizes each word, rest lowercased
-@function makeToken(user) - JWT { id, ref, role, ues, level }, expiresIn: "7d"
+@function makeToken(user) - JWT { id, ref, role, ues }, expiresIn: "7d"
 @function hashResetToken(token) - SHA-256 hex digest
 @function generateResetCode() - 6-char alphanumeric (A-Z, 2-9, no 0/O/1/I)
 @function tryGetAdminFromToken(req) - Tries to extract admin from JWT (for admin-registered users)
@@ -102,7 +102,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 ### Routes
 | Route | Auth | Input | Description |
 |-------|------|-------|-------------|
-| POST `/register` | No | `{ ref, nom, prenom, email, pseudo, password, inviteCode, ues? }` | Role and level come from the invitation code (transaction: SELECT FOR UPDATE + consume + INSERT), validates ref/email/UEs per role, checks uniqueness (ref/email/pseudo), bcrypt hash, INSERT, emit `user:registered` |
+| POST `/register` | No | `{ ref, nom, prenom, email, pseudo, password, inviteCode, ues? }` | Role comes from the invitation code (transaction: SELECT FOR UPDATE + consume + INSERT), validates ref/email/UEs per role, checks uniqueness (ref/email/pseudo), bcrypt hash, INSERT, emit `user:registered` |
 | POST `/login` | No | `{ ref, password }` | Unified: uppercase + trim the identifier, validate `STD/PROF/ADMIN/DEV` format (400), dummy bcrypt compare to keep timing uniform, generic 401 "Référence ou mot de passe incorrect.", returns JWT + user + access rights |
 | GET `/user/:ref` | Yes | — | Public profile by ref |
 | POST `/forgot-password` | No | `{ email }` | Lookup user, invalidate old tokens, INSERT new 10min token, send 6-char code via push notification, always return generic response |
@@ -132,7 +132,6 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 | PATCH `/users/:id/role` | `{ role }` | Validates against whitelist (student/teacher/admin/bde) |
 | PATCH `/users/:id/email` | `{ email }` | Validate email, update |
 | DELETE `/users/:id` | — | Cannot delete self |
-| POST `/class-upgrade` | `{ failed_refs }` or `{ failed_l1_refs, failed_l2_refs }` | L1→L2, L2→L3, redoublants stay at current level |
 | GET `/next-pseudo` | — | Get next sequential pseudo (new_userX) |
 | POST `/invitations` | `{ role, max_uses? }` | Single code, student/teacher only, 7d expiry |
 | POST `/invitations/bulk` | `{ role, count?, max_uses? }` | Up to 1000 codes, batch INSERT (100/batch) |
@@ -195,8 +194,8 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 
 | Route | Auth | Role | Input | Description |
 |-------|------|------|-------|-------------|
-| GET `/` | Yes | Any | `?level=&limit=&offset=` | With reactions map + user_reaction |
-| POST `/` | Yes | admin | `FormData{ title, content, target_level?, image? }` | Max 10MB, push to all |
+| GET `/` | Yes | Any | `?limit=&offset=` | With reactions map + user_reaction |
+| POST `/` | Yes | admin | `FormData{ title, content, image? }` | Max 10MB, push to all |
 | DELETE `/:id` | Yes | admin | — | Hard delete |
 | POST `/:id/react` | Yes | Any | `{ reaction_type }` | like/haha/dont_like/sad, UPSERT |
 | DELETE `/:id/react` | Yes | Any | — | Remove reaction |
@@ -254,7 +253,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 ## Database Schema (full in `db/schema.sql`)
 
 ### Tables
-- `users` — id, ref (UNIQUE), nom, prenom, email (UNIQUE), pseudo (UNIQUE), password, role (ENUM), level, avatar, ues (TEXT[]), first_login (DEFAULT TRUE), created_at, updated_at (auto-trigger)
+- `users` — id, ref (UNIQUE), nom, prenom, email (UNIQUE), pseudo (UNIQUE), password, role (ENUM), avatar, ues (TEXT[]), first_login (DEFAULT TRUE), created_at, updated_at (auto-trigger)
 - `password_reset_tokens` — id, user_id (FK), token_hash (SHA-256, UNIQUE), expires_at, used_at
 - `supports` — id, ue (CHECK valid), label, url (https://), author_id
 - `messages` — id, sender_id, receiver_id (NULL for global), content (NOT NULL), is_global, seen, seen_at, created_at, indexes on sender/receiver/created
@@ -264,7 +263,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 - `push_subscriptions` — id, user_id (FK), endpoint, auth_key, p256dh_key, UNIQUE(user_id, endpoint)
 - `push_notifications` — id, user_id (FK), type, title, body, data (JSONB), is_read, created_at
 - `pings` — id, sender_id (FK), receiver_id (FK), status (pending/accepted/refused), created_at, responded_at, UNIQUE(sender_id, receiver_id)
-- `announcements` — id, title, content, image_url, author_id, target_level, created_at
+- `announcements` — id, title, content, image_url, author_id, created_at
 - `announcement_reactions` — id, announcement_id (FK), user_id (FK), reaction_type, UNIQUE(announcement_id, user_id)
 - `chat_favorites` — user_id, contact_id, PRIMARY KEY(user_id, contact_id)
 
@@ -275,9 +274,9 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 - Indexes on `suggestions(statut, student_id)`, `global_chat_read(user_id)`
 
 ### Seed Data
-- Admin: `ADMIN001` / `password` (admin, no level)
-- Student: `STD25001` / `password` (student, L1)
-- Teacher: `PROF001` / `password` (teacher, no level)
+- Admin: `ADMIN001` / `password`
+- Student: `STD25001` / `password`
+- Teacher: `PROF001` / `password`
 - All passwords hash: `$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji`
 
 ### Migrations (apply in order)
@@ -293,3 +292,4 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 10. `migration_developer_role.sql` — developer role
 11. `migration_refactor_td_exams.sql` — TD/exams refactor
 12. `migration_remove_alumni.sql` — alumni → student, drop alumni from enum/data
+13. `migration_remove_levels.sql` — drop users.level, announcements.target_level, user_level enum

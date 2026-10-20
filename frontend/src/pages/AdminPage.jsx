@@ -17,9 +17,6 @@ import {
   faTimes,
   faCheck,
   faArrowUp,
-  faGraduationCap,
-  faArrowRight,
-  faBan,
   faUserPlus,
   faMagic,
   faNewspaper,
@@ -49,12 +46,6 @@ const ROLE_CONFIG = {
   teacher: { label: "Professeur", icon: faChalkboardTeacher, color: "bg-purple-100 text-purple-700 border-purple-200" },
   admin: { label: "Admin", icon: faUserShield, color: "bg-red-100 text-red-700 border-red-200" },
   bde: { label: "BDE", icon: faUsers, color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-};
-
-const LEVEL_COLORS = {
-  L1: "bg-cyan-100 text-cyan-700",
-  L2: "bg-violet-100 text-violet-700",
-  L3: "bg-amber-100 text-amber-700",
 };
 
 const TABS = [
@@ -149,13 +140,6 @@ export default function AdminPage() {
   const [copiedId, setCopiedId] = useState(null);
   const [showTop, setShowTop] = useState(false);
 
-  const [failedL1Refs, setFailedL1Refs] = useState([]);
-  const [failedL1Input, setFailedL1Input] = useState("");
-  const [failedL2Refs, setFailedL2Refs] = useState([]);
-  const [failedL2Input, setFailedL2Input] = useState("");
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
-  const [upgradeDone, setUpgradeDone] = useState(false);
-
   const [newL1, setNewL1] = useState({
     nom: "", prenom: "", email: "", groupLetter: "",
   });
@@ -177,7 +161,6 @@ export default function AdminPage() {
   const [annContent, setAnnContent] = useState("");
   const [annImage, setAnnImage] = useState(null);
   const [annImagePreview, setAnnImagePreview] = useState(null);
-  const [annTargetLevel, setAnnTargetLevel] = useState("");
   const [annSubmitting, setAnnSubmitting] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [annLoading, setAnnLoading] = useState(false);
@@ -185,10 +168,7 @@ export default function AdminPage() {
   const [toast, setToast] = useState(null);
 
   const now = new Date();
-  const month = now.getMonth();
   const currentYear = now.getFullYear().toString().slice(-2);
-  const isSeptember = month === 8;
-  const isNovember = month === 10;
 
   const mainRef = useRef();
 
@@ -429,47 +409,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddFailedRef = (level) => {
-    const input = level === "L1" ? failedL1Input : failedL2Input;
-    const setInput = level === "L1" ? setFailedL1Input : setFailedL2Input;
-    const setRefs = level === "L1" ? setFailedL1Refs : setFailedL2Refs;
-    const refs = level === "L1" ? failedL1Refs : failedL2Refs;
-    const ref = input.trim().toUpperCase();
-    if (!ref) return;
-    if (refs.includes(ref)) return;
-    setRefs((prev) => [...prev, ref]);
-    setInput("");
-  };
-
-  const handleRemoveFailedRef = (level, ref) => {
-    if (level === "L1") {
-      setFailedL1Refs((prev) => prev.filter((r) => r !== ref));
-    } else {
-      setFailedL2Refs((prev) => prev.filter((r) => r !== ref));
-    }
-  };
-
-  const handleUpgrade = async () => {
-    setUpgradeLoading(true);
-    try {
-      await api.post("/admin/class-upgrade", {
-        failed_l1_refs: failedL1Refs,
-        failed_l2_refs: failedL2Refs,
-      });
-      setUpgradeDone(true);
-      setFailedL1Refs([]);
-      setFailedL1Input("");
-      setFailedL2Refs([]);
-      setFailedL2Input("");
-      loadUsers();
-      showToast("Passage de classe effectué !");
-    } catch (err) {
-      showToast(err.response?.data?.error || "Erreur lors du passage", "error");
-    } finally {
-      setUpgradeLoading(false);
-    }
-  };
-
   const FORBIDDEN_LETTERS = ["G", "H", "J", "K", "N", "L", "M"];
   const isLetterForbidden = (letter) => {
     const c = (letter || "").toUpperCase();
@@ -499,7 +438,6 @@ export default function AdminPage() {
         pseudo: `${newL1.prenom.trim()}.${newL1.nom.trim()}`,
         password: "STDnew_UserPass",
         role: "student",
-        level: "L1",
         groupe: letter,
       });
       setRegisterDone(true);
@@ -523,7 +461,6 @@ export default function AdminPage() {
 
   const allTabs = [
     ...TABS,
-    { key: "upgrade", label: "Passage de classe", icon: faGraduationCap },
     { key: "new-l1", label: "Nouveau étudiant", icon: faUserPlus },
     { key: "ues", label: "UEs", icon: faCode}
   ];
@@ -539,10 +476,15 @@ export default function AdminPage() {
     );
   };
 
-  const renderLevelBadge = (level) => {
+  const UE_LEVEL_COLORS = {
+    L1: "bg-cyan-100 text-cyan-700",
+    L2: "bg-violet-100 text-violet-700",
+    L3: "bg-amber-100 text-amber-700",
+  };
+
+  const renderUeLevelBadge = (level) => {
     if (!level) return null;
-    const colors = LEVEL_COLORS[level] || "bg-gray-100 text-gray-600";
-    return <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${colors}`}>{level}</span>;
+    return <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${UE_LEVEL_COLORS[level] || "bg-gray-100 text-gray-600"}`}>{level}</span>;
   };
 
   return (
@@ -728,9 +670,7 @@ export default function AdminPage() {
                               </td>
                               <td className="py-3.5 px-4 text-gray-500 text-xs">{u.pseudo}</td>
                               <td className="py-3.5 px-4">
-                                {u.role === "student" ? (
-                                  renderLevelBadge(u.level)
-                                ) : u.role === "teacher" ? (
+                                {u.role === "teacher" ? (
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {Array.isArray(u.ues) && u.ues.length > 0 ? (
                                       u.ues.map((ue) => (
@@ -805,7 +745,6 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-navy text-sm">{u.ref}</span>
-                            {renderLevelBadge(u.level)}
                           </div>
                           {renderRoleBadge(u.role)}
                         </div>
@@ -922,132 +861,6 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* Passage de classe */}
-          {tab === "upgrade" && (
-            <div className="bg-white rounded-2xl shadow-card p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 flex items-center justify-center shadow-sm">
-                  <FontAwesomeIcon icon={faGraduationCap} className="text-xl" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-navy text-base">Passage de classe — {now.getFullYear()}</h2>
-                  <p className="text-xs text-gray-400">
-                    Saisissez les étudiants qui <strong className="text-red-500">redoublent</strong> leur année. Tous les autres passeront automatiquement au niveau supérieur.
-                  </p>
-                </div>
-              </div>
-
-              {upgradeDone && (
-                <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2 animate-slide-up">
-                  <FontAwesomeIcon icon={faCheckCircle} />
-                  Passage de classe effectué avec succès !
-                </div>
-              )}
-
-              {/* L1 Redoublants */}
-              <div className="mb-5">
-                <h3 className="text-sm font-bold text-cyan-700 mb-2 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                  L1 — Redoublants
-                </h3>
-                <div className="flex items-center gap-2 mb-3">
-                  <input
-                    className="input-field font-mono uppercase"
-                    placeholder="Référence STD (ex: STD25001)"
-                    value={failedL1Input}
-                    onChange={(e) => setFailedL1Input(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") { e.preventDefault(); handleAddFailedRef("L1"); }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleAddFailedRef("L1")}
-                    className="btn-primary shrink-0"
-                  >
-                    <FontAwesomeIcon icon={faBan} className="text-sm" />
-                    Redouble
-                  </button>
-                </div>
-                {failedL1Refs.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {failedL1Refs.map((ref) => (
-                      <span key={ref} className="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full">
-                        {ref}
-                        <button type="button" onClick={() => handleRemoveFailedRef("L1", ref)} className="hover:text-red-800 transition">
-                          <FontAwesomeIcon icon={faTimes} size="xs" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* L2 Redoublants */}
-              <div className="mb-5">
-                <h3 className="text-sm font-bold text-violet-700 mb-2 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-violet-400" />
-                  L2 — Redoublants
-                </h3>
-                <div className="flex items-center gap-2 mb-3">
-                  <input
-                    className="input-field font-mono uppercase"
-                    placeholder="Référence STD (ex: STD25001)"
-                    value={failedL2Input}
-                    onChange={(e) => setFailedL2Input(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") { e.preventDefault(); handleAddFailedRef("L2"); }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleAddFailedRef("L2")}
-                    className="btn-primary shrink-0"
-                  >
-                    <FontAwesomeIcon icon={faBan} className="text-sm" />
-                    Redouble
-                  </button>
-                </div>
-                {failedL2Refs.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {failedL2Refs.map((ref) => (
-                      <span key={ref} className="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full">
-                        {ref}
-                        <button type="button" onClick={() => handleRemoveFailedRef("L2", ref)} className="hover:text-red-800 transition">
-                          <FontAwesomeIcon icon={faTimes} size="xs" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
-                <div className="flex items-start gap-2">
-                  <FontAwesomeIcon icon={faArrowRight} className="text-blue-500 mt-0.5" />
-                  <div className="text-xs text-blue-700">
-                    Les étudiants <strong>L1</strong> passeront en <strong>L2</strong>, les <strong>L2</strong> en <strong>L3</strong>.<br />
-                    Seuls les étudiants listés ci-dessus redoubleront leur année.
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleUpgrade}
-                disabled={upgradeLoading}
-                className="btn-primary"
-              >
-                {upgradeLoading ? (
-                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                ) : (
-                  <FontAwesomeIcon icon={faArrowRight} />
-                )}
-                Valider le passage de classe
-              </button>
-            </div>
-          )}
-
           {/* Nouveau étudiant */}
           {tab === "new-l1" && (
             <div className="bg-white rounded-2xl shadow-card p-6">
@@ -1106,8 +919,6 @@ export default function AdminPage() {
                       <span className="text-navy font-mono text-xs bg-navy/5 px-2 py-0.5 rounded">{newL1.prenom}.{newL1.nom}</span>
                       <span className="text-gray-500 font-medium">Mot de passe</span>
                       <span className="text-navy font-mono text-xs bg-navy/5 px-2 py-0.5 rounded">STDnew_UserPass</span>
-                      <span className="text-gray-500 font-medium">Niveau</span>
-                      <span className="text-navy font-mono text-xs bg-navy/5 px-2 py-0.5 rounded">L1</span>
                     </div>
                   </div>
                 )}
@@ -1275,27 +1086,6 @@ export default function AdminPage() {
                     <img src={annImagePreview} alt="Aperçu" className="w-full max-h-48 object-cover rounded-xl border border-contact" />
                   )}
 
-                  {/* Level selector */}
-                  <div>
-                    <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide flex items-center gap-1">
-                      <FontAwesomeIcon icon={faUsers} className="text-[10px]" />
-                      Visible par
-                    </p>
-                    <div className="flex gap-2">
-                      {["Tous", "L1", "L2", "L3"].map((l) => (
-                        <button key={l} type="button" onClick={() => setAnnTargetLevel(l === "Tous" ? "" : l)}
-                          className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-                            ((l === "Tous" && !annTargetLevel) || annTargetLevel === l)
-                              ? "bg-navy text-white shadow-sm"
-                              : "bg-white border border-contact text-navy hover:border-navy"
-                          }`}
-                        >
-                          {l === "Tous" ? "Tout le monde" : l}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   <button
                     type="button"
                     onClick={async () => {
@@ -1305,10 +1095,9 @@ export default function AdminPage() {
                         const form = new FormData();
                         form.append("title", annTitle.trim());
                         form.append("content", annContent.trim());
-                        form.append("target_level", annTargetLevel || "");
                         if (annImage) form.append("image", annImage);
                         await api.post("/announcements", form, { headers: { "Content-Type": "multipart/form-data" } });
-                        setAnnTitle(""); setAnnContent(""); setAnnImage(null); setAnnImagePreview(null); setAnnTargetLevel("");
+                        setAnnTitle(""); setAnnContent(""); setAnnImage(null); setAnnImagePreview(null);
                         loadAnnouncements();
                         showToast("Annonce publiée !");
                       } catch (err) {
@@ -1355,7 +1144,6 @@ export default function AdminPage() {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-navy text-sm truncate flex items-center gap-2">
                           {ann.title}
-                          {ann.target_level && renderLevelBadge(ann.target_level)}
                         </h4>
                         <p className="text-xs text-gray-500 line-clamp-2 mt-1">{ann.content}</p>
                         <p className="text-xs text-gray-300 mt-1.5">
@@ -1460,7 +1248,7 @@ export default function AdminPage() {
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-navy text-sm">{item.ue}</span>
-                          {renderLevelBadge(item.level)}
+                          {renderUeLevelBadge(item.level)}
                         </div>
                         <button
                           type="button"

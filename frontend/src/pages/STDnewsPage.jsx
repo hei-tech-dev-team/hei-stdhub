@@ -29,29 +29,24 @@ const REACTION_LABELS = {
   sad: "Triste",
 };
 
-const LEVELS = ["Tous", "L1", "L2", "L3"];
-
 export default function STDnewsPage() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reacting, setReacting] = useState({});
-  const [levelFilter, setLevelFilter] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/announcements", {
-        params: levelFilter !== "Tous" ? { level: levelFilter } : {},
-      });
+      const res = await api.get("/announcements");
       setAnnouncements(res.data?.announcements || []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [levelFilter]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -104,16 +99,6 @@ export default function STDnewsPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
-
-  const levelBadge = (level) => {
-    if (!level) return null;
-    const colors = { L1: "bg-cyan-100 text-cyan-700", L2: "bg-emerald-100 text-emerald-700", L3: "bg-amber-100 text-amber-700" };
-    return (
-      <span className={"text-xs font-bold px-2 py-0.5 rounded-full " + (colors[level] || "bg-gray-100 text-gray-600")}>
-        {level}
-      </span>
-    );
   };
 
   const CardVisual = ({ item, className = "" }) => {
@@ -223,23 +208,9 @@ export default function STDnewsPage() {
                       />
                   </div>
                   <div className="flex items-center gap-3 pb-3 border-b border-contact/30 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {LEVELS.map((l) => (
-                      <button
-                        key={l}
-                        type="button"
-                        onClick={() => setLevelFilter(l)}
-                        className={
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition " +
-                          (levelFilter === l
-                            ? "bg-navy text-white shadow-sm"
-                            : "bg-white border border-contact text-navy hover:border-navy")
-                        }
-                      >
-                        {l}
-                      </button>
-                      ))}
-                    </div>
+                    <p className="text-xs text-gray-400 font-medium">
+                      {mergedItems.length} annonce{mergedItems.length > 1 ? "s" : ""}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -255,11 +226,7 @@ export default function STDnewsPage() {
                   {!loading && mergedItems.length === 0 && (
                     <div className="text-center py-16">
                       <FontAwesomeIcon icon={faNewspaper} className="text-4xl text-gray-300 mb-3" />
-                      <p className="text-gray-400 text-sm">
-                        {levelFilter === "Tous"
-                          ? "Aucune annonce pour le moment."
-                          : `Aucune annonce pour le niveau ${levelFilter}.`}
-                      </p>
+                      <p className="text-gray-400 text-sm">Aucune annonce pour le moment.</p>
                     </div>
                   )}
 
@@ -282,7 +249,6 @@ export default function STDnewsPage() {
                               <h2 className="text-base sm:text-lg font-bold text-navy group-hover:text-gold transition-colors">
                                 {item.title}
                               </h2>
-                              {levelBadge(item.target_level)}
                             </div>
                             <p className="text-gray-600 lg:h-[2.75rem] overflow-hidden text-sm whitespace-pre-wrap break-words mb-1 line-clamp-2">
                               {item.content}
@@ -339,10 +305,6 @@ export default function STDnewsPage() {
           />
 
           <div className="p-5 sm:p-7">
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              {levelBadge(selectedItem.target_level)}
-            </div>
-
             <h2 className="text-xl sm:text-2xl font-bold text-navy mb-2">{selectedItem.title}</h2>
 
             <p className="text-xs text-gray-400 flex items-center gap-1.5 mb-5">

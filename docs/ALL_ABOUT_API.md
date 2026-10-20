@@ -219,7 +219,6 @@ The configured instance (`api/axios.js`) automatically:
 | PATCH | `/users/:id/email` | Yes | admin | Change user email |
 | DELETE | `/users/:id` | Yes | admin | Delete user (cannot delete self) |
 | GET | `/next-pseudo` | Yes | admin | Get next sequential pseudo (new_userX) |
-| POST | `/class-upgrade` | Yes | admin | Upgrade L1→L2, L2→L3 (redoublants stay at current level) |
 | POST | `/invitations` | Yes | admin | Generate single invitation code (student/teacher, 7d expiry) |
 | POST | `/invitations/bulk` | Yes | admin | Bulk generate up to 1000 codes (batch INSERT) |
 | GET | `/invitations?limit=&offset=` | Yes | admin | List invitations (max 200) |
@@ -229,8 +228,8 @@ The configured instance (`api/axios.js`) automatically:
 
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
-| GET | `/` | Yes | Any | List announcements (?level=, ?limit=, ?offset=) + reactions |
-| POST | `/` | Yes | admin | Create announcement (optional image, target_level, max 10MB) + push |
+| GET | `/` | Yes | Any | List announcements (?limit=, ?offset=) + reactions |
+| POST | `/` | Yes | admin | Create announcement (optional image, max 10MB) + push |
 | DELETE | `/:id` | Yes | admin | Delete announcement |
 | POST | `/:id/react` | Yes | Any | Upsert reaction (like/haha/dont_like/sad) |
 | DELETE | `/:id/react` | Yes | Any | Remove reaction |
@@ -268,14 +267,14 @@ The configured instance (`api/axios.js`) automatically:
 
 | Table | Purpose | Key columns |
 |-------|---------|-------------|
-| `users` | User accounts | id, ref (UNIQUE), pseudo (UNIQUE), email, password (bcrypt), role (ENUM), level, avatar, ues (TEXT[]), first_login |
+| `users` | User accounts | id, ref (UNIQUE), pseudo (UNIQUE), email, password (bcrypt), role (ENUM), avatar, ues (TEXT[]), first_login |
 | `messages` | Chat messages | id, sender_id, receiver_id, content, is_global, seen, seen_at |
 | `global_chat_read` | Per-user global chat read tracking | user_id (PK), last_read_msg_id |
 | `push_subscriptions` | Web Push endpoints | user_id, endpoint (UNIQUE combo), auth_key, p256dh_key |
 | `push_notifications` | Persistent notification history | user_id, type, title, body, data (JSONB), is_read |
 | `supports` | External resource links | id, ue, label, url (https://), author_id |
 | `suggestions` | BDE suggestions | id, student_id, titre, contenu, anonyme, statut, justification |
-| `announcements` | Admin announcements | id, title, content, image_url, target_level, author_id |
+| `announcements` | Admin announcements | id, title, content, image_url, author_id |
 | `announcement_reactions` | Announcement reactions | announcement_id, user_id (UNIQUE), reaction_type |
 | `invitations` | Registration codes | code (UNIQUE), role, max_uses, use_count, expires_at, created_by |
 | `password_reset_tokens` | Password reset | user_id, token_hash (SHA-256), expires_at, used_at |

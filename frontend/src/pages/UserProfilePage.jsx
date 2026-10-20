@@ -241,13 +241,6 @@ export default function UserProfilePage() {
                                                                                     roleCfg.label
                                                                               }
                                                                         </span>
-                                                                        {profile.level && (
-                                                                              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                                                                                    {
-                                                                                          profile.level
-                                                                                    }
-                                                                              </span>
-                                                                        )}
                                                                   </div>
                                                             </div>
                                                       </div>

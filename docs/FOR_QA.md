@@ -183,4 +183,4 @@ it("protected route", async () => {
 - [ ] Keep-alive ping configured (prevent Render sleep)
 - [ ] Invitation codes generate and validate
 - [ ] Role-based access control works (admin, bde, teacher, student)
-- [ ] Seasonal features show at correct times (Sept upgrade, Nov L1 registration)
+- [ ] New student registration works from the admin panel (Nov tab)

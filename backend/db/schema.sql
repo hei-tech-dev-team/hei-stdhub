@@ -9,14 +9,10 @@ DROP TABLE IF EXISTS suggestions CASCADE;
 DROP TABLE IF EXISTS users       CASCADE;
 
 DROP TYPE IF EXISTS user_role   CASCADE;
-DROP TYPE IF EXISTS user_level  CASCADE;
 DROP TYPE IF EXISTS post_type   CASCADE;
-DROP TYPE IF EXISTS submit_type CASCADE;
 
 CREATE TYPE user_role   AS ENUM ('student', 'teacher', 'admin', 'bde', 'developer');
-CREATE TYPE user_level  AS ENUM ('L1', 'L2', 'L3');
 CREATE TYPE post_type   AS ENUM ('cours', 'td', 'examen');
-CREATE TYPE submit_type AS ENUM ('TD', 'Examen');
 
 CREATE TABLE users (
   id         SERIAL       PRIMARY KEY,
@@ -27,16 +23,11 @@ CREATE TABLE users (
   pseudo     VARCHAR(100) NOT NULL UNIQUE,
   password   VARCHAR(255) NOT NULL,
   role       user_role    NOT NULL,
-  level      user_level   NULL,
   avatar     VARCHAR      NULL,
   ues        TEXT[]       DEFAULT '{}',
   first_login BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-  CONSTRAINT chk_student_level CHECK (
-    (role IN ('student', 'bde') AND level IS NOT NULL)
-    OR (role IN ('teacher','admin','developer') AND level IS NULL)
-  ),
   CONSTRAINT chk_ref_format CHECK (
     (role IN ('student', 'bde') AND ref ~ '^STD[0-9]{5,}$')
     OR (role = 'teacher'   AND ref ~ '^PROF[0-9]{3,}$')
@@ -101,31 +92,6 @@ CREATE TABLE supports (
   CONSTRAINT chk_support_url CHECK (url ~ '^https?://')
 );
 
-CREATE TABLE submissions (
-  id         SERIAL       PRIMARY KEY,
-  student_id INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
-  nom        VARCHAR(100) NOT NULL,
-  prenom     VARCHAR(100) NOT NULL,
-  email      VARCHAR(150) NOT NULL,
-  ref        VARCHAR(20)  NOT NULL,
-  level      user_level   NOT NULL,
-  groupe     VARCHAR(10)  NOT NULL,
-  ue         VARCHAR(30)  NOT NULL,
-  type       submit_type  NOT NULL,
-  file_name  VARCHAR(255) NULL,
-  file_path  VARCHAR(500) NULL,
-  link       VARCHAR(500) NULL,
-  created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-  CONSTRAINT chk_submission_source CHECK (
-    file_path IS NOT NULL OR link IS NOT NULL
-  ),
-  CONSTRAINT chk_groupe_level CHECK (
-    (level = 'L1' AND groupe IN ('N1','N2','N3','N4'))
-    OR (level = 'L2' AND groupe IN ('K1','K2','K3'))
-    OR (level = 'L3' AND groupe IN ('J1','J2'))
-  )
-);
-
 CREATE TABLE messages (
   id          SERIAL    PRIMARY KEY,
   sender_id   INTEGER   NULL REFERENCES users(id) ON DELETE SET NULL,
@@ -150,10 +116,6 @@ CREATE INDEX idx_posts_type    ON posts(type);
 CREATE INDEX idx_posts_author  ON posts(author_id);
 CREATE INDEX idx_posts_created ON posts(created_at DESC);
 CREATE INDEX idx_supports_ue   ON supports(ue);
-CREATE INDEX idx_subs_student  ON submissions(student_id);
-CREATE INDEX idx_subs_ue       ON submissions(ue);
-CREATE INDEX idx_subs_type     ON submissions(type);
-CREATE INDEX idx_subs_groupe   ON submissions(groupe);
 CREATE INDEX idx_msg_global    ON messages(is_global);
 CREATE INDEX idx_msg_sender    ON messages(sender_id);
 CREATE INDEX idx_msg_receiver  ON messages(receiver_id);
@@ -281,12 +243,12 @@ CREATE TRIGGER trg_posts_updated_at
   BEFORE UPDATE ON posts
   FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
-INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level) VALUES
+INSERT INTO users (ref, nom, prenom, email, pseudo, password, role) VALUES
   ('ADMIN001', 'Admin', 'HEI', 'stdhub.admin@gmail.com', 'ADMIN',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin', NULL),
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin'),
   ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student', 'L1'),
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student'),
   ('PROF001','Tester','PROF','tester@gmail.com','PROFTEST',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher',NULL),
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher'),
   ('DEV001','Developer','HEI','hei.dev@gmail.com','DEV',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','developer',NULL);
+   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','developer');

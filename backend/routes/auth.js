@@ -77,7 +77,7 @@ const router = express.Router();
 
 const makeToken = (user) =>
   jwt.sign(
-    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [], level: user.level || null },
+    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [] },
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
@@ -125,7 +125,6 @@ router.post("/register", async (req, res) => {
     pseudo,
     password,
     role: bodyRole,
-    level,
     groupe,
     inviteCode,
     ues,
@@ -198,12 +197,6 @@ router.post("/register", async (req, res) => {
           .status(400)
           .json({ error: "Un étudiant doit utiliser un email HEI (@gmail.com)." });
       }
-      if (!["L1", "L2", "L3"].includes(level)) {
-        await client.query("ROLLBACK");
-        return res
-          .status(400)
-          .json({ error: "Niveau invalide (L1, L2 ou L3)." });
-      }
     } else if (role === "teacher") {
       if (!/^PROF\d{3,}$/.test(refUpper)) {
         await client.query("ROLLBACK");
@@ -255,9 +248,9 @@ router.post("/register", async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await client.query(
-      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, ues, groupe)
- VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
- RETURNING id, ref, nom, prenom, email, pseudo, role, level, groupe, ues, first_login`,
+      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, ues, groupe)
+ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+ RETURNING id, ref, nom, prenom, email, pseudo, role, groupe, ues, first_login`,
       [
         refUpper,
         capitalize(nom),
@@ -266,7 +259,6 @@ router.post("/register", async (req, res) => {
         capitalize(pseudo),
         hash,
         role,
-        role === "student" || role === "bde" ? level : null,
         ues || [],
         groupe || null,
       ],
@@ -323,7 +315,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, level, ues, avatar, first_login
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, ues, avatar, first_login
        FROM users WHERE ref=$1`,
       [refUpper],
     );
@@ -344,7 +336,6 @@ router.post("/login", async (req, res) => {
 
     const access = {
       role: user.role,
-      level: user.level || null,
       bde: user.role === "bde",
       admin: user.role === "admin",
       teacher: user.role === "teacher",
@@ -409,7 +400,7 @@ router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, re
 router.get("/user/:ref", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT id, ref, nom, prenom, pseudo, role, level, avatar FROM users WHERE ref=$1",
+      "SELECT id, ref, nom, prenom, pseudo, role, avatar FROM users WHERE ref=$1",
       [req.params.ref.toUpperCase()],
     );
     if (!rows.length)
@@ -612,7 +603,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
 router.get("/me", auth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, role, level, ues, avatar
+      `SELECT id, ref, nom, prenom, email, pseudo, role, ues, avatar
        FROM users WHERE id=$1`,
       [req.user.id],
     );
@@ -653,7 +644,7 @@ router.patch("/profile", auth, async (req, res) => {
 
     const { rows } = await db.query(
       `UPDATE users SET pseudo=$1 WHERE id=$2
-       RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+       RETURNING id, ref, nom, prenom, email, pseudo, role, avatar`,
       [pseudo.trim(), req.user.id],
     );
     res.json(rows[0]);
@@ -699,7 +690,7 @@ router.patch("/avatar", auth, (req, res) => {
 
       const { rows } = await db.query(
         `UPDATE users SET avatar=$1 WHERE id=$2
-         RETURNING id, ref, nom, prenom, email, pseudo, role, level, avatar`,
+         RETURNING id, ref, nom, prenom, email, pseudo, role, avatar`,
         [avatarUrl, req.user.id],
       );
       res.json(rows[0]);

@@ -79,7 +79,7 @@ router.get("/search", auth, async (req, res) => {
   const isDeveloper = req.user.role === "developer";
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, pseudo, role, level, avatar
+      `SELECT id, ref, pseudo, role, avatar
        FROM users
        WHERE id != $1
          AND (pseudo ILIKE $2 OR ref ILIKE $2)
@@ -111,7 +111,7 @@ router.get("/contacts", auth, async (req, res) => {
     params.push(parseInt(limit) || 200);
     params.push(parseInt(offset) || 0);
     const { rows } = await db.query(
-      `SELECT id, ref, pseudo, role, level, avatar
+      `SELECT id, ref, pseudo, role, avatar
        FROM users
        ${whereClause}
        ORDER BY

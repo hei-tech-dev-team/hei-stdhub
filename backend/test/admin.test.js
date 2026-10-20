@@ -186,3 +186,29 @@ describe("ADMIN — PATCH /users/:id/role edge cases", () => {
     expect([404, 500]).to.include(res.status);
   });
 });
+
+describe("ADMIN — niveaux L1/L2/L3 supprimes", () => {
+  itWithToken("POST /class-upgrade → 404 (route supprimee)", async () => {
+    const res = await agent
+      .post("/api/admin/class-upgrade")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ failed_l1_refs: [], failed_l2_refs: [] });
+    expect(res.status).to.equal(404);
+  });
+
+  itWithToken("PATCH /users/:id/level → 404 (route supprimee)", async () => {
+    const res = await agent
+      .patch("/api/admin/users/1/level")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ level: "L1" });
+    expect(res.status).to.equal(404);
+  });
+
+  itWithToken("GET /users ne retourne plus de champ level", async () => {
+    const res = await agent
+      .get("/api/admin/users?limit=5")
+      .set("Authorization", `Bearer ${adminToken}`);
+    if (res.status !== 200) return;
+    res.body.users.forEach((u) => expect(u).to.not.have.property("level"));
+  });
+});
