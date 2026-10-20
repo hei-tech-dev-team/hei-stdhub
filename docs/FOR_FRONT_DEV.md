@@ -96,6 +96,11 @@ frontend/src/
 
 ## Pages
 
+All four auth pages (`LoginPage`, `RegisterPage`, `ForgotPasswordPage`,
+`ResetPasswordPage`) render through the shared `AuthShell` component
+(flat full-screen navy/white split, `.auth-*` controls,
+gold accents, single Quicksand font).
+
 ### `LoginPage.jsx`
 - Single identifier field (ref or teacher/admin code) + password field, show/hide password, error/loading states
 - Generic error message "Référence ou mot de passe incorrect." for any bad credential
@@ -166,6 +171,15 @@ frontend/src/
 ---
 
 ## Components
+
+### `auth/AuthShell.jsx`
+- Uniform shell for the 4 auth pages: full-screen two-panel split — flat
+  navy brand panel (bold headline with gold accent line, gold-left-rule
+  caption) and white form panel (mobile logo, title with gold
+  full stop, content, footer slot). No gradients, blobs or glow shadows.
+- Also exports `AuthBackLink` (back-to-login link used by forgot/reset)
+- Pairs with `.auth-label / .auth-error / .auth-submit / .auth-foot` and
+  `.auth-page .input-field` (flat fill fields, gold focus) in `index.css`
 
 ### `Sidebar.jsx`
 - Role-based nav: full link set for everyone, Suggestions (student/teacher), BDE (bde), Admin (admin)

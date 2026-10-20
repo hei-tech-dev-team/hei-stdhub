@@ -51,7 +51,20 @@ ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_email_format;
 -- 2. Les alumni deviennent des étudiants comme les autres
 --    (la migration suivante, migration_remove_levels.sql, supprime la
 --     colonne level : chk_student_level n'est donc pas recréée ici)
-UPDATE users SET role = 'student', level = 'L3' WHERE role = 'alumni';
+--    Garde idempotente : si la valeur 'alumni' n'existe plus dans l'enum
+--    (base déjà migrée ou reconstruite depuis schema.sql), on saute —
+--    'alumni' ne serait même pas accepté comme littéral d'enum.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'user_role' AND e.enumlabel = 'alumni'
+  ) THEN
+    UPDATE users SET role = 'student', level = 'L3' WHERE role = 'alumni';
+  END IF;
+END $$;
 
 -- 3. Suppression des données alumni
 DELETE FROM push_notifications WHERE type = 'alumni_tip';
@@ -72,6 +85,7 @@ DROP TYPE user_role_old;
 -- 5. Contraintes sans alumni
 --    Le format hei.*@gmail.com des étudiants passe côté backend
 --    (les anciens alumni n'y correspondent pas).
+ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_email_format;
 ALTER TABLE users ADD CONSTRAINT chk_email_format CHECK (
   email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
 );

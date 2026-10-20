@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { HEI_BLUE_LOGO, HEI_WHITE_LOGO } from "../assets/logos";
+import AuthShell from "../components/auth/AuthShell";
 import api from "../api/axios";
 import {
   determineRegisterRole,
@@ -17,7 +17,6 @@ import {
   AtSign,
   ArrowRight,
   CheckCircle,
-  GraduationCap,
 } from "lucide-react";
 
 const ALL_UES = [
@@ -47,9 +46,7 @@ const ALL_UES = [
 
 const InputWrapper = ({ label, icon: Icon, children }) => (
   <div>
-    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">
-      {label}
-    </label>
+    <label className="auth-label">{label}</label>
     <div className="relative">
       {Icon && (
         <Icon
@@ -169,366 +166,261 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8 auth-page">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-white/3 rounded-full blur-3xl" />
-      </div>
+    <AuthShell
+      headline="Rejoignez"
+      headlineAccent="la communauté !"
+      sub="Créez votre compte pour interagir avec la tribu HEI."
+      cardTitle="Inscription sur invitation"
+      cardSub="Code requis -- "
+      title="Créer un compte"
+      subtitle="Inscription sur invitation uniquement"
+      footer={
+        <p className="text-xs text-gray-400">
+          Déjà un compte ?{" "}
+          <Link to="/login" className="text-navy font-bold hover:underline">
+            Connectez-vous
+          </Link>
+        </p>
+      }
+    >
+      {error && <div className="auth-error">{error}</div>}
 
-      <div className="relative w-full max-w-4xl">
-        <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] overflow-hidden flex">
-          {/* Left panel */}
-          <div
-            className="hidden lg:flex lg:w-2/5 relative flex-col justify-between p-10 overflow-hidden"
-            style={{
-              background:
-                "linear-gradient(160deg, #0A1A33 0%, #001948 50%, #0A1A33 100%)",
-            }}
-          >
-            <div className="absolute top-[-60px] left-[-60px] w-56 h-56 bg-white/10 rounded-full" />
-            <div className="absolute top-[30%] right-[-80px] w-72 h-72 bg-white/8 rounded-full" />
-            <div className="absolute bottom-[-40px] left-[20%] w-48 h-48 bg-white/10 rounded-full" />
-            <div className="absolute bottom-[20%] left-[-30px] w-32 h-32 bg-white/12 rounded-full" />
-            <div className="absolute top-[55%] right-[10%] w-20 h-20 bg-white/10 rounded-full" />
-
-            <div className="relative z-10 flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <img
-                  src={HEI_WHITE_LOGO}
-                  alt="HEI"
-                  className="w-8 h-8 object-contain"
-                />
-              </div>
-              <div>
-                <span className="text-white font-bold text-lg leading-none block">
-                  HEI STDhub
-                </span>
-                <span className="text-white/60 text-xs">
-                  Plateforme étudiante
-                </span>
-              </div>
-            </div>
-
-            <div className="relative z-10">
-              <h2 className="text-white text-3xl font-bold leading-snug mb-3 font-fraunces">
-                Rejoignez
-                <br />
-                <span className="text-gold-light">la communauté !</span>
-              </h2>
-              <p className="text-white/60 text-sm leading-relaxed">
-                Créez votre compte pour accéder aux ressources, archives et
-                échanges en temps réel.
-              </p>
-            </div>
-
-            <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20 border-l-2 border-l-gold">
-              <p className="text-white/80 text-xs font-medium">
-                Inscription sur invitation
-              </p>
-              <p className="text-white/50 text-xs mt-0.5">
-                Code requis — contactez l'admin
-              </p>
-            </div>
+      {/* ÉTAPE 1 : Code */}
+      {!codeVerified ? (
+        <div className="flex flex-col gap-4">
+          <div className="bg-navy/5 border border-navy/10 rounded-lg p-4">
+            <p className="text-[#001948] font-semibold text-sm mb-1">
+              Accès sur invitation uniquement
+            </p>
+            <p className="text-gray-500 text-xs leading-relaxed">
+              Contactez l'equipe de STDhub à{" "}
+              <a
+                href="mailto:stdhub.admin@gmail.com"
+                className="text-[#001948] hover:underline font-medium"
+              >
+                stdhub.admin@gmail.com
+              </a>{" "}
+              en précisant votre rôle. Un code d'invitation vous sera fourni
+              dans les plus bref delai.
+            </p>
           </div>
 
-          {/* Right panel */}
-          <div className="flex-1 flex flex-col px-8 sm:px-10 py-8 overflow-y-auto max-h-screen">
-            <div className="flex lg:hidden items-center gap-2 mb-6">
-              <img
-                src={HEI_BLUE_LOGO}
-                alt="HEI"
-                className="h-8 object-contain"
-              />
-              <span className="text-navy font-bold">HEI STDhub</span>
+          {codeError && (
+            <div className="bg-[#FEF3F2] border border-[#FECACA] text-[#B42318] text-[13px] px-4 py-2.5 rounded-lg">
+              {codeError}
             </div>
+          )}
 
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-navy font-fraunces">Créer un compte</h1>
-              <span className="block w-12 h-1 rounded-full bg-gold mt-3" />
-              <p className="text-gray-400 text-sm mt-3">
-                Inscription sur invitation uniquement
-              </p>
-            </div>
+          <InputWrapper label="Code d'invitation" icon={Hash}>
+            <input
+              className="input-field pl-10 tracking-widest uppercase"
+              placeholder="EX: AB12CD34"
+              value={form.inviteCode}
+              onChange={(e) => {
+                set("inviteCode", e.target.value.toUpperCase());
+                setCodeError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  verifyCode();
+                }
+              }}
+            />
+          </InputWrapper>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-4 flex items-center gap-2">
-                {error}
-              </div>
-            )}
-
-            {/* ÉTAPE 1 : Code */}
-            {!codeVerified ? (
-              <div className="flex flex-col gap-4">
-                <div className="bg-[#e6edf7] border border-[#b8c9e0] rounded-2xl p-4">
-                  <p className="text-[#001948] font-semibold text-sm mb-1">
-                    Accès sur invitation uniquement
-                  </p>
-                  <p className="text-gray-500 text-xs leading-relaxed">
-                    Contactez l'administrateur à{" "}
-                    <a
-                      href="mailto:stdhub.admin@gmail.com"
-                      className="text-[#001948] hover:underline font-medium"
-                    >
-                      stdhub.admin@gmail.com
-                    </a>{" "}
-                    en précisant votre rôle et niveau. Le code est unique et
-                    expire après 7 jours.
-                  </p>
-                </div>
-
-                {codeError && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2 rounded-xl">
-                    {codeError}
-                  </div>
-                )}
-
-                <InputWrapper label="Code d'invitation" icon={Hash}>
-                  <input
-                    className="input-field pl-10 tracking-widest font-mono uppercase"
-                    placeholder="EX: AB12CD34"
-                    value={form.inviteCode}
-                    onChange={(e) => {
-                      set("inviteCode", e.target.value.toUpperCase());
-                      setCodeError("");
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        verifyCode();
-                      }
-                    }}
-                  />
-                </InputWrapper>
-
-                <button
-                  type="button"
-                  onClick={verifyCode}
-                  disabled={codeLoading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40"
-                  style={{
-                    background: "linear-gradient(135deg, #0A1A33, #001948)",
-                  }}
-                >
-                  {codeLoading ? (
-                    "Vérification..."
-                  ) : (
-                    <>
-                      <span>Vérifier le code</span>
-                      <ArrowRight size={16} />
-                    </>
-                  )}
-                </button>
-
-                <p className="text-center text-xs text-gray-400">
-                  Déjà un compte ?{" "}
-                  <Link
-                    to="/login"
-                    className="text-[#001948] font-bold hover:underline"
-                  >
-                    Se connecter
-                  </Link>
-                </p>
-              </div>
+          <button
+            type="button"
+            onClick={verifyCode}
+            disabled={codeLoading}
+            className="auth-submit"
+          >
+            {codeLoading ? (
+              "Vérification..."
             ) : (
-              /* ÉTAPE 2 : Formulaire complet */
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-[#001948] text-sm px-4 py-2.5 rounded-2xl">
-                  <CheckCircle size={16} />
-                  <span>
-                    Code valide — inscription en tant que{" "}
-                    <strong className="capitalize">
-                      {form.role === "teacher" ? "Professeur" : "Étudiant"}
-                    </strong>
-                  </span>
-                </div>
+              <>
+                <span>Vérifier le code</span>
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        /* ÉTAPE 2 : Formulaire complet */
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-navy text-sm px-4 py-2.5 rounded-lg">
+            <CheckCircle size={16} />
+            <span>
+              Code valide — inscription en tant que{" "}
+              <strong className="capitalize">
+                {form.role === "teacher" ? "Professeur" : "Étudiant"}
+              </strong>
+            </span>
+          </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <InputWrapper label="Nom" icon={User}>
-                    <input
-                      className="input-field pl-9"
-                      placeholder="Rakoto"
-                      value={form.nom}
-                      onChange={(e) => {
-                        set("nom", e.target.value);
-                        setError("");
-                      }}
-                    />
-                  </InputWrapper>
-                  <InputWrapper label="Prénom" icon={User}>
-                    <input
-                      className="input-field pl-9"
-                      placeholder="Jean"
-                      value={form.prenom}
-                      onChange={(e) => {
-                        set("prenom", e.target.value);
-                        setError("");
-                      }}
-                    />
-                  </InputWrapper>
-                </div>
+          <div className="grid grid-cols-2 gap-3">
+            <InputWrapper label="Nom" icon={User}>
+              <input
+                className="input-field pl-9"
+                placeholder="Rakoto"
+                value={form.nom}
+                onChange={(e) => {
+                  set("nom", e.target.value);
+                  setError("");
+                }}
+              />
+            </InputWrapper>
+            <InputWrapper label="Prénom" icon={User}>
+              <input
+                className="input-field pl-9"
+                placeholder="Jean"
+                value={form.prenom}
+                onChange={(e) => {
+                  set("prenom", e.target.value);
+                  setError("");
+                }}
+              />
+            </InputWrapper>
+          </div>
 
-                <InputWrapper label="Email" icon={Mail}>
-                  <input
-                    type="email"
-                    className="input-field pl-10"
-                    placeholder={
-                      form.role === "student"
-                        ? "hei.jean@gmail.com"
-                        : "dr.nom@hei.mg"
-                    }
-                    value={form.email}
-                    onChange={(e) => {
-                      set("email", e.target.value);
+          <InputWrapper label="Email" icon={Mail}>
+            <input
+              type="email"
+              className="input-field pl-10"
+              placeholder={
+                form.role === "student" ? "hei.jean@gmail.com" : "dr.nom@hei.mg"
+              }
+              value={form.email}
+              onChange={(e) => {
+                set("email", e.target.value);
+                setError("");
+              }}
+            />
+          </InputWrapper>
+
+          <div className="grid grid-cols-2 gap-3">
+            <InputWrapper label="Référence" icon={Hash}>
+              <input
+                className="input-field pl-9"
+                placeholder={form.role === "student" ? "STD25001" : "PROF001"}
+                value={form.ref}
+                onChange={(e) => {
+                  set("ref", e.target.value);
+                  setError("");
+                }}
+              />
+            </InputWrapper>
+            <InputWrapper label="Pseudo" icon={AtSign}>
+              <input
+                className="input-field pl-9"
+                placeholder="MonPseudo"
+                value={form.pseudo}
+                onChange={(e) => {
+                  set("pseudo", e.target.value);
+                  setError("");
+                }}
+              />
+            </InputWrapper>
+          </div>
+
+          {form.role === "teacher" && (
+            <div>
+              <label className="auth-label">
+                UEs dont vous êtes responsable *
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {ALL_UES.map((ue) => (
+                  <button
+                    key={ue}
+                    type="button"
+                    onClick={() => {
+                      toggleUE(ue);
                       setError("");
                     }}
-                  />
-                </InputWrapper>
+                    className={
+                      "px-3 py-1.5 rounded-full text-xs font-semibold border transition " +
+                      (form.ues.includes(ue)
+                        ? "text-white border-transparent bg-navy"
+                        : "bg-white border-gray-300 text-navy hover:bg-gray-50")
+                    }
+                  >
+                    {ue}
+                  </button>
+                ))}
+              </div>
+              {form.ues.length > 0 && (
+                <p className="text-xs text-[#001948] mt-2 font-medium">
+                  {form.ues.length} UE{form.ues.length > 1 ? "s" : ""}{" "}
+                  sélectionnée{form.ues.length > 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+          )}
 
-                <div className="grid grid-cols-2 gap-3">
-                  <InputWrapper label="Référence" icon={Hash}>
-                    <input
-                      className="input-field pl-9"
-                      placeholder={
-                        form.role === "student" ? "STD25001" : "PROF001"
-                      }
-                      value={form.ref}
-                      onChange={(e) => {
-                        set("ref", e.target.value);
-                        setError("");
-                      }}
-                    />
-                  </InputWrapper>
-                  <InputWrapper label="Pseudo" icon={AtSign}>
-                    <input
-                      className="input-field pl-9"
-                      placeholder="MonPseudo"
-                      value={form.pseudo}
-                      onChange={(e) => {
-                        set("pseudo", e.target.value);
-                        setError("");
-                      }}
-                    />
-                  </InputWrapper>
-                </div>
+          <div className="grid grid-cols-2 gap-3">
+            <InputWrapper label="Mot de passe" icon={Lock}>
+              <input
+                type={showPwd ? "text" : "password"}
+                className="input-field pl-9 pr-9"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => {
+                  set("password", e.target.value);
+                  setError("");
+                }}
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPwd((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition"
+              >
+                {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </InputWrapper>
 
-                {form.role === "teacher" && (
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">
-                      UEs dont vous êtes responsable *
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {ALL_UES.map((ue) => (
-                        <button
-                          key={ue}
-                          type="button"
-                          onClick={() => {
-                            toggleUE(ue);
-                            setError("");
-                          }}
-                          className={
-                            "px-3 py-1.5 rounded-full text-xs font-semibold border transition " +
-                            (form.ues.includes(ue)
-                              ? "text-white border-transparent"
-                              : "bg-white border-gray-300 text-navy hover:bg-gray-50")
-                          }
-                          style={
-                            form.ues.includes(ue)
-                              ? {
-                                  background:
-                                    "linear-gradient(135deg, #0A1A33, #001948)",
-                                  borderColor: "transparent",
-                                }
-                              : {}
-                          }
-                        >
-                          {ue}
-                        </button>
-                      ))}
-                    </div>
-                    {form.ues.length > 0 && (
-                      <p className="text-xs text-[#001948] mt-2 font-medium">
-                        {form.ues.length} UE{form.ues.length > 1 ? "s" : ""}{" "}
-                        sélectionnée{form.ues.length > 1 ? "s" : ""}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <InputWrapper label="Mot de passe" icon={Lock}>
-                    <input
-                      type={showPwd ? "text" : "password"}
-                      className="input-field pl-9 pr-9"
-                      placeholder="••••••••"
-                      value={form.password}
-                      onChange={(e) => {
-                        set("password", e.target.value);
-                        setError("");
-                      }}
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowPwd((p) => !p)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition"
-                    >
-                      {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </InputWrapper>
-
-                  <InputWrapper label="Confirmer" icon={Lock}>
-                    <input
-                      type={showConfirm ? "text" : "password"}
-                      className="input-field pl-9 pr-9"
-                      placeholder="••••••••"
-                      value={form.confirmPassword}
-                      onChange={(e) => {
-                        set("confirmPassword", e.target.value);
-                        setError("");
-                      }}
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowConfirm((p) => !p)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition"
-                    >
-                      {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </InputWrapper>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 mt-1 shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40"
-                  style={{
-                    background: "linear-gradient(135deg, #0A1A33, #001948)",
-                  }}
-                >
-                  {loading ? (
-                    "Inscription..."
-                  ) : (
-                    <>
-                      <span>S'inscrire</span>
-                      <ArrowRight size={16} />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setCodeVerified(false)}
-                  className="text-center text-xs text-gray-400 hover:text-navy transition"
-                >
-                  ← Changer de code d'invitation
-                </button>
-              </form>
-            )}
+            <InputWrapper label="Confirmer" icon={Lock}>
+              <input
+                type={showConfirm ? "text" : "password"}
+                className="input-field pl-9 pr-9"
+                placeholder="••••••••"
+                value={form.confirmPassword}
+                onChange={(e) => {
+                  set("confirmPassword", e.target.value);
+                  setError("");
+                }}
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowConfirm((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition"
+              >
+                {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </InputWrapper>
           </div>
-        </div>
-      </div>
-    </div>
+
+          <button type="submit" disabled={loading} className="auth-submit mt-1">
+            {loading ? (
+              "Inscription..."
+            ) : (
+              <>
+                <span>S'inscrire</span>
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCodeVerified(false)}
+            className="text-center text-xs text-gray-400 hover:text-navy transition"
+          >
+            ← Changer de code d'invitation
+          </button>
+        </form>
+      )}
+    </AuthShell>
   );
 }
