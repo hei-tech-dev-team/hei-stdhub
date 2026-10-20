@@ -77,6 +77,24 @@
     @apply focus:border-gold focus:ring-gold/25;
   }
 
+  /* Auth pages (AuthShell) — uniform typography and controls */
+  .auth-label {
+    @apply text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide;
+  }
+
+  .auth-error {
+    @apply bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-5 flex items-center gap-2;
+  }
+
+  .auth-submit {
+    @apply w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40;
+    background: linear-gradient(135deg, #0a1a33, #001948);
+  }
+
+  .auth-foot {
+    @apply mt-6 text-center border-t border-gray-100 pt-5;
+  }
+
   /* Buttons */
   .btn-primary {
     @apply bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm
