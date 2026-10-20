@@ -19,7 +19,6 @@ const SuggestionPage = lazy(() => import("./pages/SuggestionPage"));
 const BDEPage = lazy(() => import("./pages/BDEPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 const PingBoxPage = lazy(() => import("./pages/PingBoxPage"));
-const STDnewsPage = lazy(() => import("./pages/STDnewsPage"));
 
 const NotFound = lazy(() => import("./components/errors/NotFound"));
 const ServerError = lazy(() => import("./components/errors/ServerError"));
@@ -98,7 +97,6 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/user/:ref" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
           <Route path="/pings" element={<ProtectedRoute><PingBoxPage /></ProtectedRoute>} />
-          <Route path="/stdnews" element={<ProtectedRoute><STDnewsPage /></ProtectedRoute>} />
 
           <Route path="/server-error" element={<ServerError />}/>
           <Route path="/maintenance" element={<Maintenance />}/>

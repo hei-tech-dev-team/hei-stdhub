@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import api from "../../api/axios";
-import Avatar from "../ui/Avatar";
+import AuthorAvatar from "../ui/AuthorAvatar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperclip, faPaperPlane, faTimes, faSpinner, faBullhorn } from "@fortawesome/free-solid-svg-icons";
 
@@ -8,12 +8,12 @@ const ALLOWED_ANNOUNCE_ROLES = ["admin", "bde", "teacher"];
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-export default function PostComposer ({ user, onPostCreated }) {
+export default function PostComposer({ user, onPostCreated }) {
     const [content, setContent] = useState("");
     const [title, setTitle] = useState("");
     const [type, setType] = useState("post");
     const [selectedFiles, setSelectedFiles] = useState([]);
-    const [preview, setPreview] = useState([]);
+    const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -22,15 +22,16 @@ export default function PostComposer ({ user, onPostCreated }) {
 
     useEffect(() => {
         return () => {
-            preview.forEach((p) => {
+            previews.forEach((p) => {
                 if (p.url) URL.revokeObjectURL(p.url);
             });
         };
-    }, [preview]);
+    }, [previews]);
 
     const handleFileSelect = (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
+
         if (selectedFiles.length + files.length > MAX_FILES) {
             setError(`Vous ne pouvez pas ajouter plus de ${MAX_FILES} fichiers.`);
             return;
@@ -41,7 +42,7 @@ export default function PostComposer ({ user, onPostCreated }) {
 
         for (const file of files) {
             if (file.size > MAX_FILE_SIZE) {
-                setError(`Le fichier "${file.name} dépasse la limite de 10 Mo."`);
+                setError(`Le fichier "${file.name}" dépasse la limite de 10 Mo.`);
                 return;
             }
             validFiles.push(file);
@@ -54,20 +55,22 @@ export default function PostComposer ({ user, onPostCreated }) {
                 isImage,
             });
         }
+
         setError("");
         setSelectedFiles((prev) => [...prev, ...validFiles]);
-        setPreview((prev) => [...prev, ...newPreviews]);
+        setPreviews((prev) => [...prev, ...newPreviews]);
 
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     const handleRemoveFile = (index) => {
-        const targetPreview = preview[index];
-        if (targetPreview && targetPreview.url) {
-            URL.revokeObjectURL(targetPreview.url);
+        const target = previews[index];
+        if (target && target.url) {
+            URL.revokeObjectURL(target.url);
         }
+
         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-        setPreview((prev) => prev.filter((_, i) => i !== index));
+        setPreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
@@ -113,29 +116,21 @@ export default function PostComposer ({ user, onPostCreated }) {
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-card p-4 sm:p-5 mb-6">
+        <div className="bg-white rounded-2xl shadow-card p-5 sm:p-6 mb-6 border border-gray-100/50">
             <form onSubmit={handleSubmit}>
-                <div className="flex gap-3">
-                    <div className="shrink-0">
-                        {user?.avatar ? (
-                        <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-gold/20">
-                            <img src={user.avatar} alt={user.pseudo} className="w-full h-full object-cover" />
-                        </div>
-                        ) : (
-                            <Avatar name={user?.pseudo || "M"} size="md" color="bg-gold" />
-                        )}
-                    </div>
+                <div className="flex gap-4">
+                    <AuthorAvatar name={user?.pseudo} avatar={user?.avatar} />
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         {canPublishAnnounce && (
-                            <div className="flex gap-2 mb-3">
+                            <div className="flex gap-2 mb-3.5">
                                 <button
                                     type="button"
                                     onClick={() => setType("post")}
-                                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                                         type === "post"
-                                        ? "bg-navy text-white"
-                                        : "bg-surface text-gray-400 hover:text-navy"
+                                            ? "bg-navy text-white shadow-xs"
+                                            : "bg-surface text-gray-400 hover:text-navy hover:bg-gray-100"
                                     }`}
                                 >
                                     Publication
@@ -143,10 +138,10 @@ export default function PostComposer ({ user, onPostCreated }) {
                                 <button
                                     type="button"
                                     onClick={() => setType("announcement")}
-                                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                                         type === "announcement"
-                                        ? "bg-gold text-navy shadow-sm"
-                                        : "bg-surface text-gray-400 hover:text-navy"
+                                            ? "bg-gold text-navy shadow-xs font-extrabold"
+                                            : "bg-surface text-gray-400 hover:text-navy hover:bg-gray-100"
                                     }`}
                                 >
                                     <FontAwesomeIcon icon={faBullhorn} /> Annonce
@@ -155,13 +150,13 @@ export default function PostComposer ({ user, onPostCreated }) {
                         )}
 
                         {type === "announcement" && (
-                        <input
-                            type="text"
-                            placeholder="Titre de l'annonce..."
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl bg-surface border border-gray-100 font-bold text-sm text-navy mb-2 focus:outline-none focus:ring-2 focus:ring-gold/50"
-                        />
+                            <input
+                                type="text"
+                                placeholder="Titre de l'annonce..."
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-xl bg-surface border border-gray-200 font-bold text-sm text-navy mb-3 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+                            />
                         )}
 
                         <textarea
@@ -169,30 +164,31 @@ export default function PostComposer ({ user, onPostCreated }) {
                             placeholder="Quoi de neuf ?"
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="w-full p-3 rounded-xl bg-surface border border-gray-100 text-sm text-navy placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold/50 resize-none"
+                            className="w-full p-4 rounded-xl bg-surface border border-gray-200 text-sm text-navy placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all resize-none"
                         />
 
-                        {preview.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                                {preview.map((p, idx) => (
+                        {previews.length > 0 && (
+                            <div className="flex flex-wrap gap-2.5 mt-3.5">
+                                {previews.map((p, idx) => (
                                     <div
                                         key={idx}
-                                        className="relative group rounded-xl overflow-hidden bg-surface border border-gray-200 p-1 flex items-center gap-2 pr-7"
+                                        className="relative group rounded-xl overflow-hidden bg-surface border border-gray-200 p-1.5 flex items-center gap-2.5 pr-8 shadow-2xs"
                                     >
                                         {p.isImage ? (
-                                            <img src={p.url} alt="Aperçu" className="w-8 h-8 object-cover rounded-lg" />
+                                            <img src={p.url} alt="Aperçu" className="w-9 h-9 object-cover rounded-lg" />
                                         ) : (
-                                            <div className="w-8 h-8 rounded-lg bg-navy/10 flex items-center justify-center text-navy text-xs">
+                                            <div className="w-9 h-9 rounded-lg bg-navy/10 flex items-center justify-center text-navy text-xs">
                                                 <FontAwesomeIcon icon={faPaperclip} />
                                             </div>
                                         )}
-                                        <span className="text-xs font-medium text-navy truncate max-w-[120px]">
+                                        <span className="text-xs font-semibold text-navy truncate max-w-[130px]">
                                             {p.name}
                                         </span>
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveFile(idx)}
-                                            className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity"
+                                            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity"
+                                            title="Supprimer"
                                         >
                                             <FontAwesomeIcon icon={faTimes} />
                                         </button>
@@ -201,9 +197,9 @@ export default function PostComposer ({ user, onPostCreated }) {
                             </div>
                         )}
 
-                        {error && <p className="text-xs text-red-500 font-medium mt-2">{error}</p>}
+                        {error && <p className="text-xs text-rose-500 font-semibold mt-2">{error}</p>}
 
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center justify-between mt-4 pt-3.5 border-t border-gray-100">
                             <input
                                 type="file"
                                 multiple
@@ -215,7 +211,7 @@ export default function PostComposer ({ user, onPostCreated }) {
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={loading || selectedFiles.length >= MAX_FILES}
-                                className="text-xs font-bold text-gray-500 hover:text-gold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                className="text-xs font-bold text-gray-500 hover:text-gold flex items-center gap-2 transition-colors disabled:opacity-50"
                             >
                                 <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
                                 <span>Joindre des fichiers ({selectedFiles.length}/{MAX_FILES})</span>
@@ -224,14 +220,14 @@ export default function PostComposer ({ user, onPostCreated }) {
                             <button
                                 type="submit"
                                 disabled={loading || !content.trim()}
-                                className="px-4 py-2 rounded-xl bg-navy hover:bg-navy-dark text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                                className="px-5 py-2.5 rounded-xl bg-navy hover:bg-navy-dark text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 hover:scale-[1.02] active:scale-95"
                             >
                                 {loading ? (
                                     <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
                                 ) : (
                                     <FontAwesomeIcon icon={faPaperPlane} />
                                 )}
-                                    Publier
+                                Publier
                             </button>
                         </div>
                     </div>
