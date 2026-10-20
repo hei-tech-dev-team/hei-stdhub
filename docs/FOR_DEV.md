@@ -76,7 +76,6 @@ hei-stdhub-v2/
 │   │   ├── supports.js                  # 3 endpoints — external links CRUD
 │   │   ├── messages.js                  # 14 endpoints — chat, search, upload, favorites, seen, unread
 │   │   ├── suggestions.js               # 5 endpoints — submit, list, patch, confirm, report
-│   │   ├── announcements.js             # 5 endpoints — CRUD + reactions
 │   │   ├── push.js                      # 5 endpoints — subscribe, unsubscribe, notifications
 │   │   └── pings.js                     # 4 endpoints — send, list, accept, refuse
 │   ├── services/
@@ -212,7 +211,6 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 
 - **Avatars**: Cloudinary `hei-stdhub/avatars` folder, 200x200 crop (local fallback: `backend/uploads/avatars/`). Max 5MB.
 - **Chat files**: Cloudinary `hei-stdhub/chat` folder (local fallback: `backend/uploads/chat/`). Max 10MB. Supports docs, images, code files.
-- **Announcements**: Cloudinary `hei-stdhub/announcements` folder, 1200px width limit (local fallback). Max 10MB.
 
 ---
 

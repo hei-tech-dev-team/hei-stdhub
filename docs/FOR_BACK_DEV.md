@@ -17,14 +17,13 @@ backend/
 │   ├── supports.js           # 3 endpoints — list by UE, create, delete (teacher/admin)
 │   ├── messages.js           # 14 endpoints — search, contacts, global, private, send, seen, upload, unread, global/read, delete, favorites (list/add/remove)
 │   ├── suggestions.js        # 5 endpoints — submit, list (BDE), patch status, confirm (post to chat), report (PDF)
-│   ├── announcements.js      # 5 endpoints — list with reactions, create (admin), delete (admin), upsert/remove reaction
 │   ├── push.js               # 5 endpoints — subscribe, unsubscribe, list notifications, mark read, unread count
 │   └── pings.js              # 4 endpoints — send, list, accept, refuse
 ├── services/
 │   ├── notificationService.js # Web Push sender (batched concurrency, cleanup invalid subs)
 │   └── suggestionPdf.js      # PDF report (jsPDF, navy/gold branding, summary cards)
 ├── test/                     # Backend test files
-└── uploads/                  # Local file storage (avatars, chat, announcements)
+└── uploads/                  # Local file storage (avatars, chat)
 ```
 
 ---
@@ -63,7 +62,7 @@ backend/
 ```
 
 ### Schema Migrations (auto-run on startup)
-Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `announcements`, `announcement_reactions`, `chat_favorites`.
+Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `chat_favorites`.
 
 ---
 
@@ -190,18 +189,6 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 
 ---
 
-## `routes/announcements.js` — Announcements (5 endpoints)
-
-| Route | Auth | Role | Input | Description |
-|-------|------|------|-------|-------------|
-| GET `/` | Yes | Any | `?limit=&offset=` | With reactions map + user_reaction |
-| POST `/` | Yes | admin | `FormData{ title, content, image? }` | Max 10MB, push to all |
-| DELETE `/:id` | Yes | admin | — | Hard delete |
-| POST `/:id/react` | Yes | Any | `{ reaction_type }` | like/haha/dont_like/sad, UPSERT |
-| DELETE `/:id/react` | Yes | Any | — | Remove reaction |
-
----
-
 ## `routes/push.js` — Push Notifications (5 endpoints)
 
 | Route | Auth | Input | Description |
@@ -263,7 +250,6 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 - `push_subscriptions` — id, user_id (FK), endpoint, auth_key, p256dh_key, UNIQUE(user_id, endpoint)
 - `push_notifications` — id, user_id (FK), type, title, body, data (JSONB), is_read, created_at
 - `pings` — id, sender_id (FK), receiver_id (FK), status (pending/accepted/refused), created_at, responded_at, UNIQUE(sender_id, receiver_id)
-- `announcements` — id, title, content, image_url, author_id, created_at
 - `announcement_reactions` — id, announcement_id (FK), user_id (FK), reaction_type, UNIQUE(announcement_id, user_id)
 - `chat_favorites` — user_id, contact_id, PRIMARY KEY(user_id, contact_id)
 
@@ -292,5 +278,4 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 10. `migration_developer_role.sql` — developer role
 11. `migration_refactor_td_exams.sql` — TD/exams refactor
 12. `migration_remove_alumni.sql` — alumni → student, drop alumni from enum/data
-13. `migration_remove_levels.sql` — drop users.level, announcements.target_level, user_level enum
 14. `migration_remove_groupe.sql` — drop users.groupe

@@ -388,32 +388,6 @@ const { pool } = require("./db");
 
   try {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS announcements (
-        id            SERIAL       PRIMARY KEY,
-        title         VARCHAR(255) NOT NULL,
-        content       TEXT         NOT NULL,
-        image_url     TEXT         NULL,
-        author_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        created_at    TIMESTAMP    NOT NULL DEFAULT NOW()
-      )
-    `);
-  } catch (err) { console.error("Failed to create announcements table:", err); }
-
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS announcement_reactions (
-        id               SERIAL      PRIMARY KEY,
-        announcement_id  INTEGER     NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
-        user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        reaction_type    VARCHAR(20) NOT NULL,
-        created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
-        UNIQUE (announcement_id, user_id)
-      )
-    `);
-  } catch (err) { console.error("Failed to create announcement_reactions table:", err); }
-
-  try {
-    await pool.query(`
       CREATE TABLE IF NOT EXISTS chat_favorites (
         user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         contact_id INTEGER   NOT NULL,

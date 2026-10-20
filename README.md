@@ -20,7 +20,6 @@ Full-stack web platform for HEI students, teachers, and admin. Access course mat
 - **BDE Kanban** — 4 columns (Reçu/Accepté/À discuter/Refusé), drag-and-drop with mouse/touch, real-time multi-user sync, justification required for refusal, confirm round posts summary to global chat
 - **Pings** — Send pings to other users; accept or refuse; real-time notifications via Socket.IO
 - **Announcements** — Admin creates announcements with optional images; all users can react (like/haha/dont_like/sad)
-- **STDnews** — Announcements feed with reactions
 - **Admin** — User management (search, role/email change, delete), invitation management (single + bulk up to 1000), stats dashboard with live polling, next-pseudo generator, new student registration, real-time user updates via Socket.IO
 - **Profile** — Avatar upload (Cloudinary/local fallback), unique pseudo update, password change with current password verification
 - **User profiles** — View any user's public profile from chat; send pings from profile page
