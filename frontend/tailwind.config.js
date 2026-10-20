@@ -17,6 +17,7 @@ export default {
       },
       fontFamily: {
         quicksand: ["Quicksand", "sans-serif"],
+        fraunces: ["Fraunces", "serif"],
       },
       boxShadow: {
         card: "0 2px 12px 0 rgba(0,25,72,0.08)",
