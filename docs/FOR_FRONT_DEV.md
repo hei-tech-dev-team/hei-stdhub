@@ -163,11 +163,6 @@ gold accents, single Quicksand font).
 - Two tabs: Received (accept/refuse) + Sent (pending/accepted/refused)
 - `GET /pings`, `PATCH /pings/:id/accept`, `PATCH /pings/:id/refuse`
 
-### `STDnewsPage.jsx`
-- Announcements feed with search
-- Reactions (like/haha/dont_like/sad) via POST/DELETE
-- `GET /announcements`, reaction endpoints
-
 ---
 
 ## Components
@@ -193,8 +188,7 @@ gold accents, single Quicksand font).
 
 ### `TeacherHome.jsx`
 
-### `AdminHome.jsx`
-- Announcements CRUD + reactions, `POST /announcements`, `DELETE /announcements/:id`, reaction endpoints
+## `AdminHome.jsx`
 
 ### `ChatLayout.jsx`
 - Manages contacts, messages, Socket.IO, push subscriptions

@@ -1,12 +1,8 @@
 import Sidebar from "../components/layout/Sidebar";
-import TeacherHome from "../components/dashboard/TeacherHome";
-import StudentHome from "../components/dashboard/StudentHome";
-import AdminHome from "../components/dashboard/AdminHome";
+import FeedPage from "./FeedPage";
 import { useAuth } from "../context/AuthContext";
 
 export default function HomePage() {
-  const { user } = useAuth();
-
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
       <Sidebar />
@@ -14,13 +10,7 @@ export default function HomePage() {
         className="flex-1 flex flex-col min-h-screen overflow-hidden
                        pl-0 lg:pl-0"
       >
-        {user?.role === "admin" ? (
-          <AdminHome />
-        ) : user?.role === "teacher" ? (
-          <TeacherHome />
-        ) : (
-          <StudentHome />
-        )}
+        <FeedPage/>
       </main>
     </div>
   );

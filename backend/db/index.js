@@ -129,8 +129,6 @@ const ensureIndexes = async () => {
       CREATE INDEX IF NOT EXISTS idx_users_pseudo ON users USING gin(pseudo gin_trgm_ops);
       CREATE INDEX IF NOT EXISTS idx_users_ref ON users(ref);
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-      CREATE INDEX IF NOT EXISTS idx_announcements_created ON announcements(created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_announcement_reactions_ann ON announcement_reactions(announcement_id);
       CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id) WHERE used_at IS NULL;
       CREATE INDEX IF NOT EXISTS idx_security_questions_user ON user_security_questions(user_id);
       CREATE INDEX IF NOT EXISTS idx_pings_status ON pings(status);

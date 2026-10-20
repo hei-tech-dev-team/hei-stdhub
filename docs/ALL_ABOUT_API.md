@@ -224,16 +224,6 @@ The configured instance (`api/axios.js`) automatically:
 | GET | `/invitations?limit=&offset=` | Yes | admin | List invitations (max 200) |
 | DELETE | `/invitations/:id` | Yes | admin | Delete invitation |
 
-### Announcements (`/api/announcements`)
-
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/` | Yes | Any | List announcements (?limit=, ?offset=) + reactions |
-| POST | `/` | Yes | admin | Create announcement (optional image, max 10MB) + push |
-| DELETE | `/:id` | Yes | admin | Delete announcement |
-| POST | `/:id/react` | Yes | Any | Upsert reaction (like/haha/dont_like/sad) |
-| DELETE | `/:id/react` | Yes | Any | Remove reaction |
-
 ### Push Notifications (`/api/push`)
 
 | Method | Path | Auth | Role | Description |
@@ -259,7 +249,7 @@ The configured instance (`api/axios.js`) automatically:
 |--------|------|------|-------------|
 | GET | `/api/health` | No | Health check `{ status: "ok", time: Date }` |
 | GET | `/api/push/vapid-key` | No | Get VAPID public key |
-| GET | `/uploads/*` | No | Static file serving (avatars, announcements, chat) 7d cache |
+| GET | `/uploads/*` | No | Static file serving (avatars, chat) 7d cache |
 
 ---
 
@@ -274,7 +264,6 @@ The configured instance (`api/axios.js`) automatically:
 | `push_notifications` | Persistent notification history | user_id, type, title, body, data (JSONB), is_read |
 | `supports` | External resource links | id, ue, label, url (https://), author_id |
 | `suggestions` | BDE suggestions | id, student_id, titre, contenu, anonyme, statut, justification |
-| `announcements` | Admin announcements | id, title, content, image_url, author_id |
 | `announcement_reactions` | Announcement reactions | announcement_id, user_id (UNIQUE), reaction_type |
 | `invitations` | Registration codes | code (UNIQUE), role, max_uses, use_count, expires_at, created_by |
 | `password_reset_tokens` | Password reset | user_id, token_hash (SHA-256), expires_at, used_at |

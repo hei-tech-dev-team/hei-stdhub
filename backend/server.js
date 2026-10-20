@@ -160,9 +160,9 @@ app.use("/api/push", require("./routes/push"));
 app.use("/api/pings", require("./routes/pings"));
 app.use("/api/custom-ues", require("./routes/custom-ues"));
 app.use("/api/admin", require("./routes/admin"));
-app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/bug-reports", require("./routes/bugReports"));
 app.use("/api/support-tickets", require("./routes/supportTickets"));
+app.use("/api/posts", require("./routes/post"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) =>
@@ -385,32 +385,6 @@ const { pool } = require("./db");
       )
     `);
   } catch (err) { console.error("Failed to create pings table:", err); }
-
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS announcements (
-        id            SERIAL       PRIMARY KEY,
-        title         VARCHAR(255) NOT NULL,
-        content       TEXT         NOT NULL,
-        image_url     TEXT         NULL,
-        author_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        created_at    TIMESTAMP    NOT NULL DEFAULT NOW()
-      )
-    `);
-  } catch (err) { console.error("Failed to create announcements table:", err); }
-
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS announcement_reactions (
-        id               SERIAL      PRIMARY KEY,
-        announcement_id  INTEGER     NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
-        user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        reaction_type    VARCHAR(20) NOT NULL,
-        created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
-        UNIQUE (announcement_id, user_id)
-      )
-    `);
-  } catch (err) { console.error("Failed to create announcement_reactions table:", err); }
 
   try {
     await pool.query(`

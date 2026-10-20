@@ -76,7 +76,6 @@ hei-stdhub-v2/
 │   │   ├── supports.js                  # 3 endpoints — external links CRUD
 │   │   ├── messages.js                  # 14 endpoints — chat, search, upload, favorites, seen, unread
 │   │   ├── suggestions.js               # 5 endpoints — submit, list, patch, confirm, report
-│   │   ├── announcements.js             # 5 endpoints — CRUD + reactions
 │   │   ├── push.js                      # 5 endpoints — subscribe, unsubscribe, notifications
 │   │   └── pings.js                     # 4 endpoints — send, list, accept, refuse
 │   ├── services/
@@ -113,7 +112,6 @@ hei-stdhub-v2/
 │       ├── pages/                       # 14 page components
 │       └── components/                  # Reusable components
 │           ├── layout/                  # Sidebar, Navbar
-│           ├── dashboard/               # StudentHome, TeacherHome, AdminHome
 │           ├── chat/                    # ChatLayout, ContactList, MessagePanel, useLongPress
 │           ├── archives/                # ArchiveGrid, ArchiveCard
 │           ├── td/                      # StudentUpload, TeacherInbox
@@ -145,7 +143,7 @@ hei-stdhub-v2/
 | `/register` | RegisterPage | Public | Two-step: invite code + form (role-based fields) |
 | `/forgot-password` | ForgotPasswordPage | Public | Email input → 6-char code via push → new password |
 | `/reset-password` | ResetPasswordPage | Public | Token + new password form |
-| `/` | HomePage | Protected | Role-based dashboard (Student/Teacher/AdminHome) |
+| `/` | HomePage | Protected | Role-based |
 | `/archives` | ArchivesPage | Protected | Course materials by UE with support links |
 | `/chat` | ChatPage | Protected | Real-time chat (global + private) |
 | `/suggestions` | SuggestionPage | Protected | Submit anonymous suggestion to BDE |
@@ -213,7 +211,6 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 
 - **Avatars**: Cloudinary `hei-stdhub/avatars` folder, 200x200 crop (local fallback: `backend/uploads/avatars/`). Max 5MB.
 - **Chat files**: Cloudinary `hei-stdhub/chat` folder (local fallback: `backend/uploads/chat/`). Max 10MB. Supports docs, images, code files.
-- **Announcements**: Cloudinary `hei-stdhub/announcements` folder, 1200px width limit (local fallback). Max 10MB.
 
 ---
 
