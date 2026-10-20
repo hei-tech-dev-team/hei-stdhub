@@ -76,6 +76,8 @@ psql "$DATABASE_URL" -f database/migration_groupe_column.sql
 psql "$DATABASE_URL" -f database/migration_developer_role.sql
 psql "$DATABASE_URL" -f database/migration_refactor_td_exams.sql
 psql "$DATABASE_URL" -f database/migration_remove_alumni.sql
+psql "$DATABASE_URL" -f database/migration_remove_levels.sql
+psql "$DATABASE_URL" -f database/migration_remove_groupe.sql
 ```
 
 ### 2. Backend

@@ -125,7 +125,6 @@ router.post("/register", async (req, res) => {
     pseudo,
     password,
     role: bodyRole,
-    groupe,
     inviteCode,
     ues,
   } = req.body;
@@ -248,9 +247,9 @@ router.post("/register", async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await client.query(
-      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, ues, groupe)
- VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
- RETURNING id, ref, nom, prenom, email, pseudo, role, groupe, ues, first_login`,
+      `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, ues)
+ VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+ RETURNING id, ref, nom, prenom, email, pseudo, role, ues, first_login`,
       [
         refUpper,
         capitalize(nom),
@@ -260,7 +259,6 @@ router.post("/register", async (req, res) => {
         hash,
         role,
         ues || [],
-        groupe || null,
       ],
     );
 

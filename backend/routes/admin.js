@@ -52,7 +52,7 @@ router.get("/users", auth, developerOrAdmin, async (req, res) => {
 
             let countQuery = "SELECT COUNT(*) FROM users WHERE 1=1";
             let query = `
-                  SELECT id, ref, nom, prenom, email, pseudo, role, groupe, COALESCE(ues, '{}') AS ues, created_at 
+                  SELECT id, ref, nom, prenom, email, pseudo, role, COALESCE(ues, '{}') AS ues, created_at 
                   FROM users
                   WHERE 1=1
             `;

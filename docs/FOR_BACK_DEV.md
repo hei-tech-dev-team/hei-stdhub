@@ -284,12 +284,13 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 2. `migration_first_login.sql` — first_login column
 3. `migration_student_email_suffix.sql` — email constraint update
 4. `migration_multi_use_invitations.sql` — max_uses/use_count/used_by
-5. `migration_alumni_support.sql` — alumni/bde roles (superseded: alumni removed by #11)
+5. `migration_alumni_support.sql` — alumni/bde roles (superseded: alumni removed by `migration_remove_alumni.sql`)
 6. `migration_chat_seen_pseudo_unique.sql` — avatar, ues, unique pseudo, seen/seen_at, global_chat_read
 7. `migration_scale_500.sql` — performance indexes
 8. `migration_chat_emoji_transfer_answer.sql` — emoji transfer/answer columns
-9. `migration_groupe_column.sql` — groupe column
+9. `migration_groupe_column.sql` — groupe column (since removed by `migration_remove_groupe.sql`)
 10. `migration_developer_role.sql` — developer role
 11. `migration_refactor_td_exams.sql` — TD/exams refactor
 12. `migration_remove_alumni.sql` — alumni → student, drop alumni from enum/data
 13. `migration_remove_levels.sql` — drop users.level, announcements.target_level, user_level enum
+14. `migration_remove_groupe.sql` — drop users.groupe

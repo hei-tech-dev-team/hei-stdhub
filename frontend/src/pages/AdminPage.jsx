@@ -141,10 +141,9 @@ export default function AdminPage() {
   const [showTop, setShowTop] = useState(false);
 
   const [newL1, setNewL1] = useState({
-    nom: "", prenom: "", email: "", groupLetter: "",
+    nom: "", prenom: "", email: "",
   });
   const [generatedRef, setGeneratedRef] = useState("STD2");
-  const [letterError, setLetterError] = useState("");
   const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
@@ -409,21 +408,11 @@ export default function AdminPage() {
     }
   };
 
-  const FORBIDDEN_LETTERS = ["G", "H", "J", "K", "N", "L", "M"];
-  const isLetterForbidden = (letter) => {
-    const c = (letter || "").toUpperCase();
-    if (!c) return false;
-    if (c < "A" || c > "Z") return true;
-    return FORBIDDEN_LETTERS.includes(c);
-  };
-
   const STUDENT_EMAIL_REGEX = /^hei\.[a-zA-Z0-9._%+-]+(\.\d+)?@gmail\.com$/;
 
   const handleRegisterL1 = async (e) => {
     e.preventDefault();
-    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !newL1.groupLetter.trim() || !generatedRef.trim()) return;
-    const letter = newL1.groupLetter.toUpperCase();
-    if (isLetterForbidden(letter)) return;
+    if (!newL1.nom.trim() || !newL1.prenom.trim() || !newL1.email.trim() || !generatedRef.trim()) return;
     if (!STUDENT_EMAIL_REGEX.test(newL1.email.trim())) {
       setEmailError("L'email doit suivre le format hei.prenom.nom@gmail.com");
       return;
@@ -438,13 +427,11 @@ export default function AdminPage() {
         pseudo: `${newL1.prenom.trim()}.${newL1.nom.trim()}`,
         password: "STDnew_UserPass",
         role: "student",
-        groupe: letter,
       });
       setRegisterDone(true);
-      setNewL1({ nom: "", prenom: "", email: "", groupLetter: "" });
+      setNewL1({ nom: "", prenom: "", email: "" });
       setGeneratedRef("STD2");
       setEmailError("");
-      setLetterError("");
       showToast("Étudiant inscrit avec succès !");
     } catch (err) {
       showToast(err.response?.data?.error || "Erreur lors de l'inscription", "error");
@@ -923,22 +910,9 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Lettre du groupe</label>
-                  <input className="input-field max-w-[120px] text-center text-lg font-bold tracking-widest uppercase" placeholder="N" maxLength={1} value={newL1.groupLetter} onChange={(e) => {
-                    const letter = e.target.value.replace(/[^A-Za-z]/g, "").toUpperCase();
-                    setNewL1((prev) => ({ ...prev, groupLetter: letter }));
-                    if (letter && isLetterForbidden(letter)) {
-                      setLetterError("Lettre interdite — groupes déjà existants : G, H, J, K, N (et L, M exclues pour confusion).");
-                    } else { setLetterError(""); }
-                  }} required />
-                  {letterError && <p className="text-xs text-red-500 mt-1 font-medium">{letterError}</p>}
-                  <p className="text-xs text-gray-400 mt-1">Lettres interdites : G, H, J, K, N, L, M. Exemples valides : A, B, C, D, E, F, I, O…</p>
-                </div>
-
                 <button
                   type="submit"
-                  disabled={registerLoading || !generatedRef.trim() || !newL1.groupLetter || !!letterError}
+                  disabled={registerLoading || !generatedRef.trim()}
                   className="btn-gold mt-2 self-start"
                 >
                   {registerLoading ? (

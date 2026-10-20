@@ -130,7 +130,9 @@ hei-stdhub-v2/
     ├── migration_groupe_column.sql
     ├── migration_developer_role.sql
     ├── migration_refactor_td_exams.sql
-    └── migration_remove_alumni.sql
+    ├── migration_remove_alumni.sql
+    ├── migration_remove_levels.sql
+    └── migration_remove_groupe.sql
 ```
 
 ---
@@ -164,10 +166,9 @@ hei-stdhub-v2/
 ### Valid UE Codes
 WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, SYS3, DONNEES1, DONNEES2, THEORIE1-P1, THEORIE1-P2, MGT2, IA1, MOB1, SECU1, SECU2
 
-### Groups (`groupe` column, historical letters)
-- STD25: N1, N2, N3, N4
-- STD24: K1, K2, K3
-- STD23: J1, J2
+### Groups (`groupe`)
+- Removed: the `groupe` column and the group letter input are gone
+  (migration_remove_groupe.sql).
 
 ### Seed Data
 - Admin: `ADMIN001` / `password`
