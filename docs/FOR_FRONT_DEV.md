@@ -250,7 +250,7 @@ colors: {
   surface: "#F2F4F8",
   contact: "#D9DCE3",
 }
-fontFamily: { quicksand: ["Quicksand", "sans-serif"] }
+fontFamily: { quicksand: ["Quicksand", "sans-serif"], fraunces: ["Fraunces", "serif"] }
 boxShadow: {
   card: "0 2px 12px 0 rgba(0,25,72,0.08)",
   modal: "0 8px 32px 0 rgba(0,25,72,0.16)",

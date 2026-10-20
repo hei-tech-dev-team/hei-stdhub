@@ -73,6 +73,10 @@
            transition-all duration-200 placeholder:text-gray-400;
   }
 
+  .auth-page .input-field {
+    @apply focus:border-gold focus:ring-gold/25;
+  }
+
   /* Buttons */
   .btn-primary {
     @apply bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm

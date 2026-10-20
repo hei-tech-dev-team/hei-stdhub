@@ -169,7 +169,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0A1A33] via-[#001948] to-[#0A1A33] flex items-center justify-center px-4 py-8 auth-page">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute top-1/4 -right-24 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
@@ -211,10 +211,10 @@ export default function RegisterPage() {
             </div>
 
             <div className="relative z-10">
-              <h2 className="text-white text-3xl font-bold leading-snug mb-3">
+              <h2 className="text-white text-3xl font-bold leading-snug mb-3 font-fraunces">
                 Rejoignez
                 <br />
-                la communauté !
+                <span className="text-gold-light">la communauté !</span>
               </h2>
               <p className="text-white/60 text-sm leading-relaxed">
                 Créez votre compte pour accéder aux ressources, archives et
@@ -222,7 +222,7 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
+            <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20 border-l-2 border-l-gold">
               <p className="text-white/80 text-xs font-medium">
                 Inscription sur invitation
               </p>
@@ -244,8 +244,9 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-navy">Créer un compte</h1>
-              <p className="text-gray-400 text-sm mt-1">
+              <h1 className="text-2xl font-bold text-navy font-fraunces">Créer un compte</h1>
+              <span className="block w-12 h-1 rounded-full bg-gold mt-3" />
+              <p className="text-gray-400 text-sm mt-3">
                 Inscription sur invitation uniquement
               </p>
             </div>
@@ -304,7 +305,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={verifyCode}
                   disabled={codeLoading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40"
                   style={{
                     background: "linear-gradient(135deg, #0A1A33, #001948)",
                   }}
@@ -501,7 +502,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 mt-1"
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60 mt-1 shadow-lg hover:shadow-[0_12px_32px_rgba(223,164,8,0.25)] focus:ring-4 focus:ring-gold/40"
                   style={{
                     background: "linear-gradient(135deg, #0A1A33, #001948)",
                   }}

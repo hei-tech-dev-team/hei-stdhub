@@ -292,7 +292,7 @@ npm run release:major   # 1.9.0 -> 2.0.0
 
 ### Styling
 - Colors: Navy (`#001948`, `#0A1A33`), Gold (`#DFA408`, `#F2C94C`), Surface (`#F2F4F8`), Contact (`#D9DCE3`).
-- Font: Quicksand (sans-serif).
+- Fonts: Quicksand (body), Fraunces (auth page headings).
 - Glassmorphism on auth pages, chat, onboarding modal.
 
 ### Admin Tabs
