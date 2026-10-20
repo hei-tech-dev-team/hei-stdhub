@@ -10,6 +10,7 @@ const MAX_TITLE = 150;
 const MAX_CONTENT = 5000;
 
 const isValidId = (id) => Number.isInteger(Number(id)) && Number(id) > 0;
+const escapeLike = (s) => s.replace(/[\\%_]/g, "\\$&");
 
 const getClient = () => (db.pool || db).connect();
 
@@ -26,6 +27,7 @@ const POST_SELECT = `
         to_char(p.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_created_at,
         json_build_object(
             'id', u.id,
+            'ref', u.ref,
             'pseudo', u.pseudo,
             'avatar', u.avatar,
             'role', u.role
@@ -81,19 +83,36 @@ router.get("/", auth, async (req, res) => {
         const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
         const rawCursorDate = req.query.cursor_created_at;
         const cursorId = req.query.cursor_id ? parseInt(req.query.cursor_id, 10) : null;
+        const type = req.query.type;
+        const q = String(req.query.q || "").trim().slice(0, 100);
 
         const queryParams = [req.user.id, limit + 1];
-        let cursorCondition = "";
+        const addParam = (value) => {
+            queryParams.push(value);
+            return `$${queryParams.length}`;
+        };
+        const conditions = ["p.deleted_at IS NULL"];
+
+        if (type === "post" || type === "announcement") {
+            conditions.push(`p.type = ${addParam(type)}::post_type`);
+        }
+
+        if (q) {
+            const like = addParam(`%${escapeLike(q)}%`);
+            conditions.push(
+                `(p.title ILIKE ${like}::text OR p.content ILIKE ${like}::text OR u.pseudo ILIKE ${like}::text)`
+            );
+        }
 
         if (rawCursorDate && !isNaN(Date.parse(rawCursorDate)) && cursorId) {
-            queryParams.push(rawCursorDate, cursorId);
-            cursorCondition = `AND (p.created_at, p.id) < ($3::timestamptz, $4::integer)`;
+            const dateParam = addParam(rawCursorDate);
+            const idParam = addParam(cursorId);
+            conditions.push(`(p.created_at, p.id) < (${dateParam}::timestamptz, ${idParam}::integer)`);
         }
 
         const query = `
             ${POST_SELECT}
-            WHERE p.deleted_at IS NULL
-            ${cursorCondition}
+            WHERE ${conditions.join(" AND ")}
             ORDER BY p.created_at DESC, p.id DESC
             LIMIT $2;
         `;
