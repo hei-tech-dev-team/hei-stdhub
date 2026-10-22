@@ -149,16 +149,23 @@ export default function Sidebar() {
         ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
                   >
-                        <div className="flex items-center justify-between px-2 mb-10 shrink-0">
+                        <div className="flex items-center justify-between mb-10 shrink-0 px-1">
                               <div className="flex items-center gap-3">
-                                    <img
-                                          src={STDHUB_LOGO}
-                                          alt="STDhub"
-                                          className="h-8 w-8 object-contain rounded-full"
-                                    />
-                                    <span className="text-white font-bold text-base">
-                                          HEI STDhub
-                                    </span>
+                                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                                          <img
+                                                src={STDHUB_LOGO}
+                                                alt="STDhub"
+                                                className="w-5 h-5 object-contain"
+                                          />
+                                    </div>
+                                    <div>
+                                          <span className="block text-white font-bold text-[14px] leading-none">
+                                                HEI STDhub
+                                          </span>
+                                          <span className="block text-white/40 text-[11px] mt-1">
+                                                Plateforme étudiante
+                                          </span>
+                                    </div>
                               </div>
                               <button
                                     onClick={() => setOpen(false)}
@@ -299,7 +306,7 @@ export default function Sidebar() {
                               </div>
                               <button
                                     onClick={handleLogout}
-                                    className="sidebar-link w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"
+                                    className="sidebar-link w-full text-white/50 hover:text-white/90"
                               >
                                     <FontAwesomeIcon
                                           icon={faRightFromBracket}

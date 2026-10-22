@@ -47,13 +47,13 @@
 @layer components {
   /* Layout */
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm
-           text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer;
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-[13px]
+           text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 cursor-pointer;
   }
 
   .sidebar-link-active {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm
-           bg-gold text-navy-dark transition-all duration-200 cursor-pointer;
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-[13px]
+           text-white bg-white/[0.08] transition-all duration-200 cursor-pointer;
   }
 
   /* Cards */
@@ -66,15 +66,11 @@
     @apply bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide;
   }
 
-  /* Inputs */
+  /* Inputs — auth-grade flat fill, gold focus (app-wide) */
   .input-field {
-    @apply w-full border border-contact rounded-xl px-4 py-2.5 text-sm bg-white
-           focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10
+    @apply w-full bg-[#F6F7F8] border border-transparent rounded-xl px-4 py-2.5 text-sm text-navy-dark
+           focus:outline-none focus:bg-white focus:border-gold/50 focus:ring-1 focus:ring-gold/20
            transition-all duration-200 placeholder:text-gray-400;
-  }
-
-  .auth-page .input-field {
-    @apply bg-[#F6F7F8] border border-transparent focus:bg-white focus:border-gold/50 focus:ring-1 focus:ring-gold/20;
   }
 
   /* Auth pages (AuthShell) — uniform typography and controls */
@@ -94,24 +90,30 @@
     @apply mt-7 text-center border-t border-gray-100 pt-5;
   }
 
-  /* Buttons */
+  /* Buttons — flat, rounded-xl, auth rhythm */
   .btn-primary {
-    @apply bg-navy text-white px-5 py-2.5 rounded-full font-semibold text-sm
-           hover:bg-navy-dark transition-all duration-200 cursor-pointer;
+    @apply bg-navy text-white px-5 py-2.5 rounded-xl font-semibold text-sm
+           hover:bg-navy-dark transition-all duration-200 cursor-pointer
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:ring-offset-2;
   }
 
   .btn-gold {
-    @apply bg-gold text-white px-5 py-2.5 rounded-full font-semibold text-sm
-           hover:opacity-90 transition-all duration-200 cursor-pointer;
+    @apply bg-gold text-navy-dark px-5 py-2.5 rounded-xl font-semibold text-sm
+           hover:bg-gold-light transition-all duration-200 cursor-pointer;
+  }
+
+  .btn-ghost {
+    @apply bg-[#F6F7F8] text-navy px-5 py-2.5 rounded-xl font-semibold text-sm border border-transparent
+           hover:bg-white hover:border-gold/50 transition-all duration-200 cursor-pointer;
   }
 
   .btn-danger {
-    @apply bg-red-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm
+    @apply bg-red-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm
            hover:bg-red-600 transition-all duration-200 cursor-pointer;
   }
 
   .btn-success {
-    @apply bg-green-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm
+    @apply bg-green-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm
            hover:bg-green-600 transition-all duration-200 cursor-pointer;
   }
 
@@ -172,21 +174,31 @@
     transform: scale(1.2);
   }
 
-  /* Glassmorphism */
+  /* Flat surfaces (legacy class names kept — no glassmorphism) */
   .glass {
-    @apply bg-white/5 backdrop-blur-xl;
+    @apply bg-white;
   }
 
   .glass-heavy {
-    @apply bg-white/10 backdrop-blur-2xl;
+    @apply bg-white;
   }
 
   .glass-border {
-    @apply border border-white/10;
+    @apply border border-gray-100;
   }
 
   .glass-card {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl;
+    @apply bg-white shadow-card;
+  }
+
+  /* Micro uppercase label — the auth signature, usable app-wide */
+  .field-label {
+    @apply text-[11px] font-semibold text-navy/50 mb-2 block uppercase tracking-[0.1em];
+  }
+
+  /* Flat page section header — replaces gradient heroes */
+  .page-hero {
+    @apply bg-navy px-4 sm:px-6 lg:px-8 pt-8 pb-9;
   }
 
     .status-dot {
