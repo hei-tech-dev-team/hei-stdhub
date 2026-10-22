@@ -22,7 +22,7 @@ export default function AttachmentList({ attachments = [] }) {
                         return (
                             <div
                                 key={img.id || img.url}
-                                className="relative w-full h-full min-h-[100px] rounded-2xl overflow-hidden bg-surface border border-gray-100 group"
+                                className="relative w-full h-full min-h-[100px] rounded-xl overflow-hidden bg-surface group"
                             >
                                 {failedImages[img.id] ? (
                                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-2 text-center bg-gray-50">
@@ -34,12 +34,12 @@ export default function AttachmentList({ attachments = [] }) {
                                         alt={img.file_name || "Pièce jointe"}
                                         loading="lazy"
                                         onError={() => setFailedImages((prev) => ({ ...prev, [img.id]: true }))}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        className="w-full h-full object-cover"
                                     />
                                 )}
 
                                 {isLast && (
-                                    <div className="absolute inset-0 bg-navy/60 backdrop-blur-2xs flex items-center justify-center text-white font-bold text-xl">
+                                    <div className="absolute inset-0 bg-navy/70 flex items-center justify-center text-white font-medium text-xl">
                                         +{extraCount}
                                     </div>
                                 )}
@@ -58,7 +58,7 @@ export default function AttachmentList({ attachments = [] }) {
                             target="_blank"
                             rel="noopener noreferrer"
                             download={file.file_name}
-                            className="flex items-center justify-between p-2.5 rounded-xl bg-surface hover:bg-gold/10 text-navy hover:text-gold border border-gray-100 text-xs font-semibold transition-all group"
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-surface hover:bg-gold/10 text-navy transition-colors text-xs font-medium group"
                         >
                             <div className="flex items-center gap-2 truncate">
                                 <FontAwesomeIcon icon={faFileAlt} className="text-gray-400 group-hover:text-gold shrink-0" />
