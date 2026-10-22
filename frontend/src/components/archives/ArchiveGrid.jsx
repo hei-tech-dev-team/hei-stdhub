@@ -35,44 +35,20 @@ const LEVEL_META = {
   L1: {
     label: "Première Année",
     subtitle: "Semestre 1 & 2",
-    gradient: "from-cyan-500/10 via-cyan-500/5 to-transparent",
-    accent: "bg-cyan-500",
     light: "bg-cyan-50",
-    border: "border-cyan-200",
     text: "text-cyan-700",
-    dot: "bg-cyan-400",
-    badge: "bg-cyan-100 text-cyan-700",
-    glow: "rgba(6,182,212,0.15)",
-    icon: "01",
-    ring: "ring-cyan-500/20",
   },
   L2: {
     label: "Deuxième Année",
     subtitle: "Semestre 3 & 4",
-    gradient: "from-violet-500/10 via-violet-500/5 to-transparent",
-    accent: "bg-violet-500",
     light: "bg-violet-50",
-    border: "border-violet-200",
     text: "text-violet-700",
-    dot: "bg-violet-400",
-    badge: "bg-violet-100 text-violet-700",
-    glow: "rgba(139,92,246,0.15)",
-    icon: "02",
-    ring: "ring-violet-500/20",
   },
   L3: {
     label: "Troisième Année",
     subtitle: "Semestre 5 & 6",
-    gradient: "from-amber-500/10 via-amber-500/5 to-transparent",
-    accent: "bg-amber-500",
     light: "bg-amber-50",
-    border: "border-amber-200",
     text: "text-amber-700",
-    dot: "bg-amber-400",
-    badge: "bg-amber-100 text-amber-700",
-    glow: "rgba(245,158,11,0.15)",
-    icon: "03",
-    ring: "ring-amber-500/20",
   },
 };
 
@@ -88,14 +64,14 @@ function getFileIcon(url) {
 }
 
 function getFileColor(url) {
-  if (!url) return "from-blue-500/20 to-blue-500/5 text-blue-600";
+  if (!url) return "bg-blue-50 text-blue-600";
   const ext = url.split(".").pop()?.toLowerCase();
-  if (ext === "pdf") return "from-red-500/20 to-red-500/5 text-red-600";
-  if (["mp4", "webm", "avi"].includes(ext)) return "from-purple-500/20 to-purple-500/5 text-purple-600";
-  if (["js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "html", "css"].includes(ext)) return "from-emerald-500/20 to-emerald-500/5 text-emerald-600";
-  if (["doc", "docx", "txt", "md"].includes(ext)) return "from-blue-500/20 to-blue-500/5 text-blue-600";
-  if (url.includes("youtube") || url.includes("vimeo")) return "from-red-500/20 to-red-500/5 text-red-600";
-  return "from-gray-500/20 to-gray-500/5 text-gray-600";
+  if (ext === "pdf") return "bg-red-50 text-red-600";
+  if (["mp4", "webm", "avi"].includes(ext)) return "bg-purple-50 text-purple-600";
+  if (["js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "html", "css"].includes(ext)) return "bg-emerald-50 text-emerald-600";
+  if (["doc", "docx", "txt", "md"].includes(ext)) return "bg-blue-50 text-blue-600";
+  if (url.includes("youtube") || url.includes("vimeo")) return "bg-red-50 text-red-600";
+  return "bg-gray-50 text-gray-600";
 }
 
 const LEVEL_ACCENT_COLORS = {
@@ -243,32 +219,24 @@ export default function ArchiveGrid() {
       <div className="flex items-start justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-0 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: selectedMeta
-                ? `linear-gradient(135deg, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"}20, ${LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.to || "#0891b2"}10)`
-                : "linear-gradient(135deg, rgba(223,164,8,0.2), rgba(223,164,8,0.1))",
-            }}
+            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+              selectedMeta ? selectedMeta.light : "bg-[#F6F7F8]"
+            }`}
           >
             <FontAwesomeIcon
               icon={faBookOpen}
-              className="text-lg"
-              style={{
-                color: selectedMeta
-                  ? LEVEL_ACCENT_COLORS[effectiveUeToLevel[selectedUE]]?.from || "#06b6d4"
-                  : "#DFA408",
-              }}
+              className={`text-lg ${selectedMeta ? selectedMeta.text : "text-navy"}`}
             />
           </div>
           <div className="min-w-0">
-            <h3 className="font-bold text-navy text-lg leading-tight truncate">
+            <h3 className="font-semibold text-navy text-lg leading-tight truncate">
               {selectedUE}
             </h3>
             <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
               <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
               Supports pédagogiques
               {supportsCount > 0 && (
-                <span className="ml-1.5 px-2 py-0.5 rounded-full bg-navy/5 text-navy/60 text-[10px] font-bold">
+                <span className="ml-1.5 px-2 py-0.5 rounded-full bg-navy/5 text-navy/60 text-[10px] font-medium">
                   {supportsCount}
                 </span>
               )}
@@ -280,7 +248,7 @@ export default function ArchiveGrid() {
             <button
               type="button"
               onClick={() => { setShowAdd((p) => !p); setAddError(""); }}
-              className="w-9 h-9 rounded-xl bg-gold text-white flex items-center justify-center hover:opacity-80 transition-all duration-200 active:scale-90 shadow-sm"
+              className="w-9 h-9 rounded-xl bg-gold text-navy-dark flex items-center justify-center hover:bg-gold-light transition-all duration-200 active:scale-90"
               title={showAdd ? "Fermer" : "Ajouter un support"}
             >
               <FontAwesomeIcon icon={showAdd ? faTimes : faPlus} className="text-sm" />
@@ -289,7 +257,7 @@ export default function ArchiveGrid() {
           <button
             type="button"
             onClick={handleClosePanel}
-            className="w-9 h-9 rounded-xl bg-surface text-gray-400 flex items-center justify-center hover:bg-contact hover:text-navy transition-all duration-200 active:scale-90"
+            className="w-9 h-9 rounded-xl bg-[#F6F7F8] text-gray-400 flex items-center justify-center hover:bg-white hover:text-navy transition-all duration-200 active:scale-90"
             title="Fermer"
           >
             <FontAwesomeIcon icon={faTimes} className="text-sm" />
@@ -299,16 +267,16 @@ export default function ArchiveGrid() {
 
       {isTeacher && showAdd && (
         <div className="px-5 sm:px-6 pt-4 shrink-0">
-          <form onSubmit={handleAdd} className="p-4 bg-gradient-to-br from-gold/10 via-amber-50 to-transparent rounded-2xl border border-gold/20 flex flex-col gap-3">
+          <form onSubmit={handleAdd} className="p-4 bg-[#F6F7F8] rounded-2xl border border-gray-100 flex flex-col gap-3">
             {addError && (
               <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                 <p className="text-red-500 text-xs font-medium">{addError}</p>
               </div>
             )}
-            <input className="w-full bg-white border border-contact/60 rounded-xl px-4 py-2.5 text-sm text-navy placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5 transition-all" placeholder="Intitulé du support *" value={addForm.label} onChange={(e) => { setAdd("label", e.target.value); setAddError(""); }} required />
-            <input className="w-full bg-white border border-contact/60 rounded-xl px-4 py-2.5 text-sm text-navy placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5 transition-all" placeholder="URL (https://...) *" value={addForm.url} onChange={(e) => { setAdd("url", e.target.value); setAddError(""); }} required />
-            <button type="submit" disabled={saving} className="w-full bg-gold text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all duration-200 disabled:opacity-60 active:scale-[0.97]">
+            <input className="input-field" placeholder="Intitulé du support *" value={addForm.label} onChange={(e) => { setAdd("label", e.target.value); setAddError(""); }} required />
+            <input className="input-field" placeholder="URL (https://...) *" value={addForm.url} onChange={(e) => { setAdd("url", e.target.value); setAddError(""); }} required />
+            <button type="submit" disabled={saving} className="btn-primary w-full justify-center disabled:opacity-60">
               {saving ? <FontAwesomeIcon icon={faCircleNotch} className="animate-spin" /> : "Ajouter le support"}
             </button>
           </form>
@@ -327,11 +295,11 @@ export default function ArchiveGrid() {
           {!loading && supports.length === 0 && (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
               <div className="relative mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center ring-1 ring-gold/10">
-                  <FontAwesomeIcon icon={faFolderOpen} className="text-gold/60 text-2xl" />
+                <div className="w-16 h-16 rounded-2xl bg-[#F6F7F8] border border-gray-100 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faFolderOpen} className="text-navy/40 text-2xl" />
                 </div>
               </div>
-              <p className="text-navy font-bold text-sm mb-1">Aucun support pour l'instant</p>
+              <p className="text-navy font-semibold text-sm mb-1">Aucun support pour l'instant</p>
               <p className="text-gray-400 text-xs max-w-[220px] leading-relaxed">
                 {isTeacher ? "Ajoutez des ressources pédagogiques pour vos étudiants." : "Les supports seront ajoutés par vos enseignants."}
               </p>
@@ -341,13 +309,13 @@ export default function ArchiveGrid() {
           {!loading && supports.map((s) => {
             const icon = getFileIcon(s.url);
             return (
-              <div key={s.id} className="group flex items-center gap-3 p-3.5 bg-white rounded-xl hover:bg-gold/[0.02] border border-contact/40 hover:border-gold/20 transition-all duration-200 shadow-sm min-w-0">
-                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${getFileColor(s.url)} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+              <div key={s.id} className="group flex items-center gap-3 p-3.5 bg-white rounded-xl hover:bg-[#F6F7F8] border border-gray-100 transition-all duration-200 min-w-0">
+                <div className={`w-9 h-9 rounded-lg ${getFileColor(s.url)} flex items-center justify-center shrink-0`}>
                   <FontAwesomeIcon icon={icon} className="text-sm" />
                 </div>
-                <a href={s.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 truncate text-sm font-semibold text-navy group-hover:text-gold transition-colors duration-200">
+                <a href={s.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 truncate text-sm font-medium text-navy">
                   {s.label}
-                  <FontAwesomeIcon icon={faExternalLinkAlt} className="ml-1 text-gray-300 group-hover:text-gold transition-all duration-200 opacity-0 group-hover:opacity-100 text-xs" />
+                  <FontAwesomeIcon icon={faExternalLinkAlt} className="ml-1 text-gray-300 group-hover:text-gray-400 transition-all duration-200 opacity-0 group-hover:opacity-100 text-xs" />
                 </a>
                 {isTeacher && (
                   <button type="button" onClick={() => setConfirmDelete(s.id)} className="w-7 h-7 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100" title="Supprimer">
@@ -360,7 +328,7 @@ export default function ArchiveGrid() {
         </div>
 
         {!loading && supportsCount > 0 && (
-          <div className="mt-3 pt-3 border-t border-gold/20 shrink-0">
+          <div className="mt-3 pt-3 border-t border-gray-100 shrink-0">
             <p className="text-[11px] text-gray-400 font-medium text-center">
               {supportsCount} support{supportsCount > 1 ? "s" : ""}
             </p>
@@ -371,7 +339,7 @@ export default function ArchiveGrid() {
   );
 
   const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
-    <div className="mb-4 mx-auto w-full max-w-sm bg-white rounded-2xl shadow-modal overflow-hidden">
+    <div className="mb-4 mx-auto w-full max-w-sm bg-white rounded-2xl border border-gray-100 shadow-modal overflow-hidden">
       {renderPanelContent(false)}
     </div>
   );
@@ -392,9 +360,7 @@ export default function ArchiveGrid() {
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"
               />
               <input
-                className="w-full bg-white border border-contact/60 rounded-xl pl-10 pr-4 py-3 text-sm text-navy
-                  placeholder:text-gray-400 focus:outline-none focus:border-navy/40 focus:ring-2 focus:ring-navy/5
-                  transition-all duration-200 shadow-sm"
+                className="input-field pl-10"
                 placeholder="Rechercher une UE..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -411,10 +377,10 @@ export default function ArchiveGrid() {
                   key={l.value}
                   type="button"
                   onClick={() => setLevelFilter(l.value)}
-                  className={`relative px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 whitespace-nowrap shrink-0 ${
+                  className={`relative px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${
                     levelFilter === l.value
-                      ? "bg-navy text-white shadow-md shadow-navy/20"
-                      : "bg-white text-navy border border-contact/60 hover:border-navy/30 hover:bg-surface/50 shadow-sm"
+                      ? "bg-navy text-white"
+                      : "bg-white text-navy border border-gray-100 hover:bg-[#F6F7F8]"
                   }`}
                 >
                   {l.label}
@@ -469,10 +435,10 @@ export default function ArchiveGrid() {
 
           {filteredLevels.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center mb-5 ring-1 ring-gold/10">
-                <FontAwesomeIcon icon={faSearch} className="text-gold/40 text-3xl" />
+              <div className="w-20 h-20 rounded-full bg-[#F6F7F8] border border-gray-100 flex items-center justify-center mb-5">
+                <FontAwesomeIcon icon={faSearch} className="text-navy/40 text-3xl" />
               </div>
-              <p className="text-navy font-bold text-base mb-1">Aucune UE trouvée</p>
+              <p className="text-navy font-semibold text-base mb-1">Aucune UE trouvée</p>
               <p className="text-gray-400 text-sm max-w-[260px] leading-relaxed">
                 Aucun résultat ne correspond à votre recherche. Essayez de modifier vos filtres.
               </p>
@@ -486,7 +452,7 @@ export default function ArchiveGrid() {
         <div
           ref={panelRef}
           className={
-            "fixed right-6 top-[5.5rem] bottom-6 w-[28rem] z-40 bg-white rounded-2xl shadow-2xl flex flex-col " +
+            "fixed right-6 top-[5.5rem] bottom-6 w-[28rem] z-40 bg-white rounded-2xl border border-gray-100 shadow-modal flex flex-col " +
             "transition-all duration-300 ease-out " +
             (showPanel
               ? "translate-x-0 opacity-100"
@@ -501,27 +467,25 @@ export default function ArchiveGrid() {
 
       {/* Custom Confirm Dialog */}
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-sm animate-slide-up">
+        <div className="fixed inset-0 bg-navy/40 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-modal p-6 w-full max-w-sm animate-slide-up">
             <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
               <FontAwesomeIcon icon={faTrash} className="text-red-500 text-xl" />
             </div>
-            <h3 className="font-bold text-navy text-center text-base mb-2">Supprimer ce support ?</h3>
+            <h3 className="font-semibold text-navy text-center text-base mb-2">Supprimer ce support ?</h3>
             <p className="text-gray-400 text-sm text-center mb-6">Cette action est irréversible.</p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="flex-1 bg-navy text-white px-5 py-2.5 rounded-xl font-semibold text-sm
-                  hover:bg-navy-dark transition-all duration-200"
+                className="btn-primary flex-1 justify-center"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(confirmDelete)}
-                className="flex-1 bg-red-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm
-                  hover:bg-red-600 transition-all duration-200"
+                className="btn-danger flex-1 justify-center"
               >
                 Supprimer
               </button>
@@ -545,18 +509,18 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
         style={{ transitionDelay: `${yi * 120}ms` }}
       >
         <div className="relative mb-4 group">
-          <div className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white shadow-sm border border-contact/40">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-gray-400 to-gray-300" />
-            <div className="flex items-center gap-4 px-5 py-4 w-full bg-gradient-to-r from-gray-50 to-transparent">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-200 to-gray-100 flex items-center justify-center shrink-0">
+          <div className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white border border-gray-100">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gray-300" />
+            <div className="flex items-center gap-4 px-5 py-4 w-full">
+              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
                 <FontAwesomeIcon icon={faArchive} className="text-gray-500 text-base" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-navy text-sm tracking-wide">Autres UE</h3>
-                <p className="text-xs text-gray-400 mt-0.5">UE non classées</p>
+                <h3 className="font-semibold text-navy text-sm tracking-wide">Autres UE</h3>
+                <p className="text-xs text-gray-400 mt-0.5 font-medium">UE non classées</p>
               </div>
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100">
-                <span className="text-xs font-bold text-gray-500">{navylessUes.length} UE{navylessUes.length > 1 ? "s" : ""}</span>
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F6F7F8]">
+                <span className="text-xs font-medium text-navy/50">{navylessUes.length} UE{navylessUes.length > 1 ? "s" : ""}</span>
               </div>
             </div>
           </div>
@@ -570,11 +534,11 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
                 key={ue}
                 type="button"
                 onClick={() => onSelect(ue)}
-                className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
+                className={`group relative px-3 py-3.5 rounded-xl text-xs font-medium
                   transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] overflow-hidden
                   ${isSelected
-                    ? "bg-navy text-white shadow-lg shadow-navy/30 scale-[1.02]"
-                    : "bg-white text-navy border border-contact/40 hover:border-gray-400/50 hover:shadow-md hover:-translate-y-0.5"
+                    ? "bg-navy text-white"
+                    : "bg-white text-navy border border-gray-100 hover:bg-[#F6F7F8]"
                   }`}
                 style={{ animationDelay: `${ui * 50}ms`, animationFillMode: "backwards" }}
               >
@@ -607,31 +571,25 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
     >
       {/* Year Header */}
       <div className="relative mb-4 group">
-        <div className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white shadow-sm border border-contact/40">
+        <div className="relative flex items-center gap-4 rounded-2xl overflow-hidden bg-white border border-gray-100">
           <div
             className="absolute left-0 top-0 bottom-0 w-1"
-            style={{ background: `linear-gradient(to bottom, ${colors.from}, ${colors.to})` }}
+            style={{ background: colors.from }}
           />
-          <div
-            className="flex items-center gap-4 px-5 py-4 w-full"
-            style={{ background: `linear-gradient(135deg, ${colors.from}12, transparent)` }}
-          >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: `linear-gradient(135deg, ${colors.from}, ${colors.to})` }}
-            >
-              <FontAwesomeIcon icon={faGraduationCap} className="text-white text-base" />
+          <div className="flex items-center gap-4 px-5 py-4 w-full">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.light}`}>
+              <FontAwesomeIcon icon={faGraduationCap} className={`text-base ${meta.text}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-navy text-sm sm:text-base tracking-wide truncate">
+              <h3 className="font-semibold text-navy text-sm sm:text-base tracking-wide truncate">
                 {meta.label}
               </h3>
               <p className="text-xs text-gray-400 mt-0.5 font-medium">
                 {meta.subtitle}
               </p>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-navy/5">
-              <span className="text-xs font-bold text-navy/60">{safeUes.length} UE{safeUes.length > 1 ? "s" : ""}</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F6F7F8]">
+              <span className="text-xs font-medium text-navy/50">{safeUes.length} UE{safeUes.length > 1 ? "s" : ""}</span>
             </div>
           </div>
         </div>
@@ -648,15 +606,13 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
               key={ue}
               type="button"
               onClick={() => onSelect(ue)}
-              className={`group relative px-3 py-3.5 rounded-xl text-xs font-bold
+              className={`group relative px-3 py-3.5 rounded-xl text-xs font-medium
                 transition-all duration-300 active:scale-[0.96] flex flex-col items-center justify-center gap-2 min-h-[72px] sm:min-h-[80px] overflow-hidden
                 ${isSelected
-                  ? "bg-navy text-white shadow-lg shadow-navy/30 scale-[1.02]"
-                  : "bg-white text-navy border border-contact/40 hover:shadow-md hover:-translate-y-0.5"
+                  ? "bg-navy text-white"
+                  : "bg-white text-navy border border-gray-100 hover:bg-[#F6F7F8]"
                 }`}
               style={{
-                borderColor: isSelected ? undefined : undefined,
-                boxShadow: isSelected ? undefined : undefined,
                 transitionDelay: `${ui * 40}ms`,
                 animationFillMode: "backwards",
               }}
@@ -667,17 +623,12 @@ function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, p
               <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-xs transition-all duration-300 ${
                 isSelected
                   ? "bg-white/20 text-white"
-                  : "text-navy/40 group-hover:scale-110"
+                  : `${meta.light} ${meta.text}`
               }`}
-                style={{
-                  background: isSelected
-                    ? undefined
-                    : `linear-gradient(135deg, ${colors.from}18, ${colors.to}08)`,
-                }}
               >
                 <FontAwesomeIcon icon={faBookOpen} className="text-[10px] sm:text-sm" />
               </div>
-              <span className="relative z-10 leading-tight text-center font-semibold truncate w-full px-1">{ue}</span>
+              <span className="relative z-10 leading-tight text-center font-medium truncate w-full px-1">{ue}</span>
             </button>
           );
         })}

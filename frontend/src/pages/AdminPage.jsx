@@ -21,7 +21,6 @@ import {
   faMagic,
   faNewspaper,
   faImage,
-  faUserCog,
   faEnvelope,
   faKey,
   faCheckCircle,
@@ -55,13 +54,13 @@ const TABS = [
 
 function StatCard({ icon, label, value, color, trend }) {
   return (
-    <div className="bg-white rounded-2xl shadow-card p-5 flex items-center gap-4 group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color} transition-transform duration-300 group-hover:scale-110`}>
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
         <FontAwesomeIcon icon={icon} className="text-lg" />
       </div>
       <div>
-        <p className="text-2xl font-bold text-navy">{value ?? "—"}</p>
-        <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-semibold text-navy">{value ?? "—"}</p>
+        <p className="text-[11px] font-medium text-navy/50 uppercase tracking-[0.1em]">{label}</p>
       </div>
     </div>
   );
@@ -86,7 +85,7 @@ function Toast({ message, type, onClose }) {
   };
 
   return (
-    <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl border shadow-lg animate-slide-up ${colors[type] || colors.info}`}>
+    <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl border shadow-modal animate-slide-up ${colors[type] || colors.info}`}>
       <FontAwesomeIcon icon={icons[type] || icons.info} />
       <p className="text-sm font-medium">{message}</p>
       <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 transition">
@@ -99,12 +98,12 @@ function Toast({ message, type, onClose }) {
 function ConfirmModal({ open, title, message, confirmLabel, confirmColor, icon, onConfirm, onCancel }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-[0_8px_32px_0_rgba(0,25,72,0.16)] p-6 w-full max-w-sm animate-slide-up">
+    <div className="fixed inset-0 bg-navy/40 z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-modal p-6 w-full max-w-sm animate-slide-up">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 ${confirmColor === "red" ? "bg-red-50" : "bg-navy/10"}`}>
           <FontAwesomeIcon icon={icon || faExclamationTriangle} className={`text-xl ${confirmColor === "red" ? "text-red-500" : "text-navy"}`} />
         </div>
-        <h3 className="font-bold text-navy text-center text-base mb-2">{title}</h3>
+        <h3 className="font-semibold text-navy text-center text-base mb-2">{title}</h3>
         <p className="text-gray-400 text-sm text-center mb-6">{message}</p>
         <div className="flex gap-3">
           <button
@@ -438,7 +437,7 @@ export default function AdminPage() {
     const cfg = ROLE_CONFIG[role];
     if (!cfg) return null;
     return (
-      <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border ${cfg.color}`}>
+      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border ${cfg.color}`}>
         <FontAwesomeIcon icon={cfg.icon} className="text-[10px]" />
         {cfg.label}
       </span>
@@ -453,7 +452,7 @@ export default function AdminPage() {
 
   const renderUeLevelBadge = (level) => {
     if (!level) return null;
-    return <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${UE_LEVEL_COLORS[level] || "bg-gray-100 text-gray-600"}`}>{level}</span>;
+    return <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${UE_LEVEL_COLORS[level] || "bg-gray-100 text-gray-600"}`}>{level}</span>;
   };
 
   return (
@@ -470,31 +469,26 @@ export default function AdminPage() {
       <main className="flex-1 flex flex-col min-h-0">
         <div ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="relative">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute -top-24 -right-24 w-96 h-96 bg-gold/5 rounded-full blur-3xl" />
-              <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-navy/[0.03] rounded-full blur-3xl" />
-            </div>
             <div className="relative">
               {/* Hero */}
-              <div className="bg-gradient-to-br from-navy via-navy-dark to-navy px-4 sm:px-6 lg:px-8 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-14">
-                <div className="max-w-7xl mx-auto w-full flex items-center gap-4 sm:gap-5">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 ring-1 ring-white/20">
-                    <FontAwesomeIcon icon={faUserCog} className="text-gold text-lg sm:text-xl" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">
-                      Panneau d'administration
+              <div className="px-4 sm:px-6 lg:px-8 pt-6">
+                <div className="max-w-7xl mx-auto w-full">
+                  <div className="bg-navy rounded-2xl px-6 py-7 sm:px-8">
+                    <p className="text-white/40 text-[11px] uppercase tracking-[0.1em] font-medium">
+                      Administration
+                    </p>
+                    <h1 className="text-white text-xl sm:text-2xl font-bold tracking-tight mt-2.5">
+                      Panneau d'administration<span className="text-gold">.</span>
                     </h1>
-                    <p className="text-sm sm:text-base text-white/60 mt-1 font-medium">
+                    <p className="text-white/50 text-sm mt-2 leading-relaxed">
                       Gestion des utilisateurs et des accès
                     </p>
                   </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
               </div>
 
               {/* Content */}
-              <div className="px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-5 pb-6 sm:pb-8">
+              <div className="px-4 sm:px-6 lg:px-8 pt-4 pb-6 sm:pb-8">
                 <div className="max-w-7xl mx-auto w-full">
 
           {/* Stats */}
@@ -505,7 +499,7 @@ export default function AdminPage() {
 
           {/* Tabs */}
           <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-            <div className="flex gap-1.5 flex-wrap bg-white p-1.5 rounded-2xl shadow-card">
+            <div className="flex gap-1.5 flex-wrap bg-white p-1.5 rounded-2xl border border-gray-100">
               {allTabs.map((t) => {
                 const Icon = t.icon;
                 return (
@@ -513,10 +507,10 @@ export default function AdminPage() {
                     key={t.key}
                     type="button"
                     onClick={() => setTab(t.key)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                       tab === t.key
-                        ? "bg-gradient-to-r from-navy to-navy-dark text-white shadow-md shadow-navy/20"
-                        : "text-navy hover:bg-gold/10"
+                        ? "bg-navy text-white"
+                        : "text-navy hover:bg-surface"
                     }`}
                   >
                     <FontAwesomeIcon icon={Icon} className="text-sm" />
@@ -586,13 +580,13 @@ export default function AdminPage() {
               {!loading && (
                 <>
                   {/* Desktop Table */}
-                  <div className="hidden md:block bg-white rounded-2xl shadow-card overflow-hidden">
+                  <div className="hidden md:block bg-white rounded-2xl border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-surface bg-surface/60">
+                          <tr className="border-b border-gray-100 bg-[#F6F7F8]">
                             {["Réf.", "Nom", "Email", "Pseudo", "Niv.", "Rôle", "Inscrit le", ""].map((h) => (
-                              <th key={h} className="text-left py-3.5 px-4 text-xs font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                              <th key={h} className="text-left py-3.5 px-4 text-[11px] font-medium text-navy/50 uppercase tracking-[0.1em] whitespace-nowrap">
                                 {h}
                               </th>
                             ))}
@@ -600,8 +594,8 @@ export default function AdminPage() {
                         </thead>
                         <tbody>
                           {users.map((u) => (
-                            <tr key={u.id} className="border-b border-surface last:border-0 hover:bg-surface/40 transition-colors duration-150">
-                              <td className="py-3.5 px-4 font-bold text-navy whitespace-nowrap">{u.ref}</td>
+                            <tr key={u.id} className="border-b border-surface last:border-0 hover:bg-surface transition-colors duration-150">
+                              <td className="py-3.5 px-4 font-semibold text-navy whitespace-nowrap">{u.ref}</td>
                               <td className="py-3.5 px-4 whitespace-nowrap">
                                 <span className="text-gray-700">{u.prenom} {u.nom}</span>
                               </td>
@@ -612,7 +606,7 @@ export default function AdminPage() {
                                       type="email"
                                       value={editEmailValue}
                                       onChange={(e) => setEditEmailValue(e.target.value)}
-                                      className="border border-contact rounded-lg text-xs py-1 px-2 w-40 bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 transition-all"
+                                      className="input-field text-xs py-1 px-2 w-40"
                                       autoFocus
                                       onKeyDown={(e) => {
                                         if (e.key === "Enter") handleEmailSave(u.id);
@@ -643,7 +637,7 @@ export default function AdminPage() {
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {Array.isArray(u.ues) && u.ues.length > 0 ? (
                                       u.ues.map((ue) => (
-                                        <span key={ue} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-100 text-purple-700">
+                                        <span key={ue} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
                                           {ue}
                                         </span>
                                       ))
@@ -653,7 +647,7 @@ export default function AdminPage() {
                                     <button
                                       type="button"
                                       onClick={() => setSelectedTeacherForUes(u)}
-                                      className="text-xs font-bold text-navy hover:text-gold transition underline ml-1"
+                                      className="text-xs font-medium text-navy hover:text-navy-dark transition underline ml-1"
                                       title="Gérer les UEs de cet enseignant"
                                     >
                                       Gérer
@@ -668,7 +662,7 @@ export default function AdminPage() {
                                   value={u.role}
                                   onChange={(e) => handleRoleChange(u.id, e.target.value)}
                                   disabled={u.id === user.id}
-                                  className="text-xs font-bold px-2 py-1 rounded-lg border-0 focus:outline-none cursor-pointer bg-transparent"
+                                  className="text-xs font-medium px-2 py-1 rounded-xl border-0 focus:outline-none cursor-pointer bg-transparent"
                                   style={{ color: ROLE_CONFIG[u.role]?.color.split(" ")[1] }}
                                 >
                                   <option value="admin">Admin</option>
@@ -693,7 +687,7 @@ export default function AdminPage() {
                                       onConfirm: () => { handleDelete(u.id, u.ref); setConfirmState(null); },
                                       onCancel: () => setConfirmState(null),
                                     })}
-                                    className="text-red-300 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50"
+                                    className="text-gray-400 hover:text-rose-600 transition p-1.5 rounded-xl"
                                     title="Supprimer"
                                   >
                                     <FontAwesomeIcon icon={faTrash} />
@@ -710,10 +704,10 @@ export default function AdminPage() {
                   {/* Mobile Cards */}
                   <div className="md:hidden flex flex-col gap-3">
                     {users.map((u) => (
-                      <div key={u.id} className="bg-white rounded-2xl shadow-card p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
+                      <div key={u.id} className="bg-white rounded-2xl border border-gray-100 p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-navy text-sm">{u.ref}</span>
+                            <span className="font-semibold text-navy text-sm">{u.ref}</span>
                           </div>
                           {renderRoleBadge(u.role)}
                         </div>
@@ -725,7 +719,7 @@ export default function AdminPage() {
                                 type="email"
                                 value={editEmailValue}
                                 onChange={(e) => setEditEmailValue(e.target.value)}
-                                className="border border-contact rounded-lg text-xs py-1 px-2 flex-1 bg-white focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/10"
+                                className="input-field text-xs py-1 px-2 flex-1"
                                 autoFocus
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") handleEmailSave(u.id);
@@ -757,7 +751,7 @@ export default function AdminPage() {
                             value={u.role}
                             onChange={(e) => handleRoleChange(u.id, e.target.value)}
                             disabled={u.id === user.id}
-                            className="flex-1 border border-contact rounded-xl text-xs py-1.5 px-3 bg-white focus:outline-none focus:border-navy font-medium"
+                            className="input-field flex-1 text-xs py-1.5 px-3"
                           >
                             <option value="student">Étudiant</option>
                             <option value="teacher">Professeur</option>
@@ -832,9 +826,9 @@ export default function AdminPage() {
 
           {/* Nouveau étudiant */}
           {tab === "new-l1" && (
-            <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-100 to-green-50 text-green-600 flex items-center justify-center shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center">
                   <FontAwesomeIcon icon={faUserPlus} className="text-xl" />
                 </div>
                 <div>
@@ -855,23 +849,23 @@ export default function AdminPage() {
               <form onSubmit={handleRegisterL1} className="flex flex-col gap-4 max-w-lg">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Prénom</label>
+                    <label className="auth-label">Prénom</label>
                     <input className="input-field" placeholder="Jean" value={newL1.prenom} onChange={(e) => setNewL1((prev) => ({ ...prev, prenom: e.target.value }))} required />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Nom</label>
+                    <label className="auth-label">Nom</label>
                     <input className="input-field" placeholder="Rakoto" value={newL1.nom} onChange={(e) => setNewL1((prev) => ({ ...prev, nom: e.target.value }))} required />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Référence STD</label>
-                  <input className="input-field font-mono tracking-widest uppercase" placeholder={`STD${currentYear}001`} value={generatedRef} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.startsWith("STD2")) setGeneratedRef(val); }} required />
+                  <label className="auth-label">Référence STD</label>
+                  <input className="input-field tracking-widest uppercase" placeholder={`STD${currentYear}001`} value={generatedRef} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.startsWith("STD2")) setGeneratedRef(val); }} required />
                   <p className="text-xs text-gray-400 mt-1">Le préfixe <strong>STD2</strong> est déjà saisi. Ajoutez le chiffre de l'année puis le numéro à 3 chiffres (ex: STD26001).</p>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Email HEI</label>
+                  <label className="auth-label">Email HEI</label>
                   <input type="email" className="input-field" placeholder="hei.prenom.nom@gmail.com" value={newL1.email} onChange={(e) => { setNewL1((prev) => ({ ...prev, email: e.target.value })); if (emailError) setEmailError(""); }} required />
                   {emailError && <p className="text-xs text-red-500 mt-1 font-medium">{emailError}</p>}
                   <p className="text-xs text-gray-400 mt-1">Format obligatoire : <strong>hei.prenom.nom@gmail.com</strong></p>
@@ -879,15 +873,15 @@ export default function AdminPage() {
 
                 {newL1.prenom && newL1.nom && generatedRef.length > 4 && (
                   <div className="bg-navy/[0.03] rounded-xl p-4 space-y-2 border border-navy/10">
-                    <p className="text-xs font-bold text-navy/60 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <p className="text-xs font-medium text-navy/60 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                       <FontAwesomeIcon icon={faMagic} className="text-[10px]" />
                       Informations générées automatiquement
                     </p>
                     <div className="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1.5 text-sm">
                       <span className="text-gray-500 font-medium">Pseudo</span>
-                      <span className="text-navy font-mono text-xs bg-navy/5 px-2 py-0.5 rounded">{newL1.prenom}.{newL1.nom}</span>
+                      <span className="text-navy text-xs font-medium bg-navy/5 px-2 py-0.5 rounded">{newL1.prenom}.{newL1.nom}</span>
                       <span className="text-gray-500 font-medium">Mot de passe</span>
-                      <span className="text-navy font-mono text-xs bg-navy/5 px-2 py-0.5 rounded">STDnew_UserPass</span>
+                      <span className="text-navy text-xs font-medium bg-navy/5 px-2 py-0.5 rounded">STDnew_UserPass</span>
                     </div>
                   </div>
                 )}
@@ -941,15 +935,15 @@ export default function AdminPage() {
                   const full = inv.use_count >= inv.max_uses;
                   const isCopied = copiedId === inv.id;
                   return (
-                    <div key={inv.id} className="bg-white rounded-2xl shadow-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
+                    <div key={inv.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <span className="font-mono font-bold text-navy text-lg tracking-widest">{inv.code}</span>
+                          <span className="font-semibold text-navy text-lg tracking-widest">{inv.code}</span>
                           <div className="flex gap-1.5 flex-wrap">
-                            {full && !expired && <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full border border-gray-200">Épuisé</span>}
-                            {!full && expired && <span className="bg-red-50 text-red-500 text-xs font-bold px-2 py-0.5 rounded-full border border-red-200">Expiré</span>}
-                            {!full && !expired && <span className="bg-gold/10 text-gold text-xs font-bold px-2 py-0.5 rounded-full border border-gold/20">Actif</span>}
-                            {multi && <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full border border-blue-200">{inv.use_count}/{inv.max_uses}</span>}
+                            {full && !expired && <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full border border-gray-200">Épuisé</span>}
+                            {!full && expired && <span className="bg-red-50 text-red-500 text-xs font-medium px-2 py-0.5 rounded-full border border-red-200">Expiré</span>}
+                            {!full && !expired && <span className="bg-gold/15 text-navy text-xs font-medium px-2 py-0.5 rounded-full border border-gold/20">Actif</span>}
+                            {multi && <span className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full border border-blue-200">{inv.use_count}/{inv.max_uses}</span>}
                             {renderRoleBadge(inv.role)}
                           </div>
                         </div>
@@ -963,7 +957,7 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => handleCopy(inv.id, inv.code)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition ${
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition ${
                               isCopied ? "bg-green-100 text-green-600 border border-green-200" : "bg-navy/10 text-navy hover:bg-navy/20 border border-transparent"
                             }`}
                           >
@@ -1000,7 +994,7 @@ export default function AdminPage() {
                 <h2 className="font-bold text-navy text-base mb-4">Créer une nouvelle UE</h2>
                 <form onSubmit={handleCreateCustomUe} className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Code UE</label>
+                    <label className="auth-label">Code UE</label>
                     <input
                       className="input-field uppercase"
                       placeholder="ex: PROG1, WEB2..."
@@ -1010,7 +1004,7 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Niveau</label>
+                    <label className="auth-label">Niveau</label>
                     <select
                       className="input-field"
                       value={newUeLevel}
@@ -1040,7 +1034,7 @@ export default function AdminPage() {
                         key={lvl}
                         type="button"
                         onClick={() => setFilterLevel(lvl)}
-                        className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                        className={`px-3 py-1 text-xs font-medium rounded-lg transition ${
                           filterLevel === lvl
                             ? "bg-navy text-white shadow-sm"
                             : "text-gray-500 hover:text-navy"
@@ -1064,7 +1058,7 @@ export default function AdminPage() {
                         className="flex items-center justify-between p-3 bg-surface rounded-xl border border-contact/50 hover:border-purple-200 transition"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-navy text-sm">{item.ue}</span>
+                          <span className="font-semibold text-navy text-sm">{item.ue}</span>
                           {renderUeLevelBadge(item.level)}
                         </div>
                         <button
@@ -1078,7 +1072,7 @@ export default function AdminPage() {
                           onConfirm: () => { handleDeleteCustomUe(item.id); setConfirmState(null); },
                           onCancel: () => setConfirmState(null),
                           })}
-                          className="text-red-300 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50"
+                          className="text-gray-400 hover:text-rose-600 transition p-1.5 rounded-xl"
                           title="Supprimer"
                         >
                           <FontAwesomeIcon icon={faTrash} />
@@ -1102,7 +1096,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-6 right-6 w-11 h-11 rounded-full bg-navy text-white flex items-center justify-center shadow-lg hover:bg-gold transition-all duration-200 z-50 hover:scale-105"
+            className="fixed bottom-6 right-6 w-11 h-11 rounded-xl bg-navy text-white flex items-center justify-center hover:bg-navy-dark transition-colors z-50"
             title="Remonter en haut"
           >
             <FontAwesomeIcon icon={faArrowUp} />
@@ -1112,7 +1106,7 @@ export default function AdminPage() {
 
       {/* Invitation Modal */}
       {showInvModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-navy/40 z-50 flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-sm animate-slide-up">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -1135,11 +1129,11 @@ export default function AdminPage() {
               </div>
             )}
 
-            <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Rôle de l'invité</label>
+            <label className="text-[11px] font-medium text-navy/50 mb-2 block uppercase tracking-[0.1em]">Rôle de l'invité</label>
             <div className="flex gap-2 mb-5">
                   {["student", "teacher"].map((r) => (
                 <button key={r} type="button" onClick={() => { setInvRole(r); setInvError(""); }}
-                  className={`flex-1 py-3 rounded-xl text-sm font-bold border transition ${
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium border transition ${
                     invRole === r ? "bg-navy text-white border-navy shadow-md" : "bg-white text-navy border-contact hover:bg-surface"
                   }`}
                 >
@@ -1148,7 +1142,7 @@ export default function AdminPage() {
               ))}
             </div>
 
-            <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Utilisations max</label>
+            <label className="text-[11px] font-medium text-navy/50 mb-2 block uppercase tracking-[0.1em]">Utilisations max</label>
             <input type="number" className="input-field mb-5" min={1} max={10000} value={invMaxUses} onChange={(e) => setInvMaxUses(Math.max(1, parseInt(e.target.value) || 1))} />
 
             <button type="button" onClick={handleCreateInvitation} disabled={invLoading} className="btn-primary w-full justify-center">
@@ -1160,7 +1154,7 @@ export default function AdminPage() {
 
       {/* Bulk Invitation Modal */}
       {showBulkModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-navy/40 z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-lg max-h-[85vh] flex flex-col animate-slide-up">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -1180,11 +1174,11 @@ export default function AdminPage() {
 
                 {bulkError && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4">{bulkError}</div>}
 
-                <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Rôle des invités</label>
+                <label className="text-[11px] font-medium text-navy/50 mb-2 block uppercase tracking-[0.1em]">Rôle des invités</label>
                 <div className="flex gap-2 mb-4">
               {["student", "teacher"].map((r) => (
                     <button key={r} type="button" onClick={() => { setBulkRole(r); setBulkError(""); }}
-                      className={`flex-1 py-3 rounded-xl text-sm font-bold border transition ${
+                      className={`flex-1 py-3 rounded-xl text-sm font-medium border transition ${
                         bulkRole === r ? "bg-navy text-white border-navy shadow-md" : "bg-white text-navy border-contact hover:bg-surface"
                       }`}
                     >
@@ -1193,10 +1187,10 @@ export default function AdminPage() {
                   ))}
                 </div>
 
-                <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Nombre de codes</label>
+                <label className="text-[11px] font-medium text-navy/50 mb-2 block uppercase tracking-[0.1em]">Nombre de codes</label>
                 <input type="number" className="input-field mb-4" min={1} max={1000} value={bulkCount} onChange={(e) => setBulkCount(Math.min(1000, Math.max(1, parseInt(e.target.value) || 1)))} />
 
-                <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Utilisations max par code</label>
+                <label className="text-[11px] font-medium text-navy/50 mb-2 block uppercase tracking-[0.1em]">Utilisations max par code</label>
                 <input type="number" className="input-field mb-6" min={1} max={10000} value={bulkMaxUses} onChange={(e) => setBulkMaxUses(Math.max(1, parseInt(e.target.value) || 1))} />
 
                 <button type="button" onClick={async () => {
@@ -1220,7 +1214,7 @@ export default function AdminPage() {
                 <div className="flex-1 overflow-y-auto mb-4 space-y-2 custom-scrollbar">
                   {bulkCodes.map((inv) => (
                     <div key={inv.id} className="flex items-center justify-between bg-surface rounded-xl px-4 py-3 border border-contact/50">
-                      <span className="font-mono font-bold text-navy tracking-widest text-sm">{inv.code}</span>
+                      <span className="font-semibold text-navy tracking-widest text-sm">{inv.code}</span>
                       {renderRoleBadge(inv.role)}
                     </div>
                   ))}
@@ -1231,7 +1225,7 @@ export default function AdminPage() {
                     const text = bulkCodes.map((i) => i.code).join("\n");
                     navigator.clipboard.writeText(text); setAllCopied(true);
                     setTimeout(() => setAllCopied(false), 2000);
-                  }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
+                  }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition ${
                     allCopied ? "bg-green-100 text-green-600 border border-green-200" : "btn-primary justify-center"
                   }`}>
                     <FontAwesomeIcon icon={allCopied ? faCheck : faCopy} />

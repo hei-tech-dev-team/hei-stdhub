@@ -221,7 +221,7 @@ export default function Maintenance() {
               <FontAwesomeIcon icon={faGamepad} className="text-gold" />
               <span>Un peu de patience ?</span>
             </div>
-            <div className="text-[11px] font-mono font-bold text-navy-dark/60">
+            <div className="text-[11px] font-medium text-navy-dark/60">
               HI: <span className="text-gold mr-2">{highScore}</span> Score: <span>{score}</span>
             </div>
           </div>

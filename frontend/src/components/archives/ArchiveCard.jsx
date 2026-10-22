@@ -9,14 +9,14 @@ export default function ArchiveCard({ post }) {
   const isFile = !!post.file_path;
 
   return (
-    <div className="bg-white rounded-xl shadow-card overflow-hidden hover:shadow-md transition-all flex flex-col h-full border border-transparent hover:border-gold/30">
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-gold/30 transition-all flex flex-col h-full">
       <div className="p-5 flex flex-col h-full">
         <div className="flex items-start justify-between mb-3">
-          <span className="inline-block px-2 py-1 rounded bg-navy/5 text-navy text-[10px] font-bold uppercase tracking-wider">
+          <span className="inline-block px-2 py-1 rounded-full bg-navy/5 text-navy text-[10px] font-medium uppercase tracking-wider">
             {post.ue}
           </span>
           <span
-            className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+            className={`px-2 py-1 rounded-full text-[10px] font-medium uppercase ${
               post.type === "cours"
                 ? "bg-blue-100 text-blue-600"
                 : "bg-purple-100 text-purple-600"
@@ -26,7 +26,7 @@ export default function ArchiveCard({ post }) {
           </span>
         </div>
 
-        <h3 className="font-bold text-navy text-base mb-2 line-clamp-2" title={post.title}>
+        <h3 className="font-semibold text-navy text-base mb-2 line-clamp-2" title={post.title}>
           {post.title}
         </h3>
 
@@ -38,14 +38,14 @@ export default function ArchiveCard({ post }) {
 
         <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
           <div className="text-[10px] text-gray-400">
-            Par <span className="font-semibold text-gray-600">{post.author_pseudo || "Anonyme"}</span>
+            Par <span className="font-medium text-gray-600">{post.author_pseudo || "Anonyme"}</span>
           </div>
 
           <a
             href={isFile ? `/${post.file_path}` : post.link}
             target={isFile ? "_self" : "_blank"}
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-navy hover:text-gold transition-colors text-xs font-bold"
+            className="flex items-center gap-2 text-navy hover:text-navy-dark transition-colors text-xs font-medium"
           >
             <FontAwesomeIcon icon={isFile ? faDownload : faLink} className="text-[10px]" />
             {isFile ? "Télécharger" : "Lien"}
