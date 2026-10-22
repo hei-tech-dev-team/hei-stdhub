@@ -51,7 +51,7 @@ export default function LoginPage() {
       title="Connexion"
       subtitle="Entrez vos identifiants pour continuer"
       footer={
-        <p className="text-xs text- gray-400">
+        <p className="text-xs text-gray-400">
           Pas encore inscrit ?{" "}
           <Link to="/register" className="text-navy font-bold hover:underline">
             Créer un compte

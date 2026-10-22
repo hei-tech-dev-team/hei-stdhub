@@ -51,7 +51,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, onReac
     };
 
     return (
-        <div className="bg-white rounded-3xl shadow-card p-5 sm:p-6 border border-gray-100/50 hover:shadow-lg transition-all duration-300 relative">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 relative">
             <div className={`grid gap-6 ${hasAttachments ? "grid-cols-1 lg:grid-cols-12" : "grid-cols-1"}`}>
                 <div className={`${hasAttachments ? "lg:col-span-7" : "w-full"} flex flex-col justify-between`}>
                     <div>
@@ -70,15 +70,15 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, onReac
                                         {!isDeletedUser && author.ref ? (
                                             <Link
                                                 to={`/user/${author.ref}`}
-                                                className="font-bold text-navy text-sm hover:text-gold transition-colors"
+                                                className="font-semibold text-navy text-sm hover:text-gold transition-colors"
                                             >
                                                 {authorName}
                                             </Link>
                                         ) : (
-                                            <span className="font-bold text-gray-400 text-sm">{authorName}</span>
+                                            <span className="font-medium text-gray-400 text-sm">{authorName}</span>
                                         )}
                                         {post.type === "announcement" && (
-                                            <span className="px-2 py-0.5 rounded-full bg-gold/15 text-navy font-bold text-[10px] flex items-center gap-1">
+                                            <span className="px-2 py-0.5 rounded-full bg-gold/15 text-navy font-medium text-[10px] flex items-center gap-1">
                                                 <FontAwesomeIcon icon={faBullhorn} className="text-gold" /> Annonce
                                             </span>
                                         )}
@@ -98,14 +98,14 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, onReac
                                     </button>
 
                                     {showMenu && (
-                                        <div className="absolute right-0 mt-1 w-36 bg-white rounded-2xl shadow-card border border-gray-100 py-1.5 z-20">
+                                        <div className="absolute right-0 mt-1 w-36 bg-white rounded-xl border border-gray-100 shadow-card py-1.5 z-20">
                                             <button
                                                 type="button"
                                                 onClick={() => {
                                                     setShowMenu(false);
                                                     setIsEditing(true);
                                                 }}
-                                                className="w-full px-3 py-1.5 text-left text-xs font-semibold text-navy hover:bg-surface flex items-center gap-2"
+                                                className="w-full px-3 py-1.5 text-left text-xs font-medium text-navy hover:bg-surface flex items-center gap-2"
                                             >
                                                 <FontAwesomeIcon icon={faEdit} className="text-gray-400" /> Modifier
                                             </button>
@@ -115,7 +115,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, onReac
                                                     setShowMenu(false);
                                                     onDelete(post.id);
                                                 }}
-                                                className="w-full px-3 py-1.5 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                                                className="w-full px-3 py-1.5 text-left text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2"
                                             >
                                                 <FontAwesomeIcon icon={faTrash} /> Supprimer
                                             </button>
@@ -127,34 +127,34 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, onReac
 
                         <div className="mt-2">
                             {isEditing ? (
-                                <div className="space-y-3 bg-surface p-3 rounded-2xl border border-gray-200">
+                                <div className="space-y-3 bg-surface p-4 rounded-xl">
                                     {post.type === "announcement" && (
                                         <input
                                             type="text"
                                             value={editTitle}
                                             onChange={(e) => setEditTitle(e.target.value)}
-                                            className="w-full px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold text-navy"
+                                            className="input-field font-medium text-navy"
                                         />
                                     )}
                                     <textarea
                                         rows={3}
                                         value={editContent}
                                         onChange={(e) => setEditContent(e.target.value)}
-                                        className="w-full p-3 rounded-xl bg-white border border-gray-200 text-sm text-navy resize-none"
+                                        className="input-field resize-none leading-relaxed"
                                     />
-                                    {error && <p className="text-xs text-rose-500 font-semibold">{error}</p>}
+                                    {error && <p className="text-xs text-rose-500 font-medium">{error}</p>}
                                     <div className="flex justify-end gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setIsEditing(false)}
-                                            className="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-200"
+                                            className="px-3 py-1.5 rounded-xl text-xs font-medium text-gray-500 hover:text-navy transition-colors"
                                         >
                                             Annuler
                                         </button>
                                         <button
                                             type="button"
                                             onClick={handleSaveEdit}
-                                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-navy text-white hover:bg-navy-dark"
+                                            className="px-3 py-1.5 rounded-xl text-xs font-medium bg-navy text-white hover:bg-navy-dark transition-colors"
                                         >
                                             {saving ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : "Enregistrer"}
                                         </button>

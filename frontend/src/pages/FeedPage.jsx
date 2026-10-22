@@ -13,7 +13,6 @@ import {
     faNewspaper,
     faStream,
     faPlus,
-    faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function FeedPage() {
@@ -22,7 +21,6 @@ export default function FeedPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [isComposerOpen, setIsComposerOpen] = useState(false);
-    const [isSearchHovered, setIsSearchHovered] = useState(false);
 
     const observerTarget = useRef(null);
 
@@ -63,29 +61,36 @@ export default function FeedPage() {
 
     return (
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-surface">
-            <div className=" mx-auto px-4 sm:px-6 py-6 space-y-6 items-center flex flex-col">
-                <div className="w-full bg-gradient-to-br from-navy via-navy-dark to-navy rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-card">
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="flex items-center gap-4 relative">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm ring-1 ring-white/20 flex items-center justify-center shrink-0">
-                            <FontAwesomeIcon icon={faBookOpen} className="text-gold text-xl sm:text-2xl" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-                                Bonjour, {user?.prenom || user?.pseudo}
-                            </h1>
-                        </div>
+            <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+                <div className="bg-navy rounded-2xl px-6 py-7 sm:px-8 flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-white/40 text-[11px] uppercase tracking-[0.1em] font-medium">
+                            Accueil
+                        </p>
+                        <h1 className="text-white text-xl sm:text-2xl font-bold tracking-tight mt-2.5">
+                            Bonjour, {user?.prenom || user?.pseudo}
+                            <span className="text-gold">.</span>
+                        </h1>
+                        <p className="text-white/50 text-sm mt-2 leading-relaxed">
+                            Les actualités et annonces de la tribu HEI, au même endroit.
+                        </p>
                     </div>
+                    <p className="hidden sm:block text-white/30 text-[11px] uppercase tracking-[0.15em] font-medium pt-1">
+                        {new Intl.DateTimeFormat("fr-FR", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                        }).format(new Date())}
+                    </p>
                 </div>
 
-                <div className="w-full fixed bottom-0 sm:sticky sm:top-0 z-40 bg-surface backdrop-blur-md flex flex-wrap items-center justify-between gap-3 p-3 sm:rounded-2xl shadow-xl sm:shadow-none border border-gray-100/50 transition-all max-w-3xl sm:max-w-none mx-auto">
-                    <div className="flex gap-1 rounded-xl shadow-card p-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-1">
                         <button
                             type="button"
                             onClick={() => setFilterType("all")}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                filterType === "all" ? "bg-navy text-white shadow-xs" : "text-gray-400 hover:text-navy"
+                            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                                filterType === "all" ? "bg-navy text-white" : "text-gray-400 hover:text-navy"
                             }`}
                         >
                             <FontAwesomeIcon icon={faStream} /> Tout
@@ -93,8 +98,8 @@ export default function FeedPage() {
                         <button
                             type="button"
                             onClick={() => setFilterType("announcements")}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                filterType === "announcements" ? "bg-navy text-white shadow-xs" : "text-gray-400 hover:text-navy"
+                            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                                filterType === "announcements" ? "bg-navy text-white" : "text-gray-400 hover:text-navy"
                             }`}
                         >
                             <FontAwesomeIcon icon={faBullhorn} /> Annonces
@@ -102,46 +107,37 @@ export default function FeedPage() {
                         <button
                             type="button"
                             onClick={() => setFilterType("posts")}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                filterType === "posts" ? "bg-navy text-white shadow-xs" : "text-gray-400 hover:text-navy"
+                            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                                filterType === "posts" ? "bg-navy text-white" : "text-gray-400 hover:text-navy"
                             }`}
                         >
                             <FontAwesomeIcon icon={faNewspaper} /> Posts
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-surface p-2 shadow-card rounded-xl">
-                        <button
-                            type="button"
-                            onClick={() => setIsComposerOpen(true)}
-                            className="w-9 h-9 rounded-xl bg-gold text-navy font-bold flex items-center justify-center hover:bg-gold-light hover:scale-105 active:scale-95 transition-all shadow-xs"
-                            title="Nouvelle publication"
-                        >
-                            <FontAwesomeIcon icon={faPlus} className="text-sm" />
-                        </button>
-
-                        <div
-                            onMouseEnter={() => setIsSearchHovered(true)}
-                            onMouseLeave={() => !searchQuery && setIsSearchHovered(false)}
-                            className={`hidden sm:flex relative items-center transition-all duration-300 ${
-                                isSearchHovered || searchQuery ? "w-48 sm:w-64" : "w-9"
-                            }`}
-                        >
+                    <div className="flex items-center gap-2">
+                        <div className="hidden sm:flex relative items-center">
+                            <FontAwesomeIcon
+                                icon={faSearch}
+                                className="absolute left-3 text-gray-400 text-xs pointer-events-none"
+                            />
                             <input
                                 type="text"
                                 placeholder="Rechercher..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                onFocus={() => setIsSearchHovered(true)}
-                                onBlur={() => !searchQuery && setIsSearchHovered(false)}
-                                className={`w-full py-2 pr-3 bg-surface rounded-xl text-xs text-navy placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all ${
-                                    isSearchHovered || searchQuery ? "pl-9 opacity-100 border border-gray-200" : "pl-9 opacity-0 cursor-pointer"
-                                }`}
+                                className="w-48 lg:w-64 bg-[#F6F7F8] border border-transparent rounded-xl pl-8 pr-3 py-2 text-xs text-navy placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all"
                             />
-                            <div className="absolute left-0 top-0 bottom-0 w-9 flex items-center justify-center text-gray-400 pointer-events-none">
-                                <FontAwesomeIcon icon={faSearch} className="text-xs" />
-                            </div>
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsComposerOpen(true)}
+                            className="w-9 h-9 rounded-xl bg-navy text-white flex items-center justify-center hover:bg-navy-dark transition-colors"
+                            title="Nouvelle publication"
+                        >
+                            <FontAwesomeIcon icon={faPlus} className="text-sm" />
+                        </button>
                     </div>
                 </div>
 
@@ -153,12 +149,12 @@ export default function FeedPage() {
                 />
 
                 {error && (
-                    <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center">
-                        <p className="text-xs font-semibold text-rose-600 mb-2">{error}</p>
+                    <div className="bg-[#FEF3F2] border border-[#FECACA] rounded-xl p-4 text-center">
+                        <p className="text-xs text-[#B42318] mb-2">{error}</p>
                         <button
                             type="button"
                             onClick={retry}
-                            className="px-4 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700"
+                            className="px-4 py-1.5 rounded-xl bg-navy text-white text-xs font-medium hover:bg-navy-dark transition-colors"
                         >
                             Réessayer
                         </button>
@@ -184,7 +180,7 @@ export default function FeedPage() {
 
                 <div ref={observerTarget} className="h-12 flex items-center justify-center">
                     {loading && (
-                        <div className="flex items-center gap-2 text-navy text-sm font-semibold bg-white px-4 py-2 rounded-full shadow-card">
+                        <div className="flex items-center gap-2 text-navy/60 text-xs font-medium">
                             <FontAwesomeIcon icon={faSpinner} className="animate-spin text-gold" />
                             <span>Chargement...</span>
                         </div>

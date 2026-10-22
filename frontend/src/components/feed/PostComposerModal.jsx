@@ -110,17 +110,17 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/40 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/40 animate-in fade-in duration-200">
             <div
-                className="bg-white w-full max-w-lg rounded-3xl shadow-card overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
+                className="bg-white w-full max-w-lg rounded-2xl shadow-modal overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-surface/50">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="font-bold text-navy text-base">Créer une publication</h2>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 hover:text-navy flex items-center justify-center transition-colors"
+                        className="w-8 h-8 rounded-xl bg-[#F6F7F8] text-gray-400 hover:text-navy flex items-center justify-center transition-colors"
                     >
                         <FontAwesomeIcon icon={faTimes} />
                     </button>
@@ -130,13 +130,13 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                     <div className="flex items-center gap-3">
                         <AuthorAvatar name={user?.pseudo} avatar={user?.avatar} />
                         <div>
-                            <p className="font-bold text-navy text-sm">{user?.pseudo || "Utilisateur"}</p>
+                            <p className="font-semibold text-navy text-sm">{user?.pseudo || "Utilisateur"}</p>
                             {canPublishAnnounce && (
                                 <div className="flex gap-2 mt-1">
                                     <button
                                         type="button"
                                         onClick={() => setType("post")}
-                                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all ${
+                                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors ${
                                             type === "post" ? "bg-navy text-white" : "bg-surface text-gray-400"
                                         }`}
                                     >
@@ -145,8 +145,8 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                                     <button
                                         type="button"
                                         onClick={() => setType("announcement")}
-                                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 ${
-                                            type === "announcement" ? "bg-gold text-navy font-bold" : "bg-surface text-gray-400"
+                                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                                            type === "announcement" ? "bg-gold text-navy-dark" : "bg-surface text-gray-400"
                                         }`}
                                     >
                                         <FontAwesomeIcon icon={faBullhorn} /> Annonce
@@ -162,7 +162,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                             placeholder="Titre de l'annonce..."
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl bg-surface border border-gray-200 font-bold text-sm text-navy focus:outline-none focus:ring-2 focus:ring-gold/50"
+                            className="input-field font-medium"
                         />
                     )}
 
@@ -171,7 +171,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                         placeholder="Quoi de neuf ?"
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        className="w-full p-4 rounded-xl bg-surface border border-gray-200 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 resize-none"
+                        className="w-full p-4 rounded-xl bg-[#F6F7F8] border border-transparent text-sm text-navy placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gold/50 focus:ring-1 focus:ring-gold/20 resize-none leading-relaxed"
                     />
 
                     {previews.length > 0 && (
@@ -179,7 +179,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                             {previews.map((p, idx) => (
                                 <div
                                     key={idx}
-                                    className="relative rounded-xl overflow-hidden bg-surface border border-gray-200 p-1 flex items-center gap-2 pr-7"
+                                    className="relative rounded-xl overflow-hidden bg-surface p-1 flex items-center gap-2 pr-7"
                                 >
                                     {p.isImage ? (
                                         <img src={p.url} alt="Aperçu" className="w-8 h-8 object-cover rounded-lg" />
@@ -188,7 +188,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                                             <FontAwesomeIcon icon={faPaperclip} />
                                         </div>
                                     )}
-                                    <span className="text-xs font-semibold text-navy truncate max-w-[120px]">{p.name}</span>
+                                    <span className="text-xs font-medium text-navy truncate max-w-[120px]">{p.name}</span>
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveFile(idx)}
@@ -201,7 +201,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                         </div>
                     )}
 
-                    {error && <p className="text-xs text-rose-500 font-semibold">{error}</p>}
+                    {error && <p className="text-xs text-rose-500 font-medium">{error}</p>}
 
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <input type="file" multiple ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
@@ -209,7 +209,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={loading || selectedFiles.length >= MAX_FILES}
-                            className="text-xs font-bold text-gray-500 hover:text-gold flex items-center gap-2"
+                            className="text-xs font-medium text-gray-500 hover:text-navy flex items-center gap-2 transition-colors"
                         >
                             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
                             <span>Joindre des fichiers ({selectedFiles.length}/{MAX_FILES})</span>
@@ -218,7 +218,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
                         <button
                             type="submit"
                             disabled={loading || !content.trim()}
-                            className="px-5 py-2.5 rounded-xl bg-navy text-white text-xs font-bold hover:bg-navy-dark transition-all flex items-center gap-2"
+                            className="px-5 py-2.5 rounded-xl bg-navy text-white text-xs font-medium hover:bg-navy-dark transition-colors flex items-center gap-2 disabled:opacity-60"
                         >
                             {loading ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : <FontAwesomeIcon icon={faPaperPlane} />}
                             Publier

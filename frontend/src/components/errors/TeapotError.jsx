@@ -1,9 +1,5 @@
 export default function TeapotError() {
   const customAnimation = `
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
     @keyframes steamRise {
       0% { transform: translateY(0) scale(0.8); opacity: 0; }
       20% { opacity: 0.7; }
@@ -45,8 +41,6 @@ export default function TeapotError() {
       0%, 100% { transform: rotate(0deg); }
       50% { transform: rotate(-8deg); }
     }
-    .animate-float-item { animation: float 4s ease-in-out infinite; }
-    .animate-float-delayed { animation: float 4s ease-in-out infinite; animation-delay: 2s; }
     .teapot-grump { animation: teapotGrump 3s ease-in-out infinite; transform-origin: 170px 200px; }
     .brow { animation: browFurrow 3s ease-in-out infinite; }
     .deny-mark { animation: denyPulse 1.4s ease-in-out infinite; }
@@ -62,40 +56,23 @@ export default function TeapotError() {
   `;
 
   return (
-    <section
-      className="min-h-screen w-full bg-white flex items-center justify-center font-sans p-4 relative overflow-hidden select-none"
-      style={{
-        backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px), 
-                          linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)`,
-        backgroundSize: "24px 24px",
-      }}
-    >
+    <section className="min-h-screen w-full bg-white flex items-center justify-center font-sans p-4 select-none">
       <style>{customAnimation}</style>
 
-      <div className="absolute top-10 left-10 w-4 h-4 bg-navy rounded-full opacity-30 blur-[1px] animate-float-item" />
-      <div className="absolute top-1/4 right-12 w-3 h-3 bg-gold rounded-full opacity-60 animate-float-delayed" />
-      <div className="absolute bottom-12 left-12 w-3 h-3 bg-gold rounded-full opacity-50 animate-float-delayed" />
-      <div className="absolute bottom-1/4 right-16 w-4 h-4 bg-navy rounded-full opacity-20 blur-[1px] animate-float-item" />
+      <div className="w-full max-w-xl text-center flex flex-col items-center gap-4">
+        <h1 className="text-7xl sm:text-8xl font-bold text-navy leading-none tracking-tight">418</h1>
 
-      <div className="absolute -bottom-20 -left-20 w-[350px] h-[350px] bg-gold/20 rounded-full blur-[80px] pointer-events-none" />
-      <div className="absolute -top-20 -right-20 w-[400px] h-[400px] bg-gold/10 rounded-full blur-[100px] pointer-events-none" />
-
-      <div className="w-full max-w-xl text-center z-10 flex flex-col items-center gap-4">
-        <h1 className="text-[100px] sm:text-[140px] font-black text-gold leading-none tracking-tight filter drop-shadow-sm">
-          418
-        </h1>
-
-        <div className="w-full flex justify-center -mt-2">
+        <div className="w-full flex justify-center">
           <svg
             viewBox="0 0 340 260"
             xmlns="http://www.w3.org/2000/svg"
-            className="h-[220px] sm:h-[300px] w-auto overflow-visible"
+            className="h-[200px] sm:h-[260px] w-auto overflow-visible"
             aria-label="Théière grincheuse refusant de servir du café à une tasse suppliante"
           >
             <g className="bubble" style={{ transformOrigin: "170px 40px" }}>
-              <rect x="90" y="10" width="160" height="34" rx="8" fill="#001F3F" />
-              <polygon points="150,44 165,44 155,54" fill="#001F3F" />
-              <text x="170" y="32" textAnchor="middle" fontSize="14" fontWeight="500" fill="#FFD700" fontFamily="sans-serif">
+              <rect x="90" y="10" width="160" height="34" rx="8" fill="#001948" />
+              <polygon points="150,44 165,44 155,54" fill="#001948" />
+              <text x="170" y="32" textAnchor="middle" fontSize="14" fontWeight="500" fill="#DFA408" fontFamily="sans-serif">
                 Non. Jamais.
               </text>
             </g>
@@ -134,36 +111,35 @@ export default function TeapotError() {
               <path
                 d="M235 128h12a36 36 0 0 1 0 72h-12"
                 fill="none"
-                stroke="#FFD700"
+                stroke="#DFA408"
                 strokeWidth="10"
                 strokeLinecap="round"
               />
               <path
                 d="M110 138h130v72a44 44 0 0 1-44 44h-42a44 44 0 0 1-44-44Z"
-                fill="#001F3F"
+                fill="#001948"
               />
               <path
                 d="M120 138v-24a20 20 0 0 1 20-20h70a20 20 0 0 1 20 20v24"
                 fill="none"
-                stroke="#001F3F"
+                stroke="#001948"
                 strokeWidth="8"
               />
-              <circle cx="175" cy="88" r="12" fill="#FFD700" />
-              
-              <circle cx="163" cy="150" r="4" fill="#FFD700" />
-              <circle cx="187" cy="150" r="4" fill="#FFD700" />
-              <path className="brow" d="M154 138q9-8 18 0" fill="none" stroke="#FFD700" strokeWidth="4" strokeLinecap="round" />
-              <path className="brow" d="M172 138q9-8 18 0" fill="none" stroke="#FFD700" strokeWidth="4" strokeLinecap="round" />
-              <path d="M158 172q17 12 34 0" fill="none" stroke="#FFD700" strokeWidth="4" strokeLinecap="round" />
-              
+              <circle cx="175" cy="88" r="12" fill="#DFA408" />
+
+              <circle cx="163" cy="150" r="4" fill="#DFA408" />
+              <circle cx="187" cy="150" r="4" fill="#DFA408" />
+              <path className="brow" d="M154 138q9-8 18 0" fill="none" stroke="#DFA408" strokeWidth="4" strokeLinecap="round" />
+              <path className="brow" d="M172 138q9-8 18 0" fill="none" stroke="#DFA408" strokeWidth="4" strokeLinecap="round" />
+              <path d="M158 172q17 12 34 0" fill="none" stroke="#DFA408" strokeWidth="4" strokeLinecap="round" />
+
               <path
                 d="M110 152 C 85 152, 72 162, 62 148 C 57 141, 52 144, 55 154 C 62 174, 85 186, 110 182 Z"
-                fill="#001F3F"
+                fill="#001948"
               />
             </g>
 
             <g className="cup-tremble" style={{ transform: "translate(40px,150px)" }}>
-              
               <g className="begging-bubble hidden sm:block" style={{ transformOrigin: "36px -10px" }}>
                 <rect x="-45" y="-50" width="110" height="30" rx="6" fill="#5F5E5A" />
                 <polygon points="30,-20 42,-20 36,-10" fill="#5F5E5A" />
@@ -183,7 +159,7 @@ export default function TeapotError() {
               <path
                 d="M14 6h44v54a18 18 0 0 1-18 18h-8a18 18 0 0 1-18-18Z"
                 fill="none"
-                stroke="#001F3F"
+                stroke="#001948"
                 strokeWidth="4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -192,13 +168,13 @@ export default function TeapotError() {
                 className="cup-handle"
                 d="M58 16h6a14 14 0 0 1 0 28h-6"
                 fill="none"
-                stroke="#001F3F"
+                stroke="#001948"
                 strokeWidth="4"
                 strokeLinecap="round"
               />
-              <line x1="20" y1="0" x2="20" y2="6" stroke="#001F3F" strokeWidth="4" strokeLinecap="round" />
-              <line x1="36" y1="0" x2="36" y2="6" stroke="#001F3F" strokeWidth="4" strokeLinecap="round" />
-              
+              <line x1="20" y1="0" x2="20" y2="6" stroke="#001948" strokeWidth="4" strokeLinecap="round" />
+              <line x1="36" y1="0" x2="36" y2="6" stroke="#001948" strokeWidth="4" strokeLinecap="round" />
+
               <g className="deny-mark">
                 <line x1="6" y1="6" x2="58" y2="72" stroke="#E24B4A" strokeWidth="6" strokeLinecap="round" />
                 <line x1="58" y1="6" x2="6" y2="72" stroke="#E24B4A" strokeWidth="6" strokeLinecap="round" />
@@ -208,10 +184,10 @@ export default function TeapotError() {
         </div>
 
         <div className="flex flex-col gap-2 max-w-md">
-          <h3 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-            Je suis une <span className="text-gold">théière</span>
+          <h3 className="text-2xl sm:text-3xl font-bold text-navy tracking-tight">
+            Je suis une théière
           </h3>
-          <p className="text-navy/70 text-xs sm:text-sm leading-relaxed font-medium px-4">
+          <p className="text-gray-400 text-xs sm:text-sm leading-relaxed px-4">
             Ce serveur est une théière et refuse catégoriquement de préparer du café. C'est un fait immuable défini par le RFC 2324.
           </p>
         </div>
@@ -219,7 +195,7 @@ export default function TeapotError() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center w-full mt-2 px-4">
           <a
             href="/"
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-gold text-navy hover:bg-navy hover:text-white transition-colors duration-300 font-bold text-sm rounded-lg shadow-md sm:w-auto"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-navy text-white hover:bg-navy-dark transition-colors duration-200 font-medium text-sm rounded-xl"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
               <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -230,7 +206,7 @@ export default function TeapotError() {
 
           <button
             onClick={() => window.history.back()}
-            className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-gold bg-white text-gold hover:bg-gold hover:text-navy transition-colors duration-300 font-bold text-sm rounded-lg shadow-sm sm:w-auto"
+            className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 text-navy hover:bg-surface transition-colors duration-200 font-medium text-sm rounded-xl"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
               <line x1="19" y1="12" x2="5" y2="12" />
