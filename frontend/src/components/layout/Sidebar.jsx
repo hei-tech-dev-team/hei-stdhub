@@ -5,8 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
       faHouse,
       faBookOpen,
-      faFileAlt,
       faComments,
+      faUser,
       faRightFromBracket,
       faBars,
       faTimes,
@@ -14,7 +14,6 @@ import {
       faLightbulb,
       faUsersRectangle,
       faBell,
-      faNewspaper,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import STDHUB_LOGO from "../../assets/stdhub-logo-pwa.png";
@@ -25,6 +24,7 @@ const NAV_LINKS = [
       { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
       { to: "/chat", label: "Chat", icon: faComments, end: false },
       { to: "/pings", label: "Ping Box", icon: faBell, end: false },
+      { to: "/profile", label: "Profil", icon: faUser, end: false },
 ];
 
 let notificationPermissionRequested = false;
