@@ -28,10 +28,6 @@ export default function ServerError() {
     @keyframes float-bolt {
       0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)}
     }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
     .led-blink { animation: blink 1s step-end infinite; }
     .led-blink-2 { animation: blink 1s step-end infinite; animation-delay:.3s }
     .led-blink-3 { animation: blink 1.3s step-end infinite; animation-delay:.6s }
@@ -43,38 +39,20 @@ export default function ServerError() {
     .pulse-anim { animation: pulse-red 1.5s ease-in-out infinite; }
     .bolt-anim { animation: float-bolt 1.2s ease-in-out infinite; }
     .server-shake { animation: shake 2s ease-in-out infinite; animation-delay:0.5s; }
-    .animate-float-item { animation: float 4s ease-in-out infinite; }
-    .animate-float-delayed { animation: float 4s ease-in-out infinite; animation-delay: 2s; }
   `;
 
   return (
-    <section
-      className="min-h-screen w-full bg-white flex items-center justify-center font-sans p-4 relative overflow-hidden select-none"
-      style={{
-        backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)`,
-        backgroundSize: "24px 24px",
-      }}
-    >
+    <section className="min-h-screen w-full bg-white flex items-center justify-center font-sans p-4 select-none">
       <style>{serverAnimation}</style>
 
-      <div className="absolute top-10 left-10 w-4 h-4 bg-navy rounded-full opacity-30 blur-[1px] animate-float-item" />
-      <div className="absolute top-1/4 right-12 w-3 h-3 bg-gold rounded-full opacity-40 animate-float-delayed" />
-      <div className="absolute bottom-12 left-12 w-3 h-3 bg-gold rounded-full opacity-30 animate-float-delayed" />
-      <div className="absolute bottom-1/4 right-16 w-4 h-4 bg-navy rounded-full opacity-20 blur-[1px] animate-float-item" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-gold/5 rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Ajout de flex-col et gap-6 pour créer l'espace global */}
-      <div className="w-full max-w-3xl text-center z-10 flex flex-col items-center gap-6">
-
-        <h1 className="text-[90px] sm:text-[120px] font-black text-navy leading-none relative">
-          500
-        </h1>
+      <div className="w-full max-w-3xl text-center flex flex-col items-center gap-6">
+        <h1 className="text-7xl sm:text-8xl font-bold text-navy leading-none tracking-tight">500</h1>
 
         <div className="w-full flex justify-center">
           <svg
             viewBox="0 0 680 320"
             xmlns="http://www.w3.org/2000/svg"
-            className="h-[220px] sm:h-[320px] w-auto"
+            className="h-[200px] sm:h-[280px] w-auto"
             aria-label="Serveur en panne"
           >
             <g className="server-shake">
@@ -134,29 +112,29 @@ export default function ServerError() {
           </svg>
         </div>
 
-        <div className="relative z-10 flex flex-col gap-2">
-          <h3 className="text-3xl sm:text-4xl font-bold text-navy tracking-tight">
+        <div className="flex flex-col gap-2">
+          <h3 className="text-2xl sm:text-3xl font-bold text-navy tracking-tight">
             Oups, le serveur a planté
           </h3>
-          <p className="text-navy-dark/60 text-sm sm:text-base mb-4 font-medium">
+          <p className="text-gray-400 text-sm sm:text-base mb-2">
             Une erreur interne s'est produite. Nos équipes sont sur le coup !
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="/"
-              className="inline-block px-8 py-3 bg-navy text-white hover:bg-gold hover:text-navy transition-colors duration-300 font-bold text-sm rounded-sm shadow-sm"
-            >
-              Retourner à l'accueil
-            </a>
-            <button
-              onClick={() => window.location.reload()}
-              className="inline-block px-8 py-3 border-2 border-navy text-navy hover:bg-navy hover:text-white transition-colors duration-300 font-bold text-sm rounded-sm"
-            >
-              Réessayer
-            </button>
-          </div>
         </div>
 
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <a
+            href="/"
+            className="inline-block px-8 py-3 bg-navy text-white hover:bg-navy-dark transition-colors duration-200 font-medium text-sm rounded-xl"
+          >
+            Retourner à l'accueil
+          </a>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-block px-8 py-3 border border-gray-200 text-navy hover:bg-surface transition-colors duration-200 font-medium text-sm rounded-xl"
+          >
+            Réessayer
+          </button>
+        </div>
       </div>
     </section>
   );
