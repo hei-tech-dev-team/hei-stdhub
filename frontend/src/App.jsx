@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import ServerWakingBanner from "./components/ui/ServerWakingBanner";
 import OnboardingModal from "./components/ui/OnboardingModal";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
+import FeedNotification from "./components/layout/FeedNotification";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="*" element={<NotFound />}/>
         </Routes>
       </Suspense>
+      {user && <FeedNotification />}
       {user && firstLogin && <OnboardingModal />}
     </>
   );
