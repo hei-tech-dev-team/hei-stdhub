@@ -111,154 +111,119 @@ export default function Maintenance() {
   }, []);
 
   return (
-    <div 
-      className="min-h-screen w-full flex flex-col items-center justify-center bg-surface p-4 relative overflow-hidden select-none"
-      style={{
-        backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px), 
-                          linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)`,
-        backgroundSize: "24px 24px",
-      }}
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center bg-surface p-4 select-none"
     >
-      {}
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-        @keyframes ripple {
-          0% { transform: scale(1); opacity: 0.4; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
         @keyframes moveObstacle {
           0% { transform: translateX(380px); }
           100% { transform: translateX(-40px); }
         }
-        .animate-float-wrench { animation: float 4s ease-in-out infinite; }
-        .animate-ripple { animation: ripple 3s cubic-bezier(0.1, 0.8, 0.3, 1) infinite; }
-        .animate-ripple-delayed { animation: ripple 3s cubic-bezier(0.1, 0.8, 0.3, 1) infinite; animation-delay: 1.5s; }
       `}</style>
 
-      {}
-      <div className="absolute top-10 left-10 w-4 h-4 bg-navy rounded-full opacity-30 blur-[1px]"></div>
-      <div className="absolute top-1/4 right-10 w-3 h-3 bg-gold rounded-full opacity-40"></div>
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-gold/5 rounded-full blur-[100px] pointer-events-none"></div>
-
-      {}
       <div className="text-center max-w-2xl z-10">
-        
-        {}
-        <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center animate-float-wrench">
-          <div className="absolute inset-0 bg-navy rounded-full animate-ripple pointer-events-none"></div>
-          <div className="absolute inset-0 bg-navy rounded-full animate-ripple-delayed pointer-events-none"></div>
-          
-          <div className="relative w-20 h-20 rounded-full border-2 border-navy/20 bg-white shadow-xl flex items-center justify-center z-10">
-            <FontAwesomeIcon icon={faWrench} className="text-navy text-3xl" />
+
+        <div className="relative w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full bg-white border border-gray-100 flex items-center justify-center">
+            <FontAwesomeIcon icon={faWrench} className="text-navy text-2xl" />
           </div>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-black text-navy-dark mb-4 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-bold text-navy mb-4 tracking-tight">
           Maintenance en cours
         </h1>
-        <p className="text-navy-dark/60 text-sm sm:text-base px-6 mb-10 leading-relaxed max-w-lg mx-auto">
-          Nous effectuons actuellement une maintenance programmée pour améliorer nos services. 
+        <p className="text-gray-400 text-sm sm:text-base px-6 mb-10 leading-relaxed max-w-lg mx-auto">
+          Nous effectuons actuellement une maintenance programmée pour améliorer nos services.
           Serons de retour très prochainement.
         </p>
 
-        {}
-        <div className="bg-white rounded-3xl p-8 border border-contact shadow-card mb-8 max-w-sm mx-auto relative overflow-hidden">
+        <div className="card rounded-2xl p-8 mb-8 max-w-sm mx-auto">
           <div className="flex items-center justify-center gap-2 mb-6">
             <FontAwesomeIcon icon={faClock} className="text-gold text-sm" />
-            <h3 className="text-xs font-bold text-navy-dark/40 uppercase tracking-widest">Durée estimée</h3>
+            <h3 className="text-[11px] font-medium text-navy/50 uppercase tracking-[0.1em]">Durée estimée</h3>
           </div>
-          
+
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="flex flex-col">
-              <span className="text-6xl font-black text-navy tracking-tighter">--</span>
-              <span className="text-[10px] font-bold text-navy-dark/30 uppercase mt-1">Heures</span>
+              <span className="text-6xl font-bold text-navy tracking-tighter">--</span>
+              <span className="text-[10px] font-medium text-navy/40 uppercase mt-1">Heures</span>
             </div>
-            <span className="text-4xl font-black text-gold mb-4">:</span>
+            <span className="text-4xl font-bold text-navy/30 mb-4">:</span>
             <div className="flex flex-col">
-              <span className="text-6xl font-black text-navy tracking-tighter">--</span>
-              <span className="text-[10px] font-bold text-navy-dark/30 uppercase mt-1">Minutes</span>
+              <span className="text-6xl font-bold text-navy tracking-tighter">--</span>
+              <span className="text-[10px] font-medium text-navy/40 uppercase mt-1">Minutes</span>
             </div>
           </div>
 
-          <p className="text-xs font-semibold text-navy-dark/50">
+          <p className="text-xs font-medium text-navy/50">
             Retour prévu vers : <span className="text-navy">Indéterminé</span>
           </p>
         </div>
 
-        {}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
-          <div className="bg-white/50 backdrop-blur-sm px-4 py-3 rounded-2xl border border-contact flex items-center gap-3">
-            <FontAwesomeIcon icon={faCheckCircle} className="text-gold text-sm" />
-            <span className="text-[11px] font-bold text-navy-dark/70">Optimisation</span>
+          <div className="bg-white px-4 py-3 rounded-xl border border-gray-100 flex items-center gap-3">
+            <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 text-sm" />
+            <span className="text-[11px] font-medium text-navy/70">Optimisation</span>
           </div>
-          <div className="bg-white/50 backdrop-blur-sm px-4 py-3 rounded-2xl border border-contact flex items-center gap-3">
-            <FontAwesomeIcon icon={faCheckCircle} className="text-gold text-sm" />
-            <span className="text-[11px] font-bold text-navy-dark/70">Mise à jour</span>
+          <div className="bg-white px-4 py-3 rounded-xl border border-gray-100 flex items-center gap-3">
+            <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 text-sm" />
+            <span className="text-[11px] font-medium text-navy/70">Mise à jour</span>
           </div>
-          <div className="bg-white/50 backdrop-blur-sm px-4 py-3 rounded-2xl border border-contact flex items-center gap-3">
-            <FontAwesomeIcon icon={faCheckCircle} className="text-gold text-sm" />
-            <span className="text-[11px] font-bold text-navy-dark/70">Nouveautés</span>
+          <div className="bg-white px-4 py-3 rounded-xl border border-gray-100 flex items-center gap-3">
+            <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 text-sm" />
+            <span className="text-[11px] font-medium text-navy/70">Nouveautés</span>
           </div>
         </div>
 
-        {}
-        <div className="bg-navy/5 border border-navy/10 rounded-2xl p-6 mb-[32px] flex flex-col sm:flex-row items-center justify-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center shrink-0">
-            <FontAwesomeIcon icon={faBell} className="text-navy text-sm" />
+        <div className="bg-navy rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+            <FontAwesomeIcon icon={faBell} className="text-gold text-sm" />
           </div>
-          <p className="text-navy-dark text-sm font-semibold text-center sm:text-left">
+          <p className="text-white text-sm font-medium text-center sm:text-left">
             Vous serez alertés lorsque le site sera de nouveau en marche.
           </p>
         </div>
 
-        {}
-        <div className="bg-white rounded-2xl border border-contact p-4 w-full max-w-sm shadow-card mb-8 mx-auto">
+        <div className="card rounded-2xl p-4 w-full max-w-sm mb-8 mx-auto">
           <div className="flex items-center justify-between mb-3 px-1">
-            <div className="flex items-center gap-2 text-navy font-bold text-xs">
+            <div className="flex items-center gap-2 text-navy font-medium text-xs">
               <FontAwesomeIcon icon={faGamepad} className="text-gold" />
               <span>Un peu de patience ?</span>
             </div>
-            <div className="text-[11px] font-mono font-bold text-navy-dark/60">
-              HI: <span className="text-gold mr-2">{highScore}</span> Score: <span>{score}</span>
+            <div className="text-[11px] font-medium text-navy/50">
+              HI: <span className="text-navy mr-2">{highScore}</span> Score: <span>{score}</span>
             </div>
           </div>
 
-          {}
-          <div 
+          <div
             onClick={jump}
-            className="w-full h-24 bg-surface border border-contact rounded-xl relative overflow-hidden cursor-pointer"
+            className="w-full h-24 bg-surface border border-gray-100 rounded-xl relative overflow-hidden cursor-pointer"
           >
-            {}
             {!gameStarted && (
-              <div className="absolute inset-0 bg-navy/5 backdrop-blur-[1px] flex flex-col items-center justify-center z-20">
-                <button 
+              <div className="absolute inset-0 bg-surface/80 flex flex-col items-center justify-center z-20">
+                <button
                   onClick={(e) => { e.stopPropagation(); startGame(); }}
-                  className="bg-navy hover:bg-navy-dark text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-transform active:scale-95 cursor-pointer"
+                  className="bg-navy hover:bg-navy-dark text-white rounded-full w-8 h-8 flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
                 >
                   <FontAwesomeIcon icon={faPlay} className="text-[10px] ml-0.5 text-gold" />
                 </button>
-                <span className="text-[9px] font-bold text-navy-dark/40 mt-1.5">Cliquez ou Espace pour jouer</span>
+                <span className="text-[9px] font-medium text-navy/40 mt-1.5">Cliquez ou Espace pour jouer</span>
               </div>
             )}
 
-            {}
             {gameOver && (
               <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20">
-                <span className="text-xs font-black text-navy uppercase tracking-wider mb-1">Partie terminée</span>
-                <button 
+                <span className="text-xs font-medium text-navy uppercase tracking-wider mb-1">Partie terminée</span>
+                <button
                   onClick={(e) => { e.stopPropagation(); startGame(); }}
-                  className="text-[9px] font-bold bg-gold text-navy px-2.5 py-1 rounded-md hover:bg-gold/80 transition-colors"
+                  className="text-[9px] font-medium bg-gold text-navy px-2.5 py-1 rounded-md hover:bg-gold/80 transition-colors"
                 >
                   Recommencer
                 </button>
               </div>
             )}
 
-            {}
-            <div 
+            <div
               ref={dinoRef}
               className="absolute left-6 bottom-0 w-5 h-6 bg-navy rounded-t-md transition-transform flex flex-col justify-between p-0.5"
               style={{ transform: "translateY(0px)" }}
@@ -270,8 +235,7 @@ export default function Maintenance() {
               </div>
             </div>
 
-            {}
-            <div 
+            <div
               ref={obstacleRef}
               className="absolute bottom-0 w-3.5 h-5 bg-gold rounded-t-sm"
               style={{ transform: "translateX(380px)" }}
@@ -279,46 +243,42 @@ export default function Maintenance() {
               <div className="w-1 h-2.5 bg-gold absolute left-[-2px] top-1 rounded-l-sm"></div>
             </div>
 
-            {}
             <div className="absolute left-0 right-0 bottom-0 h-[1px] bg-navy/10"></div>
           </div>
         </div>
 
-        {}
         <div className="flex items-center justify-center gap-8 mb-10">
-          <button 
+          <button
             onClick={() => setIsStatusModalOpen(true)}
-            className="flex items-center gap-2 text-xs font-bold text-navy-dark/50 hover:text-navy transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-xs font-medium text-navy/50 hover:text-navy transition-colors cursor-pointer"
           >
             <FontAwesomeIcon icon={faServer} className="text-gold" />
             Page de statut
           </button>
         </div>
 
-        {}
-        <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-xl px-4 py-2 text-[10px] sm:text-xs text-navy-dark/80">
-          <span className="font-bold text-navy">Note :</span> Merci pour votre patience pendant que nous améliorons votre expérience.
+        <div className="inline-flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-2 text-[10px] sm:text-xs text-navy/70">
+          <span className="font-medium text-navy">Note :</span> Merci pour votre patience pendant que nous améliorons votre expérience.
         </div>
       </div>
 
-      {}
       {isStatusModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl border border-contact text-center relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-modal border border-gray-100 text-center relative">
             <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mx-auto mb-4">
               <FontAwesomeIcon icon={faInfoCircle} className="text-navy text-lg" />
             </div>
-            <h3 className="text-lg font-bold text-navy-dark mb-2">Statut du système</h3>
-            <p className="text-navy-dark/60 text-sm mb-6">
+            <h3 className="text-lg font-bold text-navy mb-2">Statut du système</h3>
+            <p className="text-gray-400 text-sm mb-6">
               Tous nos systèmes sont en cours de mise à jour.
             </p>
-            <div className="bg-surface border border-contact rounded-xl py-4 px-4 mb-6">
-              <span className="text-[10px] uppercase font-bold text-navy-dark/40 tracking-wider block mb-1">Systèmes</span>
-              <span className="text-base font-bold text-gold">Maintenance Globale</span>
+            <div className="bg-surface border border-gray-100 rounded-xl py-4 px-4 mb-6">
+              <span className="text-[10px] uppercase font-medium text-navy/40 tracking-wider block mb-1">Systèmes</span>
+              <span className="text-base font-medium text-navy">Maintenance Globale</span>
             </div>
             <button
               onClick={() => setIsStatusModalOpen(false)}
-              className="w-full bg-navy hover:bg-navy-dark text-white font-semibold py-2.5 rounded-xl transition-colors text-sm cursor-pointer"
+              className="w-full bg-navy hover:bg-navy-dark text-white font-medium py-2.5 rounded-xl transition-colors text-sm cursor-pointer"
             >
               Fermer
             </button>

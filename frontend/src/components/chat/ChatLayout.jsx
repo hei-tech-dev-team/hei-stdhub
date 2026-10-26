@@ -570,7 +570,7 @@ export default function ChatLayout() {
 
       {showContactList && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-10 animate-fade-in"
+          className="lg:hidden fixed inset-0 bg-navy/40 z-10 animate-fade-in"
           onClick={() => setShowContactList(false)}
         />
       )}

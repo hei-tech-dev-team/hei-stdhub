@@ -20,15 +20,13 @@ export default function ReactionBar({ summary = {}, userReaction, onToggleReacti
                         key={r.kind}
                         type="button"
                         onClick={() => onToggleReaction(r.kind)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
-                            isActive
-                                ? `${r.activeBg}${r.color} shadow-2xs scale-105 font-bold`
-                                : "border-transparent text-gray-500 hover:bg-surface hover:text-navy"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors duration-200 ${
+                            isActive ? "bg-surface text-navy" : "text-gray-500 hover:bg-surface hover:text-navy"
                         }`}
                         title={r.label}
                     >
                         <FontAwesomeIcon icon={r.icon} className={isActive ? r.color : "text-gray-400"} />
-                        {count > 0 && <span className="font-bold">{count}</span>}
+                        {count > 0 && <span>{count}</span>}
                     </button>
                 );
             })}
