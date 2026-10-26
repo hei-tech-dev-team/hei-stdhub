@@ -229,14 +229,11 @@ router.post("/", auth, storage.many("files"), async (req, res) => {
             console.error('Failed to fetch author pseudo: ', err);
         }
 
+        const post = await fetchPost(postId, req.user.id);
+
         const io = req.app.get("io");
-        if (io) {
-            io.emit("feed:new", {
-                postId,
-                type,
-                title,
-                author: senderPseudo,
-            });
+        if (io && post) {
+            io.emit("feed:new", post);
         }
 
         if (type === 'announcement') {
@@ -257,7 +254,6 @@ router.post("/", auth, storage.many("files"), async (req, res) => {
             }).catch((err) => console.error("sendPushToAll error (posts) : ", err?.message));
         }
 
-        const post = await fetchPost(postId, req.user.id);
         return res.status(201).json(post);
 
     } catch (err) {

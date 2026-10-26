@@ -9,7 +9,7 @@ function showNotification (title, body) {
     try {
         const n = new Notification(title, {
             body,
-            icon: "/logon.png",
+            icon: "/logo.png",
             tag: "hei-feed",
         });
         setTimeout(() => n.close(), 5000);
@@ -25,9 +25,12 @@ export default function FeedNotification() {
         .then((s) => {
             if (cancelled || !s) return;
             socket = s;
-            socket.on("feed:new", ({ type: title, author } = {}) => {
+            socket.on("feed:new", ({ type, title, author } = {}) => {
                 const isAnnouncement = type === 'announcement';
-                const beginWith = isAnnouncement ? `${author}: ${title} || ""` : `${author} a publié un nouveau contenu`;
+                const authorName = author?.pseudo || "Inconnu";
+                const beginWith = isAnnouncement
+                    ? `${authorName}: ${title || ""}`
+                    : `${authorName} a publié un nouveau contenu`;
                 showNotification(
                     isAnnouncement ? "HEI STDhub - Annonces" : "HEI STDhub - Publication",
                     beginWith,
