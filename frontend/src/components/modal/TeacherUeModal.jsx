@@ -33,7 +33,7 @@ export function TeacherUeModal({ teacher, availableUes, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-md animate-slide-up">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
@@ -53,7 +53,7 @@ export function TeacherUeModal({ teacher, availableUes, onClose, onSave }) {
         </div>
 
         <div className="space-y-2 mb-5">
-          <div className="flex items-center justify-between text-xs font-bold text-gray-500">
+          <div className="flex items-center justify-between text-xs font-medium text-navy/50">
             <span>Ajouter une UE</span>
             <div className="flex gap-1">
               {["ALL", "L1", "L2", "L3"].map((lvl) => (
@@ -64,7 +64,7 @@ export function TeacherUeModal({ teacher, availableUes, onClose, onSave }) {
                     setModalFilterLevel(lvl);
                     setSelectedUe("");
                   }}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition ${
                     modalFilterLevel === lvl
                       ? "bg-purple-600 text-white"
                       : "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -102,7 +102,7 @@ export function TeacherUeModal({ teacher, availableUes, onClose, onSave }) {
         </div>
 
         <div className="mb-6">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+          <p className="text-xs font-medium text-navy/50 uppercase tracking-wide mb-2">
             UEs actuellement assignées ({assignedUes.length})
           </p>
           {assignedUes.length === 0 ? (
@@ -114,7 +114,7 @@ export function TeacherUeModal({ teacher, availableUes, onClose, onSave }) {
               {assignedUes.map((ue) => (
                 <span
                   key={ue}
-                  className="inline-flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold px-3 py-1.5 rounded-xl"
+                  className="inline-flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-700 text-xs font-medium px-3 py-1.5 rounded-xl"
                 >
                   {ue}
                   <button
@@ -132,14 +132,14 @@ export function TeacherUeModal({ teacher, availableUes, onClose, onSave }) {
         </div>
 
         <div className="flex gap-3">
-          <button type="button" onClick={onClose} className="btn-primary flex-1">
+          <button type="button" onClick={onClose} className="btn-ghost flex-1">
             Annuler
           </button>
           <button
             type="button"
             onClick={handleConfirm}
             disabled={saving}
-            className="btn-gold flex-1 justify-center"
+            className="btn-primary flex-1 justify-center"
           >
             {saving ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : <FontAwesomeIcon icon={faCheck} />}
             Valider

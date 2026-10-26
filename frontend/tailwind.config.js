@@ -20,8 +20,8 @@ export default {
         fraunces: ["Fraunces", "serif"],
       },
       boxShadow: {
-        card: "0 2px 12px 0 rgba(0,25,72,0.08)",
-        modal: "0 8px 32px 0 rgba(0,25,72,0.16)",
+        card: "0 1px 2px 0 rgba(0,25,72,0.04)",
+        modal: "0 6px 24px 0 rgba(0,25,72,0.10)",
       },
     },
   },

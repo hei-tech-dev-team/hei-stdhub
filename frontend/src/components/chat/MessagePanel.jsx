@@ -19,7 +19,7 @@ import {
   faCamera
 } from "@fortawesome/free-solid-svg-icons";
 import UserAvatar from "../ui/UserAvatar";
-import { HEI_WHITE_LOGO } from "../../assets/logos";
+import { HEI_WHITE_LOGO, HEI_BLUE_LOGO } from "../../assets/logos";
 import api from "../../api/axios";
 import DOMPurify from "dompurify";
 import {
@@ -38,7 +38,7 @@ const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 function ReactionPicker({ onReact, onClose }) {
   return (
     <div
-      className="flex items-center gap-0.5 bg-navy-dark border border-white/15 rounded-full px-2 py-1.5 shadow-xl z-50 animate-fade-in"
+      className="flex items-center gap-0.5 bg-white border border-gray-100 rounded-xl px-2 py-1.5 shadow-modal z-50 animate-fade-in"
       onMouseLeave={onClose}
     >
       {QUICK_REACTIONS.map((emoji) => (
@@ -46,7 +46,7 @@ function ReactionPicker({ onReact, onClose }) {
           key={emoji}
           type="button"
           onClick={(e) => { e.stopPropagation(); onReact(emoji); onClose(); }}
-          className="w-8 h-8 flex items-center justify-center text-lg hover:scale-125 active:scale-110 transition-transform rounded-full hover:bg-white/10"
+          className="w-8 h-8 flex items-center justify-center text-lg transition-colors rounded-full hover:bg-surface"
         >
           {emoji}
         </button>
@@ -73,14 +73,14 @@ function ReactionList({ reactions, currentUserId, onReact }) {
           type="button"
           onClick={() => onReact(emoji)}
           title={hasOwn ? "Retirer ma réaction" : "Réagir"}
-          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-all active:scale-95 ${
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors ${
             hasOwn
-              ? "bg-gold/20 border-gold/50 text-gold"
-              : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
+              ? "bg-navy text-white"
+              : "bg-surface text-navy hover:bg-contact/50"
           }`}
         >
           <span>{emoji}</span>
-          <span className="font-semibold tabular-nums">{count}</span>
+          <span className="font-medium tabular-nums">{count}</span>
         </button>
       ))}
     </div>
@@ -88,16 +88,16 @@ function ReactionList({ reactions, currentUserId, onReact }) {
 }
 
 const ROLE_BADGE = {
-  bde: { label: "BDE", cls: "bg-yellow-500/20 text-yellow-300" },
-  teacher: { label: "Prof", cls: "bg-purple-500/20 text-purple-300" },
-  admin: { label: "Admin", cls: "bg-red-500/20 text-red-300" },
+  bde: { label: "BDE", cls: "bg-amber-50 text-amber-700" },
+  teacher: { label: "Prof", cls: "bg-purple-50 text-purple-600" },
+  admin: { label: "Admin", cls: "bg-red-50 text-red-600" },
 };
 
 function RoleBadge({ role }) {
   const cfg = ROLE_BADGE[role];
   if (!cfg) return null;
   return (
-    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 ${cfg.cls}`}>
+    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ml-1.5 ${cfg.cls}`}>
       {cfg.label}
     </span>
   );
@@ -106,7 +106,7 @@ function RoleBadge({ role }) {
 function ChatAvatar({ avatar, name, userRef }) {
   const [failed, setFailed] = useState(false);
   const inner = !avatar || failed
-    ? <UserAvatar name={name} size="sm" color="bg-gold" />
+    ? <UserAvatar name={name} size="sm" color="bg-navy" />
     : <img src={avatar} alt={name} className="w-full h-full object-cover" onError={() => setFailed(true)} />;
   if (userRef) return <Link to={`/user/${userRef}`} className="block w-full h-full">{inner}</Link>;
   return inner;
@@ -115,11 +115,11 @@ function ChatAvatar({ avatar, name, userRef }) {
 function DateSeparator({ date }) {
   return (
     <div className="flex items-center gap-3 my-4">
-      <div className="flex-1 h-px bg-white/10" />
-      <span className="text-white/40 text-xs font-medium shrink-0 px-1">
+      <div className="flex-1 h-px bg-gray-100" />
+      <span className="text-navy/40 text-[11px] font-medium shrink-0 px-1">
         {formatDateLabel(date)}
       </span>
-      <div className="flex-1 h-px bg-white/10" />
+      <div className="flex-1 h-px bg-gray-100" />
     </div>
   );
 }
@@ -132,35 +132,32 @@ function ReplyQuote({ replyToContent, replyToSender, isOwn }) {
   const isFile  = parsed && !isImage;
 
   return (
-    <div className={`flex items-stretch mb-1 rounded-xl overflow-hidden
-                     max-w-full text-xs
-                     bg-white/[0.06] border border-white/10
-                     ${isOwn ? "self-end" : "self-start"}`}>
-      
-      <div className={`w-[3px] shrink-0 ${isOwn ? "bg-gold/60" : "bg-gold"}`} />
+    <div className={`flex items-center gap-2 mb-1 rounded-lg px-2.5 py-1.5
+                     max-w-full text-xs min-w-0
+                     ${isOwn ? "self-end bg-white/10" : "self-start bg-white"}`}>
+      <FontAwesomeIcon icon={faReply}
+        className={`text-[10px] shrink-0 ${isOwn ? "text-white/40" : "text-navy/30"}`} />
 
-      <div className="flex items-center gap-2 flex-1 min-w-0 px-2.5 py-1.5">
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold text-gold/80 mb-0.5 truncate">
-            ↩ {replyToSender}
+      <div className="flex-1 min-w-0">
+        <p className={`text-[11px] font-semibold mb-0.5 truncate ${isOwn ? "text-gold-light" : "text-navy"}`}>
+          {replyToSender}
+        </p>
+        {isFile ? (
+          <div className={`flex items-center gap-1 text-[11px] ${isOwn ? "text-white/50" : "text-navy/50"}`}>
+            <FontAwesomeIcon icon={faFile} className="text-[10px] shrink-0" />
+            <span className="truncate">{parsed.filename}</span>
+          </div>
+        ) : (
+          <p className={`text-[11px] truncate leading-snug ${isOwn ? "text-white/50" : "text-navy/50"}`}>
+            {isImage ? <FontAwesomeIcon icon={faCamera}/> : getMessagePreview(replyToContent)}
           </p>
-          {isFile ? (
-            <div className="flex items-center gap-1 text-[10px] text-white/40">
-              <FontAwesomeIcon icon={faFile} className="text-[9px] shrink-0" />
-              <span className="truncate">{parsed.filename}</span>
-            </div>
-          ) : (
-            <p className="text-[10px] text-white/40 truncate leading-snug">
-              {isImage ? <FontAwesomeIcon icon={faCamera}/> : getMessagePreview(replyToContent)}
-            </p>
-          )}
-        </div>
-
-        {isImage && (
-          <img src={parsed.url} alt=""
-            className="w-8 h-8 rounded-md object-cover shrink-0 opacity-70" />
         )}
       </div>
+
+      {isImage && (
+        <img src={parsed.url} alt=""
+          className="w-8 h-8 rounded-md object-cover shrink-0" />
+      )}
     </div>
   );
 }
@@ -169,23 +166,22 @@ function ReplyBar({ replyingTo, onCancel }) {
   if (!replyingTo) return null;
   return (
     <div className="absolute bottom-[calc(100%+0.5rem)] left-4 sm:left-6 right-4 sm:right-6
-                    flex items-center gap-3 px-4 py-3 z-20
-                    bg-navy-dark/95 border border-white/15 rounded-xl
-                    backdrop-blur-md shadow-xl animate-fade-in">
-      <div className="w-0.5 self-stretch bg-gold rounded-full shrink-0" />
+                    flex items-center gap-3 px-4 py-2.5 z-20
+                    bg-surface border border-gray-100 rounded-xl shadow-card animate-fade-in">
+      <FontAwesomeIcon icon={faReply} className="text-navy/40 text-xs shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-gold text-xs font-bold mb-0.5 truncate">
-          ↩ {replyingTo.sender}
+        <p className="text-navy text-xs font-semibold mb-0.5 truncate">
+          Répondre à {replyingTo.sender}
         </p>
-        <p className="text-white/50 text-xs truncate leading-snug">
+        <p className="text-navy/50 text-xs truncate leading-snug">
           {getMessagePreview(replyingTo.content)}
         </p>
       </div>
       <button
         type="button"
         onClick={onCancel}
-        className="w-7 h-7 rounded-full text-white/40 hover:text-white hover:bg-white/10
-                   flex items-center justify-center transition-all shrink-0"
+        className="w-7 h-7 rounded-lg text-gray-400 hover:text-navy
+                   flex items-center justify-center transition-colors shrink-0"
         title="Annuler la réponse"
       >
         <FontAwesomeIcon icon={faXmark} className="text-sm" />
@@ -198,19 +194,19 @@ function MessageActionSheet({ msg, isOwn, currentUserId, onReact, onClose, child
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/50"
+        className="fixed inset-0 z-40 bg-navy/40"
         onClick={onClose}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       />
 
       <div
-        className="fixed bottom-0 inset-x-0 z-50 bg-navy-dark border-t border-white/10
-                   rounded-t-2xl shadow-2xl animate-fade-in pb-safe"
+        className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100
+                   rounded-t-2xl shadow-modal animate-fade-in pb-safe"
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-5" />
+        <div className="w-10 h-1 bg-contact rounded-full mx-auto mt-3 mb-5" />
 
         <div className="flex justify-around items-center px-6 pb-5">
           {QUICK_REACTIONS.map((emoji) => {
@@ -222,20 +218,20 @@ function MessageActionSheet({ msg, isOwn, currentUserId, onReact, onClose, child
                 key={emoji}
                 type="button"
                 onClick={() => { onReact(emoji); onClose(); }}
-                className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl
-                            transition-all active:scale-90
-                            ${hasOwn ? "bg-gold/20" : "active:bg-white/10"}`}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl
+                            transition-colors
+                            ${hasOwn ? "bg-surface" : "active:bg-surface"}`}
               >
                 <span className="text-3xl leading-none">{emoji}</span>
                 {hasOwn && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-navy" />
                 )}
               </button>
             );
           })}
         </div>
 
-        <div className="h-px bg-white/10 mx-5 mb-2" />
+        <div className="h-px bg-gray-100 mx-5 mb-2" />
 
         <div className="flex flex-col pb-6">
           {children}
@@ -275,7 +271,7 @@ function TextMessage({
         onContextMenu={(e) => e.preventDefault()}
       >
         {!isOwn && isFirst && (
-          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end">
             <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
           </div>
         )}
@@ -283,10 +279,10 @@ function TextMessage({
 
         <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
           {isFirst && (
-            <span className={`text-[11px] font-semibold mb-1 ml-1 flex items-center
-                              ${isOwn ? "text-navy-dark" : "text-gold"}`}>
+            <span className={`text-[11px] font-medium mb-1 ml-1 flex items-center
+                              ${isOwn ? "text-navy/50" : "text-navy/50"}`}>
               {isOwn ? "Vous" : msg.senderRef
-                ? <Link to={`/user/${msg.senderRef}`} className="hover:underline">{msg.sender}</Link>
+                ? <Link to={`/user/${msg.senderRef}`} className="hover:text-navy transition-colors">{msg.sender}</Link>
                 : msg.sender}
               {!isOwn && <RoleBadge role={msg.senderRole} />}
             </span>
@@ -301,24 +297,24 @@ function TextMessage({
           <div className="relative">
             {!isMobile && (
               <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-10
-                              opacity-0 group-hover:opacity-100 transition-all
+                              opacity-0 group-hover:opacity-100 transition-opacity
                               ${isOwn ? "-left-[4.5rem]" : "-right-[4.5rem]"}`}>
                 <button type="button"
                   onClick={() => onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content })}
-                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
-                            flex items-center justify-center text-xs
-                            hover:scale-110 active:scale-95 transition-transform"
+                  className="w-7 h-7 rounded-full bg-white border border-gray-100 shadow-card
+                            flex items-center justify-center text-xs text-gray-400
+                            hover:text-navy transition-colors"
                   title="Répondre">
-                  <FontAwesomeIcon icon={faReply} className="text-gray-400" />
+                  <FontAwesomeIcon icon={faReply} />
                 </button>
                 
                 <button type="button"
                   onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
-                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
-                            flex items-center justify-center text-sm
-                            hover:scale-110 active:scale-95 transition-transform"
+                  className="w-7 h-7 rounded-full bg-white border border-gray-100 shadow-card
+                            flex items-center justify-center text-sm text-gray-400
+                            hover:text-navy transition-colors"
                   title="Réagir">
-                  <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
+                  <FontAwesomeIcon icon={faSmile} />
                 </button>
               </div>
             )}
@@ -335,8 +331,8 @@ function TextMessage({
             <div className={`px-4 py-2 text-sm leading-relaxed min-w-0 max-w-full
                              select-none
                              ${isOwn
-                               ? "bg-gold/95 text-navy-dark rounded-xl rounded-br-sm shadow-sm shadow-black/10"
-                               : "bg-white/[0.08] border border-white/10 text-white/90 rounded-xl rounded-bl-sm"
+                               ? "bg-navy text-white rounded-xl rounded-br-sm"
+                               : "bg-surface text-navy rounded-xl rounded-bl-sm"
                              }`}>
               {renderContent(msg.content, onImageClick, () => onDelete?.(msg), isOwn, onDownload)}
             </div>
@@ -350,17 +346,17 @@ function TextMessage({
 
           <div className={`flex items-center gap-1.5 mt-0.5 px-1
                            ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-            <span className="text-[10px] text-white/30">{timeStr}</span>
+            <span className="text-[10px] font-medium text-navy/40">{timeStr}</span>
             {isOwn && (
               <>
-                <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+                <span className={`text-[10px] font-medium ${msg.seen ? "text-navy/70" : "text-navy/30"}`}>
                   {msg.seen ? "✓✓" : "✓"}
                 </span>
                 <button
                   type="button"
                   onClick={() => onDelete?.(msg)}
-                  className="opacity-0 group-hover:opacity-100 text-white/30
-                             hover:text-red-400 transition-all text-[10px] ml-1"
+                  className="opacity-0 group-hover:opacity-100 text-navy/30
+                             hover:text-rose-600 transition-opacity text-[10px] ml-1"
                   title="Supprimer"
                 >
                   <FontAwesomeIcon icon={faTrash} />
@@ -382,13 +378,13 @@ function TextMessage({
               setActionSheetOpen(false);
               onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content });
             }}
-            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-            <FontAwesomeIcon icon={faReply} /> Répondre
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm font-medium text-navy hover:bg-surface transition-colors">
+            <FontAwesomeIcon icon={faReply} className="text-gray-400" /> Répondre
           </button>
           {isOwn && (
             <button type="button"
               onClick={() => { setActionSheetOpen(false); onDelete?.(msg); }}
-              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors">
               <FontAwesomeIcon icon={faTrash} /> Supprimer
             </button>
           )}
@@ -404,7 +400,7 @@ function ImageMessage({ parsed }) {
       src={parsed.url}
       alt={parsed.filename}
       className="max-w-[200px] sm:max-w-[320px] max-h-[300px] w-auto h-auto
-                 object-contain rounded-lg block bg-black/20 select-none"
+                 object-contain rounded-lg block select-none"
       loading="lazy"
       draggable={false}
       onContextMenu={(e) => e.preventDefault()}
@@ -416,16 +412,16 @@ function ImageMessage({ parsed }) {
 
 function FileMessage({ parsed }) {
   return (
-    <div className="flex items-center gap-2 py-3 px-2 bg-blue-900/90 max-w-full">
-      <div className="flex flex-col items-center bg-gold-700/10 border-2 border-gold rounded-lg shrink-0 py-2 px-3">
-        <FontAwesomeIcon className="text-sm text-gold" icon={faFile} />
-        <span className="text-[9px] font-bold text-gold uppercase">
+    <div className="flex items-center gap-2.5 py-2 px-2 bg-white rounded-lg max-w-full">
+      <div className="flex flex-col items-center bg-surface rounded-lg shrink-0 py-2 px-3">
+        <FontAwesomeIcon className="text-sm text-navy" icon={faFile} />
+        <span className="text-[9px] font-medium text-navy/60 uppercase">
           {parsed.extension && `.${parsed.extension}`}
         </span>
       </div>
-      <div className="flex flex-col text-blue-300 text-xs font-medium">
+      <div className="flex flex-col text-navy text-xs font-medium min-w-0">
         <span className="truncate">{parsed.filename?.substring(0, 20)}...</span>
-        <span>{parsed.size && `(${(parsed.size / 1024).toFixed(1)} KB)`}</span>
+        <span className="text-navy/50">{parsed.size && `(${(parsed.size / 1024).toFixed(1)} KB)`}</span>
       </div>
     </div>
   );
@@ -475,7 +471,7 @@ function MediaMessage({
                     ${isOwn ? "flex-row-reverse" : "flex-row"}`}
       >
         {!isOwn && isFirst && (
-          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end ring-2 ring-white/20">
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 self-end">
             <ChatAvatar avatar={msg.senderAvatar} name={msg.sender} userRef={msg.senderRef} />
           </div>
         )}
@@ -483,10 +479,9 @@ function MediaMessage({
 
         <div className={`flex flex-col min-w-0 max-w-full ${isOwn ? "items-end" : "items-start"}`}>
           {isFirst && (
-            <span className={`text-[11px] font-semibold mb-1 ml-1 flex items-center
-                              ${isOwn ? "text-navy-dark" : "text-gold"}`}>
+            <span className="text-[11px] font-medium mb-1 ml-1 flex items-center text-navy/50">
               {isOwn ? "Vous" : msg.senderRef
-                ? <Link to={`/user/${msg.senderRef}`} className="hover:underline">{msg.sender}</Link>
+                ? <Link to={`/user/${msg.senderRef}`} className="hover:text-navy transition-colors">{msg.sender}</Link>
                 : msg.sender}
               {!isOwn && <RoleBadge role={msg.senderRole} />}
             </span>
@@ -495,24 +490,24 @@ function MediaMessage({
           <div className="relative">
             {!isMobile && (
               <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-10
-                              opacity-0 group-hover:opacity-100 transition-all
+                              opacity-0 group-hover:opacity-100 transition-opacity
                               ${isOwn ? "-left-[4.5rem]" : "-right-[4.5rem]"}`}>
                 <button type="button"
                   onClick={() => onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content })}
-                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
-                            flex items-center justify-center text-xs
-                            hover:scale-110 active:scale-95 transition-transform"
+                  className="w-7 h-7 rounded-full bg-white border border-gray-100 shadow-card
+                            flex items-center justify-center text-xs text-gray-400
+                            hover:text-navy transition-colors"
                   title="Répondre">
-                  <FontAwesomeIcon icon={faReply} className="text-gray-400" />
+                  <FontAwesomeIcon icon={faReply} />
                 </button>
                 
                 <button type="button"
                   onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
-                  className="w-7 h-7 rounded-full bg-navy-dark border border-white/15
-                            flex items-center justify-center text-sm
-                            hover:scale-110 active:scale-95 transition-transform"
+                  className="w-7 h-7 rounded-full bg-white border border-gray-100 shadow-card
+                            flex items-center justify-center text-sm text-gray-400
+                            hover:text-navy transition-colors"
                   title="Réagir">
-                  <FontAwesomeIcon icon={faSmile} className="text-gray-400" />
+                  <FontAwesomeIcon icon={faSmile} />
                 </button>
               </div>
             )}
@@ -537,10 +532,8 @@ function MediaMessage({
               )}
 
             <div
-              className={`rounded-xl overflow-hidden cursor-pointer
-                          ${isOwn
-                            ? "bg-gold/95"
-                            : "bg-white/[0.08] border border-white/10"}`}
+              className={`rounded-xl overflow-hidden cursor-pointer p-1
+                          ${isOwn ? "bg-navy" : "bg-surface"}`}
               {...longPressHandlers}
               onContextMenu={(e) => e.preventDefault()}
               style={{ WebkitTouchCallout: "none" }}
@@ -560,9 +553,9 @@ function MediaMessage({
 
           <div className={`flex items-center gap-1.5 mt-0.5 px-1
                            ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-            <span className="text-[10px] text-white/30">{timeStr}</span>
+            <span className="text-[10px] font-medium text-navy/40">{timeStr}</span>
             {isOwn && (
-              <span className={`text-[10px] ${msg.seen ? "text-gold" : "text-white/40"}`}>
+              <span className={`text-[10px] font-medium ${msg.seen ? "text-navy/70" : "text-navy/30"}`}>
                 {msg.seen ? "✓✓" : "✓"}
               </span>
             )}
@@ -581,8 +574,8 @@ function MediaMessage({
           {isImage && (
             <button type="button"
               onClick={() => { setActionSheetOpen(false); onImageClick?.({ url: parsed.url, filename: parsed.filename }); }}
-              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-              <FontAwesomeIcon icon={faEye} /> Visionner
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm font-medium text-navy hover:bg-surface transition-colors">
+              <FontAwesomeIcon icon={faEye} className="text-gray-400" /> Visionner
             </button>
           )}
 
@@ -591,20 +584,20 @@ function MediaMessage({
               setActionSheetOpen(false);
               onReply?.({ id: msg.id, sender: isOwn ? "Vous" : msg.sender, content: msg.content });
             }}
-            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-            <FontAwesomeIcon icon={faReply} /> Répondre
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm font-medium text-navy hover:bg-surface transition-colors">
+            <FontAwesomeIcon icon={faReply} className="text-gray-400" /> Répondre
           </button>
 
           <button type="button"
             onClick={() => { setActionSheetOpen(false); handleDownload(); }}
-            className="flex items-center gap-3 w-full px-6 py-4 text-sm text-white hover:bg-white/5 transition">
-            <FontAwesomeIcon icon={faDownload} /> Télécharger
+            className="flex items-center gap-3 w-full px-6 py-4 text-sm font-medium text-navy hover:bg-surface transition-colors">
+            <FontAwesomeIcon icon={faDownload} className="text-gray-400" /> Télécharger
           </button>
 
           {isOwn && (
             <button type="button"
               onClick={() => { setActionSheetOpen(false); onDelete?.(msg); }}
-              className="flex items-center gap-3 w-full px-6 py-4 text-sm text-red-400 hover:bg-white/5 transition">
+              className="flex items-center gap-3 w-full px-6 py-4 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors">
               <FontAwesomeIcon icon={faTrash} /> Supprimer
             </button>
           )}
@@ -662,17 +655,17 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
   if (!message) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-xl border border-white/10 bg-navy-dark shadow-2xl shadow-black/50 overflow-hidden animate-fade-in">
-        <div className="flex items-start gap-3 p-5 border-b border-white/10">
-          <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-300 flex items-center justify-center shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-navy/40">
+      <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white shadow-modal overflow-hidden animate-fade-in">
+        <div className="flex items-start gap-3 p-5 border-b border-gray-100">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
             <FontAwesomeIcon icon={faTrash} className="text-sm" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-white font-bold text-base">
+            <h3 className="text-navy font-bold text-base">
               Supprimer ce message ?
             </h3>
-            <p className="text-white/50 text-xs mt-1 leading-relaxed">
+            <p className="text-navy/50 text-xs mt-1 leading-relaxed">
               Cette action est définitive et le message disparaîtra de la conversation.
             </p>
           </div>
@@ -680,7 +673,7 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
             type="button"
             onClick={onCancel}
             disabled={deleting}
-            className="w-8 h-8 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition disabled:opacity-40"
+            className="w-8 h-8 rounded-lg text-gray-400 hover:text-navy hover:bg-surface transition-colors disabled:opacity-40"
             title="Fermer"
           >
             <FontAwesomeIcon icon={faXmark} className="text-sm" />
@@ -688,11 +681,11 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
         </div>
 
         <div className="px-5 py-4">
-          <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
-            <p className="text-white/45 text-[11px] font-semibold uppercase tracking-wide mb-1">
+          <div className="rounded-xl bg-surface px-4 py-3">
+            <p className="text-navy/50 text-[11px] font-medium uppercase tracking-[0.1em] mb-1">
               Aperçu
             </p>
-            <p className="text-white/80 text-sm leading-relaxed break-words">
+            <p className="text-navy text-sm leading-relaxed break-words">
               {getMessagePreview(message.content)}
             </p>
           </div>
@@ -703,7 +696,7 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
             type="button"
             onClick={onCancel}
             disabled={deleting}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white/70 hover:text-white hover:bg-white/10 transition disabled:opacity-40"
+            className="px-4 py-2 rounded-xl text-sm font-medium text-navy bg-[#F6F7F8] hover:bg-white hover:ring-1 hover:ring-gold/50 transition disabled:opacity-40"
           >
             Annuler
           </button>
@@ -711,7 +704,7 @@ function DeleteMessageDialog({ message, deleting, onCancel, onConfirm }) {
             type="button"
             onClick={onConfirm}
             disabled={deleting}
-            className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-400 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {deleting && (
               <FontAwesomeIcon icon={faSpinner} className="text-xs animate-spin" />
@@ -752,7 +745,7 @@ function MessageGroup({ messages, isOwn, onDelete, onImageClick, onDownload, onR
 function ContactAvatar({ contact, onlineUsers }) {
   if (contact.isGlobal) {
     return (
-      <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center shrink-0 ring-2 ring-white/10">
+      <div className="w-10 h-10 rounded-full bg-navy flex items-center justify-center shrink-0">
         <img
           src={HEI_WHITE_LOGO}
           alt="HEI"
@@ -768,8 +761,7 @@ function ContactAvatar({ contact, onlineUsers }) {
         avatar={contact.avatar}
         name={contact.name}
         size="lg"
-        color="bg-gold"
-        className="ring-2 ring-white/10"
+        color="bg-navy"
       />
       <span className="absolute -bottom-0.5 -right-0.5">
         <span
@@ -1072,20 +1064,20 @@ export default function MessagePanel({
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full min-w-0">
+    <div className="flex flex-col h-full min-w-0 bg-white">
       {/* Header */}
-      <div className="relative flex flex-col items-center justify-center gap-1.5 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 shrink-0">
+      <div className="relative flex flex-col items-center justify-center gap-1.5 px-4 sm:px-6 py-3 sm:py-4 bg-white border-b border-gray-100 shrink-0">
         <Link 
           to={!contact.isGlobal && contact.ref ? `/user/${contact.ref}` : "#"} 
           className={`flex flex-col items-center gap-1.5 group ${!contact.isGlobal && contact.ref ? "hover:opacity-80 transition-opacity" : "cursor-default pointer-events-none"}`}
         >
           <ContactAvatar contact={contact} onlineUsers={onlineUsers} />
           <div className="min-w-0 text-center">
-            <h3 className="text-white font-bold text-sm sm:text-base truncate flex items-center justify-center gap-1.5 group-hover:text-gold transition-colors">
+            <h3 className="text-navy font-semibold text-sm sm:text-base truncate flex items-center justify-center gap-1.5">
               {contact.name}
               {!contact.isGlobal && <RoleBadge role={contact.role} />}
             </h3>
-            <p className="text-white/40 text-xs mt-0.5 truncate">
+            <p className="text-navy/40 text-xs font-medium mt-0.5 truncate">
               {typingUsers && typingUsers.length > 0
                 ? typingUsers.length === 1
                   ? `${typingUsers[0]} est en train d'écrire…`
@@ -1104,7 +1096,7 @@ export default function MessagePanel({
           type="button"
           onClick={onOpenContacts}
           title="Liste des contacts"
-          className="absolute right-4 sm:right-6 w-9 h-9 rounded-xl bg-gold text-navy flex items-center justify-center hover:bg-gold-light transition-all active:scale-95 shrink-0 shadow-lg shadow-gold/20"
+          className="absolute right-4 sm:right-6 w-9 h-9 rounded-xl bg-[#F6F7F8] text-navy/70 flex items-center justify-center hover:text-navy hover:bg-white hover:ring-1 hover:ring-gold/50 transition-colors shrink-0"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="text-sm" />
         </button>
@@ -1115,7 +1107,7 @@ export default function MessagePanel({
               socketState === "connect_error" || socketState === "reconnect_failed" ? "bg-red-400" :
               "bg-gray-400"
             }`} />
-            <span className="text-white/50 text-[10px] hidden sm:inline">
+            <span className="text-navy/50 text-[10px] font-medium hidden sm:inline">
               {socketState === "reconnecting" ? "Reconnexion…" :
                socketState === "connect_error" || socketState === "reconnect_failed" ? "Hors ligne" :
                "Connexion…"}
@@ -1140,13 +1132,13 @@ export default function MessagePanel({
         )}
 
         {!loading && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40 select-none">
+          <div className="flex flex-col items-center justify-center h-full gap-3 select-none">
             <img
-              src={HEI_WHITE_LOGO}
+              src={HEI_BLUE_LOGO}
               alt="HEI"
-              className="w-14 h-14 object-contain rounded-full opacity-60"
+              className="w-14 h-14 object-contain"
             />
-            <p className="text-white/50 text-xs sm:text-sm">Aucun message pour l'instant.</p>
+            <p className="text-navy/40 text-xs sm:text-sm font-medium">Aucun message pour l'instant.</p>
           </div>
         )}
 
@@ -1181,10 +1173,9 @@ export default function MessagePanel({
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
             className="fixed bottom-28 sm:bottom-32 right-6 sm:right-10 w-11 h-11 rounded-full
-                       bg-white/10 backdrop-blur-xl border border-white/20
-                       text-white flex items-center justify-center
-                       hover:bg-white/20 hover:scale-105 active:scale-95
-                       transition-all duration-200 shadow-lg z-10"
+                       bg-white border border-gray-100 shadow-modal
+                       text-navy flex items-center justify-center
+                       hover:bg-surface transition-colors z-10"
             title="Revenir en bas"
           >
             <FontAwesomeIcon icon={faChevronDown} className="text-sm" />
@@ -1193,25 +1184,25 @@ export default function MessagePanel({
       </div>
 
       {/* Input */}
-      <div className="relative px-1 sm:px-6 py-3 sm:py-5 bg-white/5 backdrop-blur-xl border-t border-white/10 shrink-0">
+      <div className="relative px-3 sm:px-6 py-3 sm:py-4 bg-white border-t border-gray-100 shrink-0">
 
         {error && (
           <div
-            className="absolute bottom-[calc(100%+0.5rem)] right-4 sm:right-10 px-4 py-2 bg-red-500/20 border border-red-400/30 rounded-xl backdrop-blur-md flex items-center gap-2 animate-fade-in shadow-xl z-20 cursor-pointer"
+            className="absolute bottom-[calc(100%+0.5rem)] right-4 sm:right-10 px-4 py-2 bg-[#FEF3F2] border border-[#FECACA] rounded-xl flex items-center gap-2 animate-fade-in shadow-card z-20 cursor-pointer"
             onClick={() => setError("")}
           >
-            <FontAwesomeIcon icon={faTriangleExclamation} className="text-xs text-red-300 shrink-0" />
-            <span className="text-xs text-red-300">{error}</span>
+            <FontAwesomeIcon icon={faTriangleExclamation} className="text-xs text-[#B42318] shrink-0" />
+            <span className="text-xs text-[#B42318]">{error}</span>
           </div>
         )}
         {selectedFile && (
-          <div className="absolute bottom-[calc(100%+0.5rem)] left-4 sm:left-10 p-3 bg-navy-dark/95 border border-white/20 rounded-xl backdrop-blur-md flex items-center gap-4 animate-fade-in shadow-xl z-20">
+          <div className="absolute bottom-[calc(100%+0.5rem)] left-4 sm:left-10 p-3 bg-white border border-gray-100 rounded-xl flex items-center gap-4 animate-fade-in shadow-modal z-20">
             <div className="relative">
               {previewUrl ? (
-                <img src={previewUrl} alt="Preview" className="w-16 h-16 object-cover rounded-lg ring-2 ring-white/10" />
+                <img src={previewUrl} alt="Preview" className="w-16 h-16 object-cover rounded-lg bg-surface" />
               ) : (
-                <div className="w-16 h-16 bg-white/5 rounded-lg flex items-center justify-center ring-2 ring-white/10">
-                  <FontAwesomeIcon icon={faFile} className="text-2xl text-gold" />
+                <div className="w-16 h-16 bg-surface rounded-lg flex items-center justify-center">
+                  <FontAwesomeIcon icon={faFile} className="text-2xl text-navy/50" />
                 </div>
               )}
               <button
@@ -1220,14 +1211,14 @@ export default function MessagePanel({
                   setSelectedFile(null);
                   setPreviewUrl(null);
                 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-white text-xs flex items-center justify-center hover:bg-red-400 transition-colors shadow-lg"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full text-white text-xs flex items-center justify-center hover:bg-rose-600 transition-colors"
               >
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </div>
             <div className="flex flex-col min-w-[120px] max-w-[200px]">
-              <span className="text-sm text-white font-medium truncate">{selectedFile.name}</span>
-              <span className="text-xs text-white/50">{(selectedFile.size / 1024).toFixed(1)} KB</span>
+              <span className="text-sm text-navy font-medium truncate">{selectedFile.name}</span>
+              <span className="text-xs text-navy/50">{(selectedFile.size / 1024).toFixed(1)} KB</span>
             </div>
           </div>
         )}
@@ -1237,22 +1228,22 @@ export default function MessagePanel({
           onCancel={() => setReplyingTo(null)}
         />
 
-        <div className="relative flex items-center gap-2 bg-white/10 rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20 focus-within:border-gold transition-all">
+        <div className="relative flex items-center gap-2 bg-[#F6F7F8] rounded-xl px-2 sm:px-3 py-1.5 focus-within:bg-white focus-within:ring-1 focus-within:ring-gold/50 transition-all">
           {showEmojiPicker && (
             <div
               ref={emojiPickerRef}
-              className="absolute bottom-full left-0 sm:left-4 mb-3 z-30 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl shadow-2xl shadow-black/40"
+              className="absolute bottom-full left-0 sm:left-4 mb-3 z-30 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl border border-gray-100 shadow-modal"
             >
               <Suspense
                 fallback={
-                  <div className="w-[min(360px,calc(100vw-1rem))] h-[420px] bg-[#222] text-white/60 flex items-center justify-center text-sm">
+                  <div className="w-[min(360px,calc(100vw-1rem))] h-[420px] bg-white text-navy/50 flex items-center justify-center text-sm">
                     Chargement...
                   </div>
                 }
               >
                 <EmojiPicker
                   onEmojiClick={handleEmojiClick}
-                  theme="dark"
+                  theme="light"
                   emojiStyle="native"
                   suggestedEmojisMode="recent"
                   skinTonePickerLocation="SEARCH"
@@ -1271,7 +1262,7 @@ export default function MessagePanel({
             type="button"
             onClick={() => fileRef.current?.click()}
             title="Joindre un fichier"
-            className="w-10 h-10 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all shrink-0 active:scale-90"
+            className="w-9 h-9 rounded-lg text-gray-400 hover:text-navy hover:bg-white flex items-center justify-center transition-colors shrink-0"
           >
             <FontAwesomeIcon icon={faPaperclip} className="text-sm" />
           </button>
@@ -1286,17 +1277,17 @@ export default function MessagePanel({
             type="button"
             onClick={() => setShowEmojiPicker((open) => !open)}
             title="Ajouter un emoji"
-            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-90 ${
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0 ${
               showEmojiPicker
-                ? "bg-gold text-navy"
-                : "text-white/40 hover:text-white hover:bg-white/10"
+                ? "bg-navy text-white"
+                : "text-gray-400 hover:text-navy hover:bg-white"
             }`}
           >
             <FontAwesomeIcon icon={faSmile} className="text-sm" />
           </button>
           <input
             ref={inputRef}
-            className="flex-1 min-w-0 text-sm text-white bg-transparent focus:outline-none placeholder:text-white/30"
+            className="flex-1 min-w-0 text-sm text-navy bg-transparent focus:outline-none placeholder:text-gray-400 py-2"
             placeholder="Écrire un message..."
             value={text}
             onChange={(e) => {
@@ -1310,7 +1301,7 @@ export default function MessagePanel({
             type="button"
             onClick={handleSend}
             disabled={(!text.trim() && !selectedFile) || sending}
-            className="w-10 h-10 rounded-xl bg-gold text-white flex items-center justify-center hover:bg-gold/90 hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-9 h-9 rounded-xl bg-navy text-white flex items-center justify-center hover:bg-navy-dark transition-colors shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {sending ? (
               <FontAwesomeIcon icon={faSpinner} className="text-sm animate-spin" />
@@ -1330,11 +1321,11 @@ export default function MessagePanel({
 
       {lightboxImg && (
         <div
-          className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4 animate-fade-in cursor-zoom-out"
+          className="fixed inset-0 bg-navy/95 z-50 flex flex-col items-center justify-center p-4 animate-fade-in cursor-zoom-out"
           onClick={() => setLightboxImg(null)}
         >
           <div
-            className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between px-6 text-white z-10"
+            className="absolute top-0 inset-x-0 h-16 bg-black/40 flex items-center justify-between px-6 text-white z-10"
             onClick={(e) => e.stopPropagation()}
           >
             <span className="text-sm font-medium truncate max-w-[60%] sm:max-w-[80%]">
@@ -1365,7 +1356,7 @@ export default function MessagePanel({
           <img
             src={lightboxImg.url}
             alt={lightboxImg.filename}
-            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl select-none animate-scale-in"
+            className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
           />
         </div>
       </div>
