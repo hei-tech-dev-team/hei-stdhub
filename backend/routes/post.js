@@ -2,6 +2,7 @@ const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const storage = require("../services/storage");
+const { sendPushToAll } = require("../services/notificationService");
 const router = express.Router();
 
 const ANNOUNCES_ROLES = ["admin", "bde", "teacher"];
@@ -213,9 +214,48 @@ router.post("/", auth, storage.many("files"), async (req, res) => {
                 ]
             );
         }
-
+        
         await client.query("COMMIT");
         committed = true;
+
+        let senderPseudo = null;
+
+        try {
+            const { rows } = await db.query(
+                'SELECT pseudo FROM users WHERE id=$1', [req.user.id]
+            );
+            senderPseudo = rows[0]?.pseudo || "Inconnu";
+        } catch (err) {
+            console.error('Failed to fetch author pseudo: ', err);
+        }
+
+        const io = req.app.get("io");
+        if (io) {
+            io.emit("feed:new", {
+                postId,
+                type,
+                title,
+                author: senderPseudo,
+            });
+        }
+
+        if (type === 'announcement') {
+            sendPushToAll({
+                title: "HEI STDhub - Annonces",
+                body: `${senderPseudo}: ${title}`,
+                tag: `global-${postId}`,
+                url: '/posts',
+                type: 'announcement',
+            }).catch((err) => console.error("sendPushToAll error (posts) : ", err?.message));
+        } else {
+            sendPushToAll({
+                title: "HEI STDhub - Publication",
+                body: `${senderPseudo} a publié un nouveau contenu`,
+                tag: `global-${postId}`,
+                url: '/posts',
+                type: 'announcement',
+            }).catch((err) => console.error("sendPushToAll error (posts) : ", err?.message));
+        }
 
         const post = await fetchPost(postId, req.user.id);
         return res.status(201).json(post);
