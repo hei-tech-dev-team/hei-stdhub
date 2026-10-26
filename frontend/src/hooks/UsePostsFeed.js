@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../api/axios";
+import { getSocket } from "../socket";
 
 const PAGE_SIZE = 10;
 const API_TYPES = { announcements: "announcement", posts: "post" };
@@ -20,6 +21,30 @@ export default function usePostsFeed({ type = "all", q = "" } = {}) {
     useEffect(() => {
         postsRef.current = posts;
     }, [posts]);
+
+    useEffect(() => {
+        let socket = null;
+        let cancelled = false;
+
+        getSocket()
+            .then((s) => {
+                if (cancelled || !s) return;
+                socket = s;
+                socket.on("feed:new", (post) => {
+                    if (!post?.id || q.trim()) return;
+                    if (API_TYPES[type] && post.type !== API_TYPES[type]) return;
+                    setPosts((prev) =>
+                        prev.some((p) => p.id === post.id) ? prev : [post, ...prev]
+                    );
+                });
+            })
+            .catch(() => {});
+
+        return () => {
+            cancelled = true;
+            if (socket) socket.off("feed:new");
+        };
+    }, [type, q]);
 
     const load = useCallback(
         async (reset) => {
