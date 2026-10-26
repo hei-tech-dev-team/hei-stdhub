@@ -6,7 +6,6 @@ import {
   faTimes,
   faLink,
   faExternalLinkAlt,
-  faSpinner,
   faTrash,
   faBookOpen,
   faChevronRight,
@@ -17,12 +16,7 @@ import {
   faVideo,
   faCode,
   faGlobe,
-  faPlusCircle,
-  faXmark,
-  faChevronDown,
   faArchive,
-  faBook,
-  faChalkboardUser,
   faCircleNotch,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
@@ -83,7 +77,6 @@ const LEVEL_ACCENT_COLORS = {
 export default function ArchiveGrid() {
   const { user } = useAuth();
   const isTeacher = user?.role === "teacher" || user?.role === "admin";
-  const isAdmin = user?.role === "admin";
 
   const [selectedUE, setSelectedUE] = useState(null);
   const [supports, setSupports] = useState([]);
@@ -94,7 +87,7 @@ export default function ArchiveGrid() {
   const [saving, setSaving] = useState(false);
   const [addError, setAddError] = useState("");
   const [visible, setVisible] = useState(false);
-  const [otherUes, setOtherUes] = useState([]);
+  const [otherUes] = useState([]);
   const [customUes, setCustomUes] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
