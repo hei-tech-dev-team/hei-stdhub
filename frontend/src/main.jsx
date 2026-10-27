@@ -8,8 +8,6 @@ import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
 
-let swRegistration = null;
-
 window.addEventListener("error", (e) => {
   console.error("Global error caught:", e.error || e.message);
 });
@@ -63,8 +61,6 @@ function renewPushSubscription() {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((reg) => {
-      swRegistration = reg;
-
       reg.addEventListener("updatefound", () => {
         const newSW = reg.installing;
         if (newSW) {

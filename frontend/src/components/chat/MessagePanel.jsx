@@ -13,7 +13,6 @@ import {
   faXmark,
   faDownload,
   faEye,
-  faShieldHalved,
   faTriangleExclamation,
   faReply,
   faCamera
@@ -190,7 +189,7 @@ function ReplyBar({ replyingTo, onCancel }) {
   );
 }
 
-function MessageActionSheet({ msg, isOwn, currentUserId, onReact, onClose, children }) {
+function MessageActionSheet({ msg, currentUserId, onReact, onClose, children }) {
   return (
     <>
       <div
@@ -429,7 +428,7 @@ function FileMessage({ parsed }) {
 
 function MediaMessage({
   msg, isOwn, isFirst, currentUserId,
-  onReact, onDelete, onImageClick, onDownload,
+  onReact, onDelete, onImageClick,
   pickerMsgId, setPickerMsgId, onReply
 }) {
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
@@ -789,7 +788,6 @@ export default function MessagePanel({
   onTypingChange,
   onReact,
   currentUserId,
-  onReply,
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);

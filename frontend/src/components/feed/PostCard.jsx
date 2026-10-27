@@ -4,7 +4,7 @@ import AuthorAvatar from "../ui/AuthorAvatar";
 import AttachmentList from "./AttachmentList";
 import ReactionBar from "./ReactionBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEllipsisV, faEdit, faTrash, faBullhorn, faCheck, faTimes, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faEllipsisV, faEdit, faTrash, faBullhorn, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 export default function PostCard({ post, currentUser, onUpdate, onDelete, onReactionChange }) {
     const [showMenu, setShowMenu] = useState(false);

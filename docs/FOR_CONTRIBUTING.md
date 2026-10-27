@@ -78,6 +78,26 @@ function MyComponent() {
 - Body: Describe what changed and why
 - Reference related issues if any
 
+## CI (GitHub Actions)
+
+Every PR triggers `.github/workflows/ci.yml` (replaces the legacy `run_tests.yml`):
+
+- **backend**: spins up a PostgreSQL 16 service, seeds it with `backend/db/schema.sql`, generates the root test `.env`, then runs `npm test` (mocha) on Node 20.
+- **frontend**: runs `npm run lint` then `npm run build` on Node 20.
+
+`keep-alive.yml` is a scheduled job (Render ping) — unrelated to PRs.
+
+### Run tests locally (backend)
+1. Create a test database, e.g. `createdb hei_stdhub_test`
+2. Seed it: `psql "postgres://.../hei_stdhub_test" -f backend/db/schema.sql`
+3. Create a root-level `.env` (the backend loads `../.env`) with `DATABASE_URL` pointing to it, `JWT_SECRET`, `CLIENT_URL`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `NODE_ENV=test`
+4. `cd backend && npm test`
+
+### Run checks locally (frontend)
+```bash
+cd frontend && npm ci && npm run lint && npm run build
+```
+
 ---
 
 ## Adding a New API Route
