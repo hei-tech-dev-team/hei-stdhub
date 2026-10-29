@@ -194,10 +194,22 @@ const onlineUsers = new Map();
 const MAX_ONLINE_USERS = parseInt(process.env.MAX_ONLINE_USERS || "5000", 10);
 
 io.on("connection", (socket) => {
-  socket.on("user:join", (userId) => {
+  socket.on("user:join", (clientUserId) => {
     if (onlineUsers.size >= MAX_ONLINE_USERS) {
       socket.emit("error", { message: "Serveur saturé." });
       return;
+    }
+
+    // Bind the room to the authenticated identity, never to client input.
+    const userId = socket.user?.id;
+    if (!userId) {
+      console.warn(`[socket ${socket.id}] user:join ignored: unauthenticated socket`);
+      return;
+    }
+    if (clientUserId != null && String(clientUserId) !== String(userId)) {
+      console.warn(
+        `[socket ${socket.id}] user:join id mismatch (client=${clientUserId}, auth=${userId}), using authenticated id`,
+      );
     }
 
     // Leave previous room for this userId (handles reconnection)
