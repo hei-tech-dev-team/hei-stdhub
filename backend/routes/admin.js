@@ -115,6 +115,19 @@ router.patch("/users/:id/role", auth, developerOrAdmin, async (req, res) => {
       if (req.user.role === "developer" && parseInt(req.params.id) === req.user.id)
             return res.status(403).json({ error: "Un developpeur ne peut pas modifier son propre rôle." });
       try {
+            // Only a developer may grant the developer role or alter an existing developer.
+            if (req.user.role !== "developer") {
+                  const { rows: targetRows } = await db.query(
+                        "SELECT role FROM users WHERE id=$1",
+                        [req.params.id],
+                  );
+                  if (!targetRows.length)
+                        return res.status(404).json({ error: "Utilisateur introuvable." });
+                  if (role === "developer" || targetRows[0].role === "developer")
+                        return res.status(403).json({
+                              error: "Seul un developpeur peut attribuer ou modifier le role developpeur.",
+                        });
+            }
             const { rows } = await db.query(
                   "UPDATE users SET role=$1 WHERE id=$2 RETURNING id, ref, pseudo, role",
                   [role, req.params.id],
