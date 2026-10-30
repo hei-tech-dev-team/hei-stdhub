@@ -1,6 +1,5 @@
 import Sidebar from "../components/layout/Sidebar";
 import FeedPage from "./FeedPage";
-import { useAuth } from "../context/AuthContext";
 
 export default function HomePage() {
   return (

@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers,
-  faFileAlt,
-  faInbox,
   faComments,
   faSearch,
   faTrash,
@@ -19,18 +17,11 @@ import {
   faArrowUp,
   faUserPlus,
   faMagic,
-  faNewspaper,
-  faImage,
   faEnvelope,
-  faKey,
   faCheckCircle,
   faExclamationTriangle,
   faAngleLeft,
   faAngleRight,
-  faDownload,
-  faLink,
-  faEye,
-  faEyeSlash,
   faCode
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
@@ -52,7 +43,7 @@ const TABS = [
   { key: "invitations", label: "Invitations", icon: faTicket },
 ];
 
-function StatCard({ icon, label, value, color, trend }) {
+function StatCard({ icon, label, value, color, _trend }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
@@ -154,13 +145,6 @@ export default function AdminPage() {
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerDone, setRegisterDone] = useState(false);
 
-  const [annTitle, setAnnTitle] = useState("");
-  const [annContent, setAnnContent] = useState("");
-  const [annImage, setAnnImage] = useState(null);
-  const [annImagePreview, setAnnImagePreview] = useState(null);
-  const [annSubmitting, setAnnSubmitting] = useState(false);
-  const [annLoading, setAnnLoading] = useState(false);
-
   const [toast, setToast] = useState(null);
 
   const now = new Date();
@@ -260,7 +244,7 @@ export default function AdminPage() {
       }
 
       showToast("UE supprimée avec succès.");
-    } catch (err) {
+    } catch (_err) {
       showToast("Erreur lors de la suppression", "error");
     }
   };
@@ -309,7 +293,7 @@ export default function AdminPage() {
   useEffect(() => {
     getSocket().then((socket) => {
       socket.on("user:registered", (newUser) => {
-        const { first_login, ...safeUser } = newUser;
+        const { first_login: _firstLogin, ...safeUser } = newUser;
         setUsers((prev) => [safeUser, ...prev]);
       });
     }).catch(console.error);
@@ -358,7 +342,7 @@ export default function AdminPage() {
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       api.get("/admin/stats").then(({ data }) => setStats(data)).catch(console.error);
       showToast(`${ref} supprimé`);
-    } catch (err) {
+    } catch (_err) {
       showToast("Erreur lors de la suppression", "error");
     }
   };
@@ -384,7 +368,7 @@ export default function AdminPage() {
       await api.delete(`/admin/invitations/${id}`);
       setInvitations((prev) => prev.filter((i) => i.id !== id));
       showToast("Invitation supprimée");
-    } catch (err) {
+    } catch (_err) {
       showToast("Erreur lors de la suppression", "error");
     }
   };

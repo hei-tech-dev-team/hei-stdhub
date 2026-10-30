@@ -39,7 +39,7 @@ export default function ChatLayout() {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unread, setUnread] = useState({ global: 0, contacts: {} });
-  const [contactTotal, setContactTotal] = useState(0);
+  const [, setContactTotal] = useState(0);
   const [favorites, setFavorites] = useState([]);
   const [typingUsers, setTypingUsers] = useState({});
   const [socketState, setSocketState] = useState("connecting");
