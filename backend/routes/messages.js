@@ -107,7 +107,7 @@ router.get("/global", auth, async (req, res) => {
                   rs.pseudo  AS reply_to_sender
           FROM messages m
           LEFT JOIN users u ON m.sender_id = u.id
-          LEFT JOIN messages rm ON rm.id = m.reply_to_id
+          LEFT JOIN messages rm ON rm.id = m.reply_to_id AND rm.is_global = TRUE
           LEFT JOIN users    rs ON rs.id = rm.sender_id
           WHERE m.is_global = TRUE AND m.id < $1
           ORDER BY m.created_at DESC
@@ -124,7 +124,7 @@ router.get("/global", auth, async (req, res) => {
                   rs.pseudo  AS reply_to_sender
           FROM messages m
           LEFT JOIN users u ON m.sender_id = u.id
-          LEFT JOIN messages rm ON rm.id = m.reply_to_id
+          LEFT JOIN messages rm ON rm.id = m.reply_to_id AND rm.is_global = TRUE
           LEFT JOIN users    rs ON rs.id = rm.sender_id
           WHERE m.is_global = TRUE
           ORDER BY m.created_at DESC
@@ -159,6 +159,9 @@ router.get("/private/:userId", auth, async (req, res) => {
           FROM messages m
           LEFT JOIN users u ON m.sender_id = u.id
           LEFT JOIN messages rm ON rm.id = m.reply_to_id
+            AND rm.is_global = FALSE
+            AND ((rm.sender_id = $2 AND rm.receiver_id = $3)
+                 OR (rm.sender_id = $3 AND rm.receiver_id = $2))
           LEFT JOIN users    rs ON rs.id = rm.sender_id
           WHERE m.is_global = FALSE
             AND m.id < $1
@@ -183,6 +186,9 @@ router.get("/private/:userId", auth, async (req, res) => {
           FROM messages m
           LEFT JOIN users u ON m.sender_id = u.id
           LEFT JOIN messages rm ON rm.id = m.reply_to_id
+            AND rm.is_global = FALSE
+            AND ((rm.sender_id = $1 AND rm.receiver_id = $2)
+                 OR (rm.sender_id = $2 AND rm.receiver_id = $1))
           LEFT JOIN users    rs ON rs.id = rm.sender_id
           WHERE m.is_global = FALSE
             AND (
@@ -235,10 +241,43 @@ router.post("/", auth, async (req, res) => {
     return res.status(400).json({ error: "Destinataire requis." });
 
   try {
+    // A reply may only reference a message the sender is allowed to see:
+    // a global message, or one from the current conversation.
+    let replyId = null;
+    let replyToContent = null;
+    let replyToSender  = null;
+    if (reply_to_id) {
+      const { rows: replyRows } = await db.query(
+        `SELECT rm.content, u.pseudo AS sender_pseudo
+         FROM messages rm
+         LEFT JOIN users u ON u.id = rm.sender_id
+         WHERE rm.id = $1
+           AND (
+             ($2::boolean AND rm.is_global = TRUE)
+             OR (
+               NOT $2::boolean
+               AND rm.is_global = FALSE
+               AND ((rm.sender_id = $3 AND rm.receiver_id = $4)
+                    OR (rm.sender_id = $4 AND rm.receiver_id = $3))
+             )
+           )`,
+        [reply_to_id, !!is_global, req.user.id, receiver_id ?? null],
+      );
+      if (replyRows.length) {
+        replyId = reply_to_id;
+        replyToContent = replyRows[0].content;
+        replyToSender  = replyRows[0].sender_pseudo;
+      } else {
+        console.warn(
+          `[messages] ignored inaccessible reply_to_id=${reply_to_id} from user ${req.user.id}`,
+        );
+      }
+    }
+
     const { rows } = await db.query(
       `INSERT INTO messages (sender_id, receiver_id, content, is_global, reply_to_id)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [req.user.id, is_global ? null : receiver_id, content, !!is_global, reply_to_id],
+      [req.user.id, is_global ? null : receiver_id, content, !!is_global, replyId],
     );
 
     const msg = rows[0];
@@ -247,22 +286,6 @@ router.post("/", auth, async (req, res) => {
       "SELECT pseudo, avatar, ref, role FROM users WHERE id=$1",
       [req.user.id],
     );
-
-    let replyToContent = null;
-    let replyToSender  = null;
-    if (reply_to_id) {
-      const { rows: replyRows } = await db.query(
-        `SELECT rm.content, u.pseudo AS sender_pseudo
-         FROM messages rm
-         LEFT JOIN users u ON u.id = rm.sender_id
-         WHERE rm.id = $1`,
-        [reply_to_id],
-      );
-      if (replyRows.length) {
-        replyToContent = replyRows[0].content;
-        replyToSender  = replyRows[0].sender_pseudo;
-      }
-    }
 
     const fullMsg = {
       ...msg,
