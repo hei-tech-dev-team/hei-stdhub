@@ -193,7 +193,37 @@ app.use((err, req, res, next) => {
 const onlineUsers = new Map();
 const MAX_ONLINE_USERS = parseInt(process.env.MAX_ONLINE_USERS || "5000", 10);
 
+const BDE_STATUSES = new Set(["recu", "accepte", "a_discuter", "refuse"]);
+const MAX_JUSTIFICATION_LENGTH = 1000;
+const toPositiveInt = (value) => {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+// Per-socket flood protection: at most SOCKET_RATE_MAX events per window.
+const SOCKET_RATE_WINDOW_MS = 10 * 1000;
+const SOCKET_RATE_MAX = parseInt(process.env.SOCKET_RATE_MAX || "60", 10);
+
 io.on("connection", (socket) => {
+  let windowStart = Date.now();
+  let eventCount = 0;
+  socket.use((packet, next) => {
+    const now = Date.now();
+    if (now - windowStart > SOCKET_RATE_WINDOW_MS) {
+      windowStart = now;
+      eventCount = 0;
+    }
+    eventCount += 1;
+    if (eventCount > SOCKET_RATE_MAX) {
+      if (eventCount === SOCKET_RATE_MAX + 1) {
+        console.warn(`[socket ${socket.id}] rate limit exceeded (user ${socket.user?.id})`);
+        socket.emit("error", { message: "Trop d'evenements, ralentissez." });
+      }
+      return; // drop the event
+    }
+    next();
+  });
+
   socket.on("user:join", (clientUserId) => {
     if (onlineUsers.size >= MAX_ONLINE_USERS) {
       socket.emit("error", { message: "Serveur saturé." });
@@ -238,60 +268,77 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("message:global", (msg) => {
-    if (!msg || !msg.content) {
-      socket.emit("error", { message: "Message vide." });
-      return;
-    }
-    io.emit("message:global", msg);
-  });
+  // Chat messages are only sent through the REST API (POST /api/messages),
+  // which validates, filters, persists and then broadcasts them. The former
+  // "message:global" / "message:private" socket handlers relayed arbitrary
+  // client objects (forged sender_pseudo/sender_id, unbounded size) and have
+  // been removed on purpose (audit H5).
 
-  socket.on("message:private", ({ receiverId, msg }) => {
-    if (!receiverId || !msg) return;
-    io.to(`user:${receiverId}`).emit("message:private", msg);
-    io.to(`user:${socket.userId}`).emit("message:private", msg);
-  });
-
-  socket.on("message:seen", ({ messageId, senderId }) => {
-    if (!messageId || !senderId) return;
+  socket.on("message:seen", (payload) => {
+    const messageId = toPositiveInt(payload?.messageId);
+    const senderId = toPositiveInt(payload?.senderId);
+    if (!socket.userId || !messageId || !senderId) return;
     io.to(`user:${senderId}`).emit("message:seen", { messageId, readerId: socket.userId });
   });
 
-  socket.on("typing:started", ({ contactId, isGlobal }) => {
-    if (!contactId) return;
-    if (isGlobal) {
+  socket.on("typing:started", (payload) => {
+    if (!socket.userId) return;
+    if (payload?.isGlobal) {
       socket.to("global-chat").emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
-    } else {
-      io.to(`user:${contactId}`).emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
+      return;
     }
+    const contactId = toPositiveInt(payload?.contactId);
+    if (!contactId) return;
+    io.to(`user:${contactId}`).emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
   });
 
-  socket.on("typing:stopped", ({ contactId, isGlobal }) => {
-    if (!contactId) return;
-    if (isGlobal) {
+  socket.on("typing:stopped", (payload) => {
+    if (!socket.userId) return;
+    if (payload?.isGlobal) {
       socket.to("global-chat").emit("typing:stopped", { userId: socket.userId });
-    } else {
-      io.to(`user:${contactId}`).emit("typing:stopped", { userId: socket.userId });
+      return;
     }
+    const contactId = toPositiveInt(payload?.contactId);
+    if (!contactId) return;
+    io.to(`user:${contactId}`).emit("typing:stopped", { userId: socket.userId });
   });
+
+  // BDE Kanban: only BDE members may join the room or broadcast to it.
+  const isBde = () => socket.user?.role === "bde";
 
   socket.on("bde:join", () => {
+    if (!isBde()) {
+      socket.emit("error", { message: "Acces reserve au BDE." });
+      return;
+    }
     socket.join("bde");
   });
 
-  socket.on("bde:drag-start", ({ suggestionId }) => {
+  socket.on("bde:drag-start", (payload) => {
+    const suggestionId = toPositiveInt(payload?.suggestionId);
+    if (!isBde() || !suggestionId) return;
     socket.to("bde").emit("bde:drag-start", { suggestionId, bySocket: socket.id });
   });
 
-  socket.on("bde:drag-over", ({ columnId }) => {
+  socket.on("bde:drag-over", (payload) => {
+    const columnId = payload?.columnId;
+    if (!isBde() || !BDE_STATUSES.has(columnId)) return;
     socket.to("bde").emit("bde:drag-over", { columnId, bySocket: socket.id });
   });
 
   socket.on("bde:drag-end", () => {
+    if (!isBde()) return;
     socket.to("bde").emit("bde:drag-end", { bySocket: socket.id });
   });
 
-  socket.on("bde:update", ({ id, statut, justification }) => {
+  socket.on("bde:update", (payload) => {
+    const id = toPositiveInt(payload?.id);
+    const statut = payload?.statut;
+    const justification =
+      typeof payload?.justification === "string"
+        ? payload.justification.slice(0, MAX_JUSTIFICATION_LENGTH)
+        : null;
+    if (!isBde() || !id || !BDE_STATUSES.has(statut)) return;
     socket.to("bde").emit("bde:update", { id, statut, justification });
   });
 
