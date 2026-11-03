@@ -35,6 +35,23 @@ const useCloudinary =
   process.env.CLOUDINARY_API_KEY?.trim() &&
   process.env.CLOUDINARY_API_SECRET?.trim();
 
+// Avatars: images only, extension derived from the validated MIME type (never
+// from the client file name), so an uploaded .html/.svg can never be served.
+const AVATAR_MIME_EXT = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+};
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024;
+const avatarFileFilter = (req, file, cb) => {
+  if (AVATAR_MIME_EXT[file.mimetype]) return cb(null, true);
+  const err = new Error("Format d'image non autorisé (JPG, PNG, WEBP ou GIF).");
+  err.code = "AVATAR_BAD_TYPE";
+  cb(err);
+};
+const avatarLimits = { fileSize: AVATAR_MAX_SIZE, files: 1 };
+
 let avatarUpload;
 if (useCloudinary) {
   const cloudinary = require("cloudinary");
@@ -52,7 +69,11 @@ if (useCloudinary) {
       transformation: [{ width: 200, height: 200, crop: "fill" }],
     },
   });
-  avatarUpload = multer({ storage: avatarStorage }).single("avatar");
+  avatarUpload = multer({
+    storage: avatarStorage,
+    fileFilter: avatarFileFilter,
+    limits: avatarLimits,
+  }).single("avatar");
 } else {
   const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "avatars");
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -60,14 +81,21 @@ if (useCloudinary) {
     storage: multer.diskStorage({
       destination: UPLOAD_DIR,
       filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname) || "";
-        const name = crypto.randomBytes(16).toString("hex") + ext;
-        cb(null, name);
+        cb(null, crypto.randomBytes(16).toString("hex") + AVATAR_MIME_EXT[file.mimetype]);
       },
     }),
-    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: avatarFileFilter,
+    limits: avatarLimits,
   }).single("avatar");
 }
+
+const avatarUploadError = (err) => {
+  if (err.code === "AVATAR_BAD_TYPE") return err.message;
+  if (err.code === "LIMIT_FILE_SIZE") return "Image trop volumineuse (5 Mo max).";
+  if (err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE")
+    return "Une seule image est autorisée.";
+  return "Upload de l'avatar impossible.";
+};
 
 const genericForgotPasswordResponse = {
   message: "Si un compte existe avec cet email, un lien de réinitialisation vous a été envoyé.",
@@ -679,7 +707,10 @@ router.patch("/password", auth, async (req, res) => {
 // Avatar upload via Cloudinary (or local disk)
 router.patch("/avatar", auth, (req, res) => {
   avatarUpload(req, res, async (err) => {
-    if (err) return res.status(400).json({ error: err.message });
+    if (err) {
+      if (!err.code) console.error("Avatar upload error:", err?.message || err);
+      return res.status(400).json({ error: avatarUploadError(err) });
+    }
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
     try {
       const avatarUrl = req.file.secure_url
@@ -692,11 +723,10 @@ router.patch("/avatar", auth, (req, res) => {
         [avatarUrl, req.user.id],
       );
       res.json(rows[0]);
-  } catch (err) {
-    console.error("Security questions save error:", err?.message || err);
-    const detail = process.env.NODE_ENV === "development" ? err.message : "Erreur serveur.";
-    res.status(500).json({ error: detail });
-  }
+    } catch (err) {
+      console.error("Avatar save error:", err?.message || err);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
   });
 });
 

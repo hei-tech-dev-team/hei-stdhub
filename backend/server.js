@@ -145,6 +145,14 @@ app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"), {
     maxAge: "7d",
+    setHeaders: (res, filePath) => {
+      // Never let the browser sniff or render user uploads as active content.
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+      if (!/\.(jpe?g|png|gif|webp)$/i.test(filePath)) {
+        res.setHeader("Content-Disposition", "attachment");
+      }
+    },
   }),
 );
 
