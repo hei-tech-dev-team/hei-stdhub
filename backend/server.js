@@ -11,6 +11,7 @@ const jwt = require("jsonwebtoken");
 const webpush = require("web-push");
 
 const { startMessagePurgeJob } = require("./services/messagePurgeJob");
+const { warnIfSeedAccountsPresent } = require("./services/securityChecks");
 
 // Validate critical env vars at startup
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"];
@@ -417,6 +418,7 @@ if (require.main === module) {
   const httpServer = server.listen(PORT, () =>
     console.log(`HEI STDhub API → http://localhost:${PORT}`),
   );
+  warnIfSeedAccountsPresent();
 
   // Graceful shutdown
   const shutdown = (signal) => {
