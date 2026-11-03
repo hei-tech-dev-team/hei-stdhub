@@ -11,6 +11,11 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
 const { sendPushToUser } = require("../services/notificationService");
+const {
+  signAccessToken,
+  verifyAccessToken,
+  revokeUserTokens,
+} = require("../services/tokenAuth");
 
 const SECURITY_QUESTIONS = [
   { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
@@ -75,12 +80,7 @@ const genericForgotPasswordResponse = {
 
 const router = express.Router();
 
-const makeToken = (user) =>
-  jwt.sign(
-    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [] },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" },
-  );
+const makeToken = signAccessToken;
 
 const REF_FORMAT = /^(STD\d{5,}|PROF\d{3,}|ADMIN\d{3,}|DEV\d{3,})$/;
 
@@ -99,12 +99,12 @@ const resetPasswordLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const tryGetAdminFromToken = (req) => {
+const tryGetAdminFromToken = async (req) => {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) return null;
   try {
-    const decoded = jwt.verify(header.split(" ")[1], process.env.JWT_SECRET);
-    return ["admin", "developer"].includes(decoded.role) ? decoded : null;
+    const user = await verifyAccessToken(header.split(" ")[1]);
+    return user && ["admin", "developer"].includes(user.role) ? user : null;
   } catch {
     return null;
   }
@@ -132,7 +132,7 @@ router.post("/register", async (req, res) => {
   if (!ref || !nom || !prenom || !email || !pseudo || !password)
     return res.status(400).json({ error: "Tous les champs sont requis." });
 
-  const adminUser = tryGetAdminFromToken(req);
+  const adminUser = await tryGetAdminFromToken(req);
   if (!inviteCode && !adminUser)
     return res.status(400).json({ error: "Code d'invitation requis." });
 
@@ -313,7 +313,8 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, ues, avatar, first_login
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, ues, avatar, first_login,
+              token_version
        FROM users WHERE ref=$1`,
       [refUpper],
     );
@@ -340,8 +341,13 @@ router.post("/login", async (req, res) => {
       developer: user.role === "developer",
     };
 
-    const { password: _, first_login: __, ...safeUser } = user;
-    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin, access });
+    const { password: _, first_login: __, token_version: ___, ...safeUser } = user;
+    res.json({
+      token: makeToken({ ...safeUser, token_version: user.token_version }),
+      user: safeUser,
+      first_login: isFirstLogin,
+      access,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -570,6 +576,8 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
         hash,
         resetToken.user_id,
       ]);
+      // Log out every existing session of this account.
+      await revokeUserTokens(resetToken.user_id, client);
       await client.query(
         `UPDATE password_reset_tokens
          SET used_at=NOW()
@@ -666,11 +674,13 @@ router.patch("/password", auth, async (req, res) => {
     if (!(await bcrypt.compare(current, rows[0].password)))
       return res.status(401).json({ error: "Mot de passe actuel incorrect." });
     const hash = await bcrypt.hash(newPassword, 10);
-    await db.query("UPDATE users SET password=$1 WHERE id=$2", [
-      hash,
-      req.user.id,
-    ]);
-    res.json({ message: "Mot de passe mis à jour." });
+    const { rows: updated } = await db.query(
+      `UPDATE users SET password=$1, token_version = token_version + 1 WHERE id=$2
+       RETURNING id, ref, role, pseudo, ues, token_version`,
+      [hash, req.user.id],
+    );
+    // Other sessions are revoked; this one gets a fresh token.
+    res.json({ message: "Mot de passe mis à jour.", token: makeToken(updated[0]) });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }

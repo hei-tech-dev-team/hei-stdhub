@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
+const { verifyAccessToken } = require("./services/tokenAuth");
 const webpush = require("web-push");
 
 const { startMessagePurgeJob } = require("./services/messagePurgeJob");
@@ -109,11 +110,14 @@ const io = new Server(server, {
 });
 
 // Socket auth middleware — verify JWT on connection
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+io.use(async (socket, next) => {
+  // Token only via handshake auth: query strings end up in proxy/access logs (L3).
+  const token = socket.handshake.auth?.token;
   if (!token) return next(new Error("Token manquant."));
   try {
-    socket.user = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await verifyAccessToken(token);
+    if (!user) return next(new Error("Token invalide."));
+    socket.user = user;
     next();
   } catch {
     next(new Error("Token invalide."));
