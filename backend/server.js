@@ -12,15 +12,21 @@ const webpush = require("web-push");
 
 const { startMessagePurgeJob } = require("./services/messagePurgeJob");
 
-// Validate critical env vars at startup
+// Validate critical env vars at startup. In production the VAPID keys must
+// come from the environment: Render's disk is ephemeral, so keys generated at
+// runtime rotate on every redeploy, invalidate all push subscriptions and
+// break the push-based password reset (audit I1).
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"];
+if (process.env.NODE_ENV === "production") {
+  REQUIRED_ENV.push("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY");
+}
 const missingEnv = REQUIRED_ENV.filter((v) => !process.env[v]);
 if (missingEnv.length > 0) {
   console.error(`Missing required env vars: ${missingEnv.join(", ")}`);
   process.exit(1);
 }
 
-// VAPID keys — auto-generated if missing, persisted to disk across restarts
+// VAPID keys — development only: auto-generated if missing, persisted to disk
 const VAPID_KEYS_FILE = process.env.VAPID_KEYS_FILE || path.join(__dirname, ".vapid-keys.json");
 const VAPID_KEYS_FILE_FALLBACK = path.join(__dirname, "..", ".vapid-keys.json");
 

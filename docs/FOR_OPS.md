@@ -30,8 +30,8 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 | `CLIENT_URL` | **Yes** | — | Frontend URL for CORS |
 | `NODE_ENV` | No | — | Set to `production` for prod |
 | `BACKEND_URL` | No | — | Self-ping URL for Render keep-alive |
-| `VAPID_PUBLIC_KEY` | No | auto-generated | Persist in production (auto-generated keys change each restart) |
-| `VAPID_PRIVATE_KEY` | No | auto-generated | Persist in production |
+| `VAPID_PUBLIC_KEY` | Production | auto-generated (dev only) | Required when `NODE_ENV=production` — the server exits without it. Generate once with `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | Production | auto-generated (dev only) | Required when `NODE_ENV=production` |
 | `CLOUDINARY_CLOUD_NAME` | No | — | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | No | — | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | No | — | Cloudinary API secret |
@@ -234,7 +234,7 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 - [ ] Password reset tokens: SHA-256, 1-hour expiry, single-use
 - [ ] No secrets in client-side code
 - [ ] `.env` files are in `.gitignore`
-- [ ] VAPID keys persisted in production (auto-generated keys change each restart)
+- [ ] `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` set in the Render environment (the server refuses to start in production without them)
 
 ---
 
