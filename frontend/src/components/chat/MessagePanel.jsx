@@ -451,7 +451,7 @@ function MediaMessage({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      window.open(parsed.url, "_blank");
+      window.open(parsed.url, "_blank", "noopener,noreferrer");
     }
   }, [parsed.url, parsed.filename]);
 
@@ -840,7 +840,7 @@ export default function MessagePanel({
       document.body.removeChild(a);
       URL.revokeObjectURL(localUrl);
     } catch (_error) {
-      window.open(url, "_blank");
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
