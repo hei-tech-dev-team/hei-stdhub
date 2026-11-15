@@ -56,12 +56,22 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 
 ## Setup Guide
 
+> ⚠️ **Never run `backend/db/seed.dev.sql` against production, and never run
+> `backend/db/schema.sql` against a database that holds data.**
+> `schema.sql` starts with `DROP TABLE ... CASCADE` (full data loss) and `seed.dev.sql`
+> creates well-known accounts with the password `password`, including the hidden
+> `DEV001` developer superuser. An existing production database is only evolved with
+> the migrations in `database/`, and the first admin account is created by hand with
+> a strong, unique password.
+
 ### 1. Database
 
 ```bash
 # Create a PostgreSQL database (local or Supabase)
-# Run the schema:
+# Fresh, EMPTY database only — schema.sql drops every table first:
 psql "$DATABASE_URL" -f backend/db/schema.sql
+# Local/CI only (never production) — test accounts with password "password":
+# psql "$DATABASE_URL" -f backend/db/seed.dev.sql
 
 # Apply migrations in order:
 psql "$DATABASE_URL" -f database/migration_invitations.sql

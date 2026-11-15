@@ -256,13 +256,3 @@ CREATE TRIGGER trg_users_updated_at
 CREATE TRIGGER trg_posts_updated_at
   BEFORE UPDATE ON posts
   FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-
-INSERT INTO users (ref, nom, prenom, email, pseudo, password, role) VALUES
-  ('ADMIN001', 'Admin', 'HEI', 'stdhub.admin@gmail.com', 'ADMIN',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin'),
-  ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student'),
-  ('PROF001','Tester','PROF','tester@gmail.com','PROFTEST',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher'),
-  ('DEV001','Developer','HEI','hei.dev@gmail.com','DEV',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','developer');

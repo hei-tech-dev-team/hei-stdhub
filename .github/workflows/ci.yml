@@ -43,13 +43,15 @@ jobs:
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hei_stdhub_test
           JWT_SECRET=test-secret-for-ci
           CLIENT_URL=http://localhost:5173
-          VAPID_PUBLIC_KEY=BG1Snxph0P6qGSPIuQNKcT-Vsl5WSuH5aylj8uEKN4tdgAGxflz06YsCxT3biGbmE_p3GHpNYHFmiDi1kKXOqJo
-          VAPID_PRIVATE_KEY=uDhn5NP1E7lat3AN1p92r4gy2_iKgpPZTGJbBqk-AHc
+          VAPID_PUBLIC_KEY=BO1W2CFCnUWyE_X57ZgLVV41xX_Bedt2Yckinj0fw37NVeIh4YLhPAODunV0aMFjZpDnMGEuTof8UrnmO2bZCxA
+          VAPID_PRIVATE_KEY=lMUf_1nsIg_JhWtpeZUzMW7Iq7prVIjvjMgM363MIco
           NODE_ENV=test
           EOF
 
       - name: Seed database
-        run: psql "$DATABASE_URL" -f backend/db/schema.sql
+        run: |
+          psql "$DATABASE_URL" -f backend/db/schema.sql
+          psql "$DATABASE_URL" -f backend/db/seed.dev.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hei_stdhub_test
           PGOPTIONS: "-c client_min_messages=warning"
