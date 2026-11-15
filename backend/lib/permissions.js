@@ -1,19 +1,13 @@
 /**
- * @file permissions.js
- * @description Central RBAC permission model shared by backend (Express
- * middleware in `middleware/`) and frontend (React display conditions).
+ * Central RBAC model shared by backend (Express middleware) and frontend
+ * (React display conditions).
  *
- * Conventions du projet respectees :
- * - CommonJS (`module.exports`) pour coller au reste du projet (package.json
- *   "type": "commonjs", pas de ESM, pas de TS).
- * - JavaScript vanilla, indentation 2 espaces, guillemets doubles.
- * - Deny by default : utilisateur null, role inconnu ou action non explicite
- *   => false.
- * - Zéro dependance externe (aucun import Express / React / DB).
+ * Conventions: CommonJS, JS vanilla, 2-space indent, double quotes,
+ * deny-by-default, no external dependencies.
  */
 
-// Hiérarchie stricte : dev > admin > (bde | teacher) > student.
-// L'ordre des clés n'a pas de sens par lui-même ; on se base sur le rang.
+// Strict hierarchy: developer > admin > (bde | teacher) > student.
+// Ordering of keys is meaningless; decisions use explicit ranks.
 const ROLE_RANK = {
   student: 0,
   teacher: 1,
@@ -22,42 +16,35 @@ const ROLE_RANK = {
   developer: 3,
 };
 
-// Ensemble des roles connus. Un role absent de cette liste est traite comme
-// "inconnu" => deny by default.
+// Known roles. An unknown role resolves to false (deny by default).
 const KNOWN_ROLES = Object.keys(ROLE_RANK);
 
-// Permissions definies explicitement. Chaque entreée dit quels rôles peuvent
-// executer quoi. Quand on parle d'un rang minimal, on l'indique via
-// `minRole` ; quand c'est un role exact, on utilise `roles`.
-//
-// Sourcing : routes existantes (`routes/*`) + middlewares existants
-// (`middleware/developerOnly`, `developerOrAdmin`, `adminOnly`).
+// Explicit permissions, sourced from existing routes (`routes/*`) and
+// existing middlewares (`developerOnly`, `developerOrAdmin`, inline `adminOnly`).
 const ACTIONS = new Map();
 
 // ---------------------------------------------------------------------------
-// Helpers de définition
+// Definition helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Autorise tous les roles d'un rang >= `minRoleName`.
+ * Allow all roles at or above `minRoleName`.
  */
 function addMinRole(actionKey, minRoleName) {
   ACTIONS.set(actionKey, { mode: "minRole", minRoleName });
 }
 
 /**
- * Autorise uniquement les roles listés.
+ * Allow only the listed roles.
  */
 function addRoles(actionKey, roleList) {
   ACTIONS.set(actionKey, { mode: "roles", roles: new Set(roleList) });
 }
 
-// ---------------------------------------------------------------------------
-// Ressources "contenu utilisateur" (ownership : author_id == user.id)
-// ---------------------------------------------------------------------------
+// User-generated content (ownership: author_id === user.id).
 
 // post
-addMinRole("post:create", "student"); // tout authentifié peut créer un post
+addMinRole("post:create", "student");
 addMinRole("post:read", "student");
 addMinRole("post:edit", "student"); // ownership checked by caller
 addMinRole("post:delete", "student"); // ownership checked by caller
@@ -65,26 +52,26 @@ addMinRole("post:react", "student");
 addMinRole("post:removeReaction", "student");
 addRoles("post:createAnnouncement", ["admin", "bde", "teacher"]);
 
-// comment (attaché à un post)
+// comment (attached to a post)
 addMinRole("comment:create", "student");
 addMinRole("comment:read", "student");
 addMinRole("comment:edit", "student"); // ownership checked by caller
 addMinRole("comment:delete", "student"); // ownership checked by caller
 
-// message (global / privé / reaction / suppression propre)
+// message (global / private / reaction / self-delete)
 addMinRole("message:send", "student");
 addMinRole("message:read", "student");
 addMinRole("message:delete", "student"); // ownership checked by caller
 addMinRole("message:react", "student");
 
-// support ticket (réclamation) — any authenticated user can create
+// support ticket (any authenticated user can create)
 addMinRole("supportTicket:create", "student");
 addRoles("supportTicket:read", ["developer", "admin"]);
 addRoles("supportTicket:update", ["developer", "admin"]);
 addRoles("supportTicket:respond", ["developer", "admin"]);
 addRoles("supportTicket:delete", ["developer", "admin"]);
 
-// bug report — any can create
+// bug report (any authenticated user can create)
 addMinRole("bugReport:create", "student");
 addRoles("bugReport:read", ["developer", "admin"]);
 addRoles("bugReport:update", ["developer", "admin"]);
@@ -93,71 +80,56 @@ addRoles("bugReport:delete", ["developer", "admin"]);
 // suggestion
 addRoles("suggestion:create", ["student", "teacher", "admin"]);
 addRoles("suggestion:read", ["bde"]);
-addRoles("suggestion:review", ["bde"]); // changer statut / justifier
+addRoles("suggestion:review", ["bde"]); // change status / add justification
 addRoles("suggestion:confirm", ["bde"]);
 addRoles("suggestion:report", ["bde"]);
 
-// ---------------------------------------------------------------------------
-// Administration / gére du compte utilisateur (admin/dev side)
-// ---------------------------------------------------------------------------
+// Admin / user-account management (admin + developer side).
 
-// Lecture seule de la liste des utilisateurs
+// Read-only user listing
 addRoles("user:read", ["admin", "developer"]);
 
-// Modification d'un autre compte (role, email, ues, suppression, upgrade)
+// Modify another account (role, email, ues, delete, upgrade)
 addRoles("user:edit", ["admin", "developer"]);
 addRoles("user:delete", ["admin", "developer"]);
 addRoles("user:inviteCreate", ["admin", "developer"]);
 addRoles("user:inviteBulkCreate", ["admin", "developer"]);
-addRoles("user:ueAssign", ["admin"]); // PATCH /users/:id/ues (adminOnly interne)
-addRoles("user:roleUpgrade", ["admin", "developer"]); // BDE upgrade
+addRoles("user:ueAssign", ["admin"]); // PATCH /users/:id/ues (inline adminOnly)
+addRoles("user:roleUpgrade", ["admin", "developer"]); // upgrade to bde role
 
-// ---------------------------------------------------------------------------
-// Ressources administratives / pédagogiques
-// ---------------------------------------------------------------------------
+// Admin / pedagogical resources.
 
-// supports (liens pédagogiques)
+// supports (pedagogical links)
 addRoles("support:create", ["teacher", "admin"]);
 addRoles("support:delete", ["teacher", "admin"]);
 addMinRole("support:read", "student");
 
-// custom UEs (création / suppression)
+// custom UEs (create / delete)
 addRoles("customUe:create", ["admin", "developer"]);
 addRoles("customUe:delete", ["admin", "developer"]);
 addMinRole("customUe:read", "student");
 
-// système (purge globale des messages) — réservé dev+admin
+// system (global message purge, dev + admin only)
 addRoles("system:purgeGlobalMessages", ["admin", "developer"]);
 
-// ---------------------------------------------------------------------------
-// Moderation spécifique : l'auteur d'un post peut modérer les commentaires de
-// son propre post (même si le comment a un autre auteur).
-// ---------------------------------------------------------------------------
+// Post author can moderate comments attached to their own post.
 
 // ---------------------------------------------------------------------------
 // API publique
 // ---------------------------------------------------------------------------
 
 /**
- * Détermine si `user` peut effectuer `action` sur `resource` dans le contexte
- * optionnel `context`.
+ * Returns whether `user` may perform `action` on `resource` within the
+ * optional `context`. Always returns a boolean (deny by default).
  *
- * Retourne toujours un booléen. Deny by default.
- *
- * @param {object|null} user      Entiité utilisateur issue du token.
- *                                 Doit au minimum posséder `.role` (string).
- *                                 Peut être null/undefined => false.
- * @param {string}      action    Verbe + ressource, ex. "post:edit",
- *                                 "user:delete", "system:purgeGlobalMessages".
- * @param {string}      resource  Ressource ciblée, pour les vérifications
- *                                 d'ownership/moderation. Ex. "post",
- *                                 "comment", "message".
- * @param {object}      [context] Contexte supplémentaire. Attendu par les
- *                                 règles d'ownership / moderation :
- *                                 - { ownerId: number, userId: number }
- *                                   pour les actions "modifies mon propre contenu"
- *                                 - { postAuthorId, userId } pour la modération
- *                                   de comment (auteur du post modère ses comments)
+ * @param {object|null} user
+ * @param {string} action   e.g. "post:edit", "user:delete",
+ *                          "system:purgeGlobalMessages"
+ * @param {string} resource Targeted resource, used by ownership/moderation checks,
+ *                          e.g. "post", "comment", "message".
+ * @param {object} [context] Extra context used by ownership/moderation rules:
+ *                          - { ownerId, userId } for self-content actions
+ *                          - { postAuthorId, userId } for post-author comment moderation
  * @returns {boolean}
  */
 function can(user, action, resource, context = {}) {
@@ -170,7 +142,7 @@ function can(user, action, resource, context = {}) {
   if (!KNOWN_ROLES.includes(role)) return false;
 
   const rule = ACTIONS.get(action);
-  if (!rule) return false; // action inconnue => deny
+  if (!rule) return false; // unknown action => deny
 
   switch (rule.mode) {
     case "minRole": {
@@ -185,15 +157,15 @@ function can(user, action, resource, context = {}) {
 }
 
 /**
- * Variante ownership : retourne true si le rôle a le droit générique sur
- * la ressource ET que l'action porte sur un contenu appartenant à l'utilisateur.
+ * Ownership variant: returns true when the role is generically allowed on the
+ * resource AND the action targets content owned by the user.
  *
- * Utilisée pour `post:edit`, `post:delete`, `comment:edit`, `comment:delete`,
+ * Used for `post:edit`, `post:delete`, `comment:edit`, `comment:delete`,
  * `message:delete`.
  *
  * @param {object} user
- * @param {string} action  ex. "post:edit"
- * @param {string} resource ex. "post"
+ * @param {string} action
+ * @param {string} resource
  * @param {object} context { ownerId: number, userId: number }
  * @returns {boolean}
  */
@@ -213,14 +185,13 @@ function canOwn(user, action, resource, context) {
 }
 
 /**
- * Règle de moderation : l'auteur d'un post peut supprimer/masquer les
- * commentaires attachés à son propre post, même si le comment a un autre auteur.
+ * Post-author moderation: the author of a post may delete or hide comments
+ * attached to their own post, even when the comment has a different author.
  *
- * Action concernée : `comment:delete` (et éventuellement `comment:hide` si on
- * l'ajoute plus tard).
+ * Relevant actions: `comment:delete` and, if added later, `comment:hide`.
  *
  * @param {object} user
- * @param {string} action   "comment:delete" (ou "comment:hide")
+ * @param {string} action   "comment:delete" or "comment:hide"
  * @param {string} resource "comment"
  * @param {object} context  { postAuthorId: number, userId: number }
  * @returns {boolean}
@@ -235,10 +206,8 @@ function canModerateCommentOnOwnPost(user, action, resource, context) {
     Number.isInteger(postAuthorId) &&
     Number.isInteger(userId) &&
     postAuthorId === userId;
-
-  // Seul l'auteur du post (ou un rôle supérieur) peut modérer ses comments.
   if (!isPostAuthor) {
-    // Un admin/dev peut aussi modérer, même sur un post qui n'est pas le sien.
+    // An admin/dev may also moderate, even on a post that is not theirs.
     const role = user.role;
     if (role === "admin" || role === "developer") {
       return can(user, action, resource, context);
@@ -246,8 +215,8 @@ function canModerateCommentOnOwnPost(user, action, resource, context) {
     return false;
   }
 
-  // Actions acceptées en mode "modération auteur de post" :
-  // suppression et masquage de comment.
+  // Accepted in "post-author moderation" mode:
+  // comment deletion and hiding.
   if (action === "comment:delete" || action === "comment:hide") {
     return true;
   }
@@ -255,14 +224,11 @@ function canModerateCommentOnOwnPost(user, action, resource, context) {
   return false;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers internes
-// ---------------------------------------------------------------------------
+// Internal helpers.
 
 function roleRank(roleName) {
   const rank = ROLE_RANK[roleName];
-  // rank == undefined signifie role inconnu ; on retourne -1 pour que
-  // n'importe quel minRole valide (>= 0) le rejette.
+  // Unknown role: -1 so any valid minRole (>= 0) rejects it.
   return rank == null ? -1 : rank;
 }
 
