@@ -1,6 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faExternalLinkAlt,
   faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 

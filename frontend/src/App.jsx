@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import ServerWakingBanner from "./components/ui/ServerWakingBanner";
 import OnboardingModal from "./components/ui/OnboardingModal";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
+import FeedNotification from "./components/layout/FeedNotification";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -35,7 +36,7 @@ function LoadingFallback() {
     <div className="min-h-screen bg-surface flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-4 border-navy border-t-gold rounded-full animate-spin" />
-        <p className="text-navy font-semibold text-sm">
+        <p className="text-navy font-medium text-sm">
           {slow ? "Le chargement peut varier selon la connexion, merci de patienter..." : "Chargement..."}
         </p>
       </div>
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="*" element={<NotFound />}/>
         </Routes>
       </Suspense>
+      {user && <FeedNotification />}
       {user && firstLogin && <OnboardingModal />}
     </>
   );

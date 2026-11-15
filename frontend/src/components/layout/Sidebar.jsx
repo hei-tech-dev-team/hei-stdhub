@@ -5,8 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
       faHouse,
       faBookOpen,
-      faFileAlt,
       faComments,
+      faUser,
       faRightFromBracket,
       faBars,
       faTimes,
@@ -14,7 +14,6 @@ import {
       faLightbulb,
       faUsersRectangle,
       faBell,
-      faNewspaper,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
 import STDHUB_LOGO from "../../assets/stdhub-logo-pwa.png";
@@ -25,6 +24,7 @@ const NAV_LINKS = [
       { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
       { to: "/chat", label: "Chat", icon: faComments, end: false },
       { to: "/pings", label: "Ping Box", icon: faBell, end: false },
+      { to: "/profile", label: "Profil", icon: faUser, end: false },
 ];
 
 let notificationPermissionRequested = false;
@@ -149,14 +149,14 @@ export default function Sidebar() {
         ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
                   >
-                        <div className="flex items-center justify-between px-2 mb-10 shrink-0">
+                        <div className="flex items-center justify-between mb-10 shrink-0 px-1">
                               <div className="flex items-center gap-3">
                                     <img
                                           src={STDHUB_LOGO}
                                           alt="STDhub"
-                                          className="h-8 w-8 object-contain rounded-full"
+                                          className="h-8 w-8 object-contain"
                                     />
-                                    <span className="text-white font-bold text-base">
+                                    <span className="text-white font-bold text-[15px] tracking-tight">
                                           HEI STDhub
                                     </span>
                               </div>
@@ -193,7 +193,7 @@ export default function Sidebar() {
                                           </span>
                                           {to === "/chat" &&
                                                 unreadCount > 0 && (
-                                                      <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5 shadow-lg">
+                                                      <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-semibold flex items-center justify-center px-1.5">
                                                             {unreadCount > 99
                                                                   ? "99+"
                                                                   : unreadCount}
@@ -201,7 +201,7 @@ export default function Sidebar() {
                                                 )}
                                           {to === "/pings" &&
                                                 pendingCount > 0 && (
-                                                      <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-bold flex items-center justify-center px-1.5">
+                                                      <span className="ml-auto min-w-[20px] h-5 rounded-full bg-gold text-navy text-[10px] font-semibold flex items-center justify-center px-1.5">
                                                             {pendingCount > 99
                                                                   ? "99+"
                                                                   : pendingCount}
@@ -278,7 +278,7 @@ export default function Sidebar() {
                         </nav>
 
                         <div className="border-t border-white/10 pt-4 mt-4 shrink-0">
-                              <p className="text-white/40 text-xs px-2 mb-1 uppercase tracking-widest truncate">
+                              <p className="text-white/40 text-[11px] px-4 mb-2 uppercase tracking-[0.1em] font-medium truncate">
                                     {user?.role === "teacher"
                                           ? "Professeur"
                                           : user?.role === "admin"
@@ -287,19 +287,19 @@ export default function Sidebar() {
                                               ? "BDE"
                                               : "Étudiant"}
                               </p>
-                              <div className="flex items-center gap-2 px-2 mb-3">
+                              <div className="flex items-center gap-2.5 px-4 mb-3">
                                     <UserAvatar
                                           avatar={user?.avatar}
                                           name={user?.pseudo}
                                           size="sm"
                                     />
-                                    <p className="text-white font-semibold text-sm truncate">
+                                    <p className="text-white font-medium text-sm truncate">
                                           {user?.pseudo || user?.ref || "—"}
                                     </p>
                               </div>
                               <button
                                     onClick={handleLogout}
-                                    className="sidebar-link w-full text-red-300 hover:text-red-200 hover:bg-red-500/10"
+                                    className="sidebar-link w-full text-red-300 hover:text-red-200"
                               >
                                     <FontAwesomeIcon
                                           icon={faRightFromBracket}

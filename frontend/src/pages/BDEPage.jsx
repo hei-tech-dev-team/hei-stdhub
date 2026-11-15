@@ -523,31 +523,24 @@ export default function BDEPage() {
         <Navbar title="Interface BDE" />
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="relative">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute -top-24 -right-24 w-96 h-96 bg-gold/5 rounded-full blur-3xl" />
-              <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-navy/[0.03] rounded-full blur-3xl" />
-            </div>
             <div className="relative">
               {/* Hero */}
-              <div className="bg-gradient-to-br from-navy via-navy-dark to-navy px-4 sm:px-6 lg:px-8 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-12 lg:pb-14">
-                <div className="flex items-center gap-4 sm:gap-5">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 ring-1 ring-white/20">
-                    <FontAwesomeIcon icon={faInbox} className="text-gold text-lg sm:text-xl" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">
-                      Interface BDE
-                    </h1>
-                    <p className="text-sm sm:text-base text-white/60 mt-1 font-medium">
-                      Gestion des suggestions étudiantes
-                    </p>
-                  </div>
+              <div className="px-4 sm:px-6 lg:px-8 pt-6">
+                <div className="bg-navy rounded-2xl px-6 py-7 sm:px-8">
+                  <p className="text-white/40 text-[11px] uppercase tracking-[0.1em] font-medium">
+                    Bureau des étudiants
+                  </p>
+                  <h1 className="text-white text-xl sm:text-2xl font-bold tracking-tight mt-2.5">
+                    Interface BDE<span className="text-gold">.</span>
+                  </h1>
+                  <p className="text-white/50 text-sm mt-2 leading-relaxed">
+                    Gestion des suggestions étudiantes
+                  </p>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
               </div>
 
-              <div className="px-4 sm:px-6 lg:px-8 -mt-4 sm:-mt-5 pb-6 sm:pb-8">
-                <div className="bg-white rounded-2xl shadow-card p-5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="px-4 sm:px-6 lg:px-8 pt-4 pb-6 sm:pb-8">
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <p className="text-gray-500 text-sm max-w-lg">
                     Glissez-déposez les suggestions dans les colonnes, puis
                     confirmez pour générer le rapport PDF et le partager dans le
@@ -609,7 +602,7 @@ export default function BDEPage() {
                   onDrop={(e) => handleDrop(e, col.id)}
                   className={`rounded-2xl border-2 border-dashed ${col.border} ${col.bg} p-3 min-h-48 sm:min-h-64 transition-all ${
                     dragOver === col.id || remoteDragOver === col.id
-                      ? "scale-[1.02] shadow-lg"
+                      ? "border-gold/50"
                       : ""
                   }`}
                   onTouchMove={handleTouchMove}
@@ -622,10 +615,10 @@ export default function BDEPage() {
                       icon={col.icon}
                       className={`${col.color} text-sm`}
                     />
-                    <span className={`font-bold text-sm ${col.color}`}>
+                    <span className={`font-semibold text-sm ${col.color}`}>
                       {col.label}
                     </span>
-                    <span className="ml-auto bg-white text-gray-500 text-xs font-bold px-2 py-0.5 rounded-full border border-gray-200">
+                    <span className="ml-auto bg-white text-gray-500 text-xs font-medium px-2 py-0.5 rounded-full border border-gray-200">
                       {getByStatut(col.id).length}
                     </span>
                   </div>
@@ -652,13 +645,13 @@ export default function BDEPage() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, s.id)}
                           onTouchStart={(e) => handleTouchStart(e, s.id)}
-                          className={`bg-white rounded-xl shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-[0_15px_40px_rgba(0,0,0,0.04),0_0_15px_rgba(212,175,55,0.1)] hover:-translate-y-1 transition-all duration-300 border-l-4 ${col.cardBorder} select-none touch-manipulation ${
+                          className={`bg-white rounded-2xl border border-gray-100 p-3 cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-all duration-300 border-l-4 ${col.cardBorder} select-none touch-manipulation ${
                             isBeingDragged
                               ? "opacity-40 scale-95"
                               : ""
                           }`}
                         >
-                          <p className="font-bold text-navy text-xs mb-1 leading-tight">
+                          <p className="font-semibold text-navy text-xs mb-1 leading-tight">
                             {s.titre}
                           </p>
                           <p className={`text-gray-500 text-xs leading-relaxed mb-0.5 ${isExpanded || !isLong ? "" : "line-clamp-2"}`}>
@@ -668,13 +661,13 @@ export default function BDEPage() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); toggleExpand(s.id); }}
-                              className="text-[10px] font-semibold text-gold hover:text-gold/80 transition-colors mb-2 block"
+                              className="text-[10px] font-medium text-navy hover:text-navy-dark transition-colors mb-2 block"
                             >
                               {isExpanded ? "Voir moins" : "Voir plus"}
                             </button>
                           )}
                           <div className="flex items-center gap-1.5 pt-2 border-t border-surface">
-                            <div className="w-5 h-5 rounded-full bg-navy flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            <div className="w-5 h-5 rounded-full bg-navy flex items-center justify-center text-white text-xs font-medium shrink-0">
                               {s.anonyme ? "?" : `${s.prenom?.[0]}${s.nom?.[0]}`}
                             </div>
                             <span className="text-xs text-gray-400 truncate flex-1">
@@ -686,7 +679,7 @@ export default function BDEPage() {
                           </div>
                           {s.statut === "refuse" && s.justification && (
                             <div className="mt-2 bg-red-50 rounded-lg px-2 py-1.5">
-                              <p className="text-xs text-red-500 font-semibold">
+                              <p className="text-xs text-red-500 font-medium">
                                 Justification :
                               </p>
                               <p className={`text-xs text-red-400 mt-0.5 ${isExpanded ? "" : "line-clamp-2"}`}>
@@ -719,9 +712,9 @@ export default function BDEPage() {
 
       {/* Modal justification refus */}
       {justModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-modal p-6 w-full max-w-md">
-            <h3 className="font-bold text-navy text-base mb-1">
+        <div className="fixed inset-0 bg-navy/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-modal p-6 w-full max-w-md">
+            <h3 className="font-semibold text-navy text-base mb-1">
               Justification du refus
             </h3>
             <p className="text-gray-400 text-sm mb-4">
@@ -748,14 +741,14 @@ export default function BDEPage() {
                   setJustModal(null);
                   setError("");
                 }}
-                className="btn-danger"
+                className="btn-ghost"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={handleJustConfirm}
-                className="btn-primary"
+                className="btn-danger"
               >
                 Confirmer le refus
               </button>

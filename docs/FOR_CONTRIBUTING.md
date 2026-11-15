@@ -102,6 +102,30 @@ A `!` after the type marks a breaking change: `refactor(api)!: migrate to TypeSc
 - Body contains `Closes #N` (checked by CI) and follows the template.
 - At least one review before merging; squash merge.
 
+## CI/CD (GitHub Actions)
+
+Every PR runs these workflows; all must be green before merging:
+
+- **Conventions** (`conventions.yml`): branch name, Conventional Commits PR title, linked issue.
+- **CI** (`ci.yml`):
+  - backend: PostgreSQL 16 service seeded with `backend/db/schema.sql`, ephemeral `JWT_SECRET`/VAPID keys generated per run, lint and typecheck when configured, `npm test`;
+  - frontend: lint, typecheck when `tsconfig.json` exists, tests, build;
+  - e2e: Playwright, enabled automatically once `e2e/playwright.config.*` exists.
+- **Security** (`security.yml`): gitleaks secret scan and `npm audit --omit=dev --audit-level=high`.
+- **CD** (`cd.yml`): after green CI on `main`, runs migrations (once they exist) and triggers the backend deploy hook.
+
+`keep-alive.yml` is a scheduled health ping, unrelated to PRs.
+
+### Run tests locally (backend)
+1. Create a test database, e.g. `createdb hei_stdhub_test`
+2. Seed it: `psql "postgres://.../hei_stdhub_test" -f backend/db/schema.sql`
+3. Create a root-level `.env` (the backend loads `../.env`) with `DATABASE_URL` pointing to it, a random `JWT_SECRET` (`openssl rand -hex 32`), `CLIENT_URL`, freshly generated `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` (`npx web-push generate-vapid-keys`) and `NODE_ENV=test`. Never reuse production values.
+4. `cd backend && npm test`
+
+### Run checks locally (frontend)
+```bash
+cd frontend && npm ci && npm run lint && npm test && npm run build
+```
 
 ## Adding a New API Route
 
