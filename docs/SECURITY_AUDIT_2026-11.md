@@ -49,7 +49,7 @@ explicit `HS256`/`EdDSA` algorithm, `iss`/`aud`; argon2id or bcrypt cost 12; res
 | # | Sev | Finding | Location |
 |---|-----|---------|----------|
 | C-04 | C | **Privilege escalation:** any `admin` (or `developer`) can set any user's role to `admin` or `developer` (including their own as admin). No audit trail. | `routes/admin.js` `PATCH /users/:id/role` |
-| H-04 | H | The `developer` role is a hidden superuser: invisible in presence and contact lists, receives every support ticket, can purge chat, manage users and invitations. The role is kept (as `dev`) but must be rebuilt as a visible, least-privilege role (#131). | `middleware/developer*.js`, `server.js`, `routes/messages.js`, `routes/admin.js`, `routes/supportTickets.js`, `routes/bugReports.js` |
+| H-04 | H | The `developer` role is a hidden superuser: invisible in presence and contact lists, receives every support ticket, can purge chat, manage users and invitations. The role is kept as `dev`, the platform superuser, but must be rebuilt as the most protected account: CLI-only creation, mandatory 2FA/passkey, step-up auth, append-only audit, dedicated `/api/dev/*` and console (#131, #185). | `middleware/developer*.js`, `server.js`, `routes/messages.js`, `routes/admin.js`, `routes/supportTickets.js`, `routes/bugReports.js` |
 | H-05 | H | Socket events trusted from clients: `message:global` and `message:private` re-broadcast **any client-crafted payload** (sender spoofing, fake messages to everyone); `bde:join` and `bde:update` are open to every user; `typing:*` and `message:seen` can target anyone. | `server.js:227-290` |
 | H-06 | H | IDOR via `reply_to_id`: replying with the id of someone else's private message returns its content to you. | `routes/messages.js` `POST /` |
 | M-05 | M | Reactions can be added to any message (including others' DMs) and the result is `io.emit`'d to everyone; `message:deleted` is broadcast globally. | `routes/messages.js` |
@@ -57,6 +57,9 @@ explicit `HS256`/`EdDSA` algorithm, `iss`/`aud`; argon2id or bcrypt cost 12; res
 | M-07 | M | `GET /api/supports/:ue` and `GET /api/custom-ues` are unauthenticated. | `routes/supports.js`, `routes/custom-ues.js` |
 | M-08 | M | Admin can change any user's email with no confirmation, which enables account takeover through password reset. | `routes/admin.js` `PATCH /users/:id/email` |
 | L-02 | L | Invitation codes generated with `Math.random()` (not a CSPRNG), 6 characters. | `routes/admin.js:generateInviteCode` |
+| H-11 | H | Anonymous BDE suggestions return `student_id` to the BDE (`SELECT s.*`), so anonymity is broken. | `routes/suggestions.js` |
+| H-12 | H | Each global chat message inserts one notification row per user and pushes to everyone: write amplification / DoS on a 1 GB database. | `services/notificationService.js:sendPushToAll` |
+| M-17 | M | Support tickets and bug reports have a backend but no frontend (unreviewed surface, same pattern as the exploited dev feature). Replaced by Signal to dev (#186). | `routes/supportTickets.js`, `routes/bugReports.js` |
 
 ## 3. Input handling, uploads, XSS
 
