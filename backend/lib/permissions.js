@@ -21,6 +21,9 @@ const KNOWN_ROLES = Object.keys(ROLE_RANK);
 
 // Explicit permissions, sourced from existing routes (`routes/*`) and
 // existing middlewares (`developerOnly`, `developerOrAdmin`, inline `adminOnly`).
+// These old middlewares are no longer used as route guards; the note remains as
+// historical provenance only. Do not edit it away without updating the rest of
+// the file accordingly.
 const ACTIONS = new Map();
 
 // ---------------------------------------------------------------------------
@@ -122,7 +125,7 @@ addRoles("user:edit", ["admin", "developer"]);
 addRoles("user:delete", ["admin", "developer"]);
 addRoles("user:inviteCreate", ["admin", "developer"]);
 addRoles("user:inviteBulkCreate", ["admin", "developer"]);
-addRoles("user:ueAssign", ["admin"]); // PATCH /users/:id/ues (inline adminOnly)
+addRoles("user:ueAssign", ["admin"]); // PATCH /users/:id/ues (formerly inline adminOnly)
 addRoles("user:roleUpgrade", ["admin", "developer"]); // upgrade to bde role
 
 // Admin / pedagogical resources.
