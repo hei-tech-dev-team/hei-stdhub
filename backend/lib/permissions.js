@@ -84,6 +84,12 @@ addRoles("suggestion:review", ["bde"]); // change status / add justification
 addRoles("suggestion:confirm", ["bde"]);
 addRoles("suggestion:report", ["bde"]);
 
+// ping
+addMinRole("ping:send", "student");
+addMinRole("ping:read", "student");
+addMinRole("ping:accept", "student");
+addMinRole("ping:refuse", "student");
+
 // Admin / user-account management (admin + developer side).
 
 // Read-only user listing
