@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Refuse to push a branch that does not follow the naming convention.
+# Enable once per clone: git config core.hooksPath .githooks  (done by `npm install` at the repo root)
+branch="$(git rev-parse --abbrev-ref HEAD)"
+[ "$branch" = "main" ] && { echo "Direct push to main is forbidden. Open a PR."; exit 1; }
+pattern='^(feat|fix|hotfix|security|refactor|perf|test|docs|chore|ci|build|style|release)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
+if [[ ! "$branch" =~ $pattern ]]; then
+  echo "Invalid branch name: '$branch'"
+  echo "Format: <type>/<issue-number>-<description>   e.g. feat/42-promo-chat"
+  exit 1
+fi

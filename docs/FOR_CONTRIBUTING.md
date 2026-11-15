@@ -57,28 +57,51 @@ function MyComponent() {
 
 ---
 
-## Git Workflow
+## Git Workflow (mandatory, enforced by CI)
 
-### Branch Naming
-- `feat/description` — New features
-- `fix/description` — Bug fixes
-- `refactor/description` — Code restructuring
-- `doc/description` — Documentation
+No direct pushes to `main`: everything goes through a PR that must be green
+(`CI`, `Conventions` and `Security` workflows).
 
-### Commit Messages
-- French or English commits
-- Format: `type: brief description`
-- Examples:
-  - `feat: add drag-and-drop for BDE kanban`
-  - `fix: correct September month detection`
-  - `refactor: simplify message grouping logic`
+After cloning, run `npm install` once at the repository root. This enables the
+local hooks (`.githooks/`) that reject invalid branch names and commit messages.
 
-### PR Convention
-- Title: Brief summary in French
-- Body: Describe what changed and why
-- Reference related issues if any
+### Branch names
 
----
+```
+<type>/<issue-number>-<kebab-case-description>
+```
+
+| type | use |
+|------|-----|
+| `feat` | new feature |
+| `fix` | bug fix |
+| `hotfix` | urgent production fix |
+| `security` | vulnerability fix |
+| `refactor` | restructuring with no behavior change |
+| `perf` | performance |
+| `test` | tests only |
+| `docs` | documentation |
+| `chore` / `build` / `ci` / `style` | tooling, dependencies, pipeline, formatting |
+| `release` | release preparation |
+
+Examples: `feat/42-promo-chat`, `security/12-jwt-revocation`, `fix/57-avatar-upload`.
+Every branch maps to an issue (the number may be omitted only for `chore`/`ci`).
+
+### Commits: Conventional Commits
+
+```
+type(optional-scope): short description
+```
+
+Examples: `feat(chat): per-promo rooms`, `fix(auth): revoke JWTs after password reset`.
+A `!` after the type marks a breaking change: `refactor(api)!: migrate to TypeScript`.
+
+### Pull requests
+
+- Title follows Conventional Commits (checked by CI).
+- Body contains `Closes #N` (checked by CI) and follows the template.
+- At least one review before merging; squash merge.
+
 
 ## Adding a New API Route
 

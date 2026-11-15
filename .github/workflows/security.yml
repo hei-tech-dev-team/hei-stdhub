@@ -1,0 +1,45 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks on the commits of this PR / push
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            RANGE="HEAD~1..HEAD"
+          fi
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 \
+            git /repo --log-opts="$RANGE" --redact --verbose
+
+  dependencies:
+    name: npm audit (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit production dependencies
+        working-directory: ${{ matrix.dir }}
+        run: npm audit --omit=dev --audit-level=high

@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — lint, typecheck, tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hei_stdhub_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hei_stdhub_test
+      CLIENT_URL: http://localhost:5173
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Generate ephemeral secrets (never commit real keys)
+        run: |
+          {
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+            node -e 'const k=require("web-push").generateVAPIDKeys();console.log("VAPID_PUBLIC_KEY="+k.publicKey);console.log("VAPID_PRIVATE_KEY="+k.privateKey)'
+          } >> "$GITHUB_ENV"
+      - name: Seed database
+        run: psql "$DATABASE_URL" -f db/schema.sql
+      - name: Lint
+        if: ${{ hashFiles('backend/eslint.config.*') != '' }}
+        run: npm run lint
+      - name: Typecheck
+        if: ${{ hashFiles('backend/tsconfig.json') != '' }}
+        run: npx tsc --noEmit
+      - name: Tests
+        run: npm test
+
+  frontend:
+    name: Frontend — lint, typecheck, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - name: Typecheck
+        if: ${{ hashFiles('frontend/tsconfig.json') != '' }}
+        run: npx tsc --noEmit -p .
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 3
+
+  e2e:
+    name: E2E (Playwright)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    # Activated automatically once the e2e/ suite exists (see issue "Tests E2E")
+    if: ${{ hashFiles('e2e/playwright.config.*') != '' }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hei_stdhub_e2e
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hei_stdhub_e2e
+      CLIENT_URL: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          npm ci --prefix e2e
+          npx --prefix e2e playwright install --with-deps chromium
+      - name: Generate ephemeral secrets
+        run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - run: psql "$DATABASE_URL" -f backend/db/schema.sql
+      - run: npm test --prefix e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7

@@ -1,0 +1,38 @@
+name: CD
+
+# Deploys only after CI succeeded on main. Frontend is deployed by the Vercel
+# Git integration; the backend is triggered through a deploy hook secret.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  migrate-and-deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Run database migrations
+        if: ${{ hashFiles('backend/migrations/**') != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+        run: |
+          npm ci --prefix backend
+          npm run migrate --prefix backend
+      - name: Trigger backend deploy
+        env:
+          HOOK: ${{ secrets.BACKEND_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::BACKEND_DEPLOY_HOOK_URL not set, skipping backend deploy."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" -o /dev/null

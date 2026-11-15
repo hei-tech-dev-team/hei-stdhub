@@ -1,21 +1,17 @@
 {
-  "name": "hei-stdhub-v2",
+  "name": "hei-stdhub",
   "version": "1.9.2",
-  "description": "",
-  "main": "index.js",
+  "description": "HEI internal social network",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepare": "git config core.hooksPath .githooks"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fatratra-png/hei-stdhub-v2.git"
+    "url": "git+https://github.com/hei-tech-dev-team/hei-stdhub.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/fatratra-png/hei-stdhub-v2/issues"
-  },
-  "homepage": "https://github.com/fatratra-png/hei-stdhub-v2#readme"
+  "private": true
 }
