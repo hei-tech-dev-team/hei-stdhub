@@ -3,9 +3,9 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const storage = require("../services/storage");
 const { sendPushToAll } = require("../services/notificationService");
+const requirePermission = require("../middleware/requirePermission");
 const router = express.Router();
 
-const ANNOUNCES_ROLES = ["admin", "bde", "teacher"];
 const ALLOWED_REACTIONS = ["like", "haha", "dislike", "sad"];
 const MAX_TITLE = 150;
 const MAX_CONTENT = 5000;
@@ -79,7 +79,7 @@ async function fetchPost(postId, userId) {
     return post;
 }
 
-router.get("/", auth, async (req, res) => {
+router.get("/", auth, requirePermission("post:read", "post"), async (req, res) => {
     try {
         const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
         const rawCursorDate = req.query.cursor_created_at;
@@ -152,7 +152,7 @@ router.get("/", auth, async (req, res) => {
     }
 });
 
-router.post("/", auth, storage.many("files"), async (req, res) => {
+router.post("/", auth, storage.many("files"), requirePermission("post:create", "post"), async (req, res) => {
     const content = req.body.content?.trim();
     const title = req.body.title?.trim() || null;
     const type = req.body.type === "announcement" ? "announcement" : "post";
@@ -167,8 +167,8 @@ router.post("/", auth, storage.many("files"), async (req, res) => {
         return res.status(400).json({ error: `Titre trop long (${MAX_TITLE} caractères max)` });
     }
     if (type === "announcement") {
-        if (!ANNOUNCES_ROLES.includes(req.user.role)) {
-            return res.status(403).json({ error: "Réservé au BDE/admin/Enseignant" });
+        if (!requirePermission("post:createAnnouncement", "post")(req, res)) {
+            return res.status(403).json({ error: "forbidden" });
         }
         if (!title) {
             return res.status(400).json({ error: "Titre requis pour une annonce" });
@@ -301,8 +301,8 @@ router.patch("/:id", auth, async (req, res) => {
             return res.status(404).json({ error: "Publication non trouvée" });
         }
         const post = check.rows[0];
-        if (post.author_id !== req.user.id && req.user.role !== "admin") {
-            return res.status(403).json({ error: "Action non autorisée" });
+        if (!requirePermission("post:edit", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
+            return res.status(403).json({ error: "forbidden" });
         }
         if (post.type === "announcement" && title === "") {
             return res.status(400).json({ error: "Le titre d'une annonce ne peut pas être vide" });
@@ -340,8 +340,8 @@ router.delete("/:id", auth, async (req, res) => {
 
         const post = check.rows[0];
 
-        if (post.author_id !== req.user.id && req.user.role !== "admin") {
-            return res.status(403).json({ error: "Action non autorisée" });
+        if (!requirePermission("post:delete", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
+            return res.status(403).json({ error: "forbidden" });
         }
 
         await db.query(
@@ -357,7 +357,7 @@ router.delete("/:id", auth, async (req, res) => {
     }
 });
 
-router.put("/:id/reaction", auth, async (req, res) => {
+router.put("/:id/reaction", auth, requirePermission("post:react", "post"), async (req, res) => {
     const { id } = req.params;
     const { kind } = req.body;
     if (!isValidId(id)) return res.status(400).json({ error: "ID invalide" });
@@ -394,7 +394,7 @@ router.put("/:id/reaction", auth, async (req, res) => {
     }
 });
 
-router.delete("/:id/reaction", auth, async (req, res) => {
+router.delete("/:id/reaction", auth, requirePermission("post:removeReaction", "post"), async (req, res) => {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: "ID invalide" });
 
