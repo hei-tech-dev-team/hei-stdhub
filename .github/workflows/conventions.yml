@@ -1,0 +1,61 @@
+name: Conventions
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  branch-name:
+    name: Branch name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name follows <type>/<issue>-<slug>
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          # Bot branches and dev -> main promotions are exempt
+          if [[ "$BRANCH" =~ ^(dependabot|renovate)/ || "$BRANCH" == "dev" ]]; then
+            echo "Bot or promotion branch, skipped."; exit 0
+          fi
+          PATTERN='^(feat|fix|hotfix|security|refactor|perf|test|docs|chore|ci|build|style|release)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
+          if [[ ! "$BRANCH" =~ $PATTERN ]]; then
+            echo "::error::Invalid branch name: '$BRANCH'"
+            echo "Expected: <type>/<issue-number>-<kebab-case-description>"
+            echo "Types : feat fix hotfix security refactor perf test docs chore ci build style release"
+            echo "Example: feat/42-post-comments"
+            exit 1
+          fi
+          echo "OK: $BRANCH"
+
+  pr-title:
+    name: PR title (Conventional Commits)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          PATTERN='^(feat|fix|hotfix|security|refactor|perf|test|docs|chore|ci|build|style|revert|release|promotion)(\([a-z0-9-]+\))?!?: .{3,}$'
+          if [[ ! "$TITLE" =~ $PATTERN ]]; then
+            echo "::error::Invalid PR title: '$TITLE'"
+            echo "Expected: type(optional-scope): description"
+            echo "Example: feat(feed): add post comments"
+            exit 1
+          fi
+
+  linked-issue:
+    name: Linked issue
+    runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.head_ref, 'dependabot/') && github.head_ref != 'dev' }}
+    steps:
+      - name: Require "Closes #N" / "Fixes #N" / "Refs #N" in PR body
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! grep -qiE '(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?) #[0-9]+' <<< "$BODY"; then
+            echo "::error::The PR must reference an issue (e.g. 'Closes #12')."
+            exit 1
+          fi

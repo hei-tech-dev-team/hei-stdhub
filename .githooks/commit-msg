@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Enforce Conventional Commits on the first line of the commit message.
+first="$(head -n1 "$1")"
+[[ "$first" =~ ^(Merge|Revert|fixup!|squash!) ]] && exit 0
+pattern='^(feat|fix|hotfix|security|refactor|perf|test|docs|chore|ci|build|style|revert|release)(\([a-z0-9-]+\))?!?: .{3,}$'
+if [[ ! "$first" =~ $pattern ]]; then
+  echo "Invalid commit message: '$first'"
+  echo "Format: type(scope): description   e.g. fix(auth): revoke JWTs after password reset"
+  exit 1
+fi

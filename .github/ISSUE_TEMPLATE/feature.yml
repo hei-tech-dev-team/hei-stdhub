@@ -1,0 +1,15 @@
+name: Feature
+description: Propose a new feature
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes: { label: Goal, description: Which user problem does this solve? }
+    validations: { required: true }
+  - type: textarea
+    id: scope
+    attributes: { label: Scope, description: What is in and out of scope }
+  - type: textarea
+    id: acceptance
+    attributes: { label: Acceptance criteria, value: "- [ ] " }
+    validations: { required: true }

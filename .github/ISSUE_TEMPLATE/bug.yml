@@ -1,0 +1,12 @@
+name: Bug
+description: Report a malfunction (for security vulnerabilities, see SECURITY.md)
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: What happens?, description: Observed vs expected }
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes: { label: Steps to reproduce, value: "1. " }
+    validations: { required: true }

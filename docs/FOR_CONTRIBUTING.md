@@ -57,35 +57,66 @@ function MyComponent() {
 
 ---
 
-## Git Workflow
+## Git Workflow (mandatory, enforced by CI)
 
-### Branch Naming
-- `feat/description` — New features
-- `fix/description` — Bug fixes
-- `refactor/description` — Code restructuring
-- `doc/description` — Documentation
+No direct pushes to `main`: everything goes through a PR that must be green
+(`CI`, `Conventions` and `Security` workflows).
 
-### Commit Messages
-- French or English commits
-- Format: `type: brief description`
-- Examples:
-  - `feat: add drag-and-drop for BDE kanban`
-  - `fix: correct September month detection`
-  - `refactor: simplify message grouping logic`
+After cloning, run `npm install` once at the repository root. This enables the
+local hooks (`.githooks/`) that reject invalid branch names and commit messages.
 
-### PR Convention
-- Title: Brief summary in French
-- Body: Describe what changed and why
-- Reference related issues if any
+### Branch names
 
-## CI (GitHub Actions)
+```
+<type>/<issue-number>-<kebab-case-description>
+```
 
-Every PR triggers `.github/workflows/ci.yml` (replaces the legacy `run_tests.yml`):
+| type | use |
+|------|-----|
+| `feat` | new feature |
+| `fix` | bug fix |
+| `hotfix` | urgent production fix |
+| `security` | vulnerability fix |
+| `refactor` | restructuring with no behavior change |
+| `perf` | performance |
+| `test` | tests only |
+| `docs` | documentation |
+| `chore` / `build` / `ci` / `style` | tooling, dependencies, pipeline, formatting |
+| `release` | release preparation |
 
-- **backend**: spins up a PostgreSQL 16 service, seeds it with `backend/db/schema.sql` + `backend/db/seed.dev.sql`, generates the root test `.env`, then runs `npm test` (mocha) on Node 20.
-- **frontend**: runs `npm run lint` then `npm run build` on Node 20.
+Examples: `feat/42-post-comments`, `security/12-jwt-revocation`, `fix/57-avatar-upload`.
+Every branch maps to an issue (the number may be omitted only for `chore`/`ci`).
 
-`keep-alive.yml` is a scheduled job (Render ping) — unrelated to PRs.
+Feature branches target `dev`; `dev` is promoted to `main` through a `promotion: dev to main` PR (exempt from the branch-name and linked-issue checks).
+
+### Commits: Conventional Commits
+
+```
+type(optional-scope): short description
+```
+
+Examples: `feat(feed): post comments`, `fix(auth): revoke JWTs after password reset`.
+A `!` after the type marks a breaking change: `refactor(api)!: migrate to TypeScript`.
+
+### Pull requests
+
+- Title follows Conventional Commits (checked by CI).
+- Body contains `Closes #N` (checked by CI) and follows the template.
+- At least one review before merging; squash merge.
+
+## CI/CD (GitHub Actions)
+
+Every PR runs these workflows; all must be green before merging:
+
+- **Conventions** (`conventions.yml`): branch name, Conventional Commits PR title, linked issue.
+- **CI** (`ci.yml`):
+  - backend: PostgreSQL 16 service seeded with `backend/db/schema.sql` + `backend/db/seed.dev.sql` (test-only accounts, never production), ephemeral `JWT_SECRET`/VAPID keys generated per run, lint and typecheck when configured, `npm test`;
+  - frontend: lint, typecheck when `tsconfig.json` exists, tests, build;
+  - e2e: Playwright, enabled automatically once `e2e/playwright.config.*` exists.
+- **Security** (`security.yml`): gitleaks secret scan and `npm audit --omit=dev --audit-level=high`.
+- **CD** (`cd.yml`): after green CI on `main`, runs migrations (once they exist) and triggers the backend deploy hook.
+
+`keep-alive.yml` is a scheduled health ping, unrelated to PRs.
 
 ### Run tests locally (backend)
 1. Create a test database, e.g. `createdb hei_stdhub_test`
@@ -95,10 +126,8 @@ Every PR triggers `.github/workflows/ci.yml` (replaces the legacy `run_tests.yml
 
 ### Run checks locally (frontend)
 ```bash
-cd frontend && npm ci && npm run lint && npm run build
+cd frontend && npm ci && npm run lint && npm test && npm run build
 ```
-
----
 
 ## Adding a New API Route
 
