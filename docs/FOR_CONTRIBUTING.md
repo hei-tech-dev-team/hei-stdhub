@@ -87,6 +87,8 @@ local hooks (`.githooks/`) that reject invalid branch names and commit messages.
 Examples: `feat/42-post-comments`, `security/12-jwt-revocation`, `fix/57-avatar-upload`.
 Every branch maps to an issue (the number may be omitted only for `chore`/`ci`).
 
+Feature branches target `dev`; `dev` is promoted to `main` through a `promotion: dev to main` PR (exempt from the branch-name and linked-issue checks).
+
 ### Commits: Conventional Commits
 
 ```
@@ -108,7 +110,7 @@ Every PR runs these workflows; all must be green before merging:
 
 - **Conventions** (`conventions.yml`): branch name, Conventional Commits PR title, linked issue.
 - **CI** (`ci.yml`):
-  - backend: PostgreSQL 16 service seeded with `backend/db/schema.sql`, ephemeral `JWT_SECRET`/VAPID keys generated per run, lint and typecheck when configured, `npm test`;
+  - backend: PostgreSQL 16 service seeded with `backend/db/schema.sql` + `backend/db/seed.dev.sql` (test-only accounts, never production), ephemeral `JWT_SECRET`/VAPID keys generated per run, lint and typecheck when configured, `npm test`;
   - frontend: lint, typecheck when `tsconfig.json` exists, tests, build;
   - e2e: Playwright, enabled automatically once `e2e/playwright.config.*` exists.
 - **Security** (`security.yml`): gitleaks secret scan and `npm audit --omit=dev --audit-level=high`.
@@ -118,8 +120,8 @@ Every PR runs these workflows; all must be green before merging:
 
 ### Run tests locally (backend)
 1. Create a test database, e.g. `createdb hei_stdhub_test`
-2. Seed it: `psql "postgres://.../hei_stdhub_test" -f backend/db/schema.sql`
-3. Create a root-level `.env` (the backend loads `../.env`) with `DATABASE_URL` pointing to it, a random `JWT_SECRET` (`openssl rand -hex 32`), `CLIENT_URL`, freshly generated `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` (`npx web-push generate-vapid-keys`) and `NODE_ENV=test`. Never reuse production values.
+2. Seed it: `psql "postgres://.../hei_stdhub_test" -f backend/db/schema.sql` then `-f backend/db/seed.dev.sql`
+3. Create a root-level `.env` (the backend loads `../.env`) with `DATABASE_URL` pointing to it, `JWT_SECRET`, `CLIENT_URL`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `NODE_ENV=test`
 4. `cd backend && npm test`
 
 ### Run checks locally (frontend)

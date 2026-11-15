@@ -30,8 +30,8 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 | `CLIENT_URL` | **Yes** | — | Frontend URL for CORS |
 | `NODE_ENV` | No | — | Set to `production` for prod |
 | `BACKEND_URL` | No | — | Self-ping URL for Render keep-alive |
-| `VAPID_PUBLIC_KEY` | No | auto-generated | Persist in production (auto-generated keys change each restart) |
-| `VAPID_PRIVATE_KEY` | No | auto-generated | Persist in production |
+| `VAPID_PUBLIC_KEY` | Production | auto-generated (dev only) | Required when `NODE_ENV=production` — the server exits without it. Generate once with `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | Production | auto-generated (dev only) | Required when `NODE_ENV=production` |
 | `CLOUDINARY_CLOUD_NAME` | No | — | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | No | — | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | No | — | Cloudinary API secret |
@@ -56,12 +56,22 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 
 ## Setup Guide
 
+> ⚠️ **Never run `backend/db/seed.dev.sql` against production, and never run
+> `backend/db/schema.sql` against a database that holds data.**
+> `schema.sql` starts with `DROP TABLE ... CASCADE` (full data loss) and `seed.dev.sql`
+> creates well-known accounts with the password `password`, including the hidden
+> `DEV001` developer superuser. An existing production database is only evolved with
+> the migrations in `database/`, and the first admin account is created by hand with
+> a strong, unique password.
+
 ### 1. Database
 
 ```bash
 # Create a PostgreSQL database (local or Supabase)
-# Run the schema:
+# Fresh, EMPTY database only — schema.sql drops every table first:
 psql "$DATABASE_URL" -f backend/db/schema.sql
+# Local/CI only (never production) — test accounts with password "password":
+# psql "$DATABASE_URL" -f backend/db/seed.dev.sql
 
 # Apply migrations in order:
 psql "$DATABASE_URL" -f database/migration_invitations.sql
@@ -71,8 +81,10 @@ psql "$DATABASE_URL" -f database/migration_multi_use_invitations.sql
 psql "$DATABASE_URL" -f database/migration_alumni_support.sql
 psql "$DATABASE_URL" -f database/migration_chat_seen_pseudo_unique.sql
 psql "$DATABASE_URL" -f database/migration_scale_500.sql
+psql "$DATABASE_URL" -f database/migration_token_version.sql
 psql "$DATABASE_URL" -f database/migration_chat_emoji_transfer_answer.sql
 psql "$DATABASE_URL" -f database/migration_groupe_column.sql
+psql "$DATABASE_URL" -f database/migration_admin_audit_log.sql
 psql "$DATABASE_URL" -f database/migration_developer_role.sql
 psql "$DATABASE_URL" -f database/migration_refactor_td_exams.sql
 psql "$DATABASE_URL" -f database/migration_remove_alumni.sql
@@ -234,7 +246,7 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 - [ ] Password reset tokens: SHA-256, 1-hour expiry, single-use
 - [ ] No secrets in client-side code
 - [ ] `.env` files are in `.gitignore`
-- [ ] VAPID keys persisted in production (auto-generated keys change each restart)
+- [ ] `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` set in the Render environment (the server refuses to start in production without them)
 
 ---
 

@@ -11,6 +11,11 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
 const { sendPushToUser } = require("../services/notificationService");
+const {
+  signAccessToken,
+  verifyAccessToken,
+  revokeUserTokens,
+} = require("../services/tokenAuth");
 
 const SECURITY_QUESTIONS = [
   { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
@@ -35,6 +40,23 @@ const useCloudinary =
   process.env.CLOUDINARY_API_KEY?.trim() &&
   process.env.CLOUDINARY_API_SECRET?.trim();
 
+// Avatars: images only, extension derived from the validated MIME type (never
+// from the client file name), so an uploaded .html/.svg can never be served.
+const AVATAR_MIME_EXT = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+};
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024;
+const avatarFileFilter = (req, file, cb) => {
+  if (AVATAR_MIME_EXT[file.mimetype]) return cb(null, true);
+  const err = new Error("Format d'image non autorisé (JPG, PNG, WEBP ou GIF).");
+  err.code = "AVATAR_BAD_TYPE";
+  cb(err);
+};
+const avatarLimits = { fileSize: AVATAR_MAX_SIZE, files: 1 };
+
 let avatarUpload;
 if (useCloudinary) {
   const cloudinary = require("cloudinary");
@@ -52,7 +74,11 @@ if (useCloudinary) {
       transformation: [{ width: 200, height: 200, crop: "fill" }],
     },
   });
-  avatarUpload = multer({ storage: avatarStorage }).single("avatar");
+  avatarUpload = multer({
+    storage: avatarStorage,
+    fileFilter: avatarFileFilter,
+    limits: avatarLimits,
+  }).single("avatar");
 } else {
   const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "avatars");
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -60,14 +86,21 @@ if (useCloudinary) {
     storage: multer.diskStorage({
       destination: UPLOAD_DIR,
       filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname) || "";
-        const name = crypto.randomBytes(16).toString("hex") + ext;
-        cb(null, name);
+        cb(null, crypto.randomBytes(16).toString("hex") + AVATAR_MIME_EXT[file.mimetype]);
       },
     }),
-    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: avatarFileFilter,
+    limits: avatarLimits,
   }).single("avatar");
 }
+
+const avatarUploadError = (err) => {
+  if (err.code === "AVATAR_BAD_TYPE") return err.message;
+  if (err.code === "LIMIT_FILE_SIZE") return "Image trop volumineuse (5 Mo max).";
+  if (err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE")
+    return "Une seule image est autorisée.";
+  return "Upload de l'avatar impossible.";
+};
 
 const genericForgotPasswordResponse = {
   message: "Si un compte existe avec cet email, un lien de réinitialisation vous a été envoyé.",
@@ -75,12 +108,7 @@ const genericForgotPasswordResponse = {
 
 const router = express.Router();
 
-const makeToken = (user) =>
-  jwt.sign(
-    { id: user.id, ref: user.ref, role: user.role, pseudo: user.pseudo || "", ues: user.ues || [] },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" },
-  );
+const makeToken = signAccessToken;
 
 const REF_FORMAT = /^(STD\d{5,}|PROF\d{3,}|ADMIN\d{3,}|DEV\d{3,})$/;
 
@@ -99,12 +127,12 @@ const resetPasswordLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const tryGetAdminFromToken = (req) => {
+const tryGetAdminFromToken = async (req) => {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) return null;
   try {
-    const decoded = jwt.verify(header.split(" ")[1], process.env.JWT_SECRET);
-    return ["admin", "developer"].includes(decoded.role) ? decoded : null;
+    const user = await verifyAccessToken(header.split(" ")[1]);
+    return user && ["admin", "developer"].includes(user.role) ? user : null;
   } catch {
     return null;
   }
@@ -132,7 +160,7 @@ router.post("/register", async (req, res) => {
   if (!ref || !nom || !prenom || !email || !pseudo || !password)
     return res.status(400).json({ error: "Tous les champs sont requis." });
 
-  const adminUser = tryGetAdminFromToken(req);
+  const adminUser = await tryGetAdminFromToken(req);
   if (!inviteCode && !adminUser)
     return res.status(400).json({ error: "Code d'invitation requis." });
 
@@ -313,7 +341,8 @@ router.post("/login", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, ref, nom, prenom, email, pseudo, password, role, ues, avatar, first_login
+      `SELECT id, ref, nom, prenom, email, pseudo, password, role, ues, avatar, first_login,
+              token_version
        FROM users WHERE ref=$1`,
       [refUpper],
     );
@@ -340,8 +369,13 @@ router.post("/login", async (req, res) => {
       developer: user.role === "developer",
     };
 
-    const { password: _, first_login: __, ...safeUser } = user;
-    res.json({ token: makeToken(safeUser), user: safeUser, first_login: isFirstLogin, access });
+    const { password: _, first_login: __, token_version: ___, ...safeUser } = user;
+    res.json({
+      token: makeToken({ ...safeUser, token_version: user.token_version }),
+      user: safeUser,
+      first_login: isFirstLogin,
+      access,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
@@ -570,6 +604,8 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
         hash,
         resetToken.user_id,
       ]);
+      // Log out every existing session of this account.
+      await revokeUserTokens(resetToken.user_id, client);
       await client.query(
         `UPDATE password_reset_tokens
          SET used_at=NOW()
@@ -666,11 +702,13 @@ router.patch("/password", auth, async (req, res) => {
     if (!(await bcrypt.compare(current, rows[0].password)))
       return res.status(401).json({ error: "Mot de passe actuel incorrect." });
     const hash = await bcrypt.hash(newPassword, 10);
-    await db.query("UPDATE users SET password=$1 WHERE id=$2", [
-      hash,
-      req.user.id,
-    ]);
-    res.json({ message: "Mot de passe mis à jour." });
+    const { rows: updated } = await db.query(
+      `UPDATE users SET password=$1, token_version = token_version + 1 WHERE id=$2
+       RETURNING id, ref, role, pseudo, ues, token_version`,
+      [hash, req.user.id],
+    );
+    // Other sessions are revoked; this one gets a fresh token.
+    res.json({ message: "Mot de passe mis à jour.", token: makeToken(updated[0]) });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
@@ -679,7 +717,10 @@ router.patch("/password", auth, async (req, res) => {
 // Avatar upload via Cloudinary (or local disk)
 router.patch("/avatar", auth, (req, res) => {
   avatarUpload(req, res, async (err) => {
-    if (err) return res.status(400).json({ error: err.message });
+    if (err) {
+      if (!err.code) console.error("Avatar upload error:", err?.message || err);
+      return res.status(400).json({ error: avatarUploadError(err) });
+    }
     if (!req.file) return res.status(400).json({ error: "Fichier requis." });
     try {
       const avatarUrl = req.file.secure_url
@@ -692,11 +733,10 @@ router.patch("/avatar", auth, (req, res) => {
         [avatarUrl, req.user.id],
       );
       res.json(rows[0]);
-  } catch (err) {
-    console.error("Security questions save error:", err?.message || err);
-    const detail = process.env.NODE_ENV === "development" ? err.message : "Erreur serveur.";
-    res.status(500).json({ error: detail });
-  }
+    } catch (err) {
+      console.error("Avatar save error:", err?.message || err);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
   });
 });
 

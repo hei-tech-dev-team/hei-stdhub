@@ -26,6 +26,7 @@ CREATE TABLE users (
   avatar     VARCHAR      NULL,
   ues        TEXT[]       DEFAULT '{}',
   first_login BOOLEAN NOT NULL DEFAULT TRUE,
+  token_version INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_ref_format CHECK (
@@ -227,6 +228,20 @@ CREATE TABLE IF NOT EXISTS support_ticket_responses (
   created_at TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+  id         SERIAL       PRIMARY KEY,
+  actor_id   INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
+  actor_role VARCHAR(20)  NULL,
+  action     VARCHAR(64)  NOT NULL,
+  target_id  INTEGER      NULL,
+  details    JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  ip         VARCHAR(64)  NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_log_created_at ON admin_audit_log (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_log_target ON admin_audit_log (target_id);
+
 CREATE OR REPLACE FUNCTION fn_set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -242,13 +257,3 @@ CREATE TRIGGER trg_users_updated_at
 CREATE TRIGGER trg_posts_updated_at
   BEFORE UPDATE ON posts
   FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-
-INSERT INTO users (ref, nom, prenom, email, pseudo, password, role) VALUES
-  ('ADMIN001', 'Admin', 'HEI', 'stdhub.admin@gmail.com', 'ADMIN',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'admin'),
-  ('STD25001', 'Rafanomezantsoa', 'Ny Fatratra', 'hei.fatratra@gmail.com', '2spicy4uwu',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji', 'student'),
-  ('PROF001','Tester','PROF','tester@gmail.com','PROFTEST',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','teacher'),
-  ('DEV001','Developer','HEI','hei.dev@gmail.com','DEV',
-   '$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji','developer');

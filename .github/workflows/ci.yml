@@ -52,8 +52,12 @@ jobs:
             echo "JWT_SECRET=$(openssl rand -hex 32)"
             node -e 'const k=require("web-push").generateVAPIDKeys();console.log("VAPID_PUBLIC_KEY="+k.publicKey);console.log("VAPID_PRIVATE_KEY="+k.privateKey)'
           } >> "$GITHUB_ENV"
-      - name: Seed database
-        run: psql "$DATABASE_URL" -f db/schema.sql
+      - name: Seed database (schema + dev/test-only accounts)
+        env:
+          PGOPTIONS: "-c client_min_messages=warning"
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seed.dev.sql
       - name: Lint
         if: ${{ hashFiles('backend/eslint.config.*') != '' }}
         run: npm run lint
@@ -137,7 +141,10 @@ jobs:
           npx --prefix e2e playwright install --with-deps chromium
       - name: Generate ephemeral secrets
         run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      - run: psql "$DATABASE_URL" -f backend/db/schema.sql
+      - name: Seed database (schema + dev/test-only accounts)
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/seed.dev.sql
       - run: npm test --prefix e2e
       - uses: actions/upload-artifact@v4
         if: failure()

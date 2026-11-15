@@ -9,6 +9,7 @@ import {
   formatTooltipDate,
   isFileMessage,
   parseFileContent,
+  isTrustedFileUrl,
   shouldGroup,
   GROUP_GAP,
   DAY,
@@ -246,11 +247,11 @@ describe("formatTooltipDate", () => {
 // isFileMessage
 describe("isFileMessage", () => {
   it("returns true for new format file messages", () => {
-    expect(isFileMessage("[FILE:img.png:https://url.com/img:img]")).to.be.true;
+    expect(isFileMessage("[FILE:img.png:https://res.cloudinary.com/img:img]")).to.be.true;
   });
 
   it("returns true for old format file messages", () => {
-    expect(isFileMessage("[FILE:doc.pdf:https://url.com/doc]")).to.be.true;
+    expect(isFileMessage("[FILE:doc.pdf:https://res.cloudinary.com/doc]")).to.be.true;
   });
 
   it("returns false for plain text", () => {
@@ -269,49 +270,81 @@ describe("isFileMessage", () => {
     expect(isFileMessage("[FILE]")).to.be.false;
   });
 
-  it("returns true for bare [FILE: prefix", () => {
-    expect(isFileMessage("[FILE:")).to.be.true;
+  // Unparseable tokens are rendered as plain text instead of a (crashing) media bubble.
+  it("returns false for bare [FILE: prefix", () => {
+    expect(isFileMessage("[FILE:")).to.be.false;
   });
 
-  it("returns true for [FILE: with closing bracket only", () => {
-    expect(isFileMessage("[FILE:]")).to.be.true;
+  it("returns false for [FILE: with closing bracket only", () => {
+    expect(isFileMessage("[FILE:]")).to.be.false;
+  });
+
+  it("returns false for a file token pointing to an untrusted URL", () => {
+    expect(isFileMessage("[FILE:x:javascript:alert(1):file]")).to.be.false;
+  });
+});
+
+// isTrustedFileUrl
+describe("isTrustedFileUrl", () => {
+  const api = "https://api.stdhub.example";
+
+  it("accepts Cloudinary over https", () => {
+    expect(isTrustedFileUrl("https://res.cloudinary.com/demo/a.jpg", api)).to.be.true;
+  });
+
+  it("accepts files served by the API origin", () => {
+    expect(isTrustedFileUrl(`${api}/uploads/chat/a.pdf`, api)).to.be.true;
+  });
+
+  it("accepts http only for localhost", () => {
+    expect(isTrustedFileUrl("http://localhost:3001/uploads/a.png", "http://localhost:3001")).to.be.true;
+    expect(isTrustedFileUrl("http://api.stdhub.example/uploads/a.png", "http://api.stdhub.example")).to.be.false;
+  });
+
+  it("rejects look-alike hosts", () => {
+    expect(isTrustedFileUrl("https://res.cloudinary.com.evil.example/a.jpg", api)).to.be.false;
+    expect(isTrustedFileUrl("https://evil.example/res.cloudinary.com/a.jpg", api)).to.be.false;
+  });
+
+  it("rejects invalid URLs", () => {
+    expect(isTrustedFileUrl("not a url", api)).to.be.false;
   });
 });
 
 // parseFileContent
 describe("parseFileContent", () => {
   it("parses new format with img type", () => {
-    const result = parseFileContent("[FILE:photo.jpg:https://cld.com/a.jpg:img]");
+    const result = parseFileContent("[FILE:photo.jpg:https://res.cloudinary.com/a.jpg:img]");
     expect(result).to.deep.equal({
       filename: "photo.jpg",
-      url: "https://cld.com/a.jpg",
+      url: "https://res.cloudinary.com/a.jpg",
       type: "img",
     });
   });
 
   it("parses new format with file type", () => {
-    const result = parseFileContent("[FILE:doc.pdf:https://cld.com/d.pdf:file]");
+    const result = parseFileContent("[FILE:doc.pdf:https://res.cloudinary.com/d.pdf:file]");
     expect(result).to.deep.equal({
       filename: "doc.pdf",
-      url: "https://cld.com/d.pdf",
+      url: "https://res.cloudinary.com/d.pdf",
       type: "file",
     });
   });
 
   it("parses old format (image extension)", () => {
-    const result = parseFileContent("[FILE:img.png:https://cld.com/i.png]");
+    const result = parseFileContent("[FILE:img.png:https://res.cloudinary.com/i.png]");
     expect(result).to.deep.equal({
       filename: "img.png",
-      url: "https://cld.com/i.png",
+      url: "https://res.cloudinary.com/i.png",
       type: "img",
     });
   });
 
   it("parses old format (non-image extension)", () => {
-    const result = parseFileContent("[FILE:data.xlsx:https://cld.com/d.xlsx]");
+    const result = parseFileContent("[FILE:data.xlsx:https://res.cloudinary.com/d.xlsx]");
     expect(result).to.deep.equal({
       filename: "data.xlsx",
-      url: "https://cld.com/d.xlsx",
+      url: "https://res.cloudinary.com/d.xlsx",
       type: "file",
     });
   });
@@ -325,33 +358,49 @@ describe("parseFileContent", () => {
   });
 
   it("parses filename with spaces", () => {
-    const result = parseFileContent("[FILE:my document.pdf:https://cld.com/d.pdf:file]");
+    const result = parseFileContent("[FILE:my document.pdf:https://res.cloudinary.com/d.pdf:file]");
     expect(result).to.deep.equal({
       filename: "my document.pdf",
-      url: "https://cld.com/d.pdf",
+      url: "https://res.cloudinary.com/d.pdf",
       type: "file",
     });
   });
 
   it("parses URL with query parameters", () => {
-    const result = parseFileContent("[FILE:img.png:https://cld.com/i.png?w=300&h=200:img]");
+    const result = parseFileContent("[FILE:img.png:https://res.cloudinary.com/i.png?w=300&h=200:img]");
     expect(result).to.have.property("filename", "img.png");
-    expect(result).to.have.property("url", "https://cld.com/i.png?w=300&h=200");
+    expect(result).to.have.property("url", "https://res.cloudinary.com/i.png?w=300&h=200");
     expect(result).to.have.property("type", "img");
   });
 
   it("detects image from URL extension in old format", () => {
-    const result = parseFileContent("[FILE:screenshot:https://cld.com/photo.jpeg]");
+    const result = parseFileContent("[FILE:screenshot:https://res.cloudinary.com/photo.jpeg]");
     expect(result).to.have.property("type", "img");
   });
 
   it("detects non-image from URL extension in old format", () => {
-    const result = parseFileContent("[FILE:data:https://cld.com/file.zip]");
+    const result = parseFileContent("[FILE:data:https://res.cloudinary.com/file.zip]");
     expect(result).to.have.property("type", "file");
   });
 
   it("returns null for just brackets with FILE:", () => {
     expect(parseFileContent("[FILE:]")).to.be.null;
+  });
+
+  it("rejects javascript: URLs", () => {
+    expect(parseFileContent("[FILE:x:javascript:alert(document.cookie):file]")).to.be.null;
+  });
+
+  it("rejects data: URLs", () => {
+    expect(parseFileContent("[FILE:x.png:data:text/html,<script>alert(1)</script>:img]")).to.be.null;
+  });
+
+  it("rejects attachments hosted on an arbitrary external domain", () => {
+    expect(parseFileContent("[FILE:a.png:https://evil.example/track.png:img]")).to.be.null;
+  });
+
+  it("rejects plain http on non-local hosts", () => {
+    expect(parseFileContent("[FILE:a.png:http://res.cloudinary.com/a.png:img]")).to.be.null;
   });
 
   it("returns null for malformed FILE: without closing bracket", () => {

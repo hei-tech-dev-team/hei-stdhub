@@ -76,9 +76,45 @@ export const formatTooltipDate = (date) =>
     year: "numeric",
   }) + ` à ${formatTime(date)}`;
 
-export const isFileMessage = (content) => Boolean(content && content.startsWith("[FILE:"));
+const readApiOrigin = () => {
+  try {
+    const configured = import.meta.env?.VITE_API_URL || "http://localhost:3001";
+    return new URL(configured).origin;
+  } catch {
+    return null;
+  }
+};
+
+const API_ORIGIN = readApiOrigin();
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
+
+/**
+ * File URLs come from message content, i.e. from any user. Only accept
+ * attachments hosted by our own upload backends (API /uploads or Cloudinary),
+ * over https (http allowed for local development only). This blocks
+ * javascript:/data: URLs, phishing redirects and IP-leaking remote images.
+ */
+export const isTrustedFileUrl = (rawUrl, apiOrigin = API_ORIGIN) => {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+  const isLocal = LOCAL_HOSTS.has(url.hostname);
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && isLocal)) return false;
+  if (apiOrigin && url.origin === apiOrigin) return true;
+  return url.hostname === "res.cloudinary.com";
+};
+
+export const isFileMessage = (content) => parseFileContent(content) !== null;
 
 export const parseFileContent = (content) => {
+  const file = parseFileToken(content);
+  return file && isTrustedFileUrl(file.url) ? file : null;
+};
+
+const parseFileToken = (content) => {
   if (!content || !content.startsWith("[FILE:") || !content.endsWith("]")) return null;
   const inner = content.slice(6, -1);
 
