@@ -84,7 +84,7 @@ local hooks (`.githooks/`) that reject invalid branch names and commit messages.
 | `chore` / `build` / `ci` / `style` | tooling, dependencies, pipeline, formatting |
 | `release` | release preparation |
 
-Examples: `feat/42-promo-chat`, `security/12-jwt-revocation`, `fix/57-avatar-upload`.
+Examples: `feat/42-post-comments`, `security/12-jwt-revocation`, `fix/57-avatar-upload`.
 Every branch maps to an issue (the number may be omitted only for `chore`/`ci`).
 
 ### Commits: Conventional Commits
@@ -93,7 +93,7 @@ Every branch maps to an issue (the number may be omitted only for `chore`/`ci`).
 type(optional-scope): short description
 ```
 
-Examples: `feat(chat): per-promo rooms`, `fix(auth): revoke JWTs after password reset`.
+Examples: `feat(feed): post comments`, `fix(auth): revoke JWTs after password reset`.
 A `!` after the type marks a breaking change: `refactor(api)!: migrate to TypeScript`.
 
 ### Pull requests

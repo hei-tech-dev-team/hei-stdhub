@@ -105,9 +105,9 @@ explicit `HS256`/`EdDSA` algorithm, `iss`/`aud`; argon2id or bcrypt cost 12; res
 
 ## 6. Database
 
-- No `promotions` / cohort entity (removed in #92), which a per-promo chat needs.
+- No `promotions` / cohort entity (removed in #92); useful as profile data.
 - `messages` mixes global and private chat with nullable `receiver_id` and an `is_global` flag. Replace with
-  `conversations` (type: `dm` | `promo` | `group`) + `conversation_members` + `messages` + `message_attachments`.
+  `conversations` (type: `global` | `dm` | `group`) + `conversation_members` + `messages` + `message_attachments`.
 - `TIMESTAMP` without time zone everywhere; use `TIMESTAMPTZ`.
 - `SERIAL` integer ids exposed in URLs (enumerable); consider UUIDv7 for public ids.
 - `users.ues TEXT[]` should be a join table; `custom_ues` naming.

@@ -6,6 +6,6 @@ branch="$(git rev-parse --abbrev-ref HEAD)"
 pattern='^(feat|fix|hotfix|security|refactor|perf|test|docs|chore|ci|build|style|release)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
 if [[ ! "$branch" =~ $pattern ]]; then
   echo "Invalid branch name: '$branch'"
-  echo "Format: <type>/<issue-number>-<description>   e.g. feat/42-promo-chat"
+  echo "Format: <type>/<issue-number>-<description>   e.g. feat/42-post-comments"
   exit 1
 fi
