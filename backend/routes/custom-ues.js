@@ -1,12 +1,12 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const developerOrAdmin = require("../middleware/developerOrAdmin");
+const requirePermission = require("../middleware/requirePermission");
 
 const router = express.Router();
 
-// GET all custom UEs
-router.get("/", async (req, res) => {
+// GET all custom UEs (public)
+router.get("/", requirePermission("customUe:read", "customUe"), async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT * FROM custom_ues ORDER BY ue ASC"
@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST create a custom UE
-router.post("/", auth, developerOrAdmin, async (req, res) => {
+router.post("/", auth, requirePermission("customUe:create", "customUe"), async (req, res) => {
   const { ue, level } = req.body;
   if (!ue || !level)
     return res.status(400).json({ error: "UE et niveau requis." });
@@ -44,7 +44,7 @@ router.post("/", auth, developerOrAdmin, async (req, res) => {
 });
 
 // DELETE a custom UE
-router.delete("/:id", auth, developerOrAdmin, async (req, res) => {
+router.delete("/:id", auth, requirePermission("customUe:delete", "customUe"), async (req, res) => {
   try {
     const getUe = await db.query("SELECT ue FROM custom_ues WHERE id = $1", [req.params.id]);
     
