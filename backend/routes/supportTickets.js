@@ -1,13 +1,13 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const developerOrAdmin = require("../middleware/developerOrAdmin");
+const requirePermission = require("../middleware/requirePermission");
 const { sendPushToUser } = require("../services/notificationService");
 
 const router = express.Router();
 
 // POST / — create a support ticket (any authenticated user)
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, requirePermission("supportTicket:create", "supportTicket"), async (req, res) => {
   const { title, description, page } = req.body;
   if (!title?.trim() || !description?.trim())
     return res.status(400).json({ error: "Titre et description requis." });
@@ -52,8 +52,8 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// GET / — list tickets (developer only)
-router.get("/", auth, developerOrAdmin, async (req, res) => {
+// GET / — list tickets (developer + admin only)
+router.get("/", auth, requirePermission("supportTicket:read", "supportTicket"), async (req, res) => {
   try {
     const { status, limit = 50, offset = 0 } = req.query;
     const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -86,8 +86,8 @@ router.get("/", auth, developerOrAdmin, async (req, res) => {
   }
 });
 
-// GET /:id — get ticket details with responses (developer only)
-router.get("/:id", auth, developerOrAdmin, async (req, res) => {
+// GET /:id — get ticket details with responses (developer + admin only)
+router.get("/:id", auth, requirePermission("supportTicket:read", "supportTicket"), async (req, res) => {
   try {
     const { rows: ticketRows } = await db.query(
       `SELECT st.*, u.pseudo AS reporter_pseudo, u.ref AS reporter_ref, u.email AS reporter_email
@@ -114,8 +114,8 @@ router.get("/:id", auth, developerOrAdmin, async (req, res) => {
   }
 });
 
-// PATCH /:id — update ticket status (developer only)
-router.patch("/:id", auth, developerOrAdmin, async (req, res) => {
+// PATCH /:id — update ticket status (developer + admin only)
+router.patch("/:id", auth, requirePermission("supportTicket:update", "supportTicket"), async (req, res) => {
   const { status } = req.body;
   if (!["open", "in_progress", "resolved", "closed"].includes(status))
     return res.status(400).json({ error: "Statut invalide." });
@@ -146,8 +146,8 @@ router.patch("/:id", auth, developerOrAdmin, async (req, res) => {
   }
 });
 
-// POST /:id/respond — add a response to a ticket (developer only)
-router.post("/:id/respond", auth, developerOrAdmin, async (req, res) => {
+// POST /:id/respond — add a response to a ticket (developer + admin only)
+router.post("/:id/respond", auth, requirePermission("supportTicket:respond", "supportTicket"), async (req, res) => {
   const { response } = req.body;
   if (!response?.trim())
     return res.status(400).json({ error: "Reponse requise." });
@@ -193,8 +193,8 @@ router.post("/:id/respond", auth, developerOrAdmin, async (req, res) => {
   }
 });
 
-// DELETE /:id — delete a ticket (developer only)
-router.delete("/:id", auth, developerOrAdmin, async (req, res) => {
+// DELETE /:id — delete a ticket (developer + admin only)
+router.delete("/:id", auth, requirePermission("supportTicket:delete", "supportTicket"), async (req, res) => {
   try {
     const { rows } = await db.query(
       "DELETE FROM support_tickets WHERE id = $1 RETURNING id",
