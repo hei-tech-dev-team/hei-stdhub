@@ -2,14 +2,10 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
 
 
-router.post("/", auth, async (req, res) => {
-  if (!["student", "teacher", "admin"].includes(req.user.role))
-    return res
-      .status(403)
-      .json({ error: "Réservé aux étudiants, professeurs et admin." });
-
+router.post("/", auth, requirePermission("suggestion:create", "suggestion"), async (req, res) => {
   const { titre, contenu, anonyme } = req.body;
   if (!titre?.trim() || !contenu?.trim())
     return res.status(400).json({ error: "Titre et contenu requis." });
@@ -27,10 +23,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-router.get("/", auth, async (req, res) => {
-  if (req.user.role !== "bde")
-    return res.status(403).json({ error: "Accès réservé au BDE." });
-
+router.get("/", auth, requirePermission("suggestion:read", "suggestion"), async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -64,10 +57,7 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-router.patch("/:id", auth, async (req, res) => {
-  if (req.user.role !== "bde")
-    return res.status(403).json({ error: "Accès réservé au BDE." });
-
+router.patch("/:id", auth, requirePermission("suggestion:review", "suggestion"), async (req, res) => {
   const { statut, justification } = req.body;
   const validStatuts = ["recu", "accepte", "a_discuter", "refuse"];
   if (!validStatuts.includes(statut))
@@ -92,10 +82,7 @@ router.patch("/:id", auth, async (req, res) => {
   }
 });
 
-router.post("/confirm", auth, async (req, res) => {
-  if (req.user.role !== "bde")
-    return res.status(403).json({ error: "Accès réservé au BDE." });
-
+router.post("/confirm", auth, requirePermission("suggestion:confirm", "suggestion"), async (req, res) => {
   try {
     const { rows: suggestions } = await db.query(
       `SELECT s.*,
@@ -161,10 +148,7 @@ router.post("/confirm", auth, async (req, res) => {
   }
 });
 
-router.post("/report", auth, async (req, res) => {
-  if (req.user.role !== "bde" && req.user.role !== "admin")
-    return res.status(403).json({ error: "Acces reserve au BDE." });
-
+router.post("/report", auth, requirePermission("suggestion:report", "suggestion"), async (req, res) => {
   const { suggestions } = req.body;
   if (!Array.isArray(suggestions) || suggestions.length === 0)
     return res.status(400).json({ error: "Suggestions requises." });
