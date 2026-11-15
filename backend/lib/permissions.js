@@ -43,6 +43,16 @@ function addRoles(actionKey, roleList) {
 
 // User-generated content (ownership: author_id === user.id).
 
+// message
+addMinRole("message:send", "student");
+addMinRole("message:read", "student");
+addMinRole("message:seen", "student");
+addMinRole("message:unread", "student");
+addMinRole("message:react", "student");
+addMinRole("message:delete", "student"); // ownership checked by caller
+addMinRole("message:attachment", "student");
+addMinRole("message:favorites", "student");
+
 // post
 addMinRole("post:create", "student");
 addMinRole("post:read", "student");
@@ -63,6 +73,11 @@ addMinRole("message:send", "student");
 addMinRole("message:read", "student");
 addMinRole("message:delete", "student"); // ownership checked by caller
 addMinRole("message:react", "student");
+addMinRole("message:seen", "student");
+addMinRole("message:unread", "student");
+addMinRole("message:send", "student");
+addMinRole("message:read", "student");
+addMinRole("message:delete", "student"); // ownership checked by caller
 
 // support ticket (any authenticated user can create)
 addMinRole("supportTicket:create", "student");

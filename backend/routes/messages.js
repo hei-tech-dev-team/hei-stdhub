@@ -8,6 +8,9 @@ const storage = require("../services/storage");
 const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
 const requirePermission = require("../middleware/requirePermission");
 const router = express.Router();
+
+// ownership context helper for delete on :id (sender only)
+
 const rateLimit = require("express-rate-limit");
 
 const reactionsLimiter = rateLimit({
@@ -92,7 +95,7 @@ router.get("/contacts", auth, requirePermission("user:read", "user"), async (req
 });
 
 // Get global chat messages (paginated, last 200 by default, supports before cursor)
-router.get("/global", auth, async (req, res) => {
+router.get("/global", auth, requirePermission("message:read", "message"), async (req, res) => {
   try {
     const { before, limit = 200 } = req.query;
     const msgLimit = Math.min(parseInt(limit) || 200, 500);
@@ -143,7 +146,7 @@ router.get("/global", auth, async (req, res) => {
 });
 
 // Get private messages between the caller and another user (paginated)
-router.get("/private/:userId", auth, async (req, res) => {
+router.get("/private/:userId", auth, requirePermission("message:read", "message"), async (req, res) => {
   try {
     const { before, limit = 100 } = req.query;
     const msgLimit = Math.min(parseInt(limit) || 100, 500);
@@ -231,7 +234,7 @@ router.post("/purge-test", auth, requirePermission("system:purgeGlobalMessages",
 });
 
 // Send a message (global or private)
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, requirePermission("message:send", "message"), async (req, res) => {
   const { receiver_id, is_global, reply_to_id = null } = req.body;
   const content = typeof req.body.content === "string" ? req.body.content : "";
   if (!content.trim()) return res.status(400).json({ error: "Message vide." });
@@ -336,7 +339,7 @@ router.post("/", auth, async (req, res) => {
 });
 
 // Mark messages as seen in batch
-router.patch("/seen", auth, async (req, res) => {
+router.patch("/seen", auth, requirePermission("message:seen", "message"), async (req, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0)
     return res.status(400).json({ error: "IDs requis." });
@@ -363,7 +366,7 @@ router.patch("/seen", auth, async (req, res) => {
 });
 
 // Mark a single message as seen (kept for backward compatibility)
-router.patch("/:id/seen", auth, async (req, res) => {
+router.patch("/:id/seen", auth, requirePermission("message:seen", "message"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `UPDATE messages SET seen=TRUE, seen_at=NOW()
@@ -389,7 +392,7 @@ router.patch("/:id/seen", auth, async (req, res) => {
 });
 
 // Get unread counts for the current user
-router.get("/unread", auth, async (req, res) => {
+router.get("/unread", auth, requirePermission("message:unread", "message"), async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -436,7 +439,7 @@ router.get("/unread", auth, async (req, res) => {
 });
 
 // Mark global chat as read up to a given message id
-router.post("/global/read", auth, async (req, res) => {
+router.post("/global/read", auth, requirePermission("message:read", "message"), async (req, res) => {
   const { messageId } = req.body;
   if (!messageId) return res.status(400).json({ error: "messageId requis." });
   try {
@@ -455,7 +458,7 @@ router.post("/global/read", auth, async (req, res) => {
 });
 
 // add reaction to a message (toggle)
-router.post("/:id/reactions", reactionsLimiter, auth, async (req, res) => {
+router.post("/:id/reactions", reactionsLimiter, auth, requirePermission("message:react", "message"), async (req, res) => {
   const messageId = parseInt(req.params.id);
   const { emoji } = req.body;
   const userId = req.user.id;
@@ -509,7 +512,7 @@ router.post("/:id/reactions", reactionsLimiter, auth, async (req, res) => {
 });
 
 // Delete a message (only the sender can delete their own message)
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", auth, requirePermission("message:delete", "message"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `DELETE FROM messages WHERE id=$1 AND sender_id=$2
@@ -537,7 +540,7 @@ router.delete("/:id", auth, async (req, res) => {
 });
 
 // Upload a file to Cloudinary (or local disk) for chat sharing
-router.post("/upload", auth, storage.single("file"), async (req, res) => {
+router.post("/upload", auth, requirePermission("message:attachment", "message"), storage.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "Fichier requis." });
   try {
     const f = await storage.saveFile(req.file, "chat");
@@ -548,7 +551,7 @@ router.post("/upload", auth, storage.single("file"), async (req, res) => {
   }
 });
 
-router.get("/favorites", auth, async (req, res) => {
+router.get("/favorites", auth, requirePermission("message:favorites", "message"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT contact_id FROM chat_favorites WHERE user_id=$1 ORDER BY created_at ASC`,
@@ -560,7 +563,7 @@ router.get("/favorites", auth, async (req, res) => {
   }
 });
 
-router.post("/favorites", auth, async (req, res) => {
+router.post("/favorites", auth, requirePermission("message:favorites", "message"), async (req, res) => {
   const { contact_id } = req.body;
   if (!contact_id) return res.status(400).json({ error: "contact_id requis." });
   try {
@@ -576,7 +579,7 @@ router.post("/favorites", auth, async (req, res) => {
   }
 });
 
-router.delete("/favorites/:contactId", auth, async (req, res) => {
+router.delete("/favorites/:contactId", auth, requirePermission("message:favorites", "message"), async (req, res) => {
   try {
     await db.query(
       `DELETE FROM chat_favorites WHERE user_id=$1 AND contact_id=$2`,

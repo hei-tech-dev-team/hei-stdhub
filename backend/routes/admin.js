@@ -2,8 +2,7 @@ const crypto = require("crypto");
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const developerOrAdmin = require("../middleware/developerOrAdmin");
-const developerOnly = require("../middleware/developerOnly");
+const requirePermission = require("../middleware/requirePermission");
 const { logAdminAction } = require("../services/auditLog");
 
 const router = express.Router();
@@ -30,26 +29,23 @@ const loadManageableTarget = async (req, res) => {
             return null;
       }
       const target = rows[0];
-      if (
-            req.user.role !== "developer" &&
-            target.id !== req.user.id &&
-            PRIVILEGED_ROLES.includes(target.role)
-      ) {
-            res.status(403).json({
-                  error: "Seul un developpeur peut modifier un compte admin ou developpeur.",
-            });
-            return null;
-      }
-      return target;
-};
+      // Developer-only rule is enforced here; admin/developer self-mgmt
+      // and cross-role edits are handled by the route handler.
+      // Developer-only rule is enforced here; admin/developer self-mgmt
+      // and cross-role edits are handled by the route handler.            if (
+                  req.user.role !== "developer" &&
+                  target.id !== req.user.id &&
+                  PRIVILEGED_ROLES.includes(target.role)
+            ) {
+                  res.status(403).json({
+                        error: "Seul un developpeur peut modifier un compte admin ou developpeur.",
+                  });
+                  return null;
+            }
+            return target;
+      };
 
-const adminOnly = (req, res, next) => {
-      if (req.user.role !== "admin")
-            return res.status(403).json({ error: "Acces reserve a l'admin." });
-      next();
-};
-
-router.get("/stats", auth, developerOrAdmin, async (req, res) => {
+      router.get("/stats", auth, requirePermission("user:read", "user"), async (req, res) => {
       try {
             const [counts, byRole] = await Promise.all([
                   db.query(`
@@ -70,7 +66,7 @@ router.get("/stats", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.get("/next-pseudo", auth, developerOrAdmin, async (req, res) => {
+router.get("/next-pseudo", auth, requirePermission("user:read", "user"), async (req, res) => {
       try {
             const { rows } = await db.query(
               `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(pseudo, '^new_user0*', '') AS INTEGER)), 0) AS last_num FROM users WHERE pseudo ~ '^new_user[0-9]+$'`
@@ -81,7 +77,7 @@ router.get("/next-pseudo", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.get("/users", auth, developerOrAdmin, async (req, res) => {
+router.get("/users", auth, requirePermission("user:read", "user"), async (req, res) => {
       try {
             const { q, role, limit = 50, offset = 0 } = req.query;
             const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -136,28 +132,15 @@ router.get("/users", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/role", auth, developerOrAdmin, async (req, res) => {
+router.patch("/users/:id/role", auth, requirePermission("user:edit", "user"), async (req, res) => {
       const { role } = req.body;
       const validRoles = ["student", "teacher", "admin", "bde", "developer"];
       if (!validRoles.includes(role))
             return res.status(400).json({ error: "Rôle invalide." });
       if (req.user.role === "developer" && parseInt(req.params.id) === req.user.id)
             return res.status(403).json({ error: "Un developpeur ne peut pas modifier son propre rôle." });
-      try {
-            // Only a developer may grant the developer role or alter an existing developer.
-            if (req.user.role !== "developer") {
-                  const { rows: targetRows } = await db.query(
-                        "SELECT role FROM users WHERE id=$1",
-                        [req.params.id],
-                  );
-                  if (!targetRows.length)
-                        return res.status(404).json({ error: "Utilisateur introuvable." });
-                  if (role === "developer" || targetRows[0].role === "developer")
-                        return res.status(403).json({
-                              error: "Seul un developpeur peut attribuer ou modifier le role developpeur.",
-                        });
-            }
-            const target = await loadManageableTarget(req, res);
+
+      const target = await loadManageableTarget(req, res);
             if (!target) return;
             const { rows } = await db.query(
                   "UPDATE users SET role=$1 WHERE id=$2 RETURNING id, ref, pseudo, role",
@@ -174,7 +157,7 @@ router.patch("/users/:id/role", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/email", auth, developerOrAdmin, async (req, res) => {
+router.patch("/users/:id/email", auth, requirePermission("user:edit", "user"), async (req, res) => {
       const { email } = req.body;
       if (!email || !email.includes("@"))
             return res.status(400).json({ error: "Email invalide." });
@@ -196,7 +179,7 @@ router.patch("/users/:id/email", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.delete("/users/:id", auth, developerOrAdmin, async (req, res) => {
+router.delete("/users/:id", auth, requirePermission("user:delete", "user"), async (req, res) => {
       if (parseInt(req.params.id) === req.user.id)
             return res
                   .status(400)
@@ -218,7 +201,7 @@ router.delete("/users/:id", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/role-upgrade", auth, developerOrAdmin, async (req, res) => {
+router.patch("/users/:id/role-upgrade", auth, requirePermission("user:roleUpgrade", "user"), async (req, res) => {
       try {
             const { rows } = await db.query(
                   "SELECT id, role FROM users WHERE id = $1",
@@ -258,7 +241,7 @@ const generateInviteCode = (role) => {
       return `${prefixes[role]}-${random}`;
 };
 
-router.post("/invitations", auth, developerOrAdmin, async (req, res) => {
+router.post("/invitations", auth, requirePermission("user:inviteCreate", "user"), async (req, res) => {
       const { role, max_uses } = req.body;
       if (!["student", "teacher"].includes(role))
             return res.status(400).json({ error: "Rôle invalide." });
@@ -284,7 +267,7 @@ router.post("/invitations", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.post("/invitations/bulk", auth, developerOrAdmin, async (req, res) => {
+router.post("/invitations/bulk", auth, requirePermission("user:inviteBulkCreate", "user"), async (req, res) => {
   const { role, count, max_uses } = req.body;
   if (!["student", "teacher"].includes(role))
     return res.status(400).json({ error: "Rôle invalide." });
@@ -339,7 +322,7 @@ router.post("/invitations/bulk", auth, developerOrAdmin, async (req, res) => {
   }
 });
 
-router.get("/invitations", auth, developerOrAdmin, async (req, res) => {
+router.get("/invitations", auth, requirePermission("user:read", "user"), async (req, res) => {
       try {
             const { limit = 50, offset = 0 } = req.query;
             const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -363,7 +346,7 @@ router.get("/invitations", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.delete("/invitations/:id", auth, developerOrAdmin, async (req, res) => {
+router.delete("/invitations/:id", auth, requirePermission("user:delete", "user"), async (req, res) => {
       try {
             await db.query("DELETE FROM invitations WHERE id=$1", [
                   req.params.id,
@@ -377,7 +360,7 @@ router.delete("/invitations/:id", auth, developerOrAdmin, async (req, res) => {
       }
 });
 
-router.patch("/users/:id/ues", auth, adminOnly, async (req, res) => {
+router.patch("/users/:id/ues", auth, requirePermission("user:ueAssign", "user"), async (req, res) => {
       const { ues } = req.body;
 
       if (!Array.isArray(ues)) {

@@ -272,7 +272,7 @@ router.post("/", auth, storage.many("files"), requirePermission("post:create", "
     }
 });
 
-router.patch("/:id", auth, async (req, res) => {
+router.patch("/:id", auth, requirePermission("post:edit", "post"), async (req, res) => {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: "ID invalide" });
 
@@ -299,11 +299,10 @@ router.patch("/:id", auth, async (req, res) => {
         );
         if (check.rows.length === 0) {
             return res.status(404).json({ error: "Publication non trouvée" });
-        }
-        const post = check.rows[0];
-        if (!requirePermission("post:edit", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
-            return res.status(403).json({ error: "forbidden" });
-        }
+        }      const post = check.rows[0];
+      if (!requirePermission("post:edit", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
+        return res.status(403).json({ error: "forbidden" });
+      }
         if (post.type === "announcement" && title === "") {
             return res.status(400).json({ error: "Le titre d'une annonce ne peut pas être vide" });
         }
@@ -325,7 +324,7 @@ router.patch("/:id", auth, async (req, res) => {
     }
 });
 
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", auth, requirePermission("post:delete", "post"), async (req, res) => {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: "ID invalide" });
 
@@ -336,12 +335,9 @@ router.delete("/:id", auth, async (req, res) => {
         );
         if (check.rows.length === 0) {
             return res.status(404).json({ error: "Publication non trouvée ou déjà supprimée" });
-        }
-
-        const post = check.rows[0];
-
+        }        const post = check.rows[0];
         if (!requirePermission("post:delete", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
-            return res.status(403).json({ error: "forbidden" });
+          return res.status(403).json({ error: "forbidden" });
         }
 
         await db.query(
