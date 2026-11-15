@@ -31,18 +31,17 @@ const loadManageableTarget = async (req, res) => {
       const target = rows[0];
       // Developer-only rule is enforced here; admin/developer self-mgmt
       // and cross-role edits are handled by the route handler.
-      // Developer-only rule is enforced here; admin/developer self-mgmt
-      // and cross-role edits are handled by the route handler.            if (
-                  req.user.role !== "developer" &&
-                  target.id !== req.user.id &&
-                  PRIVILEGED_ROLES.includes(target.role)
-            ) {
-                  res.status(403).json({
-                        error: "Seul un developpeur peut modifier un compte admin ou developpeur.",
-                  });
-                  return null;
-            }
-            return target;
+      if (
+            req.user.role !== "developer" &&
+            target.id !== req.user.id &&
+            PRIVILEGED_ROLES.includes(target.role)
+      ) {
+            res.status(403).json({
+                  error: "Seul un developpeur peut modifier un compte admin ou developpeur.",
+            });
+            return null;
+      }
+      return target;
       };
 
       router.get("/stats", auth, requirePermission("user:read", "user"), async (req, res) => {
@@ -140,7 +139,8 @@ router.patch("/users/:id/role", auth, requirePermission("user:edit", "user"), as
       if (req.user.role === "developer" && parseInt(req.params.id) === req.user.id)
             return res.status(403).json({ error: "Un developpeur ne peut pas modifier son propre rôle." });
 
-      const target = await loadManageableTarget(req, res);
+      try {
+            const target = await loadManageableTarget(req, res);
             if (!target) return;
             const { rows } = await db.query(
                   "UPDATE users SET role=$1 WHERE id=$2 RETURNING id, ref, pseudo, role",

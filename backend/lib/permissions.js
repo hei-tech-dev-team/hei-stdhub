@@ -56,6 +56,11 @@ addMinRole("message:delete", "student"); // ownership checked by caller
 addMinRole("message:attachment", "student");
 addMinRole("message:favorites", "student");
 
+// shared permissions for bde and teacher (both above student, and both below admin)
+addRoles("message:send", ["student", "teacher", "bde", "admin", "developer"]);
+addRoles("message:read", ["student", "teacher", "bde", "admin", "developer"]);
+addRoles("message:seen", ["student", "teacher", "bde", "admin", "developer"]);
+
 // comment (attached to a post)
 addMinRole("comment:create", "student");
 addMinRole("comment:read", "student");
@@ -77,7 +82,8 @@ addRoles("bugReport:delete", ["developer", "admin"]);
 
 // suggestion
 addRoles("suggestion:create", ["student", "teacher", "admin"]);
-addRoles("suggestion:read", ["bde"]);
+addRoles("suggestion:read", ["teacher", "admin"]);
+addRoles("suggestion:vote", ["teacher", "admin"]);
 addRoles("suggestion:review", ["bde"]); // change status / add justification
 addRoles("suggestion:confirm", ["bde"]);
 addRoles("suggestion:report", ["bde"]);
@@ -111,20 +117,34 @@ addRoles("user:roleUpgrade", ["admin", "developer"]); // upgrade to bde role
 // comments posted by others on the author’s own post
 addMinRole("comment:moderate", "student");
 
-// Admin / pedagogical resources.
-
-// supports (pedagogical links)
+// shared resource labels used by route declarations
+addRoles("support:read", ["teacher", "admin"]);
 addRoles("support:create", ["teacher", "admin"]);
 addRoles("support:delete", ["teacher", "admin"]);
-addMinRole("support:read", "student");
-
-// custom UEs (create / delete)
-addRoles("customUe:create", ["admin", "developer"]);
-addRoles("customUe:delete", ["admin", "developer"]);
-addMinRole("customUe:read", "student");
-
-// system (global message purge, dev + admin only)
+addRoles("bug:read", ["teacher", "admin"]);
+addRoles("bug:create", ["teacher", "admin"]);
+addRoles("bug:close", ["teacher", "admin"]);
+addRoles("ticket:read", ["teacher", "admin"]);
+addRoles("ticket:create", ["teacher", "admin"]);
+addRoles("ticket:close", ["teacher", "admin"]);
+addRoles("ticket:reply", ["teacher", "admin"]);
+addRoles("ticket:assign", ["teacher", "admin"]);
+addRoles("ticket:reopen", ["teacher", "admin"]);
+addRoles("ticket:purge", ["teacher", "admin"]);
+addRoles("suggestion:read", ["teacher", "admin"]);
+addRoles("suggestion:vote", ["teacher", "admin"]);
+addMinRole("post:read", "student");
+addMinRole("post:create", "student");
+addMinRole("post:edit", "student");
+addMinRole("post:delete", "student");
+addMinRole("comment:read", "student");
+addMinRole("comment:create", "student");
+addMinRole("comment:delete", "student");
+addMinRole("comment:hide", "student");
+addMinRole("push:subscribe", "student");
 addRoles("system:purgeGlobalMessages", ["admin", "developer"]);
+
+
 
 // Post author can moderate comments attached to their own post.
 
