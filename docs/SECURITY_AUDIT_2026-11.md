@@ -49,7 +49,7 @@ explicit `HS256`/`EdDSA` algorithm, `iss`/`aud`; argon2id or bcrypt cost 12; res
 | # | Sev | Finding | Location |
 |---|-----|---------|----------|
 | C-04 | C | **Privilege escalation:** any `admin` (or `developer`) can set any user's role to `admin` or `developer` (including their own as admin). No audit trail. | `routes/admin.js` `PATCH /users/:id/role` |
-| H-04 | H | The `developer` role is a hidden superuser: invisible in presence and contact lists, receives every support ticket, can purge chat, manage users and invitations. It has no product purpose and must be removed. | `middleware/developer*.js`, `server.js`, `routes/messages.js`, `routes/admin.js`, `routes/supportTickets.js`, `routes/bugReports.js` |
+| H-04 | H | The `developer` role is a hidden superuser: invisible in presence and contact lists, receives every support ticket, can purge chat, manage users and invitations. The role is kept (as `dev`) but must be rebuilt as a visible, least-privilege role (#131). | `middleware/developer*.js`, `server.js`, `routes/messages.js`, `routes/admin.js`, `routes/supportTickets.js`, `routes/bugReports.js` |
 | H-05 | H | Socket events trusted from clients: `message:global` and `message:private` re-broadcast **any client-crafted payload** (sender spoofing, fake messages to everyone); `bde:join` and `bde:update` are open to every user; `typing:*` and `message:seen` can target anyone. | `server.js:227-290` |
 | H-06 | H | IDOR via `reply_to_id`: replying with the id of someone else's private message returns its content to you. | `routes/messages.js` `POST /` |
 | M-05 | M | Reactions can be added to any message (including others' DMs) and the result is `io.emit`'d to everyone; `message:deleted` is broadcast globally. | `routes/messages.js` |
@@ -105,7 +105,7 @@ explicit `HS256`/`EdDSA` algorithm, `iss`/`aud`; argon2id or bcrypt cost 12; res
 
 ## 6. Database
 
-- No `promotions` / cohort entity (removed in #92); useful as profile data.
+- By product decision there is no academic year/level/promotion: everyone is part of the tribe. Remove the remaining `level` references (#177).
 - `messages` mixes global and private chat with nullable `receiver_id` and an `is_global` flag. Replace with
   `conversations` (type: `global` | `dm` | `group`) + `conversation_members` + `messages` + `message_attachments`.
 - `TIMESTAMP` without time zone everywhere; use `TIMESTAMPTZ`.
