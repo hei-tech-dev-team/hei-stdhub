@@ -56,31 +56,11 @@ addMinRole("message:delete", "student"); // ownership checked by caller
 addMinRole("message:attachment", "student");
 addMinRole("message:favorites", "student");
 
-// post
-addMinRole("post:create", "student");
-addMinRole("post:read", "student");
-addMinRole("post:edit", "student"); // ownership checked by caller
-addMinRole("post:delete", "student"); // ownership checked by caller
-addMinRole("post:react", "student");
-addMinRole("post:removeReaction", "student");
-addRoles("post:createAnnouncement", ["admin", "bde", "teacher"]);
-
 // comment (attached to a post)
 addMinRole("comment:create", "student");
 addMinRole("comment:read", "student");
 addMinRole("comment:edit", "student"); // ownership checked by caller
 addMinRole("comment:delete", "student"); // ownership checked by caller
-
-// message (global / private / reaction / self-delete)
-addMinRole("message:send", "student");
-addMinRole("message:read", "student");
-addMinRole("message:delete", "student"); // ownership checked by caller
-addMinRole("message:react", "student");
-addMinRole("message:seen", "student");
-addMinRole("message:unread", "student");
-addMinRole("message:send", "student");
-addMinRole("message:read", "student");
-addMinRole("message:delete", "student"); // ownership checked by caller
 
 // support ticket (any authenticated user can create)
 addMinRole("supportTicket:create", "student");
@@ -127,6 +107,9 @@ addRoles("user:inviteCreate", ["admin", "developer"]);
 addRoles("user:inviteBulkCreate", ["admin", "developer"]);
 addRoles("user:ueAssign", ["admin"]); // PATCH /users/:id/ues (formerly inline adminOnly)
 addRoles("user:roleUpgrade", ["admin", "developer"]); // upgrade to bde role
+
+// comments posted by others on the author’s own post
+addMinRole("comment:moderate", "student");
 
 // Admin / pedagogical resources.
 

@@ -299,8 +299,7 @@ router.patch("/:id", auth, requirePermission("post:edit", "post"), async (req, r
         );
         if (check.rows.length === 0) {
             return res.status(404).json({ error: "Publication non trouvée" });
-        }      const post = check.rows[0];
-      if (!requirePermission("post:edit", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
+        }      if (!requirePermission("post:edit", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
         return res.status(403).json({ error: "forbidden" });
       }
         if (post.type === "announcement" && title === "") {
@@ -335,8 +334,7 @@ router.delete("/:id", auth, requirePermission("post:delete", "post"), async (req
         );
         if (check.rows.length === 0) {
             return res.status(404).json({ error: "Publication non trouvée ou déjà supprimée" });
-        }        const post = check.rows[0];
-        if (!requirePermission("post:delete", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
+        }        if (!requirePermission("post:delete", "post", () => ({ ownerId: post.author_id, userId: req.user.id }))(req, res)) {
           return res.status(403).json({ error: "forbidden" });
         }
 
