@@ -6,6 +6,7 @@ const db = require("../db");
 const auth = require("../middleware/auth");
 const storage = require("../services/storage");
 const { sendPushToUser, sendPushToAll } = require("../services/notificationService");
+const requirePermission = require("../middleware/requirePermission");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
 
@@ -33,7 +34,7 @@ const REACTIONS_SUBQUERY = `
 `;
 
 // Search users by ref or pseudo
-router.get("/search", auth, async (req, res) => {
+router.get("/search", auth, requirePermission("user:read", "user"), async (req, res) => {
   const { q } = req.query;
   if (!q?.trim()) return res.json([]);
   const isDeveloper = req.user.role === "developer";
@@ -55,7 +56,7 @@ router.get("/search", auth, async (req, res) => {
 });
 
 // List contacts with optional search filter and pagination
-router.get("/contacts", auth, async (req, res) => {
+router.get("/contacts", auth, requirePermission("user:read", "user"), async (req, res) => {
   try {
     const { q, limit = 200, offset = 0 } = req.query;
     const isDeveloper = req.user.role === "developer";
@@ -210,12 +211,9 @@ router.get("/private/:userId", auth, async (req, res) => {
   }
 });
 
-// POST /purge-test —  (admin only, debug)
+// POST /purge-test —  (admin + developer only, debug)
 let purgeInProgress = false;
-router.post("/purge-test", auth, async (req, res) => {
-  if (!["admin", "developer"].includes(req.user.role)) {
-    return res.status(403).json({ error: "Réservé aux administrateurs." });
-  }
+router.post("/purge-test", auth, requirePermission("system:purgeGlobalMessages", "system"), async (req, res) => {
   if (purgeInProgress) {
     return res.status(429).json({ error: "Une purge est déjà en cours." });
   }
