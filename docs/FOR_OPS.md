@@ -81,6 +81,7 @@ psql "$DATABASE_URL" -f database/migration_multi_use_invitations.sql
 psql "$DATABASE_URL" -f database/migration_alumni_support.sql
 psql "$DATABASE_URL" -f database/migration_chat_seen_pseudo_unique.sql
 psql "$DATABASE_URL" -f database/migration_scale_500.sql
+psql "$DATABASE_URL" -f database/migration_token_version.sql
 psql "$DATABASE_URL" -f database/migration_chat_emoji_transfer_answer.sql
 psql "$DATABASE_URL" -f database/migration_groupe_column.sql
 psql "$DATABASE_URL" -f database/migration_admin_audit_log.sql

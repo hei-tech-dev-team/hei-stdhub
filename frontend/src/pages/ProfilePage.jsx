@@ -169,10 +169,12 @@ export default function ProfilePage() {
     }
     setLoadingPwd(true);
     try {
-      await api.patch("/auth/password", {
+      const { data } = await api.patch("/auth/password", {
         current: currentPwd,
         newPassword: newPwd,
       });
+      // The server revokes previous sessions and returns a fresh token for this one.
+      if (data?.token) localStorage.setItem("hei_token", data.token);
       setSuccessPwd(true);
       setCurrentPwd("");
       setNewPwd("");

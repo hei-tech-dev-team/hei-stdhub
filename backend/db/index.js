@@ -70,6 +70,10 @@ pool.on("error", (err) => {
 
 const ensureIndexes = async () => {
   try {
+    // Server-side JWT revocation (see database/migration_token_version.sql) —
+    // idempotent, so a deploy can never ship without the column the auth
+    // middleware relies on.
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0;`);
     await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login BOOLEAN NOT NULL DEFAULT true;`);
     // Audit trail for privileged admin/developer actions (see
