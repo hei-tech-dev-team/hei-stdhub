@@ -90,6 +90,13 @@ addMinRole("ping:read", "student");
 addMinRole("ping:accept", "student");
 addMinRole("ping:refuse", "student");
 
+// push
+addMinRole("push:subscribe", "student");
+addMinRole("push:unsubscribe", "student");
+addMinRole("push:notifications:list", "student");
+addMinRole("push:notifications:markRead", "student");
+addMinRole("push:notifications:unreadCount", "student");
+
 // Admin / user-account management (admin + developer side).
 
 // Read-only user listing
