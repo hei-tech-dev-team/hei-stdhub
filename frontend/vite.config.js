@@ -12,17 +12,24 @@ export default defineConfig({
   },
   build: {
     target: "es2020",
-    minify: "esbuild",
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          socket: ["socket.io-client"],
-          lucide: ["lucide-react"],
-          fa: ["@fortawesome/fontawesome-svg-core", "@fortawesome/free-solid-svg-icons"],
-          pdf: ["jspdf"],
-          emoji: ["emoji-picker-react"],
+        // Vite 8 (rolldown) only accepts manualChunks as a function.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          const chunks = {
+            vendor: ["/react/", "/react-dom/", "/react-router-dom/", "/react-router/", "/scheduler/"],
+            socket: ["/socket.io-client/", "/engine.io-client/", "/socket.io-parser/"],
+            lucide: ["/lucide-react/"],
+            fa: ["/@fortawesome/"],
+            pdf: ["/jspdf/"],
+            emoji: ["/emoji-picker-react/"],
+          };
+          for (const [name, pkgs] of Object.entries(chunks)) {
+            if (pkgs.some((pkg) => id.includes(`/node_modules${pkg}`))) return name;
+          }
+          return undefined;
         },
       },
     },
