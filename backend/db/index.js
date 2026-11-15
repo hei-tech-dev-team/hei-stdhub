@@ -72,6 +72,23 @@ const ensureIndexes = async () => {
   try {
     await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login BOOLEAN NOT NULL DEFAULT true;`);
+    // Audit trail for privileged admin/developer actions (see
+    // database/migration_admin_audit_log.sql) — idempotent, so a deploy can
+    // never ship without it.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_audit_log (
+        id         SERIAL       PRIMARY KEY,
+        actor_id   INTEGER      NULL REFERENCES users(id) ON DELETE SET NULL,
+        actor_role VARCHAR(20)  NULL,
+        action     VARCHAR(64)  NOT NULL,
+        target_id  INTEGER      NULL,
+        details    JSONB        NOT NULL DEFAULT '{}'::jsonb,
+        ip         VARCHAR(64)  NULL,
+        created_at TIMESTAMP    NOT NULL DEFAULT NOW()
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_admin_audit_log_created_at ON admin_audit_log (created_at DESC);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_admin_audit_log_target ON admin_audit_log (target_id);`);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS custom_ues (
@@ -107,7 +124,7 @@ const ensureIndexes = async () => {
     `);
 
     await pool.query(`
-      CREATE TRIGGER trg_support_tickets_updated_at
+      CREATE OR REPLACE TRIGGER trg_support_tickets_updated_at
         BEFORE UPDATE ON support_tickets
         FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
     `);
