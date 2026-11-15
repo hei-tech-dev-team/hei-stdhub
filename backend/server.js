@@ -8,19 +8,27 @@ const { Server } = require("socket.io");
 require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
+const { verifyAccessToken } = require("./services/tokenAuth");
 const webpush = require("web-push");
 
 const { startMessagePurgeJob } = require("./services/messagePurgeJob");
+const { warnIfSeedAccountsPresent } = require("./services/securityChecks");
 
-// Validate critical env vars at startup
+// Validate critical env vars at startup. In production the VAPID keys must
+// come from the environment: Render's disk is ephemeral, so keys generated at
+// runtime rotate on every redeploy, invalidate all push subscriptions and
+// break the push-based password reset (audit I1).
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"];
+if (process.env.NODE_ENV === "production") {
+  REQUIRED_ENV.push("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY");
+}
 const missingEnv = REQUIRED_ENV.filter((v) => !process.env[v]);
 if (missingEnv.length > 0) {
   console.error(`Missing required env vars: ${missingEnv.join(", ")}`);
   process.exit(1);
 }
 
-// VAPID keys — auto-generated if missing, persisted to disk across restarts
+// VAPID keys — development only: auto-generated if missing, persisted to disk
 const VAPID_KEYS_FILE = process.env.VAPID_KEYS_FILE || path.join(__dirname, ".vapid-keys.json");
 const VAPID_KEYS_FILE_FALLBACK = path.join(__dirname, "..", ".vapid-keys.json");
 
@@ -109,11 +117,14 @@ const io = new Server(server, {
 });
 
 // Socket auth middleware — verify JWT on connection
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+io.use(async (socket, next) => {
+  // Token only via handshake auth: query strings end up in proxy/access logs (L3).
+  const token = socket.handshake.auth?.token;
   if (!token) return next(new Error("Token manquant."));
   try {
-    socket.user = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await verifyAccessToken(token);
+    if (!user) return next(new Error("Token invalide."));
+    socket.user = user;
     next();
   } catch {
     next(new Error("Token invalide."));
@@ -145,6 +156,14 @@ app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"), {
     maxAge: "7d",
+    setHeaders: (res, filePath) => {
+      // Never let the browser sniff or render user uploads as active content.
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+      if (!/\.(jpe?g|png|gif|webp)$/i.test(filePath)) {
+        res.setHeader("Content-Disposition", "attachment");
+      }
+    },
   }),
 );
 
@@ -193,11 +212,53 @@ app.use((err, req, res, next) => {
 const onlineUsers = new Map();
 const MAX_ONLINE_USERS = parseInt(process.env.MAX_ONLINE_USERS || "5000", 10);
 
+const BDE_STATUSES = new Set(["recu", "accepte", "a_discuter", "refuse"]);
+const MAX_JUSTIFICATION_LENGTH = 1000;
+const toPositiveInt = (value) => {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+// Per-socket flood protection: at most SOCKET_RATE_MAX events per window.
+const SOCKET_RATE_WINDOW_MS = 10 * 1000;
+const SOCKET_RATE_MAX = parseInt(process.env.SOCKET_RATE_MAX || "60", 10);
+
 io.on("connection", (socket) => {
-  socket.on("user:join", (userId) => {
+  let windowStart = Date.now();
+  let eventCount = 0;
+  socket.use((packet, next) => {
+    const now = Date.now();
+    if (now - windowStart > SOCKET_RATE_WINDOW_MS) {
+      windowStart = now;
+      eventCount = 0;
+    }
+    eventCount += 1;
+    if (eventCount > SOCKET_RATE_MAX) {
+      if (eventCount === SOCKET_RATE_MAX + 1) {
+        console.warn(`[socket ${socket.id}] rate limit exceeded (user ${socket.user?.id})`);
+        socket.emit("error", { message: "Trop d'evenements, ralentissez." });
+      }
+      return; // drop the event
+    }
+    next();
+  });
+
+  socket.on("user:join", (clientUserId) => {
     if (onlineUsers.size >= MAX_ONLINE_USERS) {
       socket.emit("error", { message: "Serveur saturé." });
       return;
+    }
+
+    // Bind the room to the authenticated identity, never to client input.
+    const userId = socket.user?.id;
+    if (!userId) {
+      console.warn(`[socket ${socket.id}] user:join ignored: unauthenticated socket`);
+      return;
+    }
+    if (clientUserId != null && String(clientUserId) !== String(userId)) {
+      console.warn(
+        `[socket ${socket.id}] user:join id mismatch (client=${clientUserId}, auth=${userId}), using authenticated id`,
+      );
     }
 
     // Leave previous room for this userId (handles reconnection)
@@ -226,60 +287,77 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("message:global", (msg) => {
-    if (!msg || !msg.content) {
-      socket.emit("error", { message: "Message vide." });
-      return;
-    }
-    io.emit("message:global", msg);
-  });
+  // Chat messages are only sent through the REST API (POST /api/messages),
+  // which validates, filters, persists and then broadcasts them. The former
+  // "message:global" / "message:private" socket handlers relayed arbitrary
+  // client objects (forged sender_pseudo/sender_id, unbounded size) and have
+  // been removed on purpose (audit H5).
 
-  socket.on("message:private", ({ receiverId, msg }) => {
-    if (!receiverId || !msg) return;
-    io.to(`user:${receiverId}`).emit("message:private", msg);
-    io.to(`user:${socket.userId}`).emit("message:private", msg);
-  });
-
-  socket.on("message:seen", ({ messageId, senderId }) => {
-    if (!messageId || !senderId) return;
+  socket.on("message:seen", (payload) => {
+    const messageId = toPositiveInt(payload?.messageId);
+    const senderId = toPositiveInt(payload?.senderId);
+    if (!socket.userId || !messageId || !senderId) return;
     io.to(`user:${senderId}`).emit("message:seen", { messageId, readerId: socket.userId });
   });
 
-  socket.on("typing:started", ({ contactId, isGlobal }) => {
-    if (!contactId) return;
-    if (isGlobal) {
+  socket.on("typing:started", (payload) => {
+    if (!socket.userId) return;
+    if (payload?.isGlobal) {
       socket.to("global-chat").emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
-    } else {
-      io.to(`user:${contactId}`).emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
+      return;
     }
+    const contactId = toPositiveInt(payload?.contactId);
+    if (!contactId) return;
+    io.to(`user:${contactId}`).emit("typing:started", { userId: socket.userId, pseudo: socket.user.pseudo });
   });
 
-  socket.on("typing:stopped", ({ contactId, isGlobal }) => {
-    if (!contactId) return;
-    if (isGlobal) {
+  socket.on("typing:stopped", (payload) => {
+    if (!socket.userId) return;
+    if (payload?.isGlobal) {
       socket.to("global-chat").emit("typing:stopped", { userId: socket.userId });
-    } else {
-      io.to(`user:${contactId}`).emit("typing:stopped", { userId: socket.userId });
+      return;
     }
+    const contactId = toPositiveInt(payload?.contactId);
+    if (!contactId) return;
+    io.to(`user:${contactId}`).emit("typing:stopped", { userId: socket.userId });
   });
+
+  // BDE Kanban: only BDE members may join the room or broadcast to it.
+  const isBde = () => socket.user?.role === "bde";
 
   socket.on("bde:join", () => {
+    if (!isBde()) {
+      socket.emit("error", { message: "Acces reserve au BDE." });
+      return;
+    }
     socket.join("bde");
   });
 
-  socket.on("bde:drag-start", ({ suggestionId }) => {
+  socket.on("bde:drag-start", (payload) => {
+    const suggestionId = toPositiveInt(payload?.suggestionId);
+    if (!isBde() || !suggestionId) return;
     socket.to("bde").emit("bde:drag-start", { suggestionId, bySocket: socket.id });
   });
 
-  socket.on("bde:drag-over", ({ columnId }) => {
+  socket.on("bde:drag-over", (payload) => {
+    const columnId = payload?.columnId;
+    if (!isBde() || !BDE_STATUSES.has(columnId)) return;
     socket.to("bde").emit("bde:drag-over", { columnId, bySocket: socket.id });
   });
 
   socket.on("bde:drag-end", () => {
+    if (!isBde()) return;
     socket.to("bde").emit("bde:drag-end", { bySocket: socket.id });
   });
 
-  socket.on("bde:update", ({ id, statut, justification }) => {
+  socket.on("bde:update", (payload) => {
+    const id = toPositiveInt(payload?.id);
+    const statut = payload?.statut;
+    const justification =
+      typeof payload?.justification === "string"
+        ? payload.justification.slice(0, MAX_JUSTIFICATION_LENGTH)
+        : null;
+    if (!isBde() || !id || !BDE_STATUSES.has(statut)) return;
     socket.to("bde").emit("bde:update", { id, statut, justification });
   });
 
@@ -405,6 +483,7 @@ if (require.main === module) {
   const httpServer = server.listen(PORT, () =>
     console.log(`HEI STDhub API → http://localhost:${PORT}`),
   );
+  warnIfSeedAccountsPresent();
 
   // Graceful shutdown
   const shutdown = (signal) => {

@@ -8,7 +8,8 @@ backend/
 ├── start.sh                  # Production startup (keep-alive ping)
 ├── db/
 │   ├── index.js              # PostgreSQL pool (max: 25)
-│   └── schema.sql            # Full schema + seed data
+│   ├── schema.sql            # Full schema (destructive: drops tables first)
+│   └── seed.dev.sql          # Local/CI test accounts — never production
 ├── middleware/
 │   └── auth.js               # JWT verification
 ├── routes/
@@ -259,11 +260,11 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 - Indexes on `invitations(expires_at, use_count)`, `push_subscriptions(endpoint)`
 - Indexes on `suggestions(statut, student_id)`, `global_chat_read(user_id)`
 
-### Seed Data
-- Admin: `ADMIN001` / `password`
-- Student: `STD25001` / `password`
-- Teacher: `PROF001` / `password`
-- All passwords hash: `$2b$10$gjbcSWvJAI698s1zi3ZVxOrvjzbkaAqZIK8jEkDSf6ixszON.EWji`
+### Seed Data (local/CI only)
+`backend/db/seed.dev.sql` creates the test accounts used by the backend test suite
+(`ADMIN001`, `STD25001`, `PROF001`, `DEV001`). Their shared password is defined in
+the test files. **This file must never be applied to production.** In production the
+server logs a `CRITICAL` warning at startup if any account still uses the seed password.
 
 ### Migrations (apply in order)
 1. `migration_invitations.sql` — invitations table

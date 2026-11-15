@@ -47,11 +47,11 @@ describe("ADMIN — DELETE /users/:id", () => {
     );
   });
 
-  itWithToken("returns 200 when deleting another user", async () => {
+  itWithToken("returns 404 when deleting an unknown user", async () => {
     const res = await agent
       .delete("/api/admin/users/999999")
       .set("Authorization", `Bearer ${adminToken}`);
-    expect([200, 500]).to.include(res.status);
+    expect(res.status).to.equal(404);
   });
 });
 

@@ -503,7 +503,7 @@ describe("AUTH — Forgot/Reset Password", () => {
       // Step 1: Get admin email from DB
       const db = require("../db");
       const { rows: userRows } = await db.query(
-        `SELECT email, id FROM users WHERE ref = 'ADMIN001' LIMIT 1`,
+        `SELECT email, id, token_version FROM users WHERE ref = 'ADMIN001' LIMIT 1`,
       );
       if (!userRows.length) return this.skip();
       const adminEmail = userRows[0].email;
@@ -557,10 +557,21 @@ describe("AUTH — Forgot/Reset Password", () => {
       expect(loginRes.status).to.equal(200);
       expect(loginRes.body).to.have.property("token");
 
-      // Step 7: Restore original password
+      // Step 6b: the reset revoked every session issued before it
+      const { rows: after } = await db.query(
+        "SELECT token_version FROM users WHERE id = $1",
+        [userRows[0].id],
+      );
+      expect(after[0].token_version).to.equal(userRows[0].token_version + 1);
+
+      // Step 7: Restore original password and token version (ADMIN001 is shared
+      // by the other test files, whose tokens must stay valid)
       const bcrypt = require("bcryptjs");
       const restoredHash = await bcrypt.hash("password", 10);
-      await db.query("UPDATE users SET password = $1 WHERE id = $2", [restoredHash, userRows[0].id]);
+      await db.query(
+        "UPDATE users SET password = $1, token_version = $2 WHERE id = $3",
+        [restoredHash, userRows[0].token_version, userRows[0].id],
+      );
     });
   });
 });

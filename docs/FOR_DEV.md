@@ -66,7 +66,8 @@ hei-stdhub-v2/
 │   ├── .mocharc.json
 │   ├── db/
 │   │   ├── index.js                     # PostgreSQL pool
-│   │   └── schema.sql                   # Full database schema + seed data
+│   │   ├── schema.sql                   # Full database schema (drops tables first)
+│   │   └── seed.dev.sql                 # Local/CI test accounts — never production
 │   ├── middleware/
 │   │   ├── auth.js                      # JWT verification middleware
 │   │   └── profanity.js                 # Profanity filter (EN/FR/MG/leetspeak)
@@ -168,11 +169,8 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 - Removed: the `groupe` column and the group letter input are gone
   (migration_remove_groupe.sql).
 
-### Seed Data
-- Admin: `ADMIN001` / `password`
-- Student: `STD25001` / `password`
-- Teacher: `PROF001` / `password`
-- Developer: `DEV001` / `password`
+### Seed Data (local/CI only)
+- `backend/db/seed.dev.sql` creates test accounts (`ADMIN001`, `STD25001`, `PROF001`, `DEV001`) for local development and the test suite. **Never apply it to production.**
 - Invitation codes are generated from the admin panel (student/teacher only, 7-day expiry)
 
 ---
@@ -253,7 +251,7 @@ cd backend && npm install && npm run dev
 # Frontend (port 5173)
 cd frontend && npm install && npm run dev
 
-# Database: run schema.sql then migrations in order
+# Database (local): run schema.sql, then seed.dev.sql, then migrations in order
 ```
 
 ### Production
