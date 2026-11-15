@@ -88,12 +88,23 @@ jobs:
           path: frontend/dist
           retention-days: 3
 
+  detect:
+    name: Detect optional suites
+    runs-on: ubuntu-latest
+    outputs:
+      e2e: ${{ steps.check.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if ls e2e/playwright.config.* >/dev/null 2>&1; then echo "e2e=true" >> "$GITHUB_OUTPUT"; else echo "e2e=false" >> "$GITHUB_OUTPUT"; fi
+
   e2e:
     name: E2E (Playwright)
-    needs: [backend, frontend]
+    needs: [detect, backend, frontend]
     runs-on: ubuntu-latest
-    # Activated automatically once the e2e/ suite exists (see issue "Tests E2E")
-    if: ${{ hashFiles('e2e/playwright.config.*') != '' }}
+    # Activated automatically once the e2e/ suite exists (issue #152)
+    if: ${{ needs.detect.outputs.e2e == 'true' }}
     services:
       postgres:
         image: postgres:16
