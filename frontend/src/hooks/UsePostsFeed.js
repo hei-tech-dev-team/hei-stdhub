@@ -104,6 +104,12 @@ export default function usePostsFeed({ type = "all", q = "" } = {}) {
 
     const loadMore = useCallback(() => load(false), [load]);
     const retry = useCallback(() => load(postsRef.current.length === 0), [load]);
+    const refresh = useCallback(() => {
+        cursorRef.current = null;
+        hasNextRef.current = false;
+        setHasNextPage(false);
+        return load(true);
+    }, [load]);
 
     const addPost = useCallback((post) => {
         setPosts((prev) => [post, ...prev.filter((p) => p.id !== post.id)]);
@@ -177,6 +183,7 @@ export default function usePostsFeed({ type = "all", q = "" } = {}) {
         hasNextPage,
         loadMore,
         retry,
+        refresh,
         addPost,
         updatePost,
         deletePost,

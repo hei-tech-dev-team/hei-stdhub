@@ -1,10 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 import ArchiveGrid from "../components/archives/ArchiveGrid";
+import usePullToRefresh from "../hooks/usePullToRefresh";
+import PullToRefreshIndicator from "../components/ui/PullToRefreshIndicator";
 
 export default function ArchivesPage() {
   const [mounted, setMounted] = useState(false);
+  const scrollRef = useRef(null);
+  const gridRef = useRef(null);
+
+  const refreshArchives = useCallback(
+    () => gridRef.current?.refresh?.() ?? Promise.resolve(),
+    [],
+  );
+
+  const { pullDistance, refreshing } = usePullToRefresh({
+    rootRef: scrollRef,
+    onRefresh: refreshArchives,
+  });
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -15,7 +29,14 @@ export default function ArchivesPage() {
       <Sidebar />
       <main className="flex-1 flex flex-col min-h-0 safe-x safe-bottom">
         <Navbar title="Archives de cours" />
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden"
+        >
+          <PullToRefreshIndicator
+            pullDistance={pullDistance}
+            refreshing={refreshing}
+          />
           <div
             className={`transition-all duration-700 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
@@ -31,7 +52,7 @@ export default function ArchivesPage() {
               </p>
             </div>
             <div className="mt-6">
-              <ArchiveGrid />
+              <ArchiveGrid ref={gridRef} />
             </div>
           </div>
         </div>

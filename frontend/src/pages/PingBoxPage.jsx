@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 import Avatar from "../components/ui/Avatar";
+import PullToRefreshIndicator from "../components/ui/PullToRefreshIndicator";
 import useSwipeTabs from "../hooks/useSwipeTabs";
+import usePullToRefresh from "../hooks/usePullToRefresh";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheck,
@@ -111,12 +113,13 @@ export default function PingBoxPage() {
   const [processingId, setProcessingId] = useState(null);
   const [tab, setTab] = useState("received");
   const [mounted, setMounted] = useState(false);
+  const scrollRef = useRef(null);
  
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
   }, []);
  
-  const fetchPings = async () => {
+  const fetchPings = useCallback(async () => {
     try {
       const { data } = await api.get("/pings");
       setPings(Array.isArray(data) ? data : []);
@@ -125,11 +128,11 @@ export default function PingBoxPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
  
   useEffect(() => {
     fetchPings();
-  }, []);
+  }, [fetchPings]);
  
   const handleAccept = async (id) => {
     setProcessingId(id);
@@ -166,6 +169,10 @@ export default function PingBoxPage() {
     activeTab: tab,
     onChange: setTab,
   });
+  const { pullDistance, refreshing } = usePullToRefresh({
+    rootRef: scrollRef,
+    onRefresh: fetchPings,
+  });
  
   return (
     <div className="flex h-app bg-surface overflow-hidden">
@@ -173,9 +180,14 @@ export default function PingBoxPage() {
       <main className="flex-1 flex flex-col min-h-0 safe-x safe-bottom">
         <Navbar title="Ping Box" />
         <div
+          ref={scrollRef}
           className="flex-1 overflow-y-auto overflow-x-hidden"
           {...swipeHandlers}
         >
+          <PullToRefreshIndicator
+            pullDistance={pullDistance}
+            refreshing={refreshing}
+          />
           <div
             className={`transition-all duration-700 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"

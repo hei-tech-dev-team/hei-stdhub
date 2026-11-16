@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import usePostsFeed from "../hooks/UsePostsFeed";
+import usePullToRefresh from "../hooks/usePullToRefresh";
 import PostCard from "../components/feed/PostCard";
 import PostComposerModal from "../components/feed/PostComposerModal";
 import EmptyStateAnimation from "../components/ui/EmptyStateAnimation";
+import PullToRefreshIndicator from "../components/ui/PullToRefreshIndicator";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faSearch,
@@ -22,6 +24,7 @@ export default function FeedPage() {
     const [isComposerOpen, setIsComposerOpen] = useState(false);
 
     const observerTarget = useRef(null);
+    const scrollRef = useRef(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -37,11 +40,17 @@ export default function FeedPage() {
         hasNextPage,
         loadMore,
         retry,
+        refresh,
         addPost,
         updatePost,
         deletePost,
         toggleReaction,
     } = usePostsFeed({ type: filterType, q: debouncedSearch });
+
+    const { pullDistance, refreshing } = usePullToRefresh({
+        rootRef: scrollRef,
+        onRefresh: refresh,
+    });
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -59,7 +68,11 @@ export default function FeedPage() {
     }, [hasNextPage, loading, loadMore]);
 
     return (
-        <div className="flex-1 overflow-y-auto custom-scrollbar bg-surface">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar bg-surface">
+            <PullToRefreshIndicator
+                pullDistance={pullDistance}
+                refreshing={refreshing}
+            />
             <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
                 <div className="bg-navy rounded-2xl px-6 py-7 sm:px-8 flex items-start justify-between gap-4">
                     <div>
