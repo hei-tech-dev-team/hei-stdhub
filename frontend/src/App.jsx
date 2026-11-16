@@ -127,26 +127,28 @@ export default function App() {
       </Helmet>
       <ServerWakingBanner />
       <Suspense fallback={<LoadingFallback />}>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/archives" element={<ProtectedRoute><ArchivesPage /></ProtectedRoute>} />
-          <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-          <Route path="/suggestions" element={<ProtectedRoute><SuggestionPage /></ProtectedRoute>} />
-          <Route path="/bde" element={<BDERoute><BDEPage /></BDERoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/user/:ref" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
-          <Route path="/pings" element={<ProtectedRoute><PingBoxPage onBoundarySwipe={navigateAdjacentPage} /></ProtectedRoute>} />
+        <div key={location.pathname} className="page-transition">
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/archives" element={<ProtectedRoute><ArchivesPage /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/suggestions" element={<ProtectedRoute><SuggestionPage /></ProtectedRoute>} />
+            <Route path="/bde" element={<BDERoute><BDEPage /></BDERoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/user/:ref" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+            <Route path="/pings" element={<ProtectedRoute><PingBoxPage onBoundarySwipe={navigateAdjacentPage} /></ProtectedRoute>} />
 
-          <Route path="/server-error" element={<ServerError />}/>
-          <Route path="/maintenance" element={<Maintenance />}/>
-          <Route path="/teapot" element={<TeapotError />}/>
-          <Route path="*" element={<NotFound />}/>
-        </Routes>
+            <Route path="/server-error" element={<ServerError />}/>
+            <Route path="/maintenance" element={<Maintenance />}/>
+            <Route path="/teapot" element={<TeapotError />}/>
+            <Route path="*" element={<NotFound />}/>
+          </Routes>
+        </div>
       </Suspense>
       {showBottomTabBar && <BottomTabBar />}
       {user && <FeedNotification />}
