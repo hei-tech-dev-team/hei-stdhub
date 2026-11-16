@@ -5,8 +5,10 @@ const requirePermission = require("../middleware/requirePermission");
 
 const router = express.Router();
 
-// GET all custom UEs (public)
-router.get("/", requirePermission("customUe:read", "customUe"), async (req, res) => {
+// GET all custom UEs (public route: no auth, no permission guard —
+// requirePermission without a preceding auth middleware would deny every
+// caller because can() is deny-by-default for anonymous users)
+router.get("/", async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT * FROM custom_ues ORDER BY ue ASC"
