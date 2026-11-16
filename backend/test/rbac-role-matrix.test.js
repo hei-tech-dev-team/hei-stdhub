@@ -144,24 +144,37 @@ describe("RBAC — route × role authorization matrix", function () {
       refs,
     ]);
 
+    // `level` is not part of db/schema.sql (the CI baseline) but still exists
+    // on databases that ran the level migrations: detect it instead of
+    // assuming, otherwise the INSERT fails on CI.
+    const { rows: levelColumns } = await db.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'level'",
+    );
+    const hasLevelColumn = levelColumns.length > 0;
+
     const hash = await bcrypt.hash(PASSWORD, 10);
     for (const fixture of FIXTURES) {
-      // chk_student_level: students and bde must carry a level, every other
-      // role must leave it NULL.
-      const level = ["student", "bde"].includes(fixture.role) ? "L1" : null;
+      const columns = ["ref", "nom", "prenom", "email", "pseudo", "password", "role", "first_login"];
+      const values = [
+        fixture.ref,
+        FIXTURE_NOM,
+        "Matrix",
+        fixture.email,
+        fixture.pseudo,
+        hash,
+        fixture.role,
+        false,
+      ];
+      if (hasLevelColumn) {
+        // chk_student_level: students and bde must carry a level, every other
+        // role must leave it NULL.
+        columns.push("level");
+        values.push(["student", "bde"].includes(fixture.role) ? "L1" : null);
+      }
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
       await db.query(
-        `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, level, first_login)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE)`,
-        [
-          fixture.ref,
-          FIXTURE_NOM,
-          "Matrix",
-          fixture.email,
-          fixture.pseudo,
-          hash,
-          fixture.role,
-          level,
-        ],
+        `INSERT INTO users (${columns.join(", ")}) VALUES (${placeholders})`,
+        values,
       );
     }
 
