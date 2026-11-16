@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { can } from "../../shared/permissions";
 import ServerWakingBanner from "./components/ui/ServerWakingBanner";
 import OnboardingModal from "./components/ui/OnboardingModal";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
@@ -58,14 +59,14 @@ function ProtectedRoute({ children }) {
 function AdminRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <LoadingFallback />;
-  if (!user || user.role !== "admin") return <Navigate to="/" replace />;
+  if (!can(user, "user:list", "user")) return <Navigate to="/" replace />;
   return children;
 }
 
 function BDERoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <LoadingFallback />;
-  if (!user || user.role !== "bde") return <Navigate to="/" replace />;
+  if (!can(user, "suggestion:read", "suggestion")) return <Navigate to="/" replace />;
   return children;
 }
 
