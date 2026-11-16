@@ -142,6 +142,14 @@ router.patch("/users/:id/role", auth, requirePermission("user:manage", "user"), 
       try {
             const target = await loadManageableTarget(req, res);
             if (!target) return;
+            // Only a developer may grant the developer role (altering an
+            // existing developer account is already refused by
+            // loadManageableTarget). Restores the rule from #115 that was
+            // dropped during the requirePermission migration.
+            if (role === "developer" && req.user.role !== "developer")
+                  return res.status(403).json({
+                        error: "Seul un developpeur peut attribuer ou modifier le role developpeur.",
+                  });
             const { rows } = await db.query(
                   "UPDATE users SET role=$1 WHERE id=$2 RETURNING id, ref, pseudo, role",
                   [role, target.id],
