@@ -49,6 +49,7 @@ Full-stack web platform for **HEI Madagascar** (school). Students browse course 
 hei-stdhub-v2/
 ├── package.json                         # Root scripts
 ├── README.md
+├── .env.example                         # Local backend env template (never commit .env)
 ├── docs/
 │   ├── ALL_ABOUT_API.md                 # API concepts & reference
 │   ├── FOR_DEV.md                       # This file
@@ -57,12 +58,12 @@ hei-stdhub-v2/
 │   ├── FOR_OPS.md                       # Operations & deployment
 │   ├── FOR_QA.md                        # Testing & QA
 │   ├── FOR_CONTRIBUTING.md              # Contribution guidelines
+│   ├── SECRET_ROTATION.md               # Incident runbook for leaked credentials
 │   └── EMAIL_SETUP.md                   # Email configuration
 ├── backend/
 │   ├── package.json
 │   ├── server.js                        # Entry point: Express, Socket.IO, rate limiting, VAPID, schema migrations
 │   ├── start.sh                         # Production startup script
-│   ├── .env.example
 │   ├── .mocharc.json
 │   ├── db/
 │   │   ├── index.js                     # PostgreSQL pool
@@ -214,7 +215,11 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 
 ## Environment Variables
 
-### Backend (`backend/.env`)
+### Backend (repository-root `.env`)
+
+`backend/server.js` loads `../.env`. Never commit it; production values live in
+Render, and the rotation procedure is in `SECRET_ROTATION.md`.
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | PORT | No | 3001 | Server port |
@@ -234,7 +239,11 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 | MAX_ONLINE_USERS | No | 5000 | Max tracked online users |
 | SOCKET_* | No | various | Socket.IO tuning knobs |
 
-### Frontend (`frontend/.env`)
+### Frontend (no committed `.env`)
+
+Only `VITE_API_URL` is needed. It defaults to `http://localhost:3001`; use
+`frontend/.env.local` for a local override and set it in Vercel for production.
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | VITE_API_URL | No | http://localhost:3001 | Backend API URL |

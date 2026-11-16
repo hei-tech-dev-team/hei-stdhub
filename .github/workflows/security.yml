@@ -28,6 +28,23 @@ jobs:
           docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 \
             git /repo --log-opts="$RANGE" --redact --verbose
 
+  env-files:
+    name: No tracked env files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject .env files in the tree
+        run: |
+          tracked="$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example$' || true)"
+          if [ -n "$tracked" ]; then
+            echo "::error::Environment files must never be tracked:"
+            echo "$tracked"
+            exit 1
+          fi
+      - name: Reject leaked values in .env.example
+        run: node scripts/rotate-secrets.js --check .env.example
+        continue-on-error: false
+
   dependencies:
     name: npm audit (${{ matrix.dir }})
     runs-on: ubuntu-latest

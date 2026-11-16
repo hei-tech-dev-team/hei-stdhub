@@ -6,6 +6,7 @@ const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
 require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
+const { warnOrExitOnLeakedSecrets } = require("./services/leakedSecrets");
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const { verifyAccessToken } = require("./services/tokenAuth");
@@ -13,6 +14,11 @@ const webpush = require("web-push");
 
 const { startMessagePurgeJob } = require("./services/messagePurgeJob");
 const { warnIfSeedAccountsPresent } = require("./services/securityChecks");
+
+// Refuse to boot in production while a credential exposed in git history is
+// still configured. Development only warns: local `.env` files are expected,
+// but they must be rotated too before they can be used to deploy (#127).
+warnOrExitOnLeakedSecrets();
 
 // Validate critical env vars at startup. In production the VAPID keys must
 // come from the environment: Render's disk is ephemeral, so keys generated at
