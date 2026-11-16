@@ -22,6 +22,19 @@ const ROLE_RANK = {
 // Known roles. An unknown role resolves to false (deny by default).
 const KNOWN_ROLES = Object.keys(ROLE_RANK);
 
+// Actions gated by ownership as soon as the caller supplies an ownership
+// context ({ ownerId, userId } or { postAuthorId, userId }): only the owner
+// (or a privileged role: admin / developer) may proceed. Without such a
+// context the plain role rule applies (e.g. routes whose handlers enforce
+// ownership themselves through SQL).
+const OWNERSHIP_GATED = new Set([
+  "post:edit",
+  "post:delete",
+  "comment:edit",
+  "comment:delete",
+  "message:delete",
+]);
+
 // Explicit permissions, sourced from existing routes (`routes/*`) and
 // existing middlewares (`developerOnly`, `developerOrAdmin`, inline `adminOnly`).
 const ACTIONS = new Map();
@@ -55,7 +68,7 @@ addMinRole("message:read", "student");
 addMinRole("message:seen", "student");
 addMinRole("message:unread", "student");
 addMinRole("message:react", "student");
-addMinRole("message:delete", "student"); // ownership checked by caller (sender only)
+addMinRole("message:delete", "student"); // ownership enforced by can() when a context is supplied
 addMinRole("message:attachment", "student");
 addMinRole("message:favorites", "student");
 
@@ -65,7 +78,8 @@ addMinRole("post:read", "student");
 addMinRole("post:create", "student");
 // Announcements: only admin, bde, teacher can create
 addRoles("post:create:announcement", ["admin", "bde", "teacher"]);
-// Edit/delete: owner OR admin (checked via canOwn in middleware)
+// Edit/delete: owner OR admin/developer (ownership enforced by can()
+// as soon as a context is supplied)
 addMinRole("post:edit", "student");
 addMinRole("post:delete", "student");
 
@@ -76,7 +90,8 @@ addMinRole("post:reaction", "student");
 // Any authenticated user can create/read comments
 addMinRole("comment:create", "student");
 addMinRole("comment:read", "student");
-// Edit/delete: owner OR admin (checked via canOwn)
+// Edit/delete: owner OR admin/developer (ownership enforced by can()
+// when a context is supplied)
 addMinRole("comment:edit", "student");
 addMinRole("comment:delete", "student");
 // Post author can moderate (delete/hide) comments on their own post
@@ -138,11 +153,22 @@ addRoles("customUe:read", ["student", "teacher", "admin", "bde", "developer"]);
 addRoles("customUe:create", ["admin", "developer"]);
 addRoles("customUe:delete", ["admin", "developer"]);
 
-// ============ ADMIN / USER MANAGEMENT (routes/admin.js) ============
-// User listing: admin + developer (via developerOrAdmin)
-addRoles("user:read", ["admin", "developer"]);
-// Modify another account: admin + developer (via developerOrAdmin + loadManageableTarget)
-addRoles("user:edit", ["admin", "developer"]);
+// ============ USER ACCOUNTS (routes/auth.js, routes/messages.js) ============
+// Basic user info readable by any authenticated user: own account
+// (GET /auth/me), public profiles (GET /auth/user/:ref) and the chat
+// directory (GET /messages/search, GET /messages/contacts).
+addMinRole("user:read", "student");
+// Self-service account edits (profile, password, avatar) — the handlers
+// only ever target the caller's own row.
+addMinRole("user:edit", "student");
+
+// ============ ADMIN PANEL (routes/admin.js) ============
+// Enumerate the whole user base / invitations (admin panel listing, stats).
+addRoles("user:list", ["admin", "developer"]);
+// Modify another account (role, email): admin + developer, with the
+// fine-grained privileged-target rules kept in the route handler
+// (loadManageableTarget).
+addRoles("user:manage", ["admin", "developer"]);
 addRoles("user:delete", ["admin", "developer"]);
 addRoles("user:inviteCreate", ["admin", "developer"]);
 addRoles("user:inviteBulkCreate", ["admin", "developer"]);
@@ -176,6 +202,11 @@ addRoles("bde:kanban:update", ["bde"]);
  * @param {object} [context] Extra context used by ownership/moderation rules:
  *                          - { ownerId, userId } for self-content actions
  *                          - { postAuthorId, userId } for post-author comment moderation
+ *
+ *                          For ownership-gated actions (see OWNERSHIP_GATED),
+ *                          supplying an ownership context restricts the
+ *                          decision to the owner or a privileged role
+ *                          (admin / developer).
  * @returns {boolean}
  */
 function can(user, action, resource, context = {}) {
@@ -189,6 +220,16 @@ function can(user, action, resource, context = {}) {
 
   const rule = ACTIONS.get(action);
   if (!rule) return false; // unknown action => deny
+
+  // Ownership gate: when an ownership context is supplied for an ownership
+  // action, only the owner (or a privileged role) passes.
+  if (hasOwnershipContext(context) && OWNERSHIP_GATED.has(action)) {
+    const isOwner =
+      Number.isInteger(context.ownerId) &&
+      Number.isInteger(context.userId) &&
+      context.ownerId === context.userId;
+    if (!isOwner && roleRank(role) < roleRank("admin")) return false;
+  }
 
   switch (rule.mode) {
     case "minRole": {
@@ -276,6 +317,15 @@ function roleRank(roleName) {
   const rank = ROLE_RANK[roleName];
   // Unknown role: -1 so any valid minRole (>= 0) rejects it.
   return rank == null ? -1 : rank;
+}
+
+// True when the caller supplied an ownership context (either key present).
+function hasOwnershipContext(context) {
+  return (
+    context != null &&
+    (Object.prototype.hasOwnProperty.call(context, "ownerId") ||
+      Object.prototype.hasOwnProperty.call(context, "postAuthorId"))
+  );
 }
 
 // ---------------------------------------------------------------------------
