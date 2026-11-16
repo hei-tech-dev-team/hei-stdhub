@@ -44,7 +44,7 @@ const loadManageableTarget = async (req, res) => {
       return target;
       };
 
-      router.get("/stats", auth, requirePermission("user:read", "user"), async (req, res) => {
+      router.get("/stats", auth, requirePermission("user:list", "user"), async (req, res) => {
       try {
             const [counts, byRole] = await Promise.all([
                   db.query(`
@@ -65,7 +65,7 @@ const loadManageableTarget = async (req, res) => {
       }
 });
 
-router.get("/next-pseudo", auth, requirePermission("user:read", "user"), async (req, res) => {
+router.get("/next-pseudo", auth, requirePermission("user:list", "user"), async (req, res) => {
       try {
             const { rows } = await db.query(
               `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(pseudo, '^new_user0*', '') AS INTEGER)), 0) AS last_num FROM users WHERE pseudo ~ '^new_user[0-9]+$'`
@@ -76,7 +76,7 @@ router.get("/next-pseudo", auth, requirePermission("user:read", "user"), async (
       }
 });
 
-router.get("/users", auth, requirePermission("user:read", "user"), async (req, res) => {
+router.get("/users", auth, requirePermission("user:list", "user"), async (req, res) => {
       try {
             const { q, role, limit = 50, offset = 0 } = req.query;
             const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -131,7 +131,7 @@ router.get("/users", auth, requirePermission("user:read", "user"), async (req, r
       }
 });
 
-router.patch("/users/:id/role", auth, requirePermission("user:edit", "user"), async (req, res) => {
+router.patch("/users/:id/role", auth, requirePermission("user:manage", "user"), async (req, res) => {
       const { role } = req.body;
       const validRoles = ["student", "teacher", "admin", "bde", "developer"];
       if (!validRoles.includes(role))
@@ -157,7 +157,7 @@ router.patch("/users/:id/role", auth, requirePermission("user:edit", "user"), as
       }
 });
 
-router.patch("/users/:id/email", auth, requirePermission("user:edit", "user"), async (req, res) => {
+router.patch("/users/:id/email", auth, requirePermission("user:manage", "user"), async (req, res) => {
       const { email } = req.body;
       if (!email || !email.includes("@"))
             return res.status(400).json({ error: "Email invalide." });
@@ -322,7 +322,7 @@ router.post("/invitations/bulk", auth, requirePermission("user:inviteBulkCreate"
   }
 });
 
-router.get("/invitations", auth, requirePermission("user:read", "user"), async (req, res) => {
+router.get("/invitations", auth, requirePermission("user:list", "user"), async (req, res) => {
       try {
             const { limit = 50, offset = 0 } = req.query;
             const pageLimit = Math.min(parseInt(limit) || 50, 200);
