@@ -16,6 +16,7 @@ import {
       faBell,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
+import { can } from "../../../../shared/permissions";
 import STDHUB_LOGO from "../../assets/stdhub-logo-pwa.png";
 import UserAvatar from "../ui/UserAvatar";
 
@@ -210,9 +211,7 @@ export default function Sidebar() {
                                     </NavLink>
                               ))}
 
-                              {["student", "teacher"].includes(
-                                    user?.role,
-                              ) && (
+                              {can(user, "suggestion:create", "suggestion") && (
                                     <NavLink
                                           to="/suggestions"
                                           end={false}
@@ -233,7 +232,7 @@ export default function Sidebar() {
                                     </NavLink>
                               )}
 
-                              {user?.role === "bde" && (
+                              {can(user, "suggestion:read", "suggestion") && (
                                     <NavLink
                                           to="/bde"
                                           end={false}
@@ -255,7 +254,7 @@ export default function Sidebar() {
                                     </NavLink>
                               )}
 
-                              {user?.role === "admin" && (
+                              {can(user, "user:list", "user") && (
                                     <NavLink
                                           to="/admin"
                                           end={false}
