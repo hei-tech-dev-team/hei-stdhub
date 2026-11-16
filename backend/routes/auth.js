@@ -9,6 +9,7 @@ const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
 const auth = require("../middleware/auth");
 const requirePermission = require("../middleware/requirePermission");
+const { can } = require("../../shared/permissions");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
 const { sendPushToUser } = require("../services/notificationService");
@@ -133,7 +134,9 @@ const tryGetAdminFromToken = async (req) => {
   if (!header?.startsWith("Bearer ")) return null;
   try {
     const user = await verifyAccessToken(header.split(" ")[1]);
-    return user && ["admin", "developer"].includes(user.role) ? user : null;
+    // The role always comes from the database (verifyAccessToken re-queries
+    // the users table); the decision itself comes from the shared model.
+    return user && can(user, "user:inviteCreate", "user") ? user : null;
   } catch {
     return null;
   }
