@@ -283,7 +283,8 @@ npm run release:major   # 1.9.0 -> 2.0.0
 ### PWA
 - Service worker registers on window load, caches `/`, `/logo.png`, `/manifest.json`.
 - Push notifications: payload data navigates to URL on click.
-- Manifest: standalone display, portrait, 192x512 icons.
+- Manifest: standalone display, portrait orientation, dedicated `any` and `maskable` icons at 192/512 px plus a 180x180 Apple touch icon.
+- An install banner captures `beforeinstallprompt` (Chromium) and shows manual iOS Safari instructions; user dismissals are persisted locally.
 - Login/register triggers push subscription.
 
 ### Styling

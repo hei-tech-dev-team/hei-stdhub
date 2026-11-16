@@ -6,6 +6,7 @@ import ServerWakingBanner from "./components/ui/ServerWakingBanner";
 import OnboardingModal from "./components/ui/OnboardingModal";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import FeedNotification from "./components/layout/FeedNotification";
+import InstallPrompt from "./components/ui/InstallPrompt";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -107,6 +108,10 @@ export default function App() {
       </Suspense>
       {user && <FeedNotification />}
       {user && firstLogin && <OnboardingModal />}
+      {/* Install banner is rendered for all users but suppressed during the
+          onboarding flow to avoid stacking competing modals/banners on first
+          login. Visibility/dismissal is handled inside the component. */}
+      <InstallPrompt suppress={Boolean(user && firstLogin)} />
     </>
   );
 }
