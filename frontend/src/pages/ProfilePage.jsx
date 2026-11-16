@@ -188,9 +188,9 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
+    <div className="flex h-app bg-surface overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden safe-x safe-bottom">
         <Navbar title="Mon Profil" />
 
         <main className="flex-1 overflow-y-auto custom-scrollbar">

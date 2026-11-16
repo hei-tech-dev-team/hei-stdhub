@@ -151,7 +151,7 @@ const ContactList = memo(function ContactList({ contacts, activeId, onSelect, on
   };
 
   return (
-    <div className="w-full h-full bg-white border-r border-gray-100 flex flex-col relative">
+    <div className="w-full h-full bg-white border-r border-gray-100 flex flex-col relative safe-top safe-bottom">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 shrink-0 border-b border-gray-100">
         <div className="relative">

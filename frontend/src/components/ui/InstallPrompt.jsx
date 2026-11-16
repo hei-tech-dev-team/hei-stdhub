@@ -32,7 +32,16 @@ export default function InstallPrompt({ suppress = false }) {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 p-3 sm:p-4 pointer-events-none">
+    <div
+      className="fixed inset-x-0 bottom-0 z-40 pointer-events-none
+                 pt-3 sm:pt-4
+                 pl-[max(env(safe-area-inset-left,0px),0.75rem)]
+                 pr-[max(env(safe-area-inset-right,0px),0.75rem)]
+                 sm:pl-[max(env(safe-area-inset-left,0px),1rem)]
+                 sm:pr-[max(env(safe-area-inset-right,0px),1rem)]
+                 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]
+                 sm:pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
+    >
       <div
         className="pointer-events-auto mx-auto max-w-lg bg-navy-dark text-white rounded-2xl shadow-modal border border-white/10 px-4 py-3 sm:px-5 sm:py-4 flex items-start gap-3"
         role="dialog"

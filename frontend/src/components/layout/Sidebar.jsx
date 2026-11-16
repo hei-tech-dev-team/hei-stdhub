@@ -128,8 +128,9 @@ export default function Sidebar() {
             <>
                   <button
                         onClick={() => setOpen(true)}
-                        className="lg:hidden fixed top-3 left-3 z-40 touch-target rounded-xl
-                   bg-navy text-white shadow-lg"
+                        className="lg:hidden fixed top-[calc(env(safe-area-inset-top,0px)+0.75rem)]
+                   left-[calc(env(safe-area-inset-left,0px)+0.75rem)]
+                   z-40 touch-target rounded-xl bg-navy text-white shadow-lg"
                   >
                         <FontAwesomeIcon icon={faBars} className="text-base" />
                   </button>
@@ -144,7 +145,10 @@ export default function Sidebar() {
                   <aside
                         className={`
         fixed lg:static inset-y-0 left-0 z-40
-        w-60 h-screen bg-navy flex flex-col py-6 px-4 shrink-0
+        w-60 h-app bg-navy flex flex-col shrink-0
+        pt-[calc(env(safe-area-inset-top,0px)+1.5rem)]
+        pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]
+        pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-4
         transform transition-transform duration-300
         ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
