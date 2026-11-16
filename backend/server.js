@@ -9,6 +9,7 @@ require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
 const { verifyAccessToken } = require("./services/tokenAuth");
+const { can } = require("../shared/permissions");
 const webpush = require("web-push");
 
 const { startMessagePurgeJob } = require("./services/messagePurgeJob");
@@ -282,7 +283,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("dev:join", () => {
-    if (socket.user?.role === "developer") {
+    // The "developers" room relays ticket:new events; joining it requires
+    // the same permission that allows reading support tickets.
+    if (can(socket.user, "supportTicket:read", "supportTicket")) {
       socket.join("developers");
     }
   });
@@ -323,10 +326,11 @@ io.on("connection", (socket) => {
   });
 
   // BDE Kanban: only BDE members may join the room or broadcast to it.
-  const isBde = () => socket.user?.role === "bde";
+  // The decision comes from the shared RBAC model (shared/permissions.js).
+  const canBde = (action) => can(socket.user, action, "bde");
 
   socket.on("bde:join", () => {
-    if (!isBde()) {
+    if (!canBde("bde:kanban:join")) {
       socket.emit("error", { message: "Acces reserve au BDE." });
       return;
     }
@@ -335,18 +339,18 @@ io.on("connection", (socket) => {
 
   socket.on("bde:drag-start", (payload) => {
     const suggestionId = toPositiveInt(payload?.suggestionId);
-    if (!isBde() || !suggestionId) return;
+    if (!canBde("bde:kanban:update") || !suggestionId) return;
     socket.to("bde").emit("bde:drag-start", { suggestionId, bySocket: socket.id });
   });
 
   socket.on("bde:drag-over", (payload) => {
     const columnId = payload?.columnId;
-    if (!isBde() || !BDE_STATUSES.has(columnId)) return;
+    if (!canBde("bde:kanban:update") || !BDE_STATUSES.has(columnId)) return;
     socket.to("bde").emit("bde:drag-over", { columnId, bySocket: socket.id });
   });
 
   socket.on("bde:drag-end", () => {
-    if (!isBde()) return;
+    if (!canBde("bde:kanban:update")) return;
     socket.to("bde").emit("bde:drag-end", { bySocket: socket.id });
   });
 
@@ -357,7 +361,7 @@ io.on("connection", (socket) => {
       typeof payload?.justification === "string"
         ? payload.justification.slice(0, MAX_JUSTIFICATION_LENGTH)
         : null;
-    if (!isBde() || !id || !BDE_STATUSES.has(statut)) return;
+    if (!canBde("bde:kanban:update") || !id || !BDE_STATUSES.has(statut)) return;
     socket.to("bde").emit("bde:update", { id, statut, justification });
   });
 
