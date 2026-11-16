@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 import Avatar from "../components/ui/Avatar";
+import useSwipeTabs from "../hooks/useSwipeTabs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheck,
@@ -21,6 +22,8 @@ const STATUS_CFG = {
   accepted: { label: "Accepté", cls: "bg-green-100 text-green-700" },
   refused: { label: "Refusé", cls: "bg-red-100 text-red-700" },
 };
+
+const PING_TABS = ["received", "sent"];
  
 function PingCard({ ping, isSent, onAccept, onRefuse, processingId }) {
   const person = isSent
@@ -158,13 +161,21 @@ export default function PingBoxPage() {
   const hasPending = pendingCount > 0;
  
   const activePings = tab === "received" ? received : sent;
+  const swipeHandlers = useSwipeTabs({
+    tabs: PING_TABS,
+    activeTab: tab,
+    onChange: setTab,
+  });
  
   return (
     <div className="flex h-app bg-surface overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col min-h-0 safe-x safe-bottom">
         <Navbar title="Ping Box" />
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div
+          className="flex-1 overflow-y-auto overflow-x-hidden"
+          {...swipeHandlers}
+        >
           <div
             className={`transition-all duration-700 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
