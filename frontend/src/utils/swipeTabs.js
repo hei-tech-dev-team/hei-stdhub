@@ -3,6 +3,55 @@ export const SWIPE_MAX_VERTICAL_PX = 40;
 export const SWIPE_MAX_DURATION_MS = 700;
 export const SWIPE_HORIZONTAL_RATIO = 1.5;
 
+export const SWIPE_INTERACTIVE_SELECTOR =
+  "input, textarea, select, [contenteditable='true'], [data-swipe-ignore]";
+
+export function isInteractiveTarget(target) {
+  return (
+    typeof target?.closest === "function" &&
+    Boolean(target.closest(SWIPE_INTERACTIVE_SELECTOR))
+  );
+}
+
+export function isHorizontalScroller(node) {
+  if (!node || typeof node.scrollWidth !== "number") return false;
+
+  const style = window.getComputedStyle(node);
+  return (
+    (style.overflowX === "auto" || style.overflowX === "scroll") &&
+    node.scrollWidth > node.clientWidth
+  );
+}
+
+export function startsInHorizontalScroller(target, boundary = null) {
+  let node = target;
+  while (node && node !== boundary) {
+    if (isHorizontalScroller(node)) return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
+/**
+ * Fixed layers (modals, drawers, action sheets) own their own gestures and
+ * must never trigger page navigation.
+ */
+export function startsInFixedLayer(target) {
+  let node = target;
+  while (node && node !== document.documentElement) {
+    if (
+      node.getAttribute?.("role") === "dialog" ||
+      node.getAttribute?.("aria-modal") === "true"
+    ) {
+      return true;
+    }
+
+    if (window.getComputedStyle(node).position === "fixed") return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
 /**
  * Resolve a horizontal touch gesture into tab navigation direction.
  *

@@ -12,9 +12,10 @@ import { useInstallPrompt } from "../../hooks/useInstallPrompt";
  *   dismissed it (persisted), or when no install path is available.
  *
  * `suppress` lets parents hide the banner in contexts where it would be noisy
- * (e.g. during the onboarding flow).
+ * (e.g. during the onboarding flow). `raised` lifts it above the mobile tab bar
+ * on routes where that bar is rendered.
  */
-export default function InstallPrompt({ suppress = false }) {
+export default function InstallPrompt({ suppress = false, raised = false }) {
   const { canShow, canPrompt, iosSafari, promptInstall, dismiss } = useInstallPrompt();
   const [busy, setBusy] = useState(false);
 
@@ -33,14 +34,18 @@ export default function InstallPrompt({ suppress = false }) {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 pointer-events-none
+      className={`fixed inset-x-0 ${
+        raised
+          ? "bottom-[calc(env(safe-area-inset-bottom,0px)+4rem)]"
+          : "bottom-0"
+      } z-40 pointer-events-none lg:bottom-0
                  pt-3 sm:pt-4
                  pl-[max(env(safe-area-inset-left,0px),0.75rem)]
                  pr-[max(env(safe-area-inset-right,0px),0.75rem)]
                  sm:pl-[max(env(safe-area-inset-left,0px),1rem)]
                  sm:pr-[max(env(safe-area-inset-right,0px),1rem)]
                  pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]
-                 sm:pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
+                 sm:pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]`}
     >
       <div
         className="pointer-events-auto mx-auto max-w-lg bg-navy-dark text-white rounded-2xl shadow-modal border border-white/10 px-4 py-3 sm:px-5 sm:py-4 flex items-start gap-3"

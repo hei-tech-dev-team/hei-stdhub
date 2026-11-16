@@ -591,6 +591,7 @@ export default function BDEPage() {
                 ) : (
             <div
               ref={boardRef}
+              data-swipe-ignore
               className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 items-start"
             >
               {COLUMNS.map((col) => (

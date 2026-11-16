@@ -3,29 +3,17 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-      faHouse,
-      faBookOpen,
-      faComments,
-      faUser,
       faRightFromBracket,
       faBars,
       faTimes,
       faUserShield,
       faLightbulb,
       faUsersRectangle,
-      faBell,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
+import { MAIN_NAV_LINKS } from "../../config/navigation";
 import STDHUB_LOGO from "../../assets/stdhub-logo-pwa.png";
 import UserAvatar from "../ui/UserAvatar";
-
-const NAV_LINKS = [
-      { to: "/", label: "Accueil", icon: faHouse, end: true },
-      { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
-      { to: "/chat", label: "Chat", icon: faComments, end: false },
-      { to: "/pings", label: "Ping Box", icon: faBell, end: false },
-      { to: "/profile", label: "Profil", icon: faUser, end: false },
-];
 
 let notificationPermissionRequested = false;
 
@@ -176,7 +164,7 @@ export default function Sidebar() {
                         </div>
 
                         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
-                              {NAV_LINKS.map(({ to, label, icon, end }) => (
+                              {MAIN_NAV_LINKS.map(({ to, label, icon, end }) => (
                                     <NavLink
                                           key={to}
                                           to={to}

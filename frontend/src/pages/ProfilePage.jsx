@@ -193,7 +193,7 @@ export default function ProfilePage() {
       <div className="flex-1 flex flex-col overflow-hidden safe-x safe-bottom">
         <Navbar title="Mon Profil" />
 
-        <main className="flex-1 overflow-y-auto custom-scrollbar">
+        <main className="flex-1 overflow-y-auto custom-scrollbar pb-16 lg:pb-0">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
             {/* Identity */}
             <div className={`card p-5 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>

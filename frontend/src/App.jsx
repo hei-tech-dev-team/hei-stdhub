@@ -1,11 +1,25 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useCallback, useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import {
+  MAIN_TAB_PATHS,
+  isBottomBarPath,
+  isMainTabPath,
+} from "./config/navigation";
+import { getAdjacentTab } from "./utils/swipeTabs";
+import usePageSwipe from "./hooks/usePageSwipe";
 import ServerWakingBanner from "./components/ui/ServerWakingBanner";
 import OnboardingModal from "./components/ui/OnboardingModal";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import FeedNotification from "./components/layout/FeedNotification";
+import BottomTabBar from "./components/layout/BottomTabBar";
 import InstallPrompt from "./components/ui/InstallPrompt";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -72,6 +86,34 @@ function BDERoute({ children }) {
 
 export default function App() {
   const { user, firstLogin } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const showBottomTabBar = Boolean(user) && isBottomBarPath(location.pathname);
+  const navigateAdjacentPage = useCallback(
+    (direction) => {
+      const nextPath = getAdjacentTab(
+        MAIN_TAB_PATHS,
+        location.pathname,
+        direction,
+      );
+      if (nextPath) navigate(nextPath);
+    },
+    [location.pathname, navigate],
+  );
+
+  // Chat has its own horizontal interactions, and Ping Box delegates swipes to
+  // its internal tab group so the page only moves once the tabs hit an edge.
+  const pageSwipeEnabled =
+    Boolean(user) &&
+    isMainTabPath(location.pathname) &&
+    location.pathname !== "/chat" &&
+    location.pathname !== "/pings";
+
+  usePageSwipe({
+    enabled: pageSwipeEnabled,
+    onSwipe: navigateAdjacentPage,
+  });
 
   return (
     <>
@@ -98,7 +140,7 @@ export default function App() {
           <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/user/:ref" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
-          <Route path="/pings" element={<ProtectedRoute><PingBoxPage /></ProtectedRoute>} />
+          <Route path="/pings" element={<ProtectedRoute><PingBoxPage onBoundarySwipe={navigateAdjacentPage} /></ProtectedRoute>} />
 
           <Route path="/server-error" element={<ServerError />}/>
           <Route path="/maintenance" element={<Maintenance />}/>
@@ -106,12 +148,16 @@ export default function App() {
           <Route path="*" element={<NotFound />}/>
         </Routes>
       </Suspense>
+      {showBottomTabBar && <BottomTabBar />}
       {user && <FeedNotification />}
       {user && firstLogin && <OnboardingModal />}
       {/* Install banner is rendered for all users but suppressed during the
           onboarding flow to avoid stacking competing modals/banners on first
           login. Visibility/dismissal is handled inside the component. */}
-      <InstallPrompt suppress={Boolean(user && firstLogin)} />
+      <InstallPrompt
+        suppress={Boolean(user && firstLogin)}
+        raised={showBottomTabBar}
+      />
     </>
   );
 }

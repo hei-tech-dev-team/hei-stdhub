@@ -2,33 +2,9 @@ import { useMemo, useRef } from "react";
 import {
   getAdjacentTab,
   getSwipeTabDirection,
+  isInteractiveTarget,
+  startsInHorizontalScroller,
 } from "../utils/swipeTabs.js";
-
-const INTERACTIVE_SELECTOR =
-  "input, textarea, select, [contenteditable='true'], [data-swipe-ignore]";
-
-const isInteractiveTarget = (target) =>
-  typeof target?.closest === "function" &&
-  Boolean(target.closest(INTERACTIVE_SELECTOR));
-
-const isHorizontalScroller = (node) => {
-  if (!node || typeof node.scrollWidth !== "number") return false;
-
-  const style = window.getComputedStyle(node);
-  return (
-    (style.overflowX === "auto" || style.overflowX === "scroll") &&
-    node.scrollWidth > node.clientWidth
-  );
-};
-
-const startsInHorizontalScroller = (target, boundary) => {
-  let node = target;
-  while (node && node !== boundary) {
-    if (isHorizontalScroller(node)) return true;
-    node = node.parentElement;
-  }
-  return false;
-};
 
 /**
  * Add horizontal swipe navigation to an existing tab group.
@@ -41,6 +17,7 @@ export default function useSwipeTabs({
   tabs,
   activeTab,
   onChange,
+  onBoundarySwipe,
   enabled = true,
 }) {
   const startRef = useRef(null);
@@ -89,7 +66,13 @@ export default function useSwipeTabs({
       if (!direction) return;
 
       const nextTab = getAdjacentTab(tabs, activeTab, direction);
-      if (nextTab && nextTab !== activeTab) onChange(nextTab);
+      if (nextTab && nextTab !== activeTab) {
+        onChange(nextTab);
+      } else if (onBoundarySwipe) {
+        // The internal tab group cannot move further, so let the caller hand
+        // the gesture over to page-level navigation.
+        onBoundarySwipe(direction);
+      }
     };
 
     const handleTouchCancel = () => {
@@ -101,7 +84,7 @@ export default function useSwipeTabs({
       onTouchEnd: handleTouchEnd,
       onTouchCancel: handleTouchCancel,
     };
-  }, [tabs, activeTab, onChange, enabled]);
+  }, [tabs, activeTab, onChange, onBoundarySwipe, enabled]);
 
   return handlers;
 }

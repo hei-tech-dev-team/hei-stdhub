@@ -31,7 +31,7 @@ export default function ArchivesPage() {
         <Navbar title="Archives de cours" />
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden"
+          className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0"
         >
           <PullToRefreshIndicator
             pullDistance={pullDistance}

@@ -68,7 +68,7 @@ export default function FeedPage() {
     }, [hasNextPage, loading, loadMore]);
 
     return (
-        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar bg-surface">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar bg-surface pb-16 lg:pb-0">
             <PullToRefreshIndicator
                 pullDistance={pullDistance}
                 refreshing={refreshing}

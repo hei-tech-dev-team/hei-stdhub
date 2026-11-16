@@ -548,7 +548,7 @@ export default function ChatLayout() {
   }, [typingUsers]);
 
   return (
-    <div className="flex w-full h-app overflow-hidden safe-top safe-bottom">
+    <div className="flex w-full h-app overflow-hidden safe-top pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] lg:pb-[env(safe-area-inset-bottom,0px)]">
       <div
         className={`
         lg:relative lg:translate-x-0 lg:w-72 lg:flex lg:shrink-0

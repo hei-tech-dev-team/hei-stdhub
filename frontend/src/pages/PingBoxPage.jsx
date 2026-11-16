@@ -106,7 +106,7 @@ function PingCard({ ping, isSent, onAccept, onRefuse, processingId }) {
   );
 }
  
-export default function PingBoxPage() {
+export default function PingBoxPage({ onBoundarySwipe }) {
   const { user } = useAuth();
   const [pings, setPings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -168,6 +168,7 @@ export default function PingBoxPage() {
     tabs: PING_TABS,
     activeTab: tab,
     onChange: setTab,
+    onBoundarySwipe,
   });
   const { pullDistance, refreshing } = usePullToRefresh({
     rootRef: scrollRef,
@@ -181,7 +182,7 @@ export default function PingBoxPage() {
         <Navbar title="Ping Box" />
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden"
+          className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0"
           {...swipeHandlers}
         >
           <PullToRefreshIndicator

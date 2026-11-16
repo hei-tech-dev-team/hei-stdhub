@@ -49,7 +49,7 @@ export default function SuggestionPage() {
       <Sidebar />
       <main className="flex-1 flex flex-col min-h-0 safe-x safe-bottom">
         <Navbar title="Suggestions BDE" />
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0">
           <div className="relative px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
             {/* Hero */}
             <div className="bg-navy rounded-2xl px-6 py-7 sm:px-8">

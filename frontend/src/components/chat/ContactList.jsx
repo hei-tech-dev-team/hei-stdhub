@@ -357,6 +357,9 @@ const ContactList = memo(function ContactList({ contacts, activeId, onSelect, on
           <FontAwesomeIcon icon={faPlus} className="text-sm" />
         </button>
       </div>
+
+      {/* Keep the floating action above the mobile tab bar. */}
+      <div aria-hidden="true" className="h-16 shrink-0 lg:hidden" />
     </div>
   );
 });
