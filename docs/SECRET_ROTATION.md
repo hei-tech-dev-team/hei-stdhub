@@ -23,6 +23,28 @@ box below is checked, treat the matching credential as compromised.
 - The backend now refuses to start with `NODE_ENV=production` while a value
   known to be leaked is still configured (`backend/services/leakedSecrets.js`).
 
+## Clean-slate path (hosting already deleted)
+
+If the Render/Vercel projects have already been deleted and the database is
+paused, the order changes but the work does not disappear:
+
+1. **Deleting the hosts removes the runtime copies, not the leak.** Cloudinary,
+   SMTP, Resend, Google and the VAPID key pair are independent of Render and
+   Vercel. Revoke/regenerate them at the providers even though the old app is
+   offline.
+2. **A paused database is not a revoked database.** Keep it paused only while
+   forensics (#129) needs it; export what is needed, then **delete the Supabase
+   project**. Never unpause it and never reuse its password. The replacement
+   database (#144) must have a new owner and a new password.
+3. **Do not reuse anything from the old `.env`.** Generate a fresh JWT/VAPID
+   pair and a fresh database password for the new deployment. The guard in
+   `backend/services/leakedSecrets.js` blocks a boot that reintroduces one of
+   the old values.
+4. **GitHub `Production` is the source of truth for CI/CD secrets** until a new
+   host exists. Store only new values there.
+5. Old push subscriptions still live in users' browsers. Rotating VAPID
+   invalidates them; users must re-subscribe when the new frontend is live.
+
 ## What was exposed
 
 | Secret | Why it matters | Replace with |
@@ -196,6 +218,12 @@ Checklist:
 
 Run through this list after the deployment:
 
+- [ ] Render/Vercel projects are deleted and no old environment variables are
+      recoverable from them
+- [ ] Supabase was exported for forensics and then **deleted** (a paused project
+      still keeps the old password valid if it is ever restored)
+- [ ] The new deployment uses only new values; nothing was copied from an old
+      `.env`, backup or dashboard
 - [ ] `curl -fsS https://<backend>/api/health` returns `ok`
 - [ ] A fresh login works and an old token returns `401`
 - [ ] Creating a post/message writes to the new database
