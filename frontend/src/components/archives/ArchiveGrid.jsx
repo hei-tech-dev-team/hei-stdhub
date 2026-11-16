@@ -21,6 +21,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import { can } from "../../../../shared/permissions";
 
 const GOLD = "223,164,8";
 const NAVY_RGB = "0,25,72";
@@ -76,7 +77,8 @@ const LEVEL_ACCENT_COLORS = {
 
 export default function ArchiveGrid() {
   const { user } = useAuth();
-  const isTeacher = user?.role === "teacher" || user?.role === "admin";
+  const canCreateSupport = can(user, "support:create", "support");
+  const canDeleteSupport = can(user, "support:delete", "support");
 
   const [selectedUE, setSelectedUE] = useState(null);
   const [supports, setSupports] = useState([]);
@@ -237,7 +239,7 @@ export default function ArchiveGrid() {
           </div>
         </div>
         <div className="flex gap-2 shrink-0 ml-3">
-          {isTeacher && (
+          {canCreateSupport && (
             <button
               type="button"
               onClick={() => { setShowAdd((p) => !p); setAddError(""); }}
@@ -258,7 +260,7 @@ export default function ArchiveGrid() {
         </div>
       </div>
 
-      {isTeacher && showAdd && (
+      {canCreateSupport && showAdd && (
         <div className="px-5 sm:px-6 pt-4 shrink-0">
           <form onSubmit={handleAdd} className="p-4 bg-[#F6F7F8] rounded-2xl border border-gray-100 flex flex-col gap-3">
             {addError && (
@@ -294,7 +296,7 @@ export default function ArchiveGrid() {
               </div>
               <p className="text-navy font-semibold text-sm mb-1">Aucun support pour l'instant</p>
               <p className="text-gray-400 text-xs max-w-[220px] leading-relaxed">
-                {isTeacher ? "Ajoutez des ressources pédagogiques pour vos étudiants." : "Les supports seront ajoutés par vos enseignants."}
+                {canCreateSupport ? "Ajoutez des ressources pédagogiques pour vos étudiants." : "Les supports seront ajoutés par vos enseignants."}
               </p>
             </div>
           )}
@@ -310,7 +312,7 @@ export default function ArchiveGrid() {
                   {s.label}
                   <FontAwesomeIcon icon={faExternalLinkAlt} className="ml-1 text-gray-300 group-hover:text-gray-400 transition-all duration-200 opacity-0 group-hover:opacity-100 text-xs" />
                 </a>
-                {isTeacher && (
+                {canDeleteSupport && (
                   <button type="button" onClick={() => setConfirmDelete(s.id)} className="w-7 h-7 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100" title="Supprimer">
                     <FontAwesomeIcon icon={faTrash} className="text-xs" />
                   </button>
