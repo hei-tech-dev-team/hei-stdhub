@@ -1,14 +1,49 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// The RBAC model (`shared/permissions.js`) is CommonJS so the backend can
+// `require()` it, but Vite only executes ESM source files (and its CommonJS
+// interop only covers `node_modules`). This plugin wraps that single shared
+// file in an ESM shim for dev and build, so the React app consumes the very
+// same permission model instead of duplicating it.
+const sharedPermissionsPath = fileURLToPath(
+  new URL("../shared/permissions.js", import.meta.url),
+);
+
+function sharedPermissionsPlugin() {
+  return {
+    name: "shared-permissions-esm",
+    enforce: "pre",
+    transform(code, id) {
+      if (id.split("?")[0] !== sharedPermissionsPath) return null;
+      return {
+        // Prepend on the same line so original line numbers are preserved.
+        // The shared module already declares its exports at top level, so we
+        // only have to re-export them (keep in sync with shared/permissions.js).
+        code:
+          `const module = { exports: {} }; ${code}\n` +
+          "export { can, canOwn, canModerateCommentOnOwnPost, ROLE_RANK };\n" +
+          "export default module.exports;\n",
+        map: null,
+      };
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), sharedPermissionsPlugin()],
   define: {
     global: "globalThis",
   },
   server: {
     port: 5173,
     open: true,
+    fs: {
+      // The shared RBAC module lives outside the Vite root: allow the app
+      // root (default) plus the `shared/` folder that holds it.
+      allow: [".", "../shared"],
+    },
   },
   build: {
     target: "es2020",
