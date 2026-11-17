@@ -1,12 +1,12 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const developerOrAdmin = require("../middleware/developerOrAdmin");
+const requirePermission = require("../middleware/requirePermission");
 const { sendPushToUser } = require("../services/notificationService");
 
 const router = express.Router();
 
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, requirePermission("bugReport:create", "bugReport"), async (req, res) => {
   const { title, description, page, severity } = req.body;
   if (!title?.trim() || !description?.trim())
     return res.status(400).json({ error: "Titre et description requis." });
@@ -46,7 +46,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-router.get("/", auth, developerOrAdmin, async (req, res) => {
+router.get("/", auth, requirePermission("bugReport:read", "bugReport"), async (req, res) => {
   try {
     const { status, limit = 50, offset = 0 } = req.query;
     const pageLimit = Math.min(parseInt(limit) || 50, 200);
@@ -79,7 +79,7 @@ router.get("/", auth, developerOrAdmin, async (req, res) => {
   }
 });
 
-router.patch("/:id", auth, developerOrAdmin, async (req, res) => {
+router.patch("/:id", auth, requirePermission("bugReport:update", "bugReport"), async (req, res) => {
   const { status } = req.body;
   if (!["open", "in_progress", "resolved", "closed"].includes(status))
     return res.status(400).json({ error: "Statut invalide." });
@@ -98,7 +98,7 @@ router.patch("/:id", auth, developerOrAdmin, async (req, res) => {
   }
 });
 
-router.delete("/:id", auth, developerOrAdmin, async (req, res) => {
+router.delete("/:id", auth, requirePermission("bugReport:delete", "bugReport"), async (req, res) => {
   try {
     const { rows } = await db.query(
       "DELETE FROM bug_reports WHERE id = $1 RETURNING id",

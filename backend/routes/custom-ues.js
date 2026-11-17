@@ -1,11 +1,13 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
-const developerOrAdmin = require("../middleware/developerOrAdmin");
+const requirePermission = require("../middleware/requirePermission");
 
 const router = express.Router();
 
-// GET all custom UEs
+// GET all custom UEs (public route: no auth, no permission guard —
+// requirePermission without a preceding auth middleware would deny every
+// caller because can() is deny-by-default for anonymous users)
 router.get("/", async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -19,7 +21,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST create a custom UE
-router.post("/", auth, developerOrAdmin, async (req, res) => {
+router.post("/", auth, requirePermission("customUe:create", "customUe"), async (req, res) => {
   const { ue, level } = req.body;
   if (!ue || !level)
     return res.status(400).json({ error: "UE et niveau requis." });
@@ -44,7 +46,7 @@ router.post("/", auth, developerOrAdmin, async (req, res) => {
 });
 
 // DELETE a custom UE
-router.delete("/:id", auth, developerOrAdmin, async (req, res) => {
+router.delete("/:id", auth, requirePermission("customUe:delete", "customUe"), async (req, res) => {
   try {
     const getUe = await db.query("SELECT ue FROM custom_ues WHERE id = $1", [req.params.id]);
     

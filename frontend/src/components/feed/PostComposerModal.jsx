@@ -3,8 +3,8 @@ import api from "../../api/axios";
 import AuthorAvatar from "../ui/AuthorAvatar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperclip, faPaperPlane, faTimes, faSpinner, faBullhorn } from "@fortawesome/free-solid-svg-icons";
+import { can } from "../../../../shared/permissions";
 
-const ALLOWED_ANNOUNCE_ROLES = ["admin", "bde", "teacher"];
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -18,7 +18,7 @@ export default function PostComposerModal({ isOpen, onClose, user, onPostCreated
     const [error, setError] = useState("");
 
     const fileInputRef = useRef(null);
-    const canPublishAnnounce = ALLOWED_ANNOUNCE_ROLES.includes(user?.role);
+    const canPublishAnnounce = can(user, "post:create:announcement", "post");
 
     useEffect(() => {
         return () => {

@@ -1,11 +1,12 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
 
 const router = express.Router();
 
 // Send a ping to another user
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, requirePermission("ping:send", "ping"), async (req, res) => {
   const { receiver_id } = req.body;
   if (!receiver_id)
     return res.status(400).json({ error: "Destinataire requis." });
@@ -52,7 +53,7 @@ router.post("/", auth, async (req, res) => {
 });
 
 // Get all pings for current user
-router.get("/", auth, async (req, res) => {
+router.get("/", auth, requirePermission("ping:read", "ping"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT p.id, p.sender_id, p.receiver_id, p.status, p.created_at, p.responded_at,
@@ -73,7 +74,7 @@ router.get("/", auth, async (req, res) => {
 });
 
 // Accept a ping
-router.patch("/:id/accept", auth, async (req, res) => {
+router.patch("/:id/accept", auth, requirePermission("ping:accept", "ping"), async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT * FROM pings WHERE id=$1 AND receiver_id=$2 AND status='pending'",
@@ -103,7 +104,7 @@ router.patch("/:id/accept", auth, async (req, res) => {
 });
 
 // Refuse a ping
-router.patch("/:id/refuse", auth, async (req, res) => {
+router.patch("/:id/refuse", auth, requirePermission("ping:refuse", "ping"), async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT * FROM pings WHERE id=$1 AND receiver_id=$2 AND status='pending'",
