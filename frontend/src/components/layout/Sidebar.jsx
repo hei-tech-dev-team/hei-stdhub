@@ -3,29 +3,17 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-      faHouse,
-      faBookOpen,
-      faComments,
-      faUser,
       faRightFromBracket,
       faBars,
       faTimes,
       faUserShield,
       faLightbulb,
       faUsersRectangle,
-      faBell,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../context/AuthContext";
+import { MAIN_NAV_LINKS } from "../../config/navigation";
 import STDHUB_LOGO from "../../assets/stdhub-logo-pwa.png";
 import UserAvatar from "../ui/UserAvatar";
-
-const NAV_LINKS = [
-      { to: "/", label: "Accueil", icon: faHouse, end: true },
-      { to: "/archives", label: "Archives", icon: faBookOpen, end: false },
-      { to: "/chat", label: "Chat", icon: faComments, end: false },
-      { to: "/pings", label: "Ping Box", icon: faBell, end: false },
-      { to: "/profile", label: "Profil", icon: faUser, end: false },
-];
 
 let notificationPermissionRequested = false;
 
@@ -128,8 +116,9 @@ export default function Sidebar() {
             <>
                   <button
                         onClick={() => setOpen(true)}
-                        className="lg:hidden fixed top-3 left-3 z-40 touch-target rounded-xl
-                   bg-navy text-white shadow-lg"
+                        className="lg:hidden fixed top-[calc(env(safe-area-inset-top,0px)+0.75rem)]
+                   left-[calc(env(safe-area-inset-left,0px)+0.75rem)]
+                   z-40 touch-target rounded-xl bg-navy text-white shadow-lg"
                   >
                         <FontAwesomeIcon icon={faBars} className="text-base" />
                   </button>
@@ -144,7 +133,10 @@ export default function Sidebar() {
                   <aside
                         className={`
         fixed lg:static inset-y-0 left-0 z-40
-        w-60 h-screen bg-navy flex flex-col py-6 px-4 shrink-0
+        w-60 h-app bg-navy flex flex-col shrink-0
+        pt-[calc(env(safe-area-inset-top,0px)+1.5rem)]
+        pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]
+        pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-4
         transform transition-transform duration-300
         ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
@@ -172,7 +164,7 @@ export default function Sidebar() {
                         </div>
 
                         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
-                              {NAV_LINKS.map(({ to, label, icon, end }) => (
+                              {MAIN_NAV_LINKS.map(({ to, label, icon, end }) => (
                                     <NavLink
                                           key={to}
                                           to={to}

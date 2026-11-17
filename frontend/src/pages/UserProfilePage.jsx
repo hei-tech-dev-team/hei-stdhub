@@ -71,9 +71,9 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-surface overflow-hidden">
+      <div className="flex h-app bg-surface overflow-hidden">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden safe-x safe-bottom">
           <Navbar title="Profil" />
           <main className="flex-1 flex items-center justify-center">
             <FontAwesomeIcon icon={faSpinner} className="text-navy/50 text-2xl animate-spin" />
@@ -85,9 +85,9 @@ export default function UserProfilePage() {
 
   if (error || !profile) {
     return (
-      <div className="flex h-screen bg-surface overflow-hidden">
+      <div className="flex h-app bg-surface overflow-hidden">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden safe-x safe-bottom">
           <Navbar title="Profil" />
           <main className="flex-1 flex flex-col items-center justify-center gap-4">
             <p className="text-gray-400 text-sm">{error || "Utilisateur introuvable."}</p>
@@ -126,11 +126,11 @@ export default function UserProfilePage() {
   const avatarUrl = profile.avatar || null;
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
+    <div className="flex h-app bg-surface overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden safe-x safe-bottom">
         <Navbar title={`Profil de ${profile.pseudo}`} />
-        <main className="flex-1 overflow-y-auto custom-scrollbar">
+        <main className="flex-1 overflow-y-auto custom-scrollbar pb-16 lg:pb-0">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
             {/* Identity */}
             <div
