@@ -1,22 +1,49 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../api/axios";
 import { getSocket } from "../socket";
+import { useAuth } from "../context/AuthContext";
 
 const PAGE_SIZE = 10;
 const API_TYPES = { announcements: "announcement", posts: "post" };
+const MAX_CACHED_FEEDS = 10;
+const feedCache = new Map();
+
+const getCacheKey = (userId, type, q) =>
+    `${userId || "anonymous"}|${type}|${q.trim()}`;
+
+const readCachedFeed = (key) => feedCache.get(key) || null;
+
+const writeCachedFeed = (key, entry) => {
+    feedCache.set(key, entry);
+
+    // Search/filter combinations could otherwise keep every feed in memory
+    // for the lifetime of the tab.
+    if (feedCache.size > MAX_CACHED_FEEDS) {
+        feedCache.delete(feedCache.keys().next().value);
+    }
+};
 
 export default function usePostsFeed({ type = "all", q = "" } = {}) {
-    const [posts, setPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [hasNextPage, setHasNextPage] = useState(false);
+    const { user } = useAuth();
+    const cacheKey = getCacheKey(user?.id, type, q);
+    const cachedFeed = readCachedFeed(cacheKey);
 
-    const postsRef = useRef([]);
-    const cursorRef = useRef(null);
-    const hasNextRef = useRef(false);
+    const [posts, setPosts] = useState(() => cachedFeed?.posts ?? []);
+    const [loading, setLoading] = useState(
+        () => !cachedFeed?.posts?.length,
+    );
+    const [error, setError] = useState("");
+    const [hasNextPage, setHasNextPage] = useState(
+        () => Boolean(cachedFeed?.hasNextPage),
+    );
+
+    const postsRef = useRef(posts);
+    const cursorRef = useRef(cachedFeed?.cursor ?? null);
+    const hasNextRef = useRef(Boolean(cachedFeed?.hasNextPage));
     const loadingRef = useRef(false);
     const requestIdRef = useRef(0);
     const pendingReactionsRef = useRef(new Set());
+    const cacheWriteKeyRef = useRef(cacheKey);
 
     useEffect(() => {
         postsRef.current = posts;
@@ -47,11 +74,11 @@ export default function usePostsFeed({ type = "all", q = "" } = {}) {
     }, [type, q]);
 
     const load = useCallback(
-        async (reset) => {
+        async (reset, { silent = false } = {}) => {
             if (!reset && (loadingRef.current || !hasNextRef.current)) return;
             const requestId = ++requestIdRef.current;
             loadingRef.current = true;
-            setLoading(true);
+            if (!silent) setLoading(true);
             setError("");
 
             try {
@@ -83,7 +110,7 @@ export default function usePostsFeed({ type = "all", q = "" } = {}) {
             } finally {
                 if (requestId === requestIdRef.current) {
                     loadingRef.current = false;
-                    setLoading(false);
+                    if (!silent) setLoading(false);
                 }
             }
         },
@@ -91,19 +118,47 @@ export default function usePostsFeed({ type = "all", q = "" } = {}) {
     );
 
     useEffect(() => {
-        cursorRef.current = null;
-        hasNextRef.current = false;
-        setPosts([]);
-        setHasNextPage(false);
-        load(true);
+        const cached = readCachedFeed(cacheKey);
+        const hasCachedPosts = Boolean(cached?.posts?.length);
+
+        cursorRef.current = cached?.cursor ?? null;
+        hasNextRef.current = Boolean(cached?.hasNextPage);
+        setPosts(cached?.posts ?? []);
+        setHasNextPage(Boolean(cached?.hasNextPage));
+        setLoading(!hasCachedPosts);
+
+        // Show cached posts immediately, then revalidate them silently instead
+        // of flashing an empty feed after a route remount.
+        load(true, { silent: hasCachedPosts });
 
         return () => {
             requestIdRef.current++;
         };
-    }, [load]);
+    }, [cacheKey, load]);
+
+    useEffect(() => {
+        // Skip the render where the key changes: state still belongs to the
+        // previous filter until the hydration effect above runs.
+        if (cacheWriteKeyRef.current !== cacheKey) {
+            cacheWriteKeyRef.current = cacheKey;
+            return;
+        }
+
+        writeCachedFeed(cacheKey, {
+            posts,
+            cursor: cursorRef.current,
+            hasNextPage: hasNextRef.current,
+        });
+    }, [cacheKey, posts, hasNextPage]);
 
     const loadMore = useCallback(() => load(false), [load]);
     const retry = useCallback(() => load(postsRef.current.length === 0), [load]);
+    const refresh = useCallback(() => {
+        cursorRef.current = null;
+        hasNextRef.current = false;
+        setHasNextPage(false);
+        return load(true);
+    }, [load]);
 
     const addPost = useCallback((post) => {
         setPosts((prev) => [post, ...prev.filter((p) => p.id !== post.id)]);
@@ -177,6 +232,7 @@ export default function usePostsFeed({ type = "all", q = "" } = {}) {
         hasNextPage,
         loadMore,
         retry,
+        refresh,
         addPost,
         updatePost,
         deletePost,

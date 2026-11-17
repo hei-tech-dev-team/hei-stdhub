@@ -76,7 +76,7 @@ function Toast({ message, type, onClose }) {
   };
 
   return (
-    <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl border shadow-modal animate-slide-up ${colors[type] || colors.info}`}>
+    <div className={`fixed top-[calc(env(safe-area-inset-top,0px)+1rem)] right-[calc(env(safe-area-inset-right,0px)+1rem)] z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl border shadow-modal animate-slide-up ${colors[type] || colors.info}`}>
       <FontAwesomeIcon icon={icons[type] || icons.info} />
       <p className="text-sm font-medium">{message}</p>
       <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 transition">
@@ -440,7 +440,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
+    <div className="flex h-app bg-surface overflow-hidden">
       <Sidebar />
       {toast && (
         <Toast
@@ -450,7 +450,7 @@ export default function AdminPage() {
           onClose={() => setToast(null)}
         />
       )}
-      <main className="flex-1 flex flex-col min-h-0">
+      <main className="flex-1 flex flex-col min-h-0 safe-x safe-top safe-bottom">
         <div ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="relative">
             <div className="relative">
@@ -1080,7 +1080,9 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-6 right-6 w-11 h-11 rounded-xl bg-navy text-white flex items-center justify-center hover:bg-navy-dark transition-colors z-50"
+            className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]
+                       right-[calc(env(safe-area-inset-right,0px)+1.5rem)]
+                       w-11 h-11 rounded-xl bg-navy text-white flex items-center justify-center hover:bg-navy-dark transition-colors z-50"
             title="Remonter en haut"
           >
             <FontAwesomeIcon icon={faArrowUp} />

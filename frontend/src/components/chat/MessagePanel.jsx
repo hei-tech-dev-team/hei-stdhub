@@ -1170,7 +1170,10 @@ export default function MessagePanel({
               onScrollToBottom();
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="fixed bottom-28 sm:bottom-32 right-6 sm:right-10 w-11 h-11 rounded-full
+            className="fixed bottom-28 sm:bottom-32
+                       right-[calc(env(safe-area-inset-right,0px)+1.5rem)]
+                       sm:right-[calc(env(safe-area-inset-right,0px)+2.5rem)]
+                       w-11 h-11 rounded-full
                        bg-white border border-gray-100 shadow-modal
                        text-navy flex items-center justify-center
                        hover:bg-surface transition-colors z-10"

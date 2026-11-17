@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolderOpen,
@@ -75,7 +82,7 @@ const LEVEL_ACCENT_COLORS = {
   L3: { from: "#f59e0b", to: "#d97706" },
 };
 
-export default function ArchiveGrid() {
+const ArchiveGrid = forwardRef(function ArchiveGrid(_props, ref) {
   const { user } = useAuth();
   const canCreateSupport = can(user, "support:create", "support");
   const canDeleteSupport = can(user, "support:delete", "support");
@@ -113,16 +120,35 @@ export default function ArchiveGrid() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  const loadCustomUes = useCallback(async () => {
+    try {
+      const { data } = await api.get("/custom-ues");
+      if (!Array.isArray(data)) return;
+
+      const grouped = { L1: [], L2: [], L3: [] };
+      data.forEach((cu) => {
+        if (grouped[cu.level]) grouped[cu.level].push(cu.ue);
+      });
+      setCustomUes(grouped);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   useEffect(() => {
-    api.get("/custom-ues").then(({ data }) => {
-      if (Array.isArray(data)) {
-        const grouped = { L1: [], L2: [], L3: [] };
-        data.forEach((cu) => {
-          if (grouped[cu.level]) grouped[cu.level].push(cu.ue);
-        });
-        setCustomUes(grouped);
-      }
-    }).catch(() => {});
+    loadCustomUes();
+  }, [loadCustomUes]);
+
+  const loadSupports = useCallback(async (ue) => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/supports/${ue}`);
+      setSupports(Array.isArray(data) ? data : []);
+    } catch {
+      setSupports([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const setAdd = (k, v) => setAddForm((p) => ({ ...p, [k]: v }));
@@ -132,16 +158,8 @@ export default function ArchiveGrid() {
     setShowAdd(false);
     setAddForm({ label: "", url: "" });
     setAddError("");
-    setLoading(true);
     requestAnimationFrame(() => setShowPanel(true));
-    try {
-      const { data } = await api.get(`/supports/${ue}`);
-      setSupports(Array.isArray(data) ? data : []);
-    } catch {
-      setSupports([]);
-    } finally {
-      setLoading(false);
-    }
+    await loadSupports(ue);
   };
 
   const handleClosePanel = () => {
@@ -152,6 +170,15 @@ export default function ArchiveGrid() {
       setSupports([]);
     }, 300);
   };
+
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      loadCustomUes(),
+      selectedUE ? loadSupports(selectedUE) : Promise.resolve(),
+    ]);
+  }, [loadCustomUes, loadSupports, selectedUE]);
+
+  useImperativeHandle(ref, () => ({ refresh }), [refresh]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -334,7 +361,10 @@ export default function ArchiveGrid() {
   );
 
   const mobilePanelContent = !isDesktop && showPanel && selectedLevel && (
-    <div className="mb-4 mx-auto w-full max-w-sm bg-white rounded-2xl border border-gray-100 shadow-modal overflow-hidden">
+    <div
+      data-pull-to-refresh-ignore
+      className="mb-4 mx-auto w-full max-w-sm bg-white rounded-2xl border border-gray-100 shadow-modal overflow-hidden"
+    >
       {renderPanelContent(false)}
     </div>
   );
@@ -490,7 +520,9 @@ export default function ArchiveGrid() {
       )}
     </div>
   );
-}
+});
+
+export default ArchiveGrid;
 
 function LevelSection({ levelId, meta, ues, selectedUE, visible, yi, onSelect, panelContent }) {
   if (levelId === "Autre") {

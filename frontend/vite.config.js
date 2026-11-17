@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 
 // The RBAC model (`shared/permissions.js`) is CommonJS so the backend can
 // `require()` it, but Vite only executes ESM source files (and its CommonJS
@@ -33,6 +34,33 @@ function sharedPermissionsPlugin() {
 
 export default defineConfig({
   plugins: [react(), sharedPermissionsPlugin()],
+  plugins: [
+    react(),
+    VitePWA({
+      // `injectManifest` lets us keep custom push/message handlers while
+      // Workbox injects the hashed app-shell precache manifest at build time.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.js",
+      // Registration is done explicitly in `main.jsx` via workbox-window.
+      injectRegister: false,
+      // `public/manifest.json` remains the single source of truth; do not let
+      // the plugin generate or inject a second manifest.
+      manifest: false,
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,png,svg,ico,json,woff,woff2}"],
+        // Never precache the SW itself, and skip deploy-only metadata files.
+        globIgnores: ["**/sw.js", "**/robots.txt", "**/sitemap.xml"],
+        // The emoji picker/PDF chunks are large; keep the limit generous but
+        // bounded so a single huge asset cannot silently break install.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
+      devOptions: {
+        // Dev uses Vite's live module graph; a SW cache would serve stale code.
+        enabled: false,
+      },
+    }),
+  ],
   define: {
     global: "globalThis",
   },
