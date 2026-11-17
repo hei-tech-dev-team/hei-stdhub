@@ -33,9 +33,9 @@ function sharedPermissionsPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), sharedPermissionsPlugin()],
   plugins: [
     react(),
+    sharedPermissionsPlugin(),
     VitePWA({
       // `injectManifest` lets us keep custom push/message handlers while
       // Workbox injects the hashed app-shell precache manifest at build time.
