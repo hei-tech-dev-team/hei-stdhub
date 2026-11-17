@@ -1,10 +1,10 @@
 # Dépendances
 node_modules/
 
-# Variables d'environnement — NE JAMAIS commit
+# Variables d'environnement — NE JAMAIS commit (issue #127)
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
 
 # VAPID keys persisted on first run (fallback when env vars are not set)
 .vapid-keys.json

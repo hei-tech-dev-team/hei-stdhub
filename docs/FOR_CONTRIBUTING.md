@@ -113,7 +113,7 @@ Every PR runs these workflows; all must be green before merging:
   - backend: PostgreSQL 16 service seeded with `backend/db/schema.sql` + `backend/db/seed.dev.sql` (test-only accounts, never production), ephemeral `JWT_SECRET`/VAPID keys generated per run, lint and typecheck when configured, `npm test`;
   - frontend: lint, typecheck when `tsconfig.json` exists, tests, build;
   - e2e: Playwright, enabled automatically once `e2e/playwright.config.*` exists.
-- **Security** (`security.yml`): gitleaks secret scan and `npm audit --omit=dev --audit-level=high`.
+- **Security** (`security.yml`): gitleaks secret scan, a check that no `.env*` file is tracked, and `npm audit --omit=dev --audit-level=high`.
 - **CD** (`cd.yml`): after green CI on `main`, runs migrations (once they exist) and triggers the backend deploy hook.
 
 `keep-alive.yml` is a scheduled health ping, unrelated to PRs.
@@ -218,6 +218,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS new_column VARCHAR(100);
 ## Environment Variables
 
 - Never commit `.env` files
-- Document new env vars in FOR_OPS.md
+- Use the repository-root `.env` (the backend loads `../.env`); there is no `backend/.env`
+- The frontend only needs `VITE_API_URL`; production sets it in Vercel, and no `frontend/.env` is committed
+- Production secrets live in Render and GitHub Environments, never in files
+- Rotate a leaked credential with `docs/SECRET_ROTATION.md`; do not just delete the file
+- Document new env vars in FOR_OPS.md and add them to `.env.example` without values
 - Add defaults where possible
 - Use `process.env.VAR || default` pattern
