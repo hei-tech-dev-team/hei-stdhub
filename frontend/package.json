@@ -17,7 +17,7 @@
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-regular-svg-icons": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
-    "@fortawesome/react-fontawesome": "^3.2.0",
+    "@fortawesome/react-fontawesome": "^3.5.0",
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.13.5",
     "dompurify": "^3.3.2",
