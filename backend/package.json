@@ -26,7 +26,7 @@
     "fs-extra": "^11.2.0",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
-    "mime-types": "^2.1.35",
+    "mime-types": "^3.0.2",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^2.2.1",
     "node-cron": "^4.5.0",
