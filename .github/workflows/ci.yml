@@ -93,6 +93,34 @@ jobs:
           path: frontend/dist
           retention-days: 3
 
+  lighthouse:
+    name: Lighthouse — PWA and mobile performance
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      # Keep the audit toolchain out of the app's dependency manifest: the
+      # Lighthouse version is pinned here so scores stay reproducible.
+      - name: Install Lighthouse CI
+        run: npm install --no-save --package-lock=false @lhci/cli@0.16.1 lighthouse@13.6.0
+      - name: Run Lighthouse CI
+        run: npx lhci autorun --config=./lighthouserc.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: frontend/.lighthouseci
+          retention-days: 7
+
   detect:
     name: Detect optional suites
     runs-on: ubuntu-latest
