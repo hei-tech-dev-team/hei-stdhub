@@ -67,6 +67,30 @@ cd frontend && npm test    # Frontend tests
 | HTTP TAMPERING | 2 | PUT on messages/global, DELETE on auth/me |
 | MALFORMED | 1 | Invalid JSON body |
 
+### `session.test.js` — Session Tests
+
+| Area | What it verifies |
+|------|------------------|
+| Tokens | 15-minute access token, `sub`/`sid`/`tv`/`iss`/`aud`, no role or UEs in claims |
+| Cookie | `HttpOnly`, `SameSite=Strict`, `Path=/api/auth` |
+| CSRF | Refresh without token → 403, wrong token → 403 |
+| Rotation | Refresh token changes; previous token accepted only inside the grace window |
+| Reuse | Reuse outside grace revokes the session (`reuse`) and blocks further refresh |
+| Logout | Current session only, then all sessions with `logout-all` |
+| Session list | Only own sessions, one `current`, foreign revocation → 404 |
+| Password change | Other sessions revoked, current device gets a new session and token |
+| Role change | Target sessions revoked and access token rejected |
+| Purge | Expired and old revoked sessions deleted, active session kept |
+
+### `socket-join-auth.test.js` — Socket Session Tests
+
+| Test | What it verifies |
+|------|------------------|
+| Spoofed `user:join` | Room bound to the authenticated id, attacker receives nothing |
+| Forged global event | Client cannot relay a fake `message:global` |
+| BDE event | Non-BDE socket rejected |
+| Revocation | `session:revoked` emitted and socket disconnected |
+
 ### `socket.test.js` — Real-Time Tests
 
 | Test | What it verifies |

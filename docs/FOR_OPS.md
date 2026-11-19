@@ -4,17 +4,26 @@
 
 ```
 Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
-                                        │
-                                   PostgreSQL (Supabase)
-                                        │
-                                   Cloudinary (file storage)
+      │                                │
+      │ /api/auth/* via Vercel proxy    │
+      └────────────────────────────────┘
+                                       │
+                                  PostgreSQL (Supabase)
+                                       │
+                                  Cloudinary (file storage)
 ```
 
 - **Frontend**: Vercel, SPA rewrite all routes to `/index.html`
+- **Auth proxy**: Vercel function `frontend/api/auth/[...path].js`, same-origin `/api/auth/*` → Render
 - **Backend**: Render (free tier sleeps after inactivity, keep-alive ping via start.sh)
 - **Database**: Supabase PostgreSQL
 - **File Storage**: Cloudinary (avatars, chat files)
 - **Push Notifications**: Web Push API (auto-generated VAPID keys — persist in production)
+
+The refresh cookie is host-only and scoped to `/api/auth`, so it is only sent to
+the Vercel proxy. Business API calls and Socket.IO go directly to Render with
+`Authorization: Bearer <access token>`. See `DOC_SESSIONS_GUIDE.md` for the full
+session model.
 
 ---
 
@@ -27,6 +36,15 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 | `PORT` | No | `3001` | Server port |
 | `DATABASE_URL` | **Yes** | — | PostgreSQL connection string |
 | `JWT_SECRET` | **Yes** | — | JWT signing secret (strong random string) |
+| `JWT_ISSUER` | No | `hei-stdhub-api` | Expected `iss` claim |
+| `JWT_AUDIENCE` | No | `hei-stdhub-web` | Expected `aud` claim |
+| `ACCESS_TOKEN_TTL_SECONDS` | No | `900` | Access token lifetime (15 minutes) |
+| `REFRESH_TOKEN_TTL_DAYS` | No | `30` | Absolute refresh-session lifetime |
+| `REFRESH_REUSE_GRACE_SECONDS` | No | `15` | Multi-tab rotation grace window |
+| `AUTH_CACHE_TTL_MS` | No | `15000` | Per-session user cache; `0` in tests |
+| `MAX_SESSIONS_PER_USER` | No | `20` | Active sessions per user; `1000` in tests |
+| `SESSION_RETENTION_DAYS` | No | `30` | Retention after expiry/revocation |
+| `AUTH_PROXY_SECRET` | With proxy | — | Shared secret so Render trusts `X-Forwarded-For` from the Vercel proxy |
 | `CLIENT_URL` | **Yes** | — | Frontend URL for CORS |
 | `NODE_ENV` | No | — | Set to `production` for prod |
 | `BACKEND_URL` | No | — | Self-ping URL for Render keep-alive |
@@ -50,7 +68,17 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `VITE_API_URL` | No | `http://localhost:3001` | Backend API URL |
+| `VITE_API_URL` | No | `http://localhost:3001` | Backend API and Socket.IO URL |
+| `VITE_AUTH_API_URL` | No | same-origin `/api/auth` in production | Optional auth base URL; development defaults to the local API |
+
+### Vercel (auth proxy)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `API_URL` | **Yes** | Render backend URL, without `/api` |
+| `AUTH_PROXY_SECRET` | Recommended | Must match the Render value; lets the backend trust the forwarded client IP |
+| `VITE_API_URL` | **Yes** | Render URL used by the frontend for API and Socket.IO |
+| `VITE_AUTH_API_URL` | No | Leave empty to use the same-origin proxy |
 
 ---
 
@@ -82,6 +110,7 @@ psql "$DATABASE_URL" -f database/migration_alumni_support.sql
 psql "$DATABASE_URL" -f database/migration_chat_seen_pseudo_unique.sql
 psql "$DATABASE_URL" -f database/migration_scale_500.sql
 psql "$DATABASE_URL" -f database/migration_token_version.sql
+psql "$DATABASE_URL" -f database/migration_sessions.sql
 psql "$DATABASE_URL" -f database/migration_chat_emoji_transfer_answer.sql
 psql "$DATABASE_URL" -f database/migration_groupe_column.sql
 psql "$DATABASE_URL" -f database/migration_admin_audit_log.sql
@@ -122,6 +151,12 @@ npm run build
 # Deploy dist/ to Vercel (auto-deploys from git)
 # vercel.json handles SPA rewrites
 ```
+
+Set **Root Directory** to `frontend` in the Vercel project settings. This is
+required for the `api/auth/[...path].js` serverless function to be discovered.
+Set `API_URL`, `AUTH_PROXY_SECRET` and `VITE_API_URL` in the Vercel dashboard.
+The `/api/auth/*` function proxies to Render and keeps the refresh cookie
+first-party; API and Socket.IO calls still go directly to Render.
 
 ### 5. Render Deployment (Backend)
 
@@ -242,7 +277,10 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 - [ ] Passwords are bcrypt hashed (salt rounds: 10)
 - [ ] SQL uses parameterized queries (`$1`, `$2`)
 - [ ] XSS: chat messages sanitized client-side with DOMPurify
-- [ ] JWT expires in 7 days
+- [ ] Access token expires in 15 minutes and is kept in memory
+- [ ] Refresh cookie is `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/auth`
+- [ ] `migration_sessions.sql` applied before deploying the session code
+- [ ] `AUTH_PROXY_SECRET` matches between Vercel and Render
 - [ ] Password reset tokens: SHA-256, 1-hour expiry, single-use
 - [ ] No secrets in client-side code
 - [ ] `.env` files are in `.gitignore`
@@ -254,7 +292,14 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 
 ### "Token manquant" errors
 → Check `Authorization: Bearer <token>` header is being sent
-→ Verify token exists in `localStorage` key `hei_token`
+→ Access tokens live in memory only; reload the page or log in again
+→ Refresh failures return 401 and clear the local session
+
+### The page reloads and the user is logged out
+→ Check that `hei_csrf` exists in `localStorage`
+→ Check that the `hei_refresh` cookie is present on `/api/auth`
+→ In production, `Secure` requires HTTPS and the cookie must come from the Vercel proxy
+→ Check `AUTH_PROXY_SECRET` and `API_URL` on Vercel
 
 ### "Code d'invitation invalide ou expiré"
 → Invitation codes expire after 7 days
@@ -268,12 +313,18 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 ### Socket.IO not connecting
 → Verify `VITE_API_URL` is correct
 → Check CORS config on server
-→ JWT token must be valid (socket authenticates via `handshake.auth.token`)
-→ If token expires, call `refreshSocket()` (handled automatically in AuthContext)
+→ Access token must be valid (socket authenticates via `handshake.auth.token`)
+→ Expired access tokens trigger `auth:expired`; the client refreshes and reconnects
 
 ### Socket.IO connection refused (401)
-→ Token is missing or expired in localStorage (`hei_token`)
-→ Re-login to obtain a fresh token
+→ The in-memory access token is missing or expired
+→ Refresh or log in again; tokens are no longer stored in `localStorage`
+→ A revoked session disconnects the socket and redirects to `/login`
+
+### Random logouts while using multiple tabs
+→ Check `REFRESH_REUSE_GRACE_SECONDS` (default 15)
+→ A refresh token reused outside the grace window revokes the session by design
+→ Inspect `sessions.revoked_reason='reuse'`
 
 ### Push notifications not working
 → Service worker must be registered

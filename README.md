@@ -7,7 +7,7 @@ Full-stack web platform for HEI students, teachers, and admin. Access course mat
 **Frontend:** React 19, Vite, Tailwind CSS, React Router 7, Socket.IO Client, Font Awesome, Lucide React, jsPDF, DOMPurify, emoji-picker-react  
 **Backend:** Express 5, Socket.IO 4, PostgreSQL, JWT (jsonwebtoken + bcryptjs), Cloudinary (file uploads), Multer, express-rate-limit, web-push  
 **Testing:** Mocha + Chai (backend), Mocha + Chai (frontend chat utils)  
-**Documentation:** `docs/` — FOR_DEV (overview), FOR_BACK_DEV (backend), FOR_FRONT_DEV (frontend), FOR_QA (testing), FOR_OPS (ops), FOR_CONTRIBUTING (contribute), ALL_ABOUT_API (API reference), EMAIL_SETUP (email config)  
+**Documentation:** `docs/` — FOR_DEV (overview), FOR_BACK_DEV (backend), FOR_FRONT_DEV (frontend), FOR_QA (testing), FOR_OPS (ops), DOC_SESSIONS_GUIDE (auth sessions), FOR_CONTRIBUTING (contribute), ALL_ABOUT_API (API reference), EMAIL_SETUP (email config)<br>
 **Deployment:** Vercel (frontend) + Render (backend via start.sh)
 
 ## Features
@@ -27,7 +27,7 @@ Full-stack web platform for HEI students, teachers, and admin. Access course mat
 - **PWA** — Service worker for push notifications; works even when browser is closed (mobile); Web Push API with auto-generated VAPID keys; login/register triggers push subscription
 - **Scalability (500+ users)** — Pagination on all list endpoints (limit/offset/before cursors), database indexes (GIN on users.ues, composite on messages), batch push notifications with concurrency control (10 parallel), batch bulk invitation INSERT (100/batch), DB pool config (max: 25)
 - **Rate Limiting** — Login/register: 3 req/15min, general API: 50 req/15min, write operations: 15 req/15min, forgot-password: 2 req/15min, verify-code: 2 req/15min
-- **Security** — JWT with 7-day expiry, parameterized SQL queries (no injection), bcrypt password hashing (salt: 10), profanity filter on messages/suggestions, DOMPurify XSS sanitization, CORS restricted origin, SHA-256 password reset tokens (1-hour expiry, single-use)
+- **Security** — Short-lived access tokens (15 min, in memory), rotating `HttpOnly` refresh cookies, revocable server-side sessions with reuse detection, CSRF protection, database-loaded roles (never trusted from the token), parameterized SQL queries (no injection), bcrypt password hashing (salt: 10), profanity filter on messages/suggestions, DOMPurify XSS sanitization, CORS restricted origin, SHA-256 password reset tokens (1-hour expiry, single-use)
 - **Error Handling** — Every route wrapped in try/catch, consistent error response format `{ error: "Message en français." }`, request timeout (30s), malformed JSON detection, Multer error handling
 
 ## Backend Hosting and Cold Starts (Render Free Tier)
