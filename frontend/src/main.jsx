@@ -7,6 +7,7 @@ import ErrorBoundary from "./components/ui/ErrorBoundary";
 import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
+import { hasSessionHint } from "./api/tokenStore";
 
 window.addEventListener("error", (e) => {
   console.error("Global error caught:", e.error || e.message);
@@ -25,7 +26,7 @@ document.addEventListener("touchend", (e) => {
 }, false);
 
 async function fetchMissedNotifications() {
-  if (!localStorage.getItem("hei_token")) return;
+  if (!hasSessionHint()) return;
   try {
     const { default: api } = await import("./api/axios");
     const { data } = await api.get("/push/notifications");
@@ -96,7 +97,7 @@ if ("serviceWorker" in navigator) {
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-      if (localStorage.getItem("hei_token")) {
+      if (hasSessionHint()) {
         renewPushSubscription();
       }
     }

@@ -43,7 +43,8 @@ const ROLE_LABEL = {
 };
 
 export default function ProfilePage() {
-  const { user, setUser, pushSubscribed, setPushSubscribed } = useAuth();
+  const { user, setUser, pushSubscribed, setPushSubscribed, changePassword } =
+    useAuth();
   const fileRef = useRef(null);
 
   const [pseudo, setPseudo] = useState(user?.pseudo || "");
@@ -169,12 +170,7 @@ export default function ProfilePage() {
     }
     setLoadingPwd(true);
     try {
-      const { data } = await api.patch("/auth/password", {
-        current: currentPwd,
-        newPassword: newPwd,
-      });
-      // The server revokes previous sessions and returns a fresh token for this one.
-      if (data?.token) localStorage.setItem("hei_token", data.token);
+      await changePassword(currentPwd, newPwd);
       setSuccessPwd(true);
       setCurrentPwd("");
       setNewPwd("");

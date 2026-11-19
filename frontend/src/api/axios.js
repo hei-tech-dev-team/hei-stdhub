@@ -1,4 +1,6 @@
 import axios from "axios";
+import { getAccessToken } from "./tokenStore";
+import { refreshAccessToken, clearAuth } from "./session";
 
 const getApiBaseUrl = () => {
   const configuredUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -41,7 +43,7 @@ const finishRequest = (config) => {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("hei_token");
+  const token = getAccessToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
   clearTimeout(config.__slowTimer);
@@ -85,9 +87,25 @@ api.interceptors.response.use(
       url.includes("/auth/register") ||
       url.includes("/auth/verify-invite");
 
-    if (status === 401 && !isAuthRoute) {
-      localStorage.removeItem("hei_token");
-      window.location.href = "/login";
+    if (status === 401 && !isAuthRoute && !config?.__authRetried) {
+      config.__authRetried = true;
+      try {
+        const data = await refreshAccessToken();
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${data.token}`;
+        return api.request(config);
+      } catch {
+        clearAuth();
+        window.dispatchEvent(
+          new CustomEvent("auth:session-revoked", {
+            detail: { reason: "expired" },
+          }),
+        );
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(err);
+      }
     }
 
     if (err.response?.status === 503) {
