@@ -1,7 +1,11 @@
 import axios from "axios";
 import { getCsrfToken } from "./tokenStore";
 
-const trimApi = (value) => value.replace(/\/+$/, "").replace(/\/api$/, "");
+const trimApi = (value) =>
+  value
+    .replace(/\/+$/, "")
+    .replace(/\/api\/auth$/, "")
+    .replace(/\/api$/, "");
 
 const getAuthBaseUrl = () => {
   const configured = import.meta.env.VITE_AUTH_API_URL;

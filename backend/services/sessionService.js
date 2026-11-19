@@ -76,7 +76,7 @@ const publicUser = (user) => ({
   avatar: user.avatar || null,
 });
 
-const createSession = async ({ user, req, client = db }) => {
+const createSession = async ({ user, req, client = db, io }) => {
   const sid = crypto.randomUUID();
   const refreshToken = generateToken();
   const csrfToken = generateToken();
@@ -90,13 +90,19 @@ const createSession = async ({ user, req, client = db }) => {
      WHERE id IN (
        SELECT id FROM sessions
        WHERE user_id = $1 AND revoked_at IS NULL
-       ORDER BY created_at ASC
+       ORDER BY created_at DESC
        OFFSET $2
      )
      RETURNING id`,
     [user.id, Math.max(limit - 1, 0)],
   );
-  capped.forEach((row) => cacheDelete(row.id));
+  capped.forEach((row) => {
+    cacheDelete(row.id);
+    if (io) {
+      io.to(`session:${row.id}`).emit("session:revoked", { reason: "limit" });
+      io.to(`session:${row.id}`).disconnectSockets(true);
+    }
+  });
 
   await client.query(
     `INSERT INTO sessions

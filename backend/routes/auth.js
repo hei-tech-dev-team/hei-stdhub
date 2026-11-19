@@ -161,7 +161,12 @@ const issueSession = async (
   user,
   { status = 200, extra = {}, client } = {},
 ) => {
-  const session = await createSession({ user, req, client });
+  const session = await createSession({
+    user,
+    req,
+    client,
+    io: req.app.get("io"),
+  });
   res.cookie(REFRESH_COOKIE_NAME, session.refreshToken, cookieOptions());
   res.set("Cache-Control", "no-store");
   return res.status(status).json({
@@ -914,7 +919,12 @@ router.patch("/password", auth, async (req, res) => {
         client,
         bumpVersion: false,
       });
-      session = await createSession({ user, req, client });
+      session = await createSession({
+        user,
+        req,
+        client,
+        io: req.app.get("io"),
+      });
       await client.query("COMMIT");
     } catch (err) {
       await client.query("ROLLBACK").catch(() => {});
