@@ -5,6 +5,10 @@ const auth = require("../middleware/auth");
 const developerOrAdmin = require("../middleware/developerOrAdmin");
 const developerOnly = require("../middleware/developerOnly");
 const { logAdminAction } = require("../services/auditLog");
+const {
+      revokeUserSessions,
+      disconnectUser,
+} = require("../services/sessionService");
 
 const router = express.Router();
 
@@ -159,15 +163,34 @@ router.patch("/users/:id/role", auth, developerOrAdmin, async (req, res) => {
             }
             const target = await loadManageableTarget(req, res);
             if (!target) return;
-            const { rows } = await db.query(
-                  "UPDATE users SET role=$1 WHERE id=$2 RETURNING id, ref, pseudo, role",
-                  [role, target.id],
-            );
+            const client = await db.pool.connect();
+            let updated;
+            try {
+                  await client.query("BEGIN");
+                  const { rows } = await client.query(
+                        `UPDATE users SET role=$1, token_version = token_version + 1
+                         WHERE id=$2
+                         RETURNING id, ref, pseudo, role, token_version`,
+                        [role, target.id],
+                  );
+                  updated = rows[0];
+                  await revokeUserSessions(target.id, "role_change", {
+                        client,
+                        bumpVersion: false,
+                  });
+                  await client.query("COMMIT");
+            } catch (err) {
+                  await client.query("ROLLBACK").catch(() => {});
+                  throw err;
+            } finally {
+                  client.release();
+            }
+            disconnectUser(req.app.get("io"), target.id, "role_change");
             await logAdminAction(req, "user.role.update", target.id, {
                   from: target.role,
                   to: role,
             });
-            res.json(rows[0]);
+            res.json(updated);
       } catch (err) {
             console.error("ERREUR PATCH ROLE:", err.message);
             res.status(500).json({ error: "Erreur serveur." });
@@ -181,15 +204,33 @@ router.patch("/users/:id/email", auth, developerOrAdmin, async (req, res) => {
       try {
             const target = await loadManageableTarget(req, res);
             if (!target) return;
-            const { rows } = await db.query(
-                  "UPDATE users SET email=$1 WHERE id=$2 RETURNING id, ref, email",
-                  [email.trim().toLowerCase(), target.id],
-            );
+            const client = await db.pool.connect();
+            let updated;
+            try {
+                  await client.query("BEGIN");
+                  const { rows } = await client.query(
+                        `UPDATE users SET email=$1 WHERE id=$2
+                         RETURNING id, ref, email`,
+                        [email.trim().toLowerCase(), target.id],
+                  );
+                  updated = rows[0];
+                  await revokeUserSessions(target.id, "email_change", {
+                        client,
+                        bumpVersion: false,
+                  });
+                  await client.query("COMMIT");
+            } catch (err) {
+                  await client.query("ROLLBACK").catch(() => {});
+                  throw err;
+            } finally {
+                  client.release();
+            }
+            disconnectUser(req.app.get("io"), target.id, "email_change");
             await logAdminAction(req, "user.email.update", target.id, {
                   from: target.email,
-                  to: rows[0].email,
+                  to: updated.email,
             });
-            res.json(rows[0]);
+            res.json(updated);
       } catch (err) {
             console.error("ERREUR PATCH EMAIL:", err.message);
             res.status(500).json({ error: "Erreur serveur." });
@@ -207,6 +248,7 @@ router.delete("/users/:id", auth, developerOrAdmin, async (req, res) => {
             const target = await loadManageableTarget(req, res);
             if (!target) return;
             await db.query("DELETE FROM users WHERE id=$1", [target.id]);
+            disconnectUser(req.app.get("io"), target.id, "account_deleted");
             await logAdminAction(req, "user.delete", target.id, {
                   ref: target.ref,
                   role: target.role,
@@ -228,15 +270,34 @@ router.patch("/users/:id/role-upgrade", auth, developerOrAdmin, async (req, res)
                   return res.status(404).json({ error: "Utilisateur introuvable." });
             if (rows[0].role !== "student")
                   return res.status(400).json({ error: "Seuls les etudiants peuvent etre upgardes en BDE." });
-            const { rows: updated } = await db.query(
-                  "UPDATE users SET role = 'bde' WHERE id = $1 RETURNING id, ref, role",
-                  [req.params.id],
-            );
+            const client = await db.pool.connect();
+            let updated;
+            try {
+                  await client.query("BEGIN");
+                  const { rows: upgraded } = await client.query(
+                        `UPDATE users SET role = 'bde', token_version = token_version + 1
+                         WHERE id = $1
+                         RETURNING id, ref, role, token_version`,
+                        [req.params.id],
+                  );
+                  updated = upgraded[0];
+                  await revokeUserSessions(rows[0].id, "role_change", {
+                        client,
+                        bumpVersion: false,
+                  });
+                  await client.query("COMMIT");
+            } catch (err) {
+                  await client.query("ROLLBACK").catch(() => {});
+                  throw err;
+            } finally {
+                  client.release();
+            }
+            disconnectUser(req.app.get("io"), rows[0].id, "role_change");
             await logAdminAction(req, "user.role.upgrade", rows[0].id, {
                   from: "student",
                   to: "bde",
             });
-            res.json(updated[0]);
+            res.json(updated);
       } catch (err) {
             console.error("ERREUR ROLE-UPGRADE:", err.message);
             res.status(500).json({ error: "Erreur serveur." });

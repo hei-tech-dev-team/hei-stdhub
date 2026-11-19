@@ -7,11 +7,13 @@ const http = require("http");
 const { Server } = require("socket.io");
 require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const rateLimit = require("express-rate-limit");
-const jwt = require("jsonwebtoken");
+const { ipKeyGenerator } = rateLimit;
 const { verifyAccessToken } = require("./services/tokenAuth");
 const webpush = require("web-push");
+const clientIp = require("./middleware/clientIp");
 
 const { startMessagePurgeJob } = require("./services/messagePurgeJob");
+const { startSessionCleanupJob } = require("./services/sessionCleanupJob");
 const { warnIfSeedAccountsPresent } = require("./services/securityChecks");
 
 // Validate critical env vars at startup. In production the VAPID keys must
@@ -70,6 +72,7 @@ webpush.setVapidDetails(
 
 const app = express();
 app.set("trust proxy", 1);
+app.use(clientIp);
 
 const server = http.createServer(app);
 
@@ -93,6 +96,7 @@ const loginLimiter = rateLimit({
   message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.clientIp || req.ip),
 });
 
 // Socket.io setup — optimized for 1000+ concurrent connections
@@ -145,7 +149,7 @@ app.use(
   cors({
     origin: corsOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
     credentials: true,
     maxAge: 600,
   }),
@@ -243,6 +247,14 @@ io.on("connection", (socket) => {
     next();
   });
 
+  socket.join(`session:${socket.user.sid}`);
+  socket.join(`user:${socket.user.id}`);
+
+  const authTimer = setTimeout(() => {
+    socket.emit("auth:expired");
+    socket.disconnect(true);
+  }, Math.max(socket.user.exp * 1000 - Date.now(), 0));
+
   socket.on("user:join", (clientUserId) => {
     if (onlineUsers.size >= MAX_ONLINE_USERS) {
       socket.emit("error", { message: "Serveur saturé." });
@@ -259,15 +271,6 @@ io.on("connection", (socket) => {
       console.warn(
         `[socket ${socket.id}] user:join id mismatch (client=${clientUserId}, auth=${userId}), using authenticated id`,
       );
-    }
-
-    // Leave previous room for this userId (handles reconnection)
-    const prevSocketId = onlineUsers.get(userId);
-    if (prevSocketId) {
-      const prevSocket = io.sockets.sockets.get(prevSocketId);
-      if (prevSocket) {
-        prevSocket.leave(`user:${userId}`);
-      }
     }
 
     onlineUsers.set(userId, socket.id);
@@ -362,6 +365,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
+    clearTimeout(authTimer);
     if (socket.userId) {
       onlineUsers.delete(socket.userId);
       if (socket.user?.role !== "developer") {
@@ -477,6 +481,7 @@ const { pool } = require("./db");
 })();
 
 startMessagePurgeJob(io);
+startSessionCleanupJob();
 
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {

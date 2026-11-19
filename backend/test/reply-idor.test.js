@@ -16,6 +16,9 @@ describe("MESSAGES — reply_to_id must not leak foreign private messages", () =
   let adminToken;
   let studentToken;
   let teacherToken;
+  let studentId;
+  let teacherId;
+  let devId;
   let secretId;
   const secret = "SECRET interdit aux autres utilisateurs";
 
@@ -26,11 +29,19 @@ describe("MESSAGES — reply_to_id must not leak foreign private messages", () =
       login("PROF001"),
     ]);
 
-    // Private message between admin (1) and developer (4); student/teacher are outsiders.
+    const { rows: users } = await db.query(
+      "SELECT ref, id FROM users WHERE ref = ANY($1::text[])",
+      [["ADMIN001", "STD25001", "PROF001", "DEV001"]],
+    );
+    const ids = Object.fromEntries(users.map((user) => [user.ref, user.id]));
+    studentId = ids.STD25001;
+    teacherId = ids.PROF001;
+    devId = ids.DEV001;
+
     const res = await request(app)
       .post("/api/messages")
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ content: secret, receiver_id: 4, is_global: false });
+      .send({ content: secret, receiver_id: devId, is_global: false });
     secretId = res.body.id;
   });
 
@@ -40,7 +51,7 @@ describe("MESSAGES — reply_to_id must not leak foreign private messages", () =
       .set("Authorization", `Bearer ${studentToken}`)
       .send({
         content: "tentative de fuite",
-        receiver_id: 3,
+        receiver_id: teacherId,
         is_global: false,
         reply_to_id: secretId,
       });
@@ -52,7 +63,7 @@ describe("MESSAGES — reply_to_id must not leak foreign private messages", () =
 
   it("does not expose the quoted content when reading the conversation", async () => {
     const res = await request(app)
-      .get("/api/messages/private/3")
+      .get(`/api/messages/private/${teacherId}`)
       .set("Authorization", `Bearer ${studentToken}`);
 
     expect(res.status).to.equal(200);
@@ -82,13 +93,13 @@ describe("MESSAGES — reply_to_id must not leak foreign private messages", () =
     // Simulates a row created before the write-side fix.
     const { rows } = await db.query(
       `INSERT INTO messages (sender_id, receiver_id, content, is_global, reply_to_id)
-       VALUES (2, 3, $1, FALSE, $2) RETURNING id`,
-      ["ligne historique malveillante", secretId],
+       VALUES ($1, $2, $3, FALSE, $4) RETURNING id`,
+      [studentId, teacherId, "ligne historique malveillante", secretId],
     );
     const malformedId = rows[0].id;
 
     const res = await request(app)
-      .get("/api/messages/private/3")
+      .get(`/api/messages/private/${teacherId}`)
       .set("Authorization", `Bearer ${studentToken}`);
 
     const row = res.body.find((m) => m.id === malformedId);
@@ -101,14 +112,14 @@ describe("MESSAGES — reply_to_id must not leak foreign private messages", () =
     const original = await request(app)
       .post("/api/messages")
       .set("Authorization", `Bearer ${studentToken}`)
-      .send({ content: "question légitime", receiver_id: 3, is_global: false });
+      .send({ content: "question légitime", receiver_id: teacherId, is_global: false });
 
     const reply = await request(app)
       .post("/api/messages")
       .set("Authorization", `Bearer ${teacherToken}`)
       .send({
         content: "réponse légitime",
-        receiver_id: 2,
+        receiver_id: studentId,
         is_global: false,
         reply_to_id: original.body.id,
       });

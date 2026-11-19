@@ -95,6 +95,25 @@ const ensureIndexes = async () => {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_admin_audit_log_target ON admin_audit_log (target_id);`);
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id                          UUID         PRIMARY KEY,
+        user_id                     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        refresh_token_hash          CHAR(64)     NOT NULL UNIQUE,
+        previous_refresh_token_hash CHAR(64)     NULL,
+        previous_valid_until        TIMESTAMPTZ  NULL,
+        csrf_token_hash             CHAR(64)     NOT NULL,
+        token_version               INTEGER      NOT NULL,
+        user_agent                  VARCHAR(512) NULL,
+        ip                          VARCHAR(64)  NULL,
+        created_at                  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        last_used_at                TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        expires_at                  TIMESTAMPTZ  NOT NULL,
+        revoked_at                  TIMESTAMPTZ  NULL,
+        revoked_reason              VARCHAR(32)  NULL
+      );
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS custom_ues (
         id         SERIAL       PRIMARY KEY,
         ue         VARCHAR(30)  NOT NULL UNIQUE,
@@ -157,6 +176,10 @@ const ensureIndexes = async () => {
       CREATE INDEX IF NOT EXISTS idx_messages_global_id ON messages(id DESC) WHERE is_global = TRUE;
       CREATE INDEX IF NOT EXISTS idx_messages_private_pair ON messages(sender_id, receiver_id, id DESC) WHERE is_global = FALSE;
       CREATE INDEX IF NOT EXISTS idx_push_notifications_user_unread ON push_notifications(user_id, is_read) WHERE is_read = FALSE;
+      CREATE INDEX IF NOT EXISTS idx_sessions_user_active ON sessions(user_id) WHERE revoked_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_revoked ON sessions(revoked_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_previous_hash ON sessions(previous_refresh_token_hash);
       ALTER TABLE supports DROP CONSTRAINT IF EXISTS chk_support_ue;
     `);
   } catch (err) {
