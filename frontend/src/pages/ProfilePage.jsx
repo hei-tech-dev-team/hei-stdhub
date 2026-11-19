@@ -21,6 +21,10 @@ import {
   faTimes,
   faBell,
   faBellSlash,
+  faDesktop,
+  faMobileScreen,
+  faTrash,
+  faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
 
 const ROLE_LABEL = {
@@ -42,9 +46,48 @@ const ROLE_LABEL = {
   bde: { label: "BDE", icon: faUsers, cls: "bg-amber-50 text-amber-700" },
 };
 
+const sessionDeviceLabel = (userAgent) => {
+  if (!userAgent) return "Appareil inconnu";
+  const browser = /edg\//i.test(userAgent)
+    ? "Edge"
+    : /firefox/i.test(userAgent)
+      ? "Firefox"
+      : /chrome|crios/i.test(userAgent)
+        ? "Chrome"
+        : /safari/i.test(userAgent)
+          ? "Safari"
+          : "Navigateur";
+  const system = /iphone|ipad|ipod/i.test(userAgent)
+    ? "iOS"
+    : /android/i.test(userAgent)
+      ? "Android"
+      : /windows/i.test(userAgent)
+        ? "Windows"
+        : /mac os|macintosh/i.test(userAgent)
+          ? "macOS"
+          : /linux/i.test(userAgent)
+            ? "Linux"
+            : "";
+  return system ? `${browser} · ${system}` : browser;
+};
+
+const formatSessionDate = (value) =>
+  value
+    ? new Date(value).toLocaleString("fr-FR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : "—";
+
 export default function ProfilePage() {
-  const { user, setUser, pushSubscribed, setPushSubscribed, changePassword } =
-    useAuth();
+  const {
+    user,
+    setUser,
+    pushSubscribed,
+    setPushSubscribed,
+    changePassword,
+    logoutAll,
+  } = useAuth();
   const fileRef = useRef(null);
 
   const [pseudo, setPseudo] = useState(user?.pseudo || "");
@@ -71,6 +114,67 @@ export default function ProfilePage() {
 
   const [visible, setVisible] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionError, setSessionError] = useState("");
+  const [revokingSession, setRevokingSession] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get("/auth/sessions")
+      .then(({ data }) => {
+        if (active) setSessions(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (active) setSessionError("Impossible de charger les sessions.");
+      })
+      .finally(() => {
+        if (active) setSessionsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const reloadSessions = async () => {
+    const { data } = await api.get("/auth/sessions");
+    setSessions(Array.isArray(data) ? data : []);
+  };
+
+  const handleRevokeSession = async (session) => {
+    setSessionError("");
+    setRevokingSession(session.id);
+    try {
+      await api.delete(`/auth/sessions/${session.id}`);
+      if (session.current) {
+        window.location.href = "/login";
+        return;
+      }
+      await reloadSessions();
+    } catch (err) {
+      setSessionError(
+        err.response?.data?.error || "Impossible de révoquer cette session.",
+      );
+    } finally {
+      setRevokingSession(null);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    if (!window.confirm("Déconnecter tous les appareils ?")) return;
+    setSessionError("");
+    setRevokingSession("all");
+    try {
+      await logoutAll();
+      window.location.href = "/login";
+    } catch (err) {
+      setSessionError(
+        err.response?.data?.error || "Impossible de déconnecter les appareils.",
+      );
+      setRevokingSession(null);
+    }
+  };
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -344,6 +448,103 @@ export default function ProfilePage() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div
+              className={`card p-5 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+              style={{ transitionDelay: "300ms" }}
+            >
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="field-label mb-1">Sessions actives</h2>
+                  <p className="text-gray-400 text-xs">
+                    Appareils connectés à votre compte.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogoutAll}
+                  disabled={revokingSession === "all"}
+                  className="shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                >
+                  {revokingSession === "all" ? (
+                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                  ) : (
+                    <FontAwesomeIcon icon={faRightFromBracket} />
+                  )}
+                  Tous les appareils
+                </button>
+              </div>
+
+              {sessionError && (
+                <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg mb-3 bg-[#FEF3F2] border border-[#FECACA] text-[#B42318]">
+                  <FontAwesomeIcon icon={faTimes} className="text-xs shrink-0" />
+                  {sessionError}
+                </div>
+              )}
+
+              {sessionsLoading ? (
+                <div className="flex justify-center py-4 text-navy/40">
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <p className="text-gray-400 text-xs py-2">Aucune session active.</p>
+              ) : (
+                <div className="space-y-2">
+                  {sessions.map((session) => {
+                    const mobile = /iphone|ipad|android|mobile/i.test(
+                      session.user_agent || "",
+                    );
+                    return (
+                      <div
+                        key={session.id}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-surface/60 border border-gray-100"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 text-navy/60">
+                          <FontAwesomeIcon
+                            icon={mobile ? faMobileScreen : faDesktop}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-medium text-navy">
+                              {sessionDeviceLabel(session.user_agent)}
+                            </p>
+                            {session.current && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                                Cet appareil
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+                            {session.ip || "IP inconnue"} · Dernière activité{" "}
+                            {formatSessionDate(session.last_used_at)}
+                          </p>
+                          <p className="text-[11px] text-gray-400">
+                            Connecté le {formatSessionDate(session.created_at)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRevokeSession(session)}
+                          disabled={revokingSession === session.id}
+                          title="Révoquer cette session"
+                          className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                        >
+                          {revokingSession === session.id ? (
+                            <FontAwesomeIcon
+                              icon={faSpinner}
+                              className="animate-spin text-sm"
+                            />
+                          ) : (
+                            <FontAwesomeIcon icon={faTrash} className="text-sm" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </main>
