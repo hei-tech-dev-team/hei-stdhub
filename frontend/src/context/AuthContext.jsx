@@ -6,7 +6,6 @@ import {
   useRef,
   useCallback,
 } from "react";
-import api from "../api/axios";
 import authApi from "../api/authApi";
 import {
   applyAuthResponse,
@@ -170,13 +169,13 @@ export function AuthProvider({ children }) {
 
   const logoutAll = async () => {
     try {
-      await api.post("/auth/logout-all");
+      await authApi.post("/logout-all");
     } catch {}
     cleanupLocalSession();
   };
 
   const changePassword = async (current, newPassword) => {
-    const { data } = await api.patch("/auth/password", {
+    const { data } = await authApi.patch("/password", {
       current,
       newPassword,
     });

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getCsrfToken } from "./tokenStore";
+import { getAccessToken, getCsrfToken } from "./tokenStore";
 
 const trimApi = (value) =>
   value
@@ -26,6 +26,8 @@ const authApi = axios.create({
 });
 
 authApi.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   const csrf = getCsrfToken();
   if (csrf) config.headers["X-CSRF-Token"] = csrf;
   return config;
