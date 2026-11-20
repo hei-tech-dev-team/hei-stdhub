@@ -53,7 +53,7 @@ frontend/src/
 
 ### `main.jsx` — Entry Point
 - React 19 StrictMode root render
-- Service worker registration (`/sw.js`) for PWA
+- Workbox service worker registration (`/sw.js`) for PWA precache/offline support
 - On mount: fetches `GET /push/notifications`, marks them read via `PATCH /push/notifications/read`
 
 ### `App.jsx` — Router & Guards

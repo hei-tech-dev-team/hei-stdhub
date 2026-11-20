@@ -1,10 +1,11 @@
 const express = require("express");
 const db = require("../db");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
 const router = express.Router();
 
 // Subscribe to push notifications
-router.post("/subscribe", auth, async (req, res) => {
+router.post("/subscribe", auth, requirePermission("push:subscribe", "push"), async (req, res) => {
   const { subscription } = req.body;
   if (!subscription?.endpoint)
     return res.status(400).json({ error: "Subscription requise." });
@@ -30,7 +31,7 @@ router.post("/subscribe", auth, async (req, res) => {
 });
 
 // Unsubscribe
-router.delete("/subscribe", auth, async (req, res) => {
+router.delete("/subscribe", auth, requirePermission("push:unsubscribe", "push"), async (req, res) => {
   const { endpoint } = req.body;
   if (!endpoint) return res.status(400).json({ error: "Endpoint requis." });
 
@@ -47,7 +48,7 @@ router.delete("/subscribe", auth, async (req, res) => {
 });
 
 // Get missed push notifications for the current user
-router.get("/notifications", auth, async (req, res) => {
+router.get("/notifications", auth, requirePermission("push:notifications:list", "push"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT id, type, title, body, data, is_read, created_at
@@ -65,7 +66,7 @@ router.get("/notifications", auth, async (req, res) => {
 });
 
 // Mark notifications as read
-router.patch("/notifications/read", auth, async (req, res) => {
+router.patch("/notifications/read", auth, requirePermission("push:notifications:markRead", "push"), async (req, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "IDs requis." });
@@ -84,7 +85,7 @@ router.patch("/notifications/read", auth, async (req, res) => {
 });
 
 // Get unread notification count
-router.get("/notifications/unread-count", auth, async (req, res) => {
+router.get("/notifications/unread-count", auth, requirePermission("push:notifications:unreadCount", "push"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT COUNT(*)::int AS count FROM push_notifications

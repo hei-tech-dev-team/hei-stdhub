@@ -517,9 +517,9 @@ export default function BDEPage() {
   };
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
+    <div className="flex h-app bg-surface overflow-hidden">
       <Sidebar />
-      <main className="flex-1 flex flex-col min-h-0">
+      <main className="flex-1 flex flex-col min-h-0 safe-x safe-bottom">
         <Navbar title="Interface BDE" />
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="relative">
@@ -591,6 +591,7 @@ export default function BDEPage() {
                 ) : (
             <div
               ref={boardRef}
+              data-swipe-ignore
               className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 items-start"
             >
               {COLUMNS.map((col) => (

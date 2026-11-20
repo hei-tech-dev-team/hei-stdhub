@@ -1,14 +1,16 @@
 cloudinary
+
+# Environment files — never commit real values (issue #127).
+# Keep the example so contributors know which variables exist.
 .env
-.env.vercel
-.env.local
-.env.production
+.env.*
+!.env.example
+
 .vapid-keys.json
 *.pem
 scripts/venv/
 scripts/__pycache__/
 .vercel
-.vapid-keys.json
 .idea/
 AI_context.md
 .opencode/

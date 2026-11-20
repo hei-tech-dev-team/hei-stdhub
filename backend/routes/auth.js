@@ -7,6 +7,8 @@ const rateLimit = require("express-rate-limit");
 const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
+const { can } = require("../../shared/permissions");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
 const { sendPushToUser } = require("../services/notificationService");
@@ -205,7 +207,9 @@ const tryGetAdminFromToken = async (req) => {
   if (!header?.startsWith("Bearer ")) return null;
   try {
     const user = await verifyAccessToken(header.split(" ")[1]);
-    return user && ["admin", "developer"].includes(user.role) ? user : null;
+    // The role always comes from the database (verifyAccessToken re-queries
+    // the users table); the decision itself comes from the shared model.
+    return user && can(user, "user:inviteCreate", "user") ? user : null;
   } catch {
     return null;
   }
@@ -622,7 +626,7 @@ router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, re
 });
 
 // Public profile by ref
-router.get("/user/:ref", auth, async (req, res) => {
+router.get("/user/:ref", auth, requirePermission("user:read", "user"), async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT id, ref, nom, prenom, pseudo, role, avatar FROM users WHERE ref=$1",
@@ -835,7 +839,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
   }
 });
 
-router.get("/me", auth, async (req, res) => {
+router.get("/me", auth, requirePermission("user:read", "user"), async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT id, ref, nom, prenom, email, pseudo, role, ues, avatar
@@ -866,7 +870,7 @@ router.post("/verify-invite", async (req, res) => {
   }
 });
 
-router.patch("/profile", auth, async (req, res) => {
+router.patch("/profile", auth, requirePermission("user:edit", "user"), async (req, res) => {
   const { pseudo } = req.body;
   if (!pseudo?.trim()) return res.status(400).json({ error: "Pseudo requis." });
   try {
@@ -889,7 +893,7 @@ router.patch("/profile", auth, async (req, res) => {
   }
 });
 
-router.patch("/password", auth, async (req, res) => {
+router.patch("/password", auth, requirePermission("user:edit", "user"), async (req, res) => {
   const { current, newPassword } = req.body;
   if (!current || !newPassword)
     return res.status(400).json({ error: "Champs requis." });
@@ -959,7 +963,7 @@ router.patch("/password", auth, async (req, res) => {
 });
 
 // Avatar upload via Cloudinary (or local disk)
-router.patch("/avatar", auth, (req, res) => {
+router.patch("/avatar", auth, requirePermission("user:edit", "user"), (req, res) => {
   avatarUpload(req, res, async (err) => {
     if (err) {
       if (!err.code) console.error("Avatar upload error:", err?.message || err);

@@ -50,6 +50,7 @@ Full-stack web platform for **HEI Madagascar** (school). Students browse course 
 hei-stdhub-v2/
 ├── package.json                         # Root scripts
 ├── README.md
+├── .env.example                         # Local backend env template (never commit .env)
 ├── docs/
 │   ├── ALL_ABOUT_API.md                 # API concepts & reference
 │   ├── FOR_DEV.md                       # This file
@@ -59,12 +60,12 @@ hei-stdhub-v2/
 │   ├── FOR_QA.md                        # Testing & QA
 │   ├── DOC_SESSIONS_GUIDE.md            # Auth sessions, tokens and proxy deployment
 │   ├── FOR_CONTRIBUTING.md              # Contribution guidelines
+│   ├── SECRET_ROTATION.md               # Incident runbook for leaked credentials
 │   └── EMAIL_SETUP.md                   # Email configuration
 ├── backend/
 │   ├── package.json
 │   ├── server.js                        # Entry point: Express, Socket.IO, rate limiting, VAPID, schema migrations
 │   ├── start.sh                         # Production startup script
-│   ├── .env.example
 │   ├── .mocharc.json
 │   ├── db/
 │   │   ├── index.js                     # PostgreSQL pool
@@ -104,11 +105,11 @@ hei-stdhub-v2/
 │   │   └── auth/
 │   │       └── [...path].js              # Vercel auth proxy to Render
 │   ├── public/
-│   │   ├── sw.js                        # Service worker (push + cache)
 │   │   ├── manifest.json                # PWA manifest
 │   │   └── logo*.png
 │   └── src/
-│       ├── main.jsx                     # React entry + push notification fetch
+│       ├── sw.js                        # Workbox service worker (precache, offline, push)
+│       ├── main.jsx                     # React entry + SW registration + push notification fetch
 │       ├── App.jsx                      # Router with route guards
 │       ├── index.css                    # Tailwind + custom styles
 │       ├── api/
@@ -229,7 +230,11 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 
 ## Environment Variables
 
-### Backend (`backend/.env`)
+### Backend (repository-root `.env`)
+
+`backend/server.js` loads `../.env`. Never commit it; production values live in
+Render, and the rotation procedure is in `SECRET_ROTATION.md`.
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | PORT | No | 3001 | Server port |
@@ -249,7 +254,11 @@ WEB1, WEB2, WEB3, PROG1, PROG2-POO, PROG2-API, PROG3, PROG4, PROG5, SYS1, SYS2, 
 | MAX_ONLINE_USERS | No | 5000 | Max tracked online users |
 | SOCKET_* | No | various | Socket.IO tuning knobs |
 
-### Frontend (`frontend/.env`)
+### Frontend (no committed `.env`)
+
+Only `VITE_API_URL` is needed. It defaults to `http://localhost:3001`; use
+`frontend/.env.local` for a local override and set it in Vercel for production.
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | VITE_API_URL | No | http://localhost:3001 | Backend API URL |
@@ -296,9 +305,12 @@ npm run release:major   # 1.9.0 -> 2.0.0
 ## Key Implementation Details
 
 ### PWA
-- Service worker registers on window load, caches `/`, `/logo.png`, `/manifest.json`.
-- Push notifications: payload data navigates to URL on click.
-- Manifest: standalone display, portrait, 192x512 icons.
+- Workbox service worker (`src/sw.js`, `injectManifest`) precaches the hashed app shell and serves a cached SPA shell for offline navigations; API responses are never cached.
+- Static assets use conservative runtime strategies; authenticated/sensitive responses are excluded from caching.
+- Push notifications only open same-origin URLs (cross-origin, non-HTTP or malformed targets fall back to `/`).
+- Service worker activation is handled by the SW itself; clients never send a `skip-waiting` message.
+- Manifest: standalone display, portrait orientation, dedicated `any` and `maskable` icons at 192/512 px plus a 180x180 Apple touch icon.
+- An install banner captures `beforeinstallprompt` (Chromium) and shows manual iOS Safari instructions; user dismissals are persisted locally.
 - Login/register triggers push subscription.
 
 ### Styling

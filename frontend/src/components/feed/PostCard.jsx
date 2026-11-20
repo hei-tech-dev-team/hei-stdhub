@@ -5,6 +5,7 @@ import AttachmentList from "./AttachmentList";
 import ReactionBar from "./ReactionBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEllipsisV, faEdit, faTrash, faBullhorn, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { can } from "../../../../shared/permissions";
 
 export default function PostCard({ post, currentUser, onUpdate, onDelete, onReactionChange }) {
     const [showMenu, setShowMenu] = useState(false);
@@ -18,7 +19,10 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, onReac
     const isDeletedUser = !post.author_id || !author.id;
     const authorName = isDeletedUser ? "Utilisateur supprimé" : author.pseudo || "Membre";
 
-    const canManage = !isDeletedUser && (currentUser?.id === post.author_id || currentUser?.role === "admin");
+    const canManage = !isDeletedUser && can(currentUser, "post:edit", "post", {
+        ownerId: post.author_id,
+        userId: currentUser?.id,
+    });
     const hasAttachments = post.attachments && post.attachments.length > 0;
 
     const formattedDate = post.created_at

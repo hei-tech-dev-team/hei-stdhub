@@ -27,8 +27,15 @@ before(async () => {
 });
 
 describe("SUPPORTS — CRUD & access control", () => {
-  it("GET /supports/:ue returns 200 or 500", async () => {
+  it("GET /supports/:ue without token returns 401", async () => {
     const res = await agent.get("/api/supports/WEB1");
+    expect(res.status).to.equal(401);
+  });
+
+  itWithToken("GET /supports/:ue returns 200 or 500", async () => {
+    const res = await agent
+      .get("/api/supports/WEB1")
+      .set("Authorization", `Bearer ${adminToken}`);
     expect([200, 500]).to.include(res.status);
     if (res.status === 200) expect(res.body).to.be.an("array");
   });

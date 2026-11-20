@@ -7,18 +7,18 @@ Frontend (Vercel) ─── HTTPS ───→ Backend (Render)
       │                                │
       │ /api/auth/* via Vercel proxy    │
       └────────────────────────────────┘
-                                       │
-                                  PostgreSQL (Supabase)
-                                       │
-                                  Cloudinary (file storage)
+                                        │
+                                   PostgreSQL (Supabase, migrating to Neon — #144)
+                                        │
+                                   Cloudinary (file storage)
 ```
 
 - **Frontend**: Vercel, SPA rewrite all routes to `/index.html`
 - **Auth proxy**: Vercel function `frontend/api/auth/[...path].js`, same-origin `/api/auth/*` → Render
 - **Backend**: Render (free tier sleeps after inactivity, keep-alive ping via start.sh)
-- **Database**: Supabase PostgreSQL
+- **Database**: Supabase PostgreSQL (Neon migration tracked in #144)
 - **File Storage**: Cloudinary (avatars, chat files)
-- **Push Notifications**: Web Push API (auto-generated VAPID keys — persist in production)
+- **Push Notifications**: Web Push API (VAPID keys from the host environment in production — see `SECRET_ROTATION.md`)
 
 The refresh cookie is host-only and scoped to `/api/auth`, so it is only sent to
 the Vercel proxy. Business API calls and Socket.IO go directly to Render with
@@ -29,7 +29,13 @@ session model.
 
 ## Environment Variables
 
-### Backend (`backend/.env`)
+> **Production:** secrets live in **Render → Environment** (runtime) and in
+> **GitHub → Settings → Environments → Production** (CI/CD), never in a file.
+> Rotation procedure: [`SECRET_ROTATION.md`](./SECRET_ROTATION.md).
+
+### Backend (repository-root `.env`, loaded by `server.js`)
+
+`backend/server.js` loads `../.env`. There is no `backend/.env` in the repo.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -64,7 +70,11 @@ session model.
 | `SOCKET_MAX_BUFFER` | No | `1048576` | Max socket message size (bytes) |
 | `SOCKET_DEFLATE_THRESHOLD` | No | `1024` | Min message size for compression (bytes) |
 
-### Frontend (`frontend/.env`)
+### Frontend (no committed `.env`)
+
+The frontend only needs `VITE_API_URL`. It falls back to
+`http://localhost:3001`; production sets it in the Vercel project settings.
+For a local override, use `frontend/.env.local` (ignored by git).
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -124,8 +134,8 @@ psql "$DATABASE_URL" -f database/migration_remove_groupe.sql
 ### 2. Backend
 
 ```bash
+cp .env.example .env  # from the repository root: server.js loads ../.env
 cd backend
-cp .env.example .env  # or create .env manually
 npm install
 npm run dev           # Development with nodemon
 # OR
@@ -136,7 +146,7 @@ npm start             # Production (via start.sh)
 
 ```bash
 cd frontend
-cp .env.example .env  # or create .env manually (VITE_API_URL)
+# Optional local override: cp .env.example .env.local
 npm install
 npm run dev           # Development on port 5173
 # OR
@@ -268,10 +278,23 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 
 ---
 
+## Secret Rotation
+
+Every credential that was ever committed is listed in
+[`SECRET_ROTATION.md`](./SECRET_ROTATION.md), with the provider steps and the
+verification checklist. Rotate **before** purging git history (#130): rotation
+protects users, history purging only removes copies.
+
+The backend refuses to start with `NODE_ENV=production` while a known leaked
+value is still configured. If it logs `Refusing to start`, a variable in Render
+still has its old value — rotate it, do not bypass the guard.
+
+---
+
 ## Security Checklist
 
-- [ ] `JWT_SECRET` is a strong random string
-- [ ] `DATABASE_URL` uses SSL (required by Supabase)
+- [ ] `JWT_SECRET` is a strong random value of at least 32 bytes, stored in Render
+- [ ] `DATABASE_URL` uses SSL (required by Supabase/Neon)
 - [ ] CORS `origin` is restricted in production
 - [ ] Rate limiting enabled on auth routes
 - [ ] Passwords are bcrypt hashed (salt rounds: 10)
@@ -283,8 +306,10 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 - [ ] `AUTH_PROXY_SECRET` matches between Vercel and Render
 - [ ] Password reset tokens: SHA-256, 1-hour expiry, single-use
 - [ ] No secrets in client-side code
-- [ ] `.env` files are in `.gitignore`
+- [ ] `.env` files are ignored and none are tracked by git
+- [ ] `frontend/.env` does not exist; `VITE_API_URL` is set in Vercel
 - [ ] `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` set in the Render environment (the server refuses to start in production without them)
+- [ ] Every value in `docs/SECRET_ROTATION.md` has been rotated or revoked
 
 ---
 
@@ -329,7 +354,7 @@ Updates both `backend/package.json` and `frontend/package.json` simultaneously.
 ### Push notifications not working
 → Service worker must be registered
 → Browser must support Push API
-→ VAPID keys must be consistent (auto-generated keys change each restart unless persisted in `.env`)
+→ VAPID keys must come from the host environment in production; after a key rotation every device must re-subscribe ([`SECRET_ROTATION.md`](./SECRET_ROTATION.md))
 
 ### Email not sending
 Password reset uses push notifications, not email. No SMTP/Resend configuration needed for the reset flow.

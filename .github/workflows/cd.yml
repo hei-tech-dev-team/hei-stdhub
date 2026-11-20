@@ -15,7 +15,9 @@ jobs:
   migrate-and-deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    environment: production
+    # Must match the GitHub environment that holds the deployment secrets
+    # (Settings → Environments → Production).
+    environment: Production
     steps:
       - uses: actions/checkout@v4
         with:

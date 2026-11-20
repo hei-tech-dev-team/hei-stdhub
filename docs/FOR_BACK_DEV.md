@@ -40,8 +40,9 @@ backend/
 ### VAPID Key Setup
 ```js
 @function VAPID Key Setup
-@description Auto-generates VAPID keys if not in env, configures web-push
+@description Loads VAPID keys from the environment; auto-generates them in development only
 @side-effects Sets process.env.VAPID_PUBLIC_KEY/PRIVATE_KEY if missing
+@production VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are required — see docs/SECRET_ROTATION.md
 ```
 
 ### Rate Limiters

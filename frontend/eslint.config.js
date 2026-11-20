@@ -41,7 +41,8 @@ export default defineConfig([
     },
   },
   {
-    files: ['public/sw.js'],
+    // The Workbox service worker source runs in a ServiceWorkerGlobalScope.
+    files: ['src/sw.js'],
     languageOptions: {
       globals: globals.serviceworker,
     },

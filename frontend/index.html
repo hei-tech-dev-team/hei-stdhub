@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
 
     <!-- Preconnect + Font loading (non-blocking) -->
@@ -17,17 +17,22 @@
     <!-- PWA manifest -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- iOS support -->
+    <!-- iOS / installability hints -->
+    <!-- `mobile-web-app-capable` is the standardized equivalent of Apple's
+         legacy `apple-mobile-web-app-capable`; keep both for widest support. -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="STDhub" />
-    <link rel="apple-touch-icon" href="/logo-browser.png" />
+    <!-- 180x180 is the canonical Apple touch icon size; avoid upscaling a
+         non-matching asset to prevent blurry home-screen icons on iOS. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
-    <!-- Theme color -->
-    <meta name="theme-color" content="#0F1E33" />
+    <!-- Theme color (aligned with manifest/background brand color). -->
+    <meta name="theme-color" content="#0A1A33" />
 
     <!-- SEO meta tags -->
     <meta

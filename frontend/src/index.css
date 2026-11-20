@@ -273,6 +273,45 @@
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
+
+  @keyframes page-enter {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+  }
+
+  .page-transition {
+    animation: page-enter 200ms ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-transition {
+      animation: none;
+    }
+  }
+}
+
+@layer utilities {
+  /* Mobile viewport height: 100dvh avoids content being hidden behind
+     browser chrome, while the 100vh fallback keeps older browsers usable. */
+  .h-app {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Safe-area helpers for installed PWAs. The fallback keeps these classes
+     harmless in browsers that do not expose env(). */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
 }
 
 @keyframes wave-premium {
