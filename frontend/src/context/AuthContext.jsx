@@ -167,14 +167,20 @@ export function AuthProvider({ children }) {
     cleanupLocalSession();
   };
 
+  const ensureAccessToken = async () => {
+    if (isAccessTokenExpiringSoon(60)) await refreshAccessToken();
+  };
+
   const logoutAll = async () => {
     try {
+      await ensureAccessToken();
       await authApi.post("/logout-all");
     } catch {}
     cleanupLocalSession();
   };
 
   const changePassword = async (current, newPassword) => {
+    await ensureAccessToken();
     const { data } = await authApi.patch("/password", {
       current,
       newPassword,
