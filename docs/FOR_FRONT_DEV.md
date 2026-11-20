@@ -70,9 +70,10 @@ frontend/src/
 - `clearLegacyStorage()` removes the obsolete `hei_token` / `hei_user` keys
 
 ### `api/authApi.js` — Auth Client
-- Same-origin `/api/auth` in production; local backend in development
+- `/api/auth` proxy in production (same origin by default); local backend in development
 - `withCredentials: true` for the `hei_refresh` cookie
-- Request interceptor adds `X-CSRF-Token` when `hei_csrf` is present
+- Request interceptor adds the Bearer token and `X-CSRF-Token` when available
+- Used by login, register, refresh, logout, logout-all and password change so the cookie is set on the proxy origin
 
 ### `api/session.js` — Refresh Coordination
 - `applyAuthResponse(data)` stores access token, expiry and CSRF token
@@ -88,7 +89,7 @@ frontend/src/
 - On mount: reads `hei_csrf`, refreshes the session, loads the user; no token is read from `localStorage`
 - `login(ref, password)`: `POST /auth/login`, stores access token in memory, triggers push subscribe
 - `register(formData)`: `POST /auth/register`, stores access token in memory, triggers push subscribe
-- `changePassword()`: `PATCH /auth/password`, applies the replacement session returned by the server
+- `changePassword()`: `PATCH /password` on `authApi` (`/api/auth/password`), applies the replacement session returned by the server
 - `logout()` / `logoutAll()`: revoke server-side sessions, clear local state and socket
 - Refreshes automatically when the access token is about to expire and handles `auth:session-revoked`
 - `dismissOnboarding()`: sets firstLogin false

@@ -77,7 +77,7 @@ vers Render avec l'en-tête `Authorization`, car le cookie est limité à
 | `backend/routes/admin.js` | Révoque les sessions de la cible lors d'un changement de rôle, d'email ou d'une suppression. |
 | `backend/server.js` | Authentifie les sockets, crée les rooms `session:<sid>` et `user:<uid>`, coupe les connexions à l'expiration ou à la révocation. |
 | `frontend/src/api/tokenStore.js` | Garde l'access token en mémoire et le jeton CSRF dans `localStorage`. |
-| `frontend/src/api/authApi.js` | Client axios same-origin pour `/api/auth`, avec `withCredentials` et CSRF automatique. |
+| `frontend/src/api/authApi.js` | Client axios du proxy `/api/auth` (même origine par défaut), avec `withCredentials`, Bearer et CSRF automatiques. |
 | `frontend/src/api/session.js` | Refresh mono-flight, application des réponses d'authentification, purge locale. |
 | `frontend/src/api/axios.js` | Ajoute le Bearer, tente un refresh sur 401, rejoue une fois la requête. |
 | `frontend/src/context/AuthContext.jsx` | Restaure la session au démarrage, rafraîchit avant expiration, réagit à la révocation. |
@@ -201,7 +201,7 @@ La purge supprime les lignes dont `expires_at` date de plus de 30 jours ou dont
 | Variable | Défaut | Description |
 |----------|--------|-------------|
 | `VITE_API_URL` | `http://localhost:3001` | API métier et Socket.IO, appelés directement. |
-| `VITE_AUTH_API_URL` | même origine en production | Origine du backend pour `/api/auth` (sans `/api/auth`) ; en développement, l'API locale est utilisée. |
+| `VITE_AUTH_API_URL` | même origine en production | Origine du proxy d'authentification (sans `/api/auth`) ; en développement, l'API locale est utilisée. Ne pas viser Render directement en production : le cookie est host-only et `SameSite=Strict`. |
 
 ## Déploiement : Option B (proxy Vercel)
 
