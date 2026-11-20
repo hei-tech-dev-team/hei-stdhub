@@ -5,13 +5,11 @@ let expiresAt = 0;
 let csrfToken = null;
 
 const readCsrf = () => {
-  if (csrfToken) return csrfToken;
   try {
-    csrfToken = localStorage.getItem(CSRF_KEY);
+    return localStorage.getItem(CSRF_KEY);
   } catch {
-    csrfToken = null;
+    return csrfToken;
   }
-  return csrfToken;
 };
 
 export const setSession = ({ token, expiresIn, csrfToken: nextCsrf }) => {
