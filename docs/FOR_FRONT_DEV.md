@@ -63,22 +63,43 @@ frontend/src/
 - If `user.firstLogin`, renders `OnboardingModal` overlay
 - 16 routes with guards
 
+### `api/tokenStore.js` — Session Secrets
+- Access token kept **in memory only** (`accessToken`, `expiresAt`)
+- CSRF token kept in `localStorage` under `hei_csrf` so tabs can share it
+- `setSession()`, `clearSession()`, `getAccessToken()`, `getCsrfToken()`, `hasSessionHint()`, `isAccessTokenExpiringSoon()`
+- `clearLegacyStorage()` removes the obsolete `hei_token` / `hei_user` keys
+
+### `api/authApi.js` — Auth Client
+- `/api/auth` proxy in production (same origin by default); local backend in development
+- `withCredentials: true` for the `hei_refresh` cookie
+- Request interceptor adds the Bearer token and `X-CSRF-Token` when available
+- Used by login, register, refresh, logout, logout-all and password change so the cookie is set on the proxy origin
+
+### `api/session.js` — Refresh Coordination
+- `applyAuthResponse(data)` stores access token, expiry and CSRF token
+- `refreshAccessToken()` uses a single in-flight promise to avoid parallel rotations
+- `clearAuth()` wipes the local session
+
 ### `api/axios.js` — Axios Instance
 - Base URL: `VITE_API_URL || "http://localhost:3001"` + `/api`
-- Request interceptor: injects `Bearer <token>` from `localStorage("hei_token")`
-- Response interceptor: on 401 (non-auth routes), clears token, redirects to `/login`
+- Request interceptor: injects `Bearer <token>` from `tokenStore`
+- Response interceptor: on 401 (non-auth routes), attempts one refresh and replays the request; on refresh failure, clears the session and redirects to `/login`
 
 ### `context/AuthContext.jsx` — Auth State
-- On mount: reads token from localStorage, calls `GET /auth/me` to validate
-- `login(ref, password)`: `POST /auth/login`, stores token+user, triggers push subscribe
-- `register(formData)`: `POST /auth/register`, stores token+user, triggers push subscribe
-- `logout()`: clears localStorage, sets user null
+- On mount: reads `hei_csrf`, refreshes the session, loads the user; no token is read from `localStorage`
+- `login(ref, password)`: `POST /auth/login`, stores access token in memory, triggers push subscribe
+- `register(formData)`: `POST /auth/register`, stores access token in memory, triggers push subscribe
+- `changePassword()`: `PATCH /password` on `authApi` (`/api/auth/password`), applies the replacement session returned by the server
+- `logout()` / `logoutAll()`: revoke server-side sessions, clear local state and socket
+- Refreshes automatically when the access token is about to expire and handles `auth:session-revoked`
 - `dismissOnboarding()`: sets firstLogin false
 
 ### `socket.js` — Socket.IO Client
 - Lazy singleton: `getSocket()` creates connection on first call
-- Auth via `handshake.auth.token`
+- Auth via `handshake.auth.token` using the in-memory access token
 - Transports: `["websocket", "polling"]`, 10s timeout
+- On `auth:expired`: refreshes the access token and reconnects
+- On `session:revoked`: clears the session, disconnects and redirects to `/login`
 - `disconnectSocket()`, `refreshSocket()`, `onConnectionChange(listener)`
 - Exports events: user:join, message:global/private, user:online/offline, message:seen, message:deleted, unread:update, typing:started/stopped, user:registered, bde:drag-*, bde:update
 

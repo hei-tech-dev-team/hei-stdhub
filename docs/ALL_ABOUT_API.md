@@ -148,7 +148,8 @@ io.to(`user:${userId}`).emit("message:private", msg); // Server → specific use
 
 The configured instance (`api/axios.js`) automatically:
 - Adds `Authorization: Bearer <token>` header
-- Redirects to `/login` on 401 (non-auth routes)
+- Refreshes the access token once on 401 and replays the request
+- Redirects to `/login` when the refresh session is invalid
 
 ---
 
@@ -159,7 +160,12 @@ The configured instance (`api/axios.js`) automatically:
 | Method | Path | Auth | Role | Description |
 |--------|------|------|------|-------------|
 | POST | `/register` | No (invite) | student/teacher/admin | Register with invite code; role comes from the code, never from the body |
-| POST | `/login` | No | Any | Single-field login: student ref (STD…), teacher (PROF…) or admin/dev code (3 req/15min rate limit) |
+| POST | `/login` | No | Any | Single-field login: student ref (STD…), teacher (PROF…) or admin/dev code (3 req/15min rate limit); returns access token, CSRF token and refresh cookie |
+| POST | `/refresh` | Cookie | Any | Rotate the refresh token and return a new 15-minute access token |
+| POST | `/logout` | Cookie + CSRF | Any | Revoke the current session |
+| POST | `/logout-all` | Bearer | Any | Revoke every session of the user |
+| GET | `/sessions` | Bearer | Any | List active sessions, current one flagged |
+| DELETE | `/sessions/:id` | Bearer | Owner | Revoke one owned session |
 | GET | `/user/:ref` | Yes | Any | Get public profile by reference |
 | POST | `/forgot-password` | No | Any | Request password reset code via push notification |
 | POST | `/forgot-password/verify-code` | No | Any | Verify 6-char reset code, returns reset token |
@@ -267,5 +273,6 @@ The configured instance (`api/axios.js`) automatically:
 | `announcement_reactions` | Announcement reactions | announcement_id, user_id (UNIQUE), reaction_type |
 | `invitations` | Registration codes | code (UNIQUE), role, max_uses, use_count, expires_at, created_by |
 | `password_reset_tokens` | Password reset | user_id, token_hash (SHA-256), expires_at, used_at |
+| `sessions` | Revocable refresh sessions | id (UUID), user_id, refresh_token_hash, previous_refresh_token_hash, csrf_token_hash, token_version, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason |
 | `pings` | Peer-to-peer pings | sender_id, receiver_id, status (pending/accepted/refused) |
 | `chat_favorites` | Favorite contacts | user_id, contact_id (PK combo) |

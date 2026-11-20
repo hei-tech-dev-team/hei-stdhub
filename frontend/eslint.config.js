@@ -47,4 +47,10 @@ export default defineConfig([
       globals: globals.serviceworker,
     },
   },
+  {
+    files: ['api/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ])

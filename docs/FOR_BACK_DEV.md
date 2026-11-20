@@ -10,10 +10,13 @@ backend/
 │   ├── index.js              # PostgreSQL pool (max: 25)
 │   ├── schema.sql            # Full schema (destructive: drops tables first)
 │   └── seed.dev.sql          # Local/CI test accounts — never production
+├── config/
+│   └── auth.js               # Token TTLs, cookie options, issuer/audience, session limits
 ├── middleware/
-│   └── auth.js               # JWT verification
+│   ├── auth.js               # Access token + session verification
+│   └── clientIp.js           # Trusts X-Forwarded-For only through the auth proxy
 ├── routes/
-│   ├── auth.js               # 12 endpoints — register, login, forgot-password, verify-code, reset-password, me, profile, password, avatar, verify-invite, user/:ref
+│   ├── auth.js               # 18 endpoints — register, login, refresh, logout, logout-all, sessions, forgot-password, verify-code, reset-password, me, profile, password, avatar, verify-invite, user/:ref
 │   ├── admin.js              # 12 endpoints — stats, next-pseudo, users (list, role, email, delete, role-upgrade, ues), invitations (CRUD + bulk)
 │   ├── supports.js           # 3 endpoints — list by UE, create, delete (teacher/admin)
 │   ├── messages.js           # 14 endpoints — search, contacts, global, private, send, seen, upload, unread, global/read, delete, favorites (list/add/remove)
@@ -21,6 +24,9 @@ backend/
 │   ├── push.js               # 5 endpoints — subscribe, unsubscribe, list notifications, mark read, unread count
 │   └── pings.js              # 4 endpoints — send, list, accept, refuse
 ├── services/
+│   ├── tokenAuth.js          # HS256 access tokens with issuer/audience + session binding
+│   ├── sessionService.js     # Refresh rotation, revocation, cache, purge, socket disconnects
+│   ├── sessionCleanupJob.js  # Daily purge of expired or old revoked sessions
 │   ├── notificationService.js # Web Push sender (batched concurrency, cleanup invalid subs)
 │   └── suggestionPdf.js      # PDF report (jsPDF, navy/gold branding, summary cards)
 ├── test/                     # Backend test files
@@ -64,17 +70,28 @@ backend/
 ```
 
 ### Schema Migrations (auto-run on startup)
-Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `chat_favorites`.
+Creates tables if not exist: `sessions`, `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `chat_favorites`.
 
 ---
 
-## `middleware/auth.js` — JWT Authentication
+## `middleware/auth.js` — Authentication
 
 ```js
 @function auth
-@description Reads Bearer token from Authorization header, verifies with JWT_SECRET, attaches decoded payload to req.user
+@description Reads the Bearer token, verifies HS256 + issuer/audience + session binding, then loads the current user (role, pseudo, UEs) from the database and attaches it to req.user
 @status 401 - Token manquant / Token invalide
 ```
+
+---
+
+## Sessions et authentification
+
+- `config/auth.js` centralise `ACCESS_TOKEN_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`, `REFRESH_REUSE_GRACE_SECONDS`, `AUTH_CACHE_TTL_MS`, `MAX_SESSIONS_PER_USER`, `SESSION_RETENTION_DAYS`, le nom du cookie et les claims `iss`/`aud`.
+- `services/tokenAuth.js` signe et vérifie l'access token (HS256 imposé, `sub`/`sid`/`tv`/`iss`/`aud`) puis vérifie que la session existe, n'est pas révoquée et que `token_version` correspond.
+- `services/sessionService.js` crée les sessions, fait tourner le refresh token avec détection de réutilisation et 15 s de grâce, révoque par session ou par utilisateur, tient un cache de 15 s et coupe les sockets concernées.
+- `services/sessionCleanupJob.js` purge chaque jour à 03:30 les sessions expirées ou révoquées depuis plus de `SESSION_RETENTION_DAYS`.
+- `middleware/clientIp.js` ne lit `X-Forwarded-For` que si le proxy Vercel présente `AUTH_PROXY_SECRET`.
+- Détails complets, endpoints et exploitation : `docs/DOC_SESSIONS_GUIDE.md`.
 
 ---
 
@@ -89,22 +106,28 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 
 ---
 
-## `routes/auth.js` — Authentication Routes (12 endpoints)
+## `routes/auth.js` — Authentication Routes (18 endpoints)
 
 ### Helpers
 ```js
 @function capitalize(str) - Capitalizes each word, rest lowercased
-@function makeToken(user) - JWT { id, ref, role, ues }, expiresIn: "7d"
+@function signAccessToken(user) - HS256 JWT { sid, tv } with sub/iss/aud, expiresIn: ACCESS_TOKEN_TTL_SECONDS
 @function hashResetToken(token) - SHA-256 hex digest
 @function generateResetCode() - 6-char alphanumeric (A-Z, 2-9, no 0/O/1/I)
 @function tryGetAdminFromToken(req) - Tries to extract admin from JWT (for admin-registered users)
+@function issueSession(req, res, user, options) - Creates a session, sets the refresh cookie, returns access + CSRF tokens
 ```
 
 ### Routes
 | Route | Auth | Input | Description |
 |-------|------|-------|-------------|
 | POST `/register` | No | `{ ref, nom, prenom, email, pseudo, password, inviteCode, ues? }` | Role comes from the invitation code (transaction: SELECT FOR UPDATE + consume + INSERT), validates ref/email/UEs per role, checks uniqueness (ref/email/pseudo), bcrypt hash, INSERT, emit `user:registered` |
-| POST `/login` | No | `{ ref, password }` | Unified: uppercase + trim the identifier, validate `STD/PROF/ADMIN/DEV` format (400), dummy bcrypt compare to keep timing uniform, generic 401 "Référence ou mot de passe incorrect.", returns JWT + user + access rights |
+| POST `/login` | No | `{ ref, password }` | Unified: uppercase + trim the identifier, validate `STD/PROF/ADMIN/DEV` format (400), dummy bcrypt compare to keep timing uniform, generic 401 "Référence ou mot de passe incorrect.", creates a session and returns access token + CSRF + user |
+| POST `/refresh` | Cookie + CSRF | — | Rotates the refresh token and returns a new access token |
+| POST `/logout` | Cookie + CSRF | — | Revokes the current session |
+| POST `/logout-all` | Yes | — | Revokes every session of the user |
+| GET `/sessions` | Yes | — | Lists active sessions with the current one flagged |
+| DELETE `/sessions/:id` | Yes | — | Revokes one owned session |
 | GET `/user/:ref` | Yes | — | Public profile by ref |
 | POST `/forgot-password` | No | `{ email }` | Lookup user, invalidate old tokens, INSERT new 10min token, send 6-char code via push notification, always return generic response |
 | POST `/forgot-password/verify-code` | No | `{ email, code }` | Verify 6-char code, mark used, issue reset token (1h) |
@@ -113,7 +136,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 | GET `/me` | Yes | — | Current user profile |
 | POST `/verify-invite` | No | `{ code }` | Validate invitation code, return role |
 | PATCH `/profile` | Yes | `{ pseudo }` | Check uniqueness, update |
-| PATCH `/password` | Yes | `{ current, newPassword }` | Verify current, hash new, update |
+| PATCH `/password` | Yes | `{ current, newPassword }` | Verify current, hash new, revoke other sessions, bump `token_version`, create a new session for this device |
 | PATCH `/avatar` | Yes | `FormData{ avatar }` | Upload to Cloudinary (200x200 crop) or local disk, update URL |
 
 ---
@@ -130,9 +153,9 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 |-------|-------|-------------|
 | GET `/stats` | — | Parallel COUNT queries + GROUP BY role |
 | GET `/users` | `?q=&role=&limit=&offset=` | Dynamic SQL with ILIKE + role filter, paginated (max 200) |
-| PATCH `/users/:id/role` | `{ role }` | Validates against whitelist (student/teacher/admin/bde) |
-| PATCH `/users/:id/email` | `{ email }` | Validate email, update |
-| DELETE `/users/:id` | — | Cannot delete self |
+| PATCH `/users/:id/role` | `{ role }` | Validates against whitelist (student/teacher/admin/bde), revokes target sessions |
+| PATCH `/users/:id/email` | `{ email }` | Validate email, update, revokes target sessions |
+| DELETE `/users/:id` | — | Cannot delete self, sessions cascade |
 | GET `/next-pseudo` | — | Get next sequential pseudo (new_userX) |
 | POST `/invitations` | `{ role, max_uses? }` | Single code, student/teacher only, 7d expiry |
 | POST `/invitations/bulk` | `{ role, count?, max_uses? }` | Up to 1000 codes, batch INSERT (100/batch) |

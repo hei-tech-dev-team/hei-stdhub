@@ -1,9 +1,11 @@
 import { io } from "socket.io-client";
+import { getAccessToken } from "./api/tokenStore";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 let socket = null;
 let connectionPromise = null;
+let authRetry = false;
 let listeners = new Set();
 const MAX_RECONNECT_ATTEMPTS = 15;
 const BASE_RECONNECT_DELAY = 1000;
@@ -27,7 +29,7 @@ export const getSocket = async () => {
   if (socket?.connected) return socket;
   if (connectionPromise) return connectionPromise;
 
-  const token = localStorage.getItem("hei_token");
+  const token = getAccessToken();
   if (!token) throw new Error("No auth token available");
 
   socket = io(SOCKET_URL, {
@@ -42,6 +44,7 @@ export const getSocket = async () => {
   });
 
   socket.on("connect", () => {
+    authRetry = false;
     connectionPromise = null;
     notifyListeners("connected", { socketId: socket.id });
   });
@@ -62,8 +65,41 @@ export const getSocket = async () => {
     notifyListeners("reconnect_failed");
   });
 
-  socket.on("connect_error", (err) => {
+  socket.on("connect_error", async (err) => {
+    if (!authRetry && /Token invalide|Token manquant/.test(err.message)) {
+      authRetry = true;
+      try {
+        const { refreshAccessToken } = await import("./api/session");
+        await refreshAccessToken();
+        socket.auth.token = getAccessToken();
+        socket.connect();
+        return;
+      } catch {}
+    }
     notifyListeners("connect_error", { error: err.message });
+  });
+
+  socket.on("session:revoked", (payload) => {
+    notifyListeners("revoked", payload || {});
+    window.dispatchEvent(
+      new CustomEvent("auth:session-revoked", { detail: payload || {} }),
+    );
+    disconnectSocket();
+  });
+
+  socket.on("auth:expired", async () => {
+    try {
+      const { refreshAccessToken } = await import("./api/session");
+      await refreshAccessToken();
+      await refreshSocket();
+    } catch {
+      window.dispatchEvent(
+        new CustomEvent("auth:session-revoked", {
+          detail: { reason: "expired" },
+        }),
+      );
+      disconnectSocket();
+    }
   });
 
   connectionPromise = new Promise((resolve, reject) => {

@@ -7,6 +7,7 @@ import ErrorBoundary from "./components/ui/ErrorBoundary";
 import App from "./App";
 import "./index.css";
 import { Analytics } from "@vercel/analytics/react";
+import { hasSessionHint } from "./api/tokenStore";
 import { Workbox } from "workbox-window";
 
 window.addEventListener("error", (e) => {
@@ -26,7 +27,7 @@ document.addEventListener("touchend", (e) => {
 }, false);
 
 async function fetchMissedNotifications() {
-  if (!localStorage.getItem("hei_token")) return;
+  if (!hasSessionHint()) return;
   try {
     const { default: api } = await import("./api/axios");
     const { data } = await api.get("/push/notifications");
@@ -97,7 +98,7 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-      if (localStorage.getItem("hei_token")) {
+      if (hasSessionHint()) {
         renewPushSubscription();
       }
     }

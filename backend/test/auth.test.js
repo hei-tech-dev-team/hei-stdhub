@@ -500,49 +500,46 @@ describe("AUTH — Forgot/Reset Password", () => {
     });
 
     it("full flow: send-email → reset-password", async () => {
-      // Step 1: Get admin email from DB
       const db = require("../db");
-      const { rows: userRows } = await db.query(
-        `SELECT email, id, token_version FROM users WHERE ref = 'ADMIN001' LIMIT 1`,
+      const bcrypt = require("bcryptjs");
+      const crypto = require("crypto");
+      const ref = "STD97555";
+      const email = "hei.reset.97555@gmail.com";
+      await db.query("DELETE FROM users WHERE ref=$1", [ref]);
+      const initialHash = await bcrypt.hash("password", 4);
+      const { rows: created } = await db.query(
+        `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, first_login)
+         VALUES ($1, 'Reset', 'Flow', $2, 'reset_97555', $3, 'student', FALSE)
+         RETURNING id, token_version`,
+        [ref, email, initialHash],
       );
-      if (!userRows.length) return this.skip();
-      const adminEmail = userRows[0].email;
+      const user = created[0];
 
-      // Step 2: Request reset email
       const sendRes = await agent
         .post("/api/auth/forgot-password/send-email")
-        .send({ email: adminEmail });
+        .send({ email });
       expect(sendRes.status).to.equal(200);
 
-      // Step 3: Fetch the token directly from DB (since email is async)
       const { rows } = await db.query(
-        `SELECT prt.token_hash, u.id
-         FROM password_reset_tokens prt
-         JOIN users u ON prt.user_id = u.id
-         WHERE u.id = $1
-           AND prt.used_at IS NULL
-           AND prt.expires_at > NOW()
-         ORDER BY prt.created_at DESC
+        `SELECT id FROM password_reset_tokens
+         WHERE user_id = $1 AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY created_at DESC
          LIMIT 1`,
-        [userRows[0].id],
+        [user.id],
       );
       expect(rows.length).to.be.greaterThan(0);
 
-      // We can't reverse the hash, so we generate a new token and insert it directly
-      const crypto = require("crypto");
       const freshToken = crypto.randomBytes(32).toString("hex");
       const tokenHash = crypto.createHash("sha256").update(freshToken).digest("hex");
       await db.query(
         "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')",
-        [rows[0].id, tokenHash],
+        [user.id, tokenHash],
       );
 
-      // Step 4: Validate the fresh token
       const validateRes = await agent.get(`/api/auth/reset-password/${freshToken}`);
       expect(validateRes.status).to.equal(200);
       expect(validateRes.body).to.have.property("valid", true);
 
-      // Step 5: Reset password with the fresh token
       const resetRes = await agent.post("/api/auth/reset-password").send({
         token: freshToken,
         newPassword: "newpassword123",
@@ -550,28 +547,19 @@ describe("AUTH — Forgot/Reset Password", () => {
       expect(resetRes.status).to.equal(200);
       expect(resetRes.body).to.have.property("message", "Mot de passe réinitialisé.");
 
-      // Step 6: Verify login works with new password
       const loginRes = await agent
         .post("/api/auth/login")
-        .send({ ref: "ADMIN001", password: "newpassword123" });
+        .send({ ref, password: "newpassword123" });
       expect(loginRes.status).to.equal(200);
       expect(loginRes.body).to.have.property("token");
 
-      // Step 6b: the reset revoked every session issued before it
       const { rows: after } = await db.query(
         "SELECT token_version FROM users WHERE id = $1",
-        [userRows[0].id],
+        [user.id],
       );
-      expect(after[0].token_version).to.equal(userRows[0].token_version + 1);
+      expect(after[0].token_version).to.equal(user.token_version + 1);
 
-      // Step 7: Restore original password and token version (ADMIN001 is shared
-      // by the other test files, whose tokens must stay valid)
-      const bcrypt = require("bcryptjs");
-      const restoredHash = await bcrypt.hash("password", 10);
-      await db.query(
-        "UPDATE users SET password = $1, token_version = $2 WHERE id = $3",
-        [restoredHash, userRows[0].token_version, userRows[0].id],
-      );
+      await db.query("DELETE FROM users WHERE id = $1", [user.id]);
     });
   });
 });

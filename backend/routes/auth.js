@@ -3,7 +3,6 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
-const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const { ipKeyGenerator } = rateLimit;
 const db = require("../db");
@@ -13,11 +12,25 @@ const { can } = require("../../shared/permissions");
 const multer = require("multer");
 const { sendPasswordResetEmail } = require("../services/mailer");
 const { sendPushToUser } = require("../services/notificationService");
+const { signAccessToken, verifyAccessToken } = require("../services/tokenAuth");
 const {
-  signAccessToken,
-  verifyAccessToken,
-  revokeUserTokens,
-} = require("../services/tokenAuth");
+  createSession,
+  publicUser,
+  rotateSession,
+  revokeSessionByRefreshToken,
+  revokeOwnedSession,
+  revokeUserSessions,
+  revokeAllForUser,
+  disconnectUser,
+  listSessions,
+  invalidateUserCache,
+} = require("../services/sessionService");
+const {
+  ACCESS_TOKEN_TTL_SECONDS,
+  REFRESH_COOKIE_NAME,
+  cookieOptions,
+  clearCookieOptions,
+} = require("../config/auth");
 
 const SECURITY_QUESTIONS = [
   { key: "prev_school", question: "Quel est le nom de votre établissement précédent ?" },
@@ -110,7 +123,66 @@ const genericForgotPasswordResponse = {
 
 const router = express.Router();
 
-const makeToken = signAccessToken;
+const ORIGIN_ALLOWLIST = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://hei-stdhub.vercel.app",
+].filter(Boolean);
+
+const parseCookies = (header) => {
+  const cookies = {};
+  if (!header) return cookies;
+  header.split(";").forEach((part) => {
+    const index = part.indexOf("=");
+    if (index === -1) return;
+    const key = part.slice(0, index).trim();
+    if (!key) return;
+    try {
+      cookies[key] = decodeURIComponent(part.slice(index + 1).trim());
+    } catch {
+      cookies[key] = part.slice(index + 1).trim();
+    }
+  });
+  return cookies;
+};
+
+const getRefreshCookie = (req) =>
+  parseCookies(req.headers.cookie)[REFRESH_COOKIE_NAME] || null;
+
+const checkOrigin = (req) => {
+  const origin = req.get("origin");
+  return !origin || ORIGIN_ALLOWLIST.includes(origin);
+};
+
+const clientKey = (req) => ipKeyGenerator(req.clientIp || req.ip);
+
+const issueSession = async (
+  req,
+  res,
+  user,
+  { status = 200, extra = {}, client } = {},
+) => {
+  const session = await createSession({
+    user,
+    req,
+    client,
+    io: req.app.get("io"),
+  });
+  res.cookie(REFRESH_COOKIE_NAME, session.refreshToken, cookieOptions());
+  res.set("Cache-Control", "no-store");
+  return res.status(status).json({
+    token: signAccessToken({
+      id: user.id,
+      session_id: session.id,
+      token_version: user.token_version ?? 0,
+    }),
+    expires_in: ACCESS_TOKEN_TTL_SECONDS,
+    csrf_token: session.csrfToken,
+    user: publicUser(user),
+    ...extra,
+  });
+};
 
 const REF_FORMAT = /^(STD\d{5,}|PROF\d{3,}|ADMIN\d{3,}|DEV\d{3,})$/;
 
@@ -127,6 +199,7 @@ const resetPasswordLimiter = rateLimit({
   message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: clientKey,
 });
 
 const tryGetAdminFromToken = async (req) => {
@@ -281,7 +354,7 @@ router.post("/register", async (req, res) => {
     const { rows } = await client.query(
       `INSERT INTO users (ref, nom, prenom, email, pseudo, password, role, ues)
  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
- RETURNING id, ref, nom, prenom, email, pseudo, role, ues, first_login`,
+ RETURNING id, ref, nom, prenom, email, pseudo, role, ues, avatar, first_login, token_version`,
       [
         refUpper,
         capitalize(nom),
@@ -322,7 +395,10 @@ router.post("/register", async (req, res) => {
       if (io) io.emit("user:registered", newUser);
     } catch (_) {}
 
-    res.status(201).json({ token: makeToken(newUser), user: newUser, first_login: true });
+    return issueSession(req, res, newUser, {
+      status: 201,
+      extra: { first_login: true },
+    });
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
     console.error(err);
@@ -373,16 +449,132 @@ router.post("/login", async (req, res) => {
       developer: user.role === "developer",
     };
 
-    const { password: _, first_login: __, token_version: ___, ...safeUser } = user;
-    res.json({
-      token: makeToken({ ...safeUser, token_version: user.token_version }),
-      user: safeUser,
-      first_login: isFirstLogin,
-      access,
+    return issueSession(req, res, user, {
+      extra: { first_login: isFirstLogin, access },
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.post("/refresh", async (req, res) => {
+  if (!checkOrigin(req))
+    return res.status(403).json({ error: "Origine non autorisée." });
+
+  const refreshToken = getRefreshCookie(req);
+  const csrfToken = req.get("x-csrf-token");
+  if (!refreshToken)
+    return res.status(401).json({ error: "Session absente." });
+  if (!csrfToken)
+    return res.status(403).json({ error: "Jeton CSRF manquant." });
+
+  try {
+    const result = await rotateSession({
+      refreshToken,
+      csrfToken,
+      req,
+      io: req.app.get("io"),
+    });
+
+    if (result.error) {
+      if (result.error === "csrf")
+        return res.status(403).json({ error: "Jeton CSRF invalide." });
+      res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions());
+      return res.status(401).json({ error: "Session expirée ou invalide." });
+    }
+
+    if (result.refreshToken)
+      res.cookie(
+        REFRESH_COOKIE_NAME,
+        result.refreshToken,
+        cookieOptions(),
+      );
+    res.set("Cache-Control", "no-store");
+    return res.json({
+      token: signAccessToken({
+        id: result.user.id,
+        session_id: result.sessionId,
+        token_version: result.tokenVersion,
+      }),
+      expires_in: ACCESS_TOKEN_TTL_SECONDS,
+      user: publicUser(result.user),
+    });
+  } catch (err) {
+    console.error("ERREUR /auth/refresh:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.post("/logout", async (req, res) => {
+  if (!checkOrigin(req))
+    return res.status(403).json({ error: "Origine non autorisée." });
+
+  try {
+    const refreshToken = getRefreshCookie(req);
+    const csrfToken = req.get("x-csrf-token");
+    if (refreshToken && csrfToken) {
+      await revokeSessionByRefreshToken({
+        refreshToken,
+        csrfToken,
+        reason: "logout",
+        io: req.app.get("io"),
+      });
+    }
+  } catch (err) {
+    console.error("ERREUR /auth/logout:", err.message);
+  }
+  res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions());
+  return res.status(204).end();
+});
+
+router.post("/logout-all", auth, async (req, res) => {
+  try {
+    await revokeAllForUser(
+      req.user.id,
+      "logout_all",
+      req.app.get("io"),
+    );
+  } catch (err) {
+    console.error("ERREUR /auth/logout-all:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+  res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions());
+  return res.status(204).end();
+});
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+router.get("/sessions", auth, async (req, res) => {
+  try {
+    const sessions = await listSessions(req.user.id, req.user.sid);
+    res.set("Cache-Control", "no-store");
+    return res.json(sessions);
+  } catch (err) {
+    console.error("ERREUR GET /auth/sessions:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+router.delete("/sessions/:id", auth, async (req, res) => {
+  if (!UUID_PATTERN.test(req.params.id))
+    return res.status(404).json({ error: "Session introuvable." });
+
+  try {
+    const revoked = await revokeOwnedSession(
+      req.user.id,
+      req.params.id,
+      req.app.get("io"),
+    );
+    if (!revoked)
+      return res.status(404).json({ error: "Session introuvable." });
+    if (req.params.id === req.user.sid)
+      res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions());
+    return res.status(204).end();
+  } catch (err) {
+    console.error("ERREUR DELETE /auth/sessions:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
@@ -392,6 +584,7 @@ const forgotPasswordLimiter = rateLimit({
   message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: clientKey,
 });
 
 router.post("/forgot-password/send-email", forgotPasswordLimiter, async (req, res) => {
@@ -504,7 +697,7 @@ const verifyCodeLimiter = rateLimit({
   message: { error: "Trop de tentatives, Merci de reessayer dans 5 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.body.email?.trim().toLowerCase() || ipKeyGenerator(req),
+  keyGenerator: (req) => req.body.email?.trim().toLowerCase() || clientKey(req),
 });
 
 router.post("/forgot-password/verify-code", verifyCodeLimiter, async (req, res) => {
@@ -604,12 +797,14 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     const client = await db.pool.connect();
     try {
       await client.query("BEGIN");
-      await client.query("UPDATE users SET password=$1 WHERE id=$2", [
-        hash,
-        resetToken.user_id,
-      ]);
-      // Log out every existing session of this account.
-      await revokeUserTokens(resetToken.user_id, client);
+      await client.query(
+        "UPDATE users SET password=$1, token_version = token_version + 1 WHERE id=$2",
+        [hash, resetToken.user_id],
+      );
+      await revokeUserSessions(resetToken.user_id, "password_reset", {
+        client,
+        bumpVersion: false,
+      });
       await client.query(
         `UPDATE password_reset_tokens
          SET used_at=NOW()
@@ -623,6 +818,12 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     } finally {
       client.release();
     }
+
+    disconnectUser(
+      req.app.get("io"),
+      resetToken.user_id,
+      "password_reset",
+    );
 
     sendPushToUser(resetToken.user_id, {
       title: "Mot de passe modifié",
@@ -685,6 +886,7 @@ router.patch("/profile", auth, requirePermission("user:edit", "user"), async (re
        RETURNING id, ref, nom, prenom, email, pseudo, role, avatar`,
       [pseudo.trim(), req.user.id],
     );
+    invalidateUserCache(req.user.id);
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
@@ -706,14 +908,56 @@ router.patch("/password", auth, requirePermission("user:edit", "user"), async (r
     if (!(await bcrypt.compare(current, rows[0].password)))
       return res.status(401).json({ error: "Mot de passe actuel incorrect." });
     const hash = await bcrypt.hash(newPassword, 10);
-    const { rows: updated } = await db.query(
-      `UPDATE users SET password=$1, token_version = token_version + 1 WHERE id=$2
-       RETURNING id, ref, role, pseudo, ues, token_version`,
-      [hash, req.user.id],
+    const client = await db.pool.connect();
+    let user;
+    let session;
+    try {
+      await client.query("BEGIN");
+      const { rows: updated } = await client.query(
+        `UPDATE users SET password=$1, token_version = token_version + 1 WHERE id=$2
+         RETURNING id, ref, nom, prenom, email, pseudo, role, ues, avatar, token_version`,
+        [hash, req.user.id],
+      );
+      user = updated[0];
+      await revokeUserSessions(user.id, "password_change", {
+        client,
+        bumpVersion: false,
+      });
+      session = await createSession({
+        user,
+        req,
+        client,
+        io: req.app.get("io"),
+      });
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    res.cookie(REFRESH_COOKIE_NAME, session.refreshToken, cookieOptions());
+    res.set("Cache-Control", "no-store");
+    disconnectUser(
+      req.app.get("io"),
+      user.id,
+      "password_change",
+      false,
     );
-    // Other sessions are revoked; this one gets a fresh token.
-    res.json({ message: "Mot de passe mis à jour.", token: makeToken(updated[0]) });
+    res.json({
+      message: "Mot de passe mis à jour.",
+      token: signAccessToken({
+        id: user.id,
+        session_id: session.id,
+        token_version: user.token_version,
+      }),
+      expires_in: ACCESS_TOKEN_TTL_SECONDS,
+      csrf_token: session.csrfToken,
+      user: publicUser(user),
+    });
   } catch (err) {
+    console.error("ERREUR /auth/password:", err.message);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
@@ -736,6 +980,7 @@ router.patch("/avatar", auth, requirePermission("user:edit", "user"), (req, res)
          RETURNING id, ref, nom, prenom, email, pseudo, role, avatar`,
         [avatarUrl, req.user.id],
       );
+      invalidateUserCache(req.user.id);
       res.json(rows[0]);
     } catch (err) {
       console.error("Avatar save error:", err?.message || err);

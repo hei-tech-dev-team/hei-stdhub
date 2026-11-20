@@ -1,61 +1,60 @@
 const jwt = require("jsonwebtoken");
 const db = require("../db");
+const { verifySession } = require("./sessionService");
+const {
+  ACCESS_TOKEN_TTL_SECONDS,
+  JWT_ISSUER,
+  JWT_AUDIENCE,
+} = require("../config/auth");
 
 const JWT_ALGORITHMS = ["HS256"];
-const TOKEN_TTL = "7d";
 
-/** Signs an access token. `tv` (token_version) lets the server revoke it. */
 function signAccessToken(user) {
+  const sessionId = user.session_id || user.sid;
+  if (!sessionId) throw new Error("session_id requis");
   return jwt.sign(
-    {
-      id: user.id,
-      ref: user.ref,
-      role: user.role,
-      pseudo: user.pseudo || "",
-      ues: user.ues || [],
-      tv: user.token_version ?? 0,
-    },
+    { sid: sessionId, tv: user.token_version ?? 0 },
     process.env.JWT_SECRET,
-    { expiresIn: TOKEN_TTL, algorithm: "HS256" },
+    {
+      algorithm: "HS256",
+      expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+      subject: String(user.id),
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    },
   );
 }
 
-/**
- * Verifies the signature AND the account's current state in the database:
- * a deleted account, or a token issued before the last token_version bump
- * (password change/reset), is rejected. Role, pseudo and UEs always come
- * from the database, so a demotion takes effect immediately.
- * Returns the user or null.
- */
 async function verifyAccessToken(token) {
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: JWT_ALGORITHMS });
+    decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: JWT_ALGORITHMS,
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+      clockTolerance: 5,
+    });
   } catch {
     return null;
   }
-  if (!Number.isInteger(decoded?.id)) return null;
 
-  const { rows } = await db.query(
-    `SELECT id, ref, role, pseudo, COALESCE(ues, '{}') AS ues, token_version
-     FROM users WHERE id = $1`,
-    [decoded.id],
-  );
-  const user = rows[0];
+  const userId = Number(decoded?.sub);
+  const sid = decoded?.sid;
+  if (!Number.isInteger(userId) || typeof sid !== "string" || !sid) return null;
+
+  const user = await verifySession(sid, userId);
   if (!user) return null;
   if ((decoded.tv ?? 0) !== user.token_version) return null;
 
   return {
-    ...decoded,
-    id: user.id,
-    ref: user.ref,
-    role: user.role,
-    pseudo: user.pseudo || "",
-    ues: user.ues,
+    ...user,
+    sid,
+    tv: user.token_version,
+    exp: decoded.exp,
+    iat: decoded.iat,
   };
 }
 
-/** Invalidates every token previously issued to this user. */
 async function revokeUserTokens(userId, client = db) {
   const { rows } = await client.query(
     "UPDATE users SET token_version = token_version + 1 WHERE id = $1 RETURNING token_version",

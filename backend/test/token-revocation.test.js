@@ -52,13 +52,40 @@ describe("AUTH — server-side token validation and revocation (H4)", () => {
       .set("Authorization", `Bearer ${token}`);
     expect(res.status).to.equal(403);
 
-    // A token forged with an elevated role but a valid signature is still capped
-    // to the account's real role.
-    const forged = jwt.sign({ id: userId, role: "developer", tv: 0 }, process.env.JWT_SECRET);
+    const { rows: sessions } = await db.query(
+      "SELECT id FROM sessions WHERE user_id=$1 AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1",
+      [userId],
+    );
+    const forged = jwt.sign(
+      { sid: sessions[0].id, tv: 0, role: "developer" },
+      process.env.JWT_SECRET,
+      {
+        algorithm: "HS256",
+        expiresIn: "1h",
+        subject: String(userId),
+        issuer: process.env.JWT_ISSUER || "hei-stdhub-api",
+        audience: process.env.JWT_AUDIENCE || "hei-stdhub-web",
+      },
+    );
     const forgedRes = await request(app)
       .get("/api/admin/stats")
       .set("Authorization", `Bearer ${forged}`);
     expect(forgedRes.status).to.equal(403);
+  });
+
+  it("rejects a correctly signed token without session binding", async () => {
+    const forged = jwt.sign(
+      { tv: 0, role: "student" },
+      process.env.JWT_SECRET,
+      {
+        algorithm: "HS256",
+        expiresIn: "1h",
+        subject: String(userId),
+        issuer: process.env.JWT_ISSUER || "hei-stdhub-api",
+        audience: process.env.JWT_AUDIENCE || "hei-stdhub-web",
+      },
+    );
+    expect((await me(forged)).status).to.equal(401);
   });
 
   it("revokes other sessions on password change and returns a fresh token", async () => {
