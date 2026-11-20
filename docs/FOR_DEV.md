@@ -57,6 +57,7 @@ hei-stdhub-v2/
 │   ├── FOR_FRONT_DEV.md                 # Frontend code documentation
 │   ├── FOR_OPS.md                       # Operations & deployment
 │   ├── FOR_QA.md                        # Testing & QA
+│   ├── DOC_SESSIONS_GUIDE.md            # Auth sessions, tokens and proxy deployment
 │   ├── FOR_CONTRIBUTING.md              # Contribution guidelines
 │   └── EMAIL_SETUP.md                   # Email configuration
 ├── backend/
@@ -69,18 +70,24 @@ hei-stdhub-v2/
 │   │   ├── index.js                     # PostgreSQL pool
 │   │   ├── schema.sql                   # Full database schema (drops tables first)
 │   │   └── seed.dev.sql                 # Local/CI test accounts — never production
+│   ├── config/
+│   │   └── auth.js                      # Token TTLs, cookie options, issuer/audience, session limits
 │   ├── middleware/
-│   │   ├── auth.js                      # JWT verification middleware
+│   │   ├── auth.js                      # Access token + session verification
+│   │   ├── clientIp.js                  # Trusted proxy client IP
 │   │   └── profanity.js                 # Profanity filter (EN/FR/MG/leetspeak)
 │   ├── routes/
-│   │   ├── auth.js                      # 12 endpoints — register, login, password reset, profile, avatar
-│   │   ├── admin.js                     # 10 endpoints — users, invitations, stats, class upgrade
+│   │   ├── auth.js                      # 18 endpoints — register, login, refresh, sessions, password reset, profile, avatar
+│   │   ├── admin.js                     # 12 endpoints — users, invitations, stats, class upgrade
 │   │   ├── supports.js                  # 3 endpoints — external links CRUD
 │   │   ├── messages.js                  # 14 endpoints — chat, search, upload, favorites, seen, unread
 │   │   ├── suggestions.js               # 5 endpoints — submit, list, patch, confirm, report
 │   │   ├── push.js                      # 5 endpoints — subscribe, unsubscribe, notifications
 │   │   └── pings.js                     # 4 endpoints — send, list, accept, refuse
 │   ├── services/
+│   │   ├── tokenAuth.js                 # HS256 access tokens with session binding
+│   │   ├── sessionService.js            # Refresh rotation, revocation, cache, purge
+│   │   ├── sessionCleanupJob.js         # Daily purge of expired or old revoked sessions
 │   │   ├── notificationService.js       # Web Push notification sender (batched, concurrency 10)
 │   │   └── suggestionPdf.js            # PDF report generator (jsPDF, navy/gold)
 │   ├── test/                            # Backend test files
@@ -93,6 +100,9 @@ hei-stdhub-v2/
 │   ├── postcss.config.js
 │   ├── eslint.config.js
 │   ├── index.html
+│   ├── api/
+│   │   └── auth/
+│   │       └── [...path].js              # Vercel auth proxy to Render
 │   ├── public/
 │   │   ├── sw.js                        # Service worker (push + cache)
 │   │   ├── manifest.json                # PWA manifest
@@ -102,7 +112,10 @@ hei-stdhub-v2/
 │       ├── App.jsx                      # Router with route guards
 │       ├── index.css                    # Tailwind + custom styles
 │       ├── api/
-│       │   └── axios.js                 # Axios instance + auth interceptor
+│       │   ├── axios.js                 # Axios instance + Bearer/401 handling
+│       │   ├── authApi.js               # /api/auth client with cookie + CSRF
+│       │   ├── session.js               # Single-flight refresh and auth responses
+│       │   └── tokenStore.js            # In-memory access token + CSRF storage
 │       ├── context/
 │       │   └── AuthContext.jsx           # Auth provider
 │       ├── socket.js                    # Socket.IO client singleton
