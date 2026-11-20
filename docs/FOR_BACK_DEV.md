@@ -10,10 +10,13 @@ backend/
 │   ├── index.js              # PostgreSQL pool (max: 25)
 │   ├── schema.sql            # Full schema (destructive: drops tables first)
 │   └── seed.dev.sql          # Local/CI test accounts — never production
+├── config/
+│   └── auth.js               # Token TTLs, cookie options, issuer/audience, session limits
 ├── middleware/
-│   └── auth.js               # JWT verification
+│   ├── auth.js               # Access token + session verification
+│   └── clientIp.js           # Trusts X-Forwarded-For only through the auth proxy
 ├── routes/
-│   ├── auth.js               # 12 endpoints — register, login, forgot-password, verify-code, reset-password, me, profile, password, avatar, verify-invite, user/:ref
+│   ├── auth.js               # 18 endpoints — register, login, refresh, logout, logout-all, sessions, forgot-password, verify-code, reset-password, me, profile, password, avatar, verify-invite, user/:ref
 │   ├── admin.js              # 12 endpoints — stats, next-pseudo, users (list, role, email, delete, role-upgrade, ues), invitations (CRUD + bulk)
 │   ├── supports.js           # 3 endpoints — list by UE, create, delete (teacher/admin)
 │   ├── messages.js           # 14 endpoints — search, contacts, global, private, send, seen, upload, unread, global/read, delete, favorites (list/add/remove)
@@ -21,6 +24,9 @@ backend/
 │   ├── push.js               # 5 endpoints — subscribe, unsubscribe, list notifications, mark read, unread count
 │   └── pings.js              # 4 endpoints — send, list, accept, refuse
 ├── services/
+│   ├── tokenAuth.js          # HS256 access tokens with issuer/audience + session binding
+│   ├── sessionService.js     # Refresh rotation, revocation, cache, purge, socket disconnects
+│   ├── sessionCleanupJob.js  # Daily purge of expired or old revoked sessions
 │   ├── notificationService.js # Web Push sender (batched concurrency, cleanup invalid subs)
 │   └── suggestionPdf.js      # PDF report (jsPDF, navy/gold branding, summary cards)
 ├── test/                     # Backend test files
@@ -63,17 +69,28 @@ backend/
 ```
 
 ### Schema Migrations (auto-run on startup)
-Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `chat_favorites`.
+Creates tables if not exist: `sessions`, `password_reset_tokens`, `push_subscriptions`, `push_notifications`, `global_chat_read`, `pings`, `chat_favorites`.
 
 ---
 
-## `middleware/auth.js` — JWT Authentication
+## `middleware/auth.js` — Authentication
 
 ```js
 @function auth
-@description Reads Bearer token from Authorization header, verifies with JWT_SECRET, attaches decoded payload to req.user
+@description Reads the Bearer token, verifies HS256 + issuer/audience + session binding, then loads the current user (role, pseudo, UEs) from the database and attaches it to req.user
 @status 401 - Token manquant / Token invalide
 ```
+
+---
+
+## Sessions et authentification
+
+- `config/auth.js` centralise `ACCESS_TOKEN_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`, `REFRESH_REUSE_GRACE_SECONDS`, `AUTH_CACHE_TTL_MS`, `MAX_SESSIONS_PER_USER`, `SESSION_RETENTION_DAYS`, le nom du cookie et les claims `iss`/`aud`.
+- `services/tokenAuth.js` signe et vérifie l'access token (HS256 imposé, `sub`/`sid`/`tv`/`iss`/`aud`) puis vérifie que la session existe, n'est pas révoquée et que `token_version` correspond.
+- `services/sessionService.js` crée les sessions, fait tourner le refresh token avec détection de réutilisation et 15 s de grâce, révoque par session ou par utilisateur, tient un cache de 15 s et coupe les sockets concernées.
+- `services/sessionCleanupJob.js` purge chaque jour à 03:30 les sessions expirées ou révoquées depuis plus de `SESSION_RETENTION_DAYS`.
+- `middleware/clientIp.js` ne lit `X-Forwarded-For` que si le proxy Vercel présente `AUTH_PROXY_SECRET`.
+- Détails complets, endpoints et exploitation : `docs/DOC_SESSIONS_GUIDE.md`.
 
 ---
 
@@ -88,7 +105,7 @@ Creates tables if not exist: `password_reset_tokens`, `push_subscriptions`, `pus
 
 ---
 
-## `routes/auth.js` — Authentication Routes (12 endpoints)
+## `routes/auth.js` — Authentication Routes (18 endpoints)
 
 ### Helpers
 ```js

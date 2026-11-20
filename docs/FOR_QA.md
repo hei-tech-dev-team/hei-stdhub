@@ -9,7 +9,9 @@ backend/
     ├── routes.test.js           # Extended route tests
     ├── messages.test.js         # Message CRUD, search, contacts, seen, upload, delete
     ├── security.test.js         # JWT attacks, SQL injection, XSS, authorization, input validation
+    ├── session.test.js          # Refresh rotation, CSRF, revocation, session limits, purge
     ├── socket.test.js           # Socket.IO events, BDE sync, private messaging
+    ├── socket-join-auth.test.js # Socket identity, forged events, session revocation
     ├── mailer.test.js           # Email URL building, sending, fallbacks
     └── suggestionPdf.test.js    # PDF generation, content, sections, endpoint
 ```
