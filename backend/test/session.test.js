@@ -53,7 +53,7 @@ const rawRefresh = (cookie, csrf) => {
   return req;
 };
 
-describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
+describe("SESSIONS — refresh, rotation, revocation and lifecycle", () => {
   before(async () => {
     await db.query("DELETE FROM users WHERE ref=$1", [REF]);
     const hash = await bcrypt.hash(PASSWORD, 4);
@@ -75,7 +75,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     await db.query("DELETE FROM users WHERE ref=$1", [REF]);
   });
 
-  it("émet un access token court sans rôle et un cookie strict", async () => {
+  it("issues a short-lived access token with no roles and a strict cookie", async () => {
     const { res } = await login();
     expect(res.status).to.equal(200);
     expect(res.body.expires_in).to.equal(ACCESS_TOKEN_TTL_SECONDS);
@@ -97,7 +97,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect(cookie).to.include("Path=/api/auth");
   });
 
-  it("exige le jeton CSRF et fait tourner le refresh token", async () => {
+  it("requires the CSRF token and rotates the refresh token", async () => {
     const { agent, res } = await login();
     const firstCookie = cookieValue(res, "hei_refresh");
 
@@ -110,7 +110,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect(cookieValue(rotated, "hei_refresh")).to.not.equal(firstCookie);
   });
 
-  it("accepte la réutilisation dans la fenêtre de grâce sans rotation", async () => {
+  it("allow reuse within the grace window without rotation", async () => {
     const { agent, res } = await login();
     const oldCookie = cookieValue(res, "hei_refresh");
     const rotated = await refresh(agent, res.body.csrf_token);
@@ -121,7 +121,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect(grace.headers["set-cookie"]).to.be.undefined;
   });
 
-  it("révoque la session si l'ancien token est réutilisé hors grâce", async () => {
+  it("revoke the session if an old token is used", async () => {
     const { agent, res } = await login();
     const oldCookie = cookieValue(res, "hei_refresh");
     const rotated = await refresh(agent, res.body.csrf_token);
@@ -148,7 +148,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect(blocked.status).to.equal(401);
   });
 
-  it("logout ne révoque que la session courante", async () => {
+  it("logout revokes only recent session", async () => {
     const first = await login();
     const second = await login();
 
@@ -161,7 +161,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect((await refresh(second.agent, second.res.body.csrf_token)).status).to.equal(200);
   });
 
-  it("logout-all révoque toutes les sessions", async () => {
+  it("logout-all revokes all sessions", async () => {
     const first = await login();
     const second = await login();
 
@@ -174,7 +174,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect((await refresh(second.agent, second.res.body.csrf_token)).status).to.equal(401);
   });
 
-  it("liste et révoque uniquement ses propres sessions", async () => {
+  it("get and revoke only own sessions", async () => {
     const first = await login();
     const second = await login();
 
@@ -198,7 +198,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect((await refresh(second.agent, second.res.body.csrf_token)).status).to.equal(401);
   });
 
-  it("change le mot de passe, révoque les autres sessions et garde l'appareil courant", async () => {
+  it("change password, revoke other sessions and keep current device", async () => {
     const first = await login();
     const second = await login();
 
@@ -229,7 +229,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
     expect(restore.status).to.equal(200);
   });
 
-  it("révoque les sessions de la cible lors d'un changement de rôle", async () => {
+  it("revoke session of target user while role updating", async () => {
     const target = await login();
 
     const res = await request(app)
@@ -250,7 +250,7 @@ describe("SESSIONS — refresh, rotation, révocation et cycle de vie", () => {
       .send({ role: "student" });
   });
 
-  it("purge les sessions expirées ou révoquées anciennes", async () => {
+  it("purge old or revoked sessions", async () => {
     const user = { id: userId, token_version: 0 };
     const expired = await createSession({ user, req: fakeReq });
     const revoked = await createSession({ user, req: fakeReq });
